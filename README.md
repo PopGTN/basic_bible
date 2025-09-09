@@ -11,3 +11,4 @@ These are feature that will try and atleast have.
 ## Other Features
 These feature will make it if i feel like adding them
 * [ ] Prayer List
+* [ ] Believer, gospel, Hymm Books and more.
