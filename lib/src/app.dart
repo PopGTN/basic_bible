@@ -1,51 +1,75 @@
-// import 'package:basic_bible/src/screens/HomeScreen.dart';
-// import 'package:basic_bible/src/screens/MyHomePage.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
 
-import 'features/home/home_page.dart';
-import 'features/home/about_page.dart';
+import 'screens/login_screen.dart';
+import 'screens/home/home_screen.dart';
+import 'screens/other_screen.dart';
+import 'screens/settings_screen.dart';
 
+import 'common/providers/auth_provider.dart';
+import 'common/providers/theme_provider.dart' hide themeDataMap;
 
-
-
-class MyApp extends StatelessWidget {
+class MyApp extends ConsumerWidget {
   const MyApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
-        final GoRouter router = GoRouter(
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isLoggedIn = ref.watch(authProvider);
+    final appTheme = ref.watch(themeProvider);
+
+    final router = GoRouter(
+      initialLocation: isLoggedIn ? '/home' : '/login',
       routes: [
         GoRoute(
           path: '/',
-          builder: (context, state) => const HomePage(),
+          builder: (context, state) =>
+              isLoggedIn ? const HomeScreen() : const LoginScreen(),
         ),
         GoRoute(
-          path: '/about',
-          builder: (context, state) => const AboutPage(),
+          path: '/login',
+          builder: (context, state) => const LoginScreen(),
+        ),
+        GoRoute(
+          path: '/home',
+          builder: (context, state) => const HomeScreen(),
+          routes: [
+            GoRoute(
+              path: 'other',
+              builder: (context, state) => const OtherScreen(),
+            ),
+            GoRoute(
+              path: 'settings',
+              builder: (context, state) => const SettingsScreen(),
+            ),
+          ],
         ),
       ],
-    );
-    
-    return ChangeNotifierProvider(
-      create: (context) => MyAppState(),
-      child: MaterialApp.router(
-        debugShowCheckedModeBanner: false,
-        title: 'Bible App Test',
-        theme: ThemeData(
-          primarySwatch: Colors.indigo,
-          // colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepOrange),
+      redirect: (context, state) {
+        final loggedIn = ref.read(authProvider);
+        final goingToLogin = state.uri.toString() == '/login';
 
-        ),
-        routerConfig: router,
-      ),
+        if (!loggedIn && !goingToLogin) return '/login';
+        if (loggedIn && goingToLogin) return '/home';
+        return null;
+      },
+    );
+
+    // return MaterialApp.router(
+    //   debugShowCheckedModeBanner: false,
+    //   routerConfig: router,
+    //   title: 'Flutter GoRouter & Riverpod Demo',
+    //   theme: themeDataMap[appTheme], // Apply selected theme
+    // );
+    return MaterialApp.router(
+      debugShowCheckedModeBanner: false,
+      routerConfig: router,
+      title: 'Flutter GoRouter & Riverpod Demo',
+      theme: getThemeData(appTheme),
+      darkTheme: appTheme == AppThemeMode.dark
+          ? getThemeData(AppThemeMode.dark)
+          : ThemeData.dark(), // fallback for system dark
+      themeMode: mapThemeMode(appTheme),
     );
   }
 }
-
-class MyAppState extends ChangeNotifier {
-  
-}
-
-

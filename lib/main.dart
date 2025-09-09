@@ -3,31 +3,42 @@ import 'dart:io';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:window_size/window_size.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'src/app.dart';
 
-void main() {
+void main(){
+  WidgetsFlutterBinding.ensureInitialized();
   setupWindow();
-  runApp(const MyApp());
+  runApp( ProviderScope(child: MyApp()));
 }
 
-const double windowWidth = 480;
-const double windowHeight = 854;
-
+const double minWindowWidth = 480;
+const double minWindowHeight = 854;
+// const double maxWindowWidth = 480;
+// const double maxWindowHeight = 854;
 void setupWindow() {
   if (!kIsWeb &&
       (Platform.isWindows || Platform.isLinux || Platform.isMacOS)) {
-    WidgetsFlutterBinding.ensureInitialized();
-    setWindowTitle('Navigation and routing');
-    setWindowMinSize(const Size(windowWidth, windowHeight));
-    // setWindowMaxSize(const Size(windowWidth, windowHeight));
+    setWindowTitle('The Basic Bible App');
+
+    // Minimum size
+    setWindowMinSize(const Size(minWindowWidth, minWindowHeight));
+
+    // Optional: Maximum size (can remove to allow free resizing)
+    // setWindowMaxSize(const Size(maxWindowWidth, maxWindowHeight));
+
+    // Initial window placement (optional)
     getCurrentScreen().then((screen) {
-      setWindowFrame(
-        Rect.fromCenter(
-          center: screen!.frame.center,
-          width: windowWidth,
-          height: windowHeight,
-        ),
-      );
+      if (screen != null) {
+        setWindowFrame(
+          Rect.fromCenter(
+            center: screen.frame.center,
+            width: 800,  // use a reasonable default, not minWindow
+            height: 600, // use a reasonable default
+          ),
+        );
+      }
     });
   }
 }
+
