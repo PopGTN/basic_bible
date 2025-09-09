@@ -5,7 +5,7 @@
 These are feature that will try and atleast have.
 * [ ] offline Support
 * [ ] TTS Support
-* [ ] The Ability to import USFM & USFX Bible translations'
+* [ ] The Ability to import USFM & USFX Bible translations
 * [ ] Basic note Taking
 
 ## Other Features
