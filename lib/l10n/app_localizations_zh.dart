@@ -9,13 +9,13 @@ class AppLocalizationsZh extends AppLocalizations {
   AppLocalizationsZh([String locale = 'zh']) : super(locale);
 
   @override
-  String get home => 'Home';
+  String get home => '主页';
 
   @override
-  String get bible => 'Bible';
+  String get bible => '圣经';
 
   @override
-  String get about => 'About';
+  String get about => '关于';
 
   @override
   String get settings => '设置';
@@ -24,14 +24,14 @@ class AppLocalizationsZh extends AppLocalizations {
   String get logout => '登出';
 
   @override
-  String get goToOther => 'Go to Other Page';
+  String get goToOther => '前往其他页面';
 
   @override
-  String get aboutDescription => 'This Bible app is a free project by PopGTN. It is a practice project for learning Flutter & Dart. The app allows reading the Bible, taking notes, TTS support, and more. It is inspired by apps like YouVersion Bible but with extra features and improved UI.';
+  String get aboutDescription => '这个圣经应用是 PopGTN 的免费项目。它是学习 Flutter 和 Dart 的练习项目。该应用允许阅读圣经、做笔记、支持 TTS 等功能。它的灵感来自 YouVersion 圣经等应用，但具有额外功能和改进的界面。';
 
   @override
-  String get language => 'Language';
+  String get language => '语言';
 
   @override
-  String get theme => 'Theme';
+  String get theme => '主题';
 }

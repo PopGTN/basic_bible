@@ -63,16 +63,6 @@ class MyApp extends ConsumerWidget {
       //Languages
       locale: Locale(localelang),
 
-      // localizationsDelegates: [
-      //   GlobalMaterialLocalizations.delegate,
-      //   GlobalWidgetsLocalizations.delegate,
-      //   GlobalCupertinoLocalizations.delegate,
-      // ],
-      // supportedLocales: [
-      //   Locale('en'), // English
-      //   Locale('es'), // Spanish
-      // ],
-      //Themes
       localizationsDelegates: const [
         AppLocalizations.delegate,
         GlobalMaterialLocalizations.delegate,
@@ -88,4 +78,5 @@ class MyApp extends ConsumerWidget {
       themeMode: mapThemeMode(appTheme),
     );
   }
+  
 }

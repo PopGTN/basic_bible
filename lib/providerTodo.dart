@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'models/todo.dart';
-import './TodoModal.dart';
+import 'TodoModal.dart';
+import './todo_repository.dart';
 
 final todoRepositoryProvider = Provider<TodoRepository>((ref) {
   return TodoRepository();
