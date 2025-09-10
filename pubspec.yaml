@@ -18,6 +18,7 @@ dependencies:
   url_launcher: ^6.3.2
   window_manager: ^0.5.1 
   shared_preferences: ^2.5.3
+  flutter_launcher_icons: ^0.14.4
   window_size:
     git:
       url: https://github.com/google/flutter-desktop-embedding.git
@@ -30,3 +31,8 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+
+flutter_icons:
+  android: true
+  ios: true
+  image_path: "assets/icon/app_icon.png" 
