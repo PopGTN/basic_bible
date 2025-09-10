@@ -4,11 +4,23 @@
 ## Feature
 These are feature that will try and atleast have.
 * [ ] offline Support
+* [ ] Read the bible
+* [ ] Select the Translation
+* [ ] Select book/chapter/versus
 * [ ] TTS Support
 * [ ] The Ability to import USFM & USFX Bible translations
 * [ ] Basic note Taking
+* [ ] Working app themes
+  * [ ] Custom Backgrounds
+  * [x] Custom Theme Colours
+* [ ] Multiply Language Support!
+  * [x] English
+  * [ ] French
+  * [ ] Spanish
+
 
 ## Other Features
 These feature will make it if i feel like adding them
 * [ ] Prayer List
 * [ ] Believer, gospel, Hymm Books and more.
+* [ ] Adding more languages

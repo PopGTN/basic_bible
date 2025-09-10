@@ -2,17 +2,26 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../common/providers/theme_provider.dart';
 
-class SettingsScreen extends ConsumerWidget {
+class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    // Watch the current theme from ThemeNotifier
+  ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends ConsumerState<SettingsScreen> {
+  // Example language list
+  final List<String> languages = ['English', 'Spanish', 'French', 'German'];
+  String selectedLanguage = 'English'; // default
+
+  @override
+  Widget build(BuildContext context) {
     final currentTheme = ref.watch(themeProvider);
 
     return Scaffold(
       appBar: AppBar(title: const Text("Settings")),
       body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -22,14 +31,12 @@ class SettingsScreen extends ConsumerWidget {
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 10),
-            // Generate a RadioListTile for each theme
             ...AppThemeMode.values.map(
               (themeMode) => RadioListTile<AppThemeMode>(
                 value: themeMode,
                 groupValue: currentTheme,
                 title: Row(
                   children: [
-                    // Color preview box
                     Container(
                       width: 24,
                       height: 24,
@@ -44,11 +51,34 @@ class SettingsScreen extends ConsumerWidget {
                 ),
                 onChanged: (val) {
                   if (val != null) {
-                    // Persist theme selection and apply immediately
                     ref.read(themeProvider.notifier).setTheme(val);
                   }
                 },
               ),
+            ),
+            const SizedBox(height: 20),
+
+            // Language Section
+            const Text(
+              "Language",
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 10),
+            DropdownButton<String>(
+              value: selectedLanguage,
+              items: languages
+                  .map((lang) => DropdownMenuItem(
+                        value: lang,
+                        child: Text(lang),
+                      ))
+                  .toList(),
+              onChanged: (val) {
+                if (val != null) {
+                  setState(() {
+                    selectedLanguage = val;
+                  });
+                }
+              },
             ),
           ],
         ),
@@ -56,7 +86,6 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 
-  // Helper: Convert AppThemeMode to readable string
   String _themeModeToString(AppThemeMode mode) {
     switch (mode) {
       case AppThemeMode.system:
@@ -72,7 +101,6 @@ class SettingsScreen extends ConsumerWidget {
     }
   }
 
-  // Helper: Map AppThemeMode to a representative color
   Color _themeColor(AppThemeMode mode) {
     switch (mode) {
       case AppThemeMode.system:
