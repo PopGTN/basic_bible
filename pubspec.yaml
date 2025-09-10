@@ -9,8 +9,11 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  english_words: ^4.0.0 #old
-  provider: ^6.1.5 # old
+  flutter_localizations:
+    sdk: flutter
+  intl: any
+  #english_words: ^4.0.0 #old
+  #provider: ^6.1.5 # old
   riverpod: ^2.6.1
   flutter_riverpod: ^2.6.1
   hooks_riverpod: ^2.6.1
@@ -18,7 +21,7 @@ dependencies:
   url_launcher: ^6.3.2
   window_manager: ^0.5.1 
   shared_preferences: ^2.5.3
-  flutter_launcher_icons: ^0.14.4
+  http: ^1.5.0
   window_size:
     git:
       url: https://github.com/google/flutter-desktop-embedding.git
@@ -28,11 +31,18 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.4
+
 
 flutter:
   uses-material-design: true
+  generate: true # Add this line
+  assets: 
+  - "assets/icon/" 
 
-flutter_icons:
-  android: true
+flutter_launcher_icons:
+  android: "launcher_icon"
   ios: true
-  image_path: "assets/icon/app_icon.png" 
+  image_path: "assets/icon/icon.png"
+
+
