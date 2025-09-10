@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../common/providers/theme_provider.dart';
 
+//TODO: Add Language Selection and other settings and make this a stateless widget page.
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
 
@@ -20,12 +21,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
     return Scaffold(
       appBar: AppBar(title: const Text("Settings")),
-      body: Padding(
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Theme Section
             const Text(
               "Theme",
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
