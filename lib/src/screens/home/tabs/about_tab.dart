@@ -12,15 +12,11 @@ class AboutTab extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Text('This is the about page'),
-          const SizedBox(height: 20),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Theme.of(context).colorScheme.primary,
-              foregroundColor: Colors.white,
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: const Text(
+              '''This is a bible that I PopGTN has created for free use. Its a practice project for learning Flutter & Dart. This project will be used to take the things i learn and make an open source drawing bible app. Like Pencil bible but with more features and better ui. This app will hopefully have the ability to read the bible, take notes, have TTS support and more.work as nice as the YouVersion Bible app.''',
             ),
-            onPressed: () => context.go('/'),
-            child: const Text('Back to Home'),
           ),
           const SizedBox(height: 20),
           ElevatedButton.icon(
