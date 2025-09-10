@@ -34,4 +34,19 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get theme => 'Tema';
+
+  @override
+  String get login => 'Iniciar sesión';
+
+  @override
+  String get english => 'Inglés';
+
+  @override
+  String get spanish => 'Español';
+
+  @override
+  String get french => 'Francés';
+
+  @override
+  String get german => 'Alemán';
 }

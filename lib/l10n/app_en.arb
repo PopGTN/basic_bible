@@ -8,5 +8,10 @@
   "goToOther": "Go to Other Page",
   "aboutDescription": "This Bible app is a free project by PopGTN. It is a practice project for learning Flutter & Dart. The app allows reading the Bible, taking notes, TTS support, and more. It is inspired by apps like YouVersion Bible but with extra features and improved UI.",  
   "language": "Language",
-  "theme": "Theme"
+  "theme": "Theme",
+  "login": "Login",
+  "english": "English",
+  "spanish": "Spanish",
+  "french": "French",
+  "german": "German"
 }

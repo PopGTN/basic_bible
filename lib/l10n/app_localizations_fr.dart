@@ -34,4 +34,19 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get theme => 'Thème';
+
+  @override
+  String get login => 'Connexion';
+
+  @override
+  String get english => 'Anglais';
+
+  @override
+  String get spanish => 'Espagnol';
+
+  @override
+  String get french => 'Français';
+
+  @override
+  String get german => 'Allemand';
 }

@@ -34,4 +34,19 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get theme => 'Thema';
+
+  @override
+  String get login => 'Anmelden';
+
+  @override
+  String get english => 'Englisch';
+
+  @override
+  String get spanish => 'Spanisch';
+
+  @override
+  String get french => 'Französisch';
+
+  @override
+  String get german => 'Deutsch';
 }

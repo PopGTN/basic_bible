@@ -34,4 +34,19 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get theme => '主题';
+
+  @override
+  String get login => 'Login';
+
+  @override
+  String get english => 'English';
+
+  @override
+  String get spanish => 'Spanish';
+
+  @override
+  String get french => 'French';
+
+  @override
+  String get german => 'German';
 }

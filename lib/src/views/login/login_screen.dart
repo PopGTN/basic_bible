@@ -12,13 +12,13 @@ class LoginScreen extends ConsumerWidget {
  final t = AppLocalizations.of(context)!; // <-- translations
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Login')),
+      appBar: AppBar(title: Text(AppLocalizations.of(context)!.login)),
       body: Center(
         child: ElevatedButton(
           onPressed: () async {
             await ref.read(authProvider.notifier).login();
           },
-          child: const Text(AppLocalizations.of(context)!.),
+          child: Text(AppLocalizations.of(context)!.login),
         ),
       ),
     );
