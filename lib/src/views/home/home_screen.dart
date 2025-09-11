@@ -12,9 +12,12 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   int _currentIndex = 0;
+
+  // Animation controllers for bottom nav and app bar
   late final AnimationController _bottomNavController;
+  late final AnimationController _appBarController;
 
   @override
   void initState() {
@@ -22,28 +25,33 @@ class _HomeScreenState extends State<HomeScreen>
     _bottomNavController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 250),
-      value: 1.0, // initially visible
+      value: 1.0, // visible initially
+    );
+    _appBarController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 250),
+      value: 1.0, // visible initially
     );
   }
 
   @override
   void dispose() {
     _bottomNavController.dispose();
+    _appBarController.dispose();
     super.dispose();
   }
 
-  void showBottomNav() {
-    if (mounted) _bottomNavController.forward();
-  }
-
-  void hideBottomNav() {
-    if (mounted) _bottomNavController.reverse();
-  }
+  // Helper methods to show/hide bars
+  void showBottomNav() => _bottomNavController.forward();
+  void hideBottomNav() => _bottomNavController.reverse();
+  void showAppBar() => _appBarController.forward();
+  void hideAppBar() => _appBarController.reverse();
 
   @override
   Widget build(BuildContext context) {
     final t = AppLocalizations.of(context)!;
-    final isWideScreen = MediaQuery.of(context).size.width >= 800;
+    final width = MediaQuery.of(context).size.width;
+    final isWideScreen = width >= 1100;
 
     final _tabItems = [
       {'widget': const HomeTab(), 'title': t.home, 'icon': Icons.home},
@@ -51,6 +59,9 @@ class _HomeScreenState extends State<HomeScreen>
         'widget': BibleViewerTab(
           showBottomNav: showBottomNav,
           hideBottomNav: hideBottomNav,
+          showAppBar: showAppBar,
+          hideAppBar: hideAppBar,
+          isSmallDevice: !isWideScreen,
         ),
         'title': t.bible,
         'icon': Icons.menu_book
@@ -60,12 +71,29 @@ class _HomeScreenState extends State<HomeScreen>
 
     final currentTab = _tabItems[_currentIndex];
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(currentTab['title'] as String),
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        foregroundColor: Theme.of(context).colorScheme.onPrimary,
+    // AppBar animation for small screens
+    final preferredAppBar = isWideScreen
+        ? AppBar(
+      title: Text(currentTab['title'] as String),
+      backgroundColor: Theme.of(context).colorScheme.primary,
+      foregroundColor: Theme.of(context).colorScheme.onPrimary,
+    )
+        : PreferredSize(
+      preferredSize: const Size.fromHeight(kToolbarHeight),
+      child: SizeTransition(
+        sizeFactor: _appBarController,
+        axisAlignment: -1,
+        child: AppBar(
+          title: Text(currentTab['title'] as String),
+          backgroundColor: Theme.of(context).colorScheme.primary,
+          foregroundColor: Theme.of(context).colorScheme.onPrimary,
+        ),
       ),
+    );
+
+
+    return Scaffold(
+      appBar: preferredAppBar as PreferredSizeWidget?,
       body: isWideScreen
           ? Row(
         children: [

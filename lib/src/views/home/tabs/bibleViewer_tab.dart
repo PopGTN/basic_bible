@@ -5,11 +5,17 @@ import 'package:flutter/rendering.dart' show ScrollDirection;
 class BibleViewerTab extends StatefulWidget {
   final VoidCallback showBottomNav;
   final VoidCallback hideBottomNav;
+  final VoidCallback showAppBar;
+  final VoidCallback hideAppBar;
+  final bool isSmallDevice;
 
   const BibleViewerTab({
     super.key,
     required this.showBottomNav,
     required this.hideBottomNav,
+    required this.showAppBar,
+    required this.hideAppBar,
+    required this.isSmallDevice,
   });
 
   @override
@@ -34,17 +40,18 @@ class _BibleViewerTabState extends State<BibleViewerTab> {
     final maxScroll = _scrollController.position.maxScrollExtent;
     final currentScroll = _scrollController.position.pixels;
 
-    // schedule state change in next frame to avoid layout conflicts
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
 
-      // Always show bottom nav if at the bottom
       if (currentScroll >= maxScroll) {
         widget.showBottomNav();
+        if (widget.isSmallDevice) widget.showAppBar();
       } else if (direction == ScrollDirection.reverse) {
         widget.hideBottomNav();
+        if (widget.isSmallDevice) widget.hideAppBar();
       } else if (direction == ScrollDirection.forward) {
         widget.showBottomNav();
+        if (widget.isSmallDevice) widget.showAppBar();
       }
     });
   }
@@ -59,14 +66,19 @@ class _BibleViewerTabState extends State<BibleViewerTab> {
   @override
   Widget build(BuildContext context) {
     final paddingBottom = _bottomNavHeight + _chapterBarHeight;
+    final isSmall = widget.isSmallDevice;
 
     return Stack(
       children: [
-        // Bible text with padding to avoid ghost space
         ListView.builder(
           controller: _scrollController,
-          padding: EdgeInsets.fromLTRB(16, 16, 16, paddingBottom),
-          itemCount: 100,
+          padding: EdgeInsets.fromLTRB(
+            16,
+            isSmall ? 16 : _chapterBarHeight + 16, // leave room for top ChapterBar on large screens
+            16,
+            paddingBottom,
+          ),
+          itemCount: 50,
           itemBuilder: (context, index) => Padding(
             padding: const EdgeInsets.symmetric(vertical: 8),
             child: Text(
@@ -75,12 +87,13 @@ class _BibleViewerTabState extends State<BibleViewerTab> {
             ),
           ),
         ),
-
-        // ChapterBar fixed above bottom nav
+        // ChapterBar
         Align(
-          alignment: Alignment.bottomCenter,
+          alignment:
+          isSmall ? Alignment.bottomCenter : Alignment.topCenter,
           child: SafeArea(
-            top: false,
+            top: !isSmall,
+            bottom: isSmall,
             child: const ChapterBar(barHeight: _chapterBarHeight),
           ),
         ),
