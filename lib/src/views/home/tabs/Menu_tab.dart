@@ -1,0 +1,122 @@
+import 'package:basic_bible/src/providers/auth_provider.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:basic_bible/l10n/app_localizations.dart';
+import 'package:url_launcher/url_launcher.dart';
+
+class MenuTab extends ConsumerWidget {
+  const MenuTab({super.key});
+
+  Future<void> _openLink(String url) async {
+    final uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final t = AppLocalizations.of(context)!;
+
+    return ListView(
+      padding: const EdgeInsets.all(8.0),
+      children: [
+        // Profile header
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16.0),
+          child: Row(
+            children: [
+              const CircleAvatar(
+                radius: 30,
+                backgroundImage: AssetImage('assets/images/profile_placeholder.png'),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Text(
+                  "User Name", // TODO: Replace with actual user name from auth
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        const Divider(),
+
+        // Notes
+        ListTile(
+          leading: const Icon(Icons.note),
+          title: Text("Notes"),
+          onTap: () => context.go('/coming-soon/notes'),
+        ),
+
+        // Prayer List
+        ListTile(
+          leading: const Icon(Icons.list_alt),
+          title: Text("Prayer List"),
+          onTap: () => context.go('/coming-soon/prayer'),
+        ),
+
+        // Verses of the Day
+        ListTile(
+          leading: const Icon(Icons.auto_stories),
+          title: Text("Verses of the Day"),
+          onTap: () => context.go('/coming-soon/verses'),
+        ),
+
+        // Language
+        ListTile(
+          leading: const Icon(Icons.language),
+          title: Text("Language"),
+          onTap: () => context.go('/coming-soon/language'),
+        ),
+
+        // About
+        ListTile(
+          leading: const Icon(Icons.info_outline),
+          title: Text(t.about),
+          onTap: () => context.go('/coming-soon/about'),
+        ),
+
+        // Help
+        ListTile(
+          leading: const Icon(Icons.help_outline),
+          title: Text("Help"),
+          onTap: () => context.go('/coming-soon/help'),
+        ),
+
+        const Divider(),
+
+        // Settings
+        ListTile(
+          leading: const Icon(Icons.settings),
+          title: Text(t.settings),
+          onTap: () => context.go('/home/settings'),
+        ),
+
+        // GitHub Repo
+        ListTile(
+          leading: const Icon(Icons.code),
+          title: const Text("GitHub Repository"),
+          onTap: () => _openLink("https://github.com/PopGTN/basic_bible"),
+        ),
+
+        const Divider(),
+
+        // Logout
+        ListTile(
+          leading: const Icon(Icons.logout, color: Colors.redAccent),
+          title: Text(
+            t.logout,
+            style: const TextStyle(color: Colors.redAccent),
+          ),
+          onTap: () {
+            ref.read(authProvider.notifier).logout();
+            // context.go('/login');
+          },
+        ),
+      ],
+    );
+  }
+}

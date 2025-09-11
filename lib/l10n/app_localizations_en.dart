@@ -49,4 +49,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get german => 'German';
+
+  @override
+  String get menu => 'Menu';
 }

@@ -1,5 +1,6 @@
-import 'package:basic_bible/src/views/home/tabs/widgets/ReferenceBar.dart';
+import 'package:basic_bible/src/views/home/tabs/bibleViewerTab/widgets/ReferenceBar.dart';
 import 'package:flutter/material.dart';
+
 
 class BibleViewerTab extends StatefulWidget {
   final VoidCallback showBottomNav;
@@ -32,55 +33,55 @@ class _BibleViewerTabState extends State<BibleViewerTab> {
   @override
   void initState() {
     super.initState();
-    _scrollController.addListener(_onScroll);
+    _scrollController.addListener(_handleScroll);
   }
 
-  void _onScroll() {
+  void _handleScroll() {
     if (!_scrollController.hasClients) return;
 
-    final currentScroll = _scrollController.position.pixels;
-    final maxScroll = _scrollController.position.maxScrollExtent;
-    final delta = currentScroll - (_lastScroll ?? currentScroll);
-    _lastScroll = currentScroll;
+    final current = _scrollController.position.pixels;
+    final max = _scrollController.position.maxScrollExtent;
+    final delta = current - (_lastScroll ?? current);
+    _lastScroll = current;
 
     if (delta.abs() < 1) return;
 
-    // At bottom → always show bars
-    if (currentScroll >= maxScroll) {
-      if (_isHiding) {
-        widget.showBottomNav();
-        if (widget.isSmallDevice) widget.showAppBar();
-        _isHiding = false;
-      }
+    // Always show bars when at the bottom
+    if (current >= max) {
+      if (_isHiding) _toggleBars(show: true);
       return;
     }
 
-    // Scrolling down
     if (delta > 0 && !_isHiding) {
-      widget.hideBottomNav();
-      if (widget.isSmallDevice) widget.hideAppBar();
-      _isHiding = true;
+      _toggleBars(show: false); // scrolling down → hide
+    } else if (delta < 0 && _isHiding) {
+      _toggleBars(show: true); // scrolling up → show
     }
+  }
 
-    // Scrolling up
-    if (delta < 0 && _isHiding) {
+  void _toggleBars({required bool show}) {
+    if (show) {
       widget.showBottomNav();
       if (widget.isSmallDevice) widget.showAppBar();
-      _isHiding = false;
+    } else {
+      widget.hideBottomNav();
+      if (widget.isSmallDevice) widget.hideAppBar();
     }
+    _isHiding = !show;
   }
 
   @override
   void dispose() {
-    _scrollController.removeListener(_onScroll);
-    _scrollController.dispose();
+    _scrollController
+      ..removeListener(_handleScroll)
+      ..dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final paddingBottom = _bottomNavHeight + _chapterBarHeight;
     final isSmall = widget.isSmallDevice;
+    final bottomPadding = _bottomNavHeight + _chapterBarHeight;
 
     return Stack(
       children: [
@@ -90,18 +91,17 @@ class _BibleViewerTabState extends State<BibleViewerTab> {
             16,
             isSmall ? 16 : _chapterBarHeight + 16,
             16,
-            paddingBottom,
+            bottomPadding,
           ),
           itemCount: 100,
-          itemBuilder: (context, index) => Padding(
+          itemBuilder: (_, i) => Padding(
             padding: const EdgeInsets.symmetric(vertical: 8),
             child: Text(
-              "Verse line ${index + 1} — sample Bible text.",
+              "Verse line ${i + 1} — sample Bible text.",
               style: Theme.of(context).textTheme.bodyLarge,
             ),
           ),
         ),
-
         Align(
           alignment: isSmall ? Alignment.bottomCenter : Alignment.topCenter,
           child: SafeArea(
