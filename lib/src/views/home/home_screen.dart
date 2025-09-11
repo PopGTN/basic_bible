@@ -15,22 +15,25 @@ class _HomeScreenState extends State<HomeScreen>
     with TickerProviderStateMixin {
   int _currentIndex = 0;
 
-  // Animation controllers for bottom nav and app bar
   late final AnimationController _bottomNavController;
   late final AnimationController _appBarController;
 
   @override
   void initState() {
     super.initState();
+
+    // Determine duration based on device
+    // We will update the duration dynamically in build
     _bottomNavController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 250),
-      value: 1.0, // visible initially
+      duration: const Duration(milliseconds: 1250),
+      value: 1.0,
     );
+
     _appBarController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 250),
-      value: 1.0, // visible initially
+      duration: const Duration(milliseconds: 950),
+      value: 1.0,
     );
   }
 
@@ -41,7 +44,7 @@ class _HomeScreenState extends State<HomeScreen>
     super.dispose();
   }
 
-  // Helper methods to show/hide bars
+  // Animation helpers
   void showBottomNav() => _bottomNavController.forward();
   void hideBottomNav() => _bottomNavController.reverse();
   void showAppBar() => _appBarController.forward();
@@ -52,6 +55,13 @@ class _HomeScreenState extends State<HomeScreen>
     final t = AppLocalizations.of(context)!;
     final width = MediaQuery.of(context).size.width;
     final isWideScreen = width >= 1100;
+    final isSmallDevice = !isWideScreen;
+
+    // Update animation duration depending on device
+    final animationDuration =
+    isSmallDevice ? const Duration(milliseconds: 50) : Duration.zero;
+    _bottomNavController.duration = animationDuration;
+    _appBarController.duration = animationDuration;
 
     final _tabItems = [
       {'widget': const HomeTab(), 'title': t.home, 'icon': Icons.home},
@@ -61,7 +71,7 @@ class _HomeScreenState extends State<HomeScreen>
           hideBottomNav: hideBottomNav,
           showAppBar: showAppBar,
           hideAppBar: hideAppBar,
-          isSmallDevice: !isWideScreen,
+          isSmallDevice: isSmallDevice,
         ),
         'title': t.bible,
         'icon': Icons.menu_book
@@ -71,7 +81,6 @@ class _HomeScreenState extends State<HomeScreen>
 
     final currentTab = _tabItems[_currentIndex];
 
-    // AppBar animation for small screens
     final preferredAppBar = isWideScreen
         ? AppBar(
       title: Text(currentTab['title'] as String),
@@ -90,7 +99,6 @@ class _HomeScreenState extends State<HomeScreen>
         ),
       ),
     );
-
 
     return Scaffold(
       appBar: preferredAppBar as PreferredSizeWidget?,

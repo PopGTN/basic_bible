@@ -40,16 +40,14 @@ class _BibleViewerTabState extends State<BibleViewerTab> {
 
     final currentScroll = _scrollController.position.pixels;
     final maxScroll = _scrollController.position.maxScrollExtent;
-
     final delta = currentScroll - (_lastScroll ?? currentScroll);
     _lastScroll = currentScroll;
 
-    // ignore tiny jitter
     if (delta.abs() < 1) return;
 
-    // Ensure animations are not called unnecessarily
+    // At bottom → always show bars
     if (currentScroll >= maxScroll) {
-      if (!_isHiding) {
+      if (_isHiding) {
         widget.showBottomNav();
         if (widget.isSmallDevice) widget.showAppBar();
         _isHiding = false;
@@ -57,20 +55,18 @@ class _BibleViewerTabState extends State<BibleViewerTab> {
       return;
     }
 
-    if (delta > 0) {
-      // scrolling down
-      if (!_isHiding) {
-        widget.hideBottomNav();
-        if (widget.isSmallDevice) widget.hideAppBar();
-        _isHiding = true;
-      }
-    } else if (delta < 0) {
-      // scrolling up
-      if (_isHiding) {
-        widget.showBottomNav();
-        if (widget.isSmallDevice) widget.showAppBar();
-        _isHiding = false;
-      }
+    // Scrolling down
+    if (delta > 0 && !_isHiding) {
+      widget.hideBottomNav();
+      if (widget.isSmallDevice) widget.hideAppBar();
+      _isHiding = true;
+    }
+
+    // Scrolling up
+    if (delta < 0 && _isHiding) {
+      widget.showBottomNav();
+      if (widget.isSmallDevice) widget.showAppBar();
+      _isHiding = false;
     }
   }
 
@@ -88,7 +84,6 @@ class _BibleViewerTabState extends State<BibleViewerTab> {
 
     return Stack(
       children: [
-        // Bible text
         ListView.builder(
           controller: _scrollController,
           padding: EdgeInsets.fromLTRB(
@@ -97,7 +92,7 @@ class _BibleViewerTabState extends State<BibleViewerTab> {
             16,
             paddingBottom,
           ),
-          itemCount: 50,
+          itemCount: 100,
           itemBuilder: (context, index) => Padding(
             padding: const EdgeInsets.symmetric(vertical: 8),
             child: Text(
@@ -107,7 +102,6 @@ class _BibleViewerTabState extends State<BibleViewerTab> {
           ),
         ),
 
-        // ChapterBar
         Align(
           alignment: isSmall ? Alignment.bottomCenter : Alignment.topCenter,
           child: SafeArea(
@@ -120,4 +114,3 @@ class _BibleViewerTabState extends State<BibleViewerTab> {
     );
   }
 }
-
