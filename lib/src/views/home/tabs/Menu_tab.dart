@@ -65,13 +65,8 @@ class MenuTab extends ConsumerWidget {
           onTap: () => context.go('/coming-soon/verses'),
         ),
 
-        // Language
-        ListTile(
-          leading: const Icon(Icons.language),
-          title: Text("Language"),
-          onTap: () => context.go('/coming-soon/language'),
-        ),
-
+        Divider(),
+        
         // About
         ListTile(
           leading: const Icon(Icons.info_outline),
@@ -79,6 +74,12 @@ class MenuTab extends ConsumerWidget {
           onTap: () => context.go('/coming-soon/about'),
         ),
 
+        //Donate
+        ListTile(
+          leading: const Icon(Icons.help_outline),
+           title: Text("Donate"),
+          onTap: () => context.go('/coming-soon/Donate'),
+        ),
         // Help
         ListTile(
           leading: const Icon(Icons.help_outline),
@@ -86,20 +87,25 @@ class MenuTab extends ConsumerWidget {
           onTap: () => context.go('/coming-soon/help'),
         ),
 
-        const Divider(),
-
-        // Settings
-        ListTile(
-          leading: const Icon(Icons.settings),
-          title: Text(t.settings),
-          onTap: () => context.go('/home/settings'),
-        ),
-
         // GitHub Repo
         ListTile(
           leading: const Icon(Icons.code),
           title: const Text("GitHub Repository"),
           onTap: () => _openLink("https://github.com/PopGTN/basic_bible"),
+        ),
+
+        const Divider(),
+        // Language
+        ListTile(
+          leading: const Icon(Icons.language),
+          title: Text("Language"),
+          onTap: () => context.go('/coming-soon/language'),
+        ),
+        // Settings
+        ListTile(
+          leading: const Icon(Icons.settings),
+          title: Text(t.settings),
+          onTap: () => context.go('/home/settings'),
         ),
 
         const Divider(),

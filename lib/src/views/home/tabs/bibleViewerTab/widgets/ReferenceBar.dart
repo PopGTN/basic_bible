@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 class ChapterBar extends StatelessWidget {
   const ChapterBar({
@@ -37,7 +38,10 @@ class ChapterBar extends StatelessWidget {
           // Middle chapter button (expanded)
           Expanded(
             child: FilledButton.tonal(
-              onPressed: () => print("Select chapter"),
+              onPressed: ()  {
+                print("Select chapter");
+                GoRouter.of(context).go('/home/reference');
+              },
               style: FilledButton.styleFrom(
                 shape: const RoundedRectangleBorder(),
                 padding: const EdgeInsets.symmetric(horizontal: 16),
