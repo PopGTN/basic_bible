@@ -1,6 +1,5 @@
 import 'package:basic_bible/src/views/home/tabs/widgets/ReferenceBar.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart' show ScrollDirection;
 
 class BibleViewerTab extends StatefulWidget {
   final VoidCallback showBottomNav;
@@ -27,6 +26,9 @@ class _BibleViewerTabState extends State<BibleViewerTab> {
   static const double _bottomNavHeight = 56;
   static const double _chapterBarHeight = 56;
 
+  double? _lastScroll;
+  bool _isHiding = false;
+
   @override
   void initState() {
     super.initState();
@@ -36,24 +38,40 @@ class _BibleViewerTabState extends State<BibleViewerTab> {
   void _onScroll() {
     if (!_scrollController.hasClients) return;
 
-    final direction = _scrollController.position.userScrollDirection;
-    final maxScroll = _scrollController.position.maxScrollExtent;
     final currentScroll = _scrollController.position.pixels;
+    final maxScroll = _scrollController.position.maxScrollExtent;
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
+    final delta = currentScroll - (_lastScroll ?? currentScroll);
+    _lastScroll = currentScroll;
 
-      if (currentScroll >= maxScroll) {
+    // ignore tiny jitter
+    if (delta.abs() < 1) return;
+
+    // Ensure animations are not called unnecessarily
+    if (currentScroll >= maxScroll) {
+      if (!_isHiding) {
         widget.showBottomNav();
         if (widget.isSmallDevice) widget.showAppBar();
-      } else if (direction == ScrollDirection.reverse) {
+        _isHiding = false;
+      }
+      return;
+    }
+
+    if (delta > 0) {
+      // scrolling down
+      if (!_isHiding) {
         widget.hideBottomNav();
         if (widget.isSmallDevice) widget.hideAppBar();
-      } else if (direction == ScrollDirection.forward) {
+        _isHiding = true;
+      }
+    } else if (delta < 0) {
+      // scrolling up
+      if (_isHiding) {
         widget.showBottomNav();
         if (widget.isSmallDevice) widget.showAppBar();
+        _isHiding = false;
       }
-    });
+    }
   }
 
   @override
@@ -70,11 +88,12 @@ class _BibleViewerTabState extends State<BibleViewerTab> {
 
     return Stack(
       children: [
+        // Bible text
         ListView.builder(
           controller: _scrollController,
           padding: EdgeInsets.fromLTRB(
             16,
-            isSmall ? 16 : _chapterBarHeight + 16, // leave room for top ChapterBar on large screens
+            isSmall ? 16 : _chapterBarHeight + 16,
             16,
             paddingBottom,
           ),
@@ -87,10 +106,10 @@ class _BibleViewerTabState extends State<BibleViewerTab> {
             ),
           ),
         ),
+
         // ChapterBar
         Align(
-          alignment:
-          isSmall ? Alignment.bottomCenter : Alignment.topCenter,
+          alignment: isSmall ? Alignment.bottomCenter : Alignment.topCenter,
           child: SafeArea(
             top: !isSmall,
             bottom: isSmall,
@@ -101,3 +120,4 @@ class _BibleViewerTabState extends State<BibleViewerTab> {
     );
   }
 }
+
