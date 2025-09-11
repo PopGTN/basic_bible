@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Enum for all supported app themes.
@@ -30,7 +31,7 @@ class ThemeNotifier extends StateNotifier<AppThemeMode> {
     final saved = prefs.getString('themeMode');
     if (saved != null) {
       state = AppThemeMode.values.firstWhere(
-        (e) => e.toString() == saved,
+            (e) => e.toString() == saved,
         orElse: () => AppThemeMode.system,
       );
     }
@@ -46,7 +47,7 @@ class ThemeNotifier extends StateNotifier<AppThemeMode> {
 
 /// Riverpod provider that exposes the current theme state
 final themeProvider =
-    StateNotifierProvider<ThemeNotifier, AppThemeMode>((ref) {
+StateNotifierProvider<ThemeNotifier, AppThemeMode>((ref) {
   return ThemeNotifier();
 });
 
@@ -103,7 +104,7 @@ ThemeMode mapThemeMode(AppThemeMode mode) {
 ThemeData getThemeData(AppThemeMode mode) {
   switch (mode) {
     case AppThemeMode.system:
-      // Default to light for previews, actual system theme is handled by ThemeMode
+    // Default to light for previews, actual system theme is handled by ThemeMode
       return themeDataMap[AppThemeMode.light]!;
     case AppThemeMode.light:
       return themeDataMap[AppThemeMode.light]!;

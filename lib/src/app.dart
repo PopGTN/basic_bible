@@ -31,7 +31,7 @@ class MyApp extends ConsumerWidget {
         GoRoute(
           path: '/',
           builder: (context, state) =>
-              isLoggedIn ? HomeScreen() : LoginScreen(),
+          isLoggedIn ? HomeScreen() : LoginScreen(),
         ),
         GoRoute(path: '/login', builder: (context, state) => LoginScreen()),
         GoRoute(
@@ -78,5 +78,5 @@ class MyApp extends ConsumerWidget {
       themeMode: mapThemeMode(appTheme),
     );
   }
-  
+
 }
