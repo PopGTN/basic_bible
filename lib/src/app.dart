@@ -1,22 +1,29 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:basic_bible/l10n/app_localizations.dart';
 
-import 'screens/login_screen.dart';
-import 'screens/home/home_screen.dart';
-import 'screens/other_screen.dart';
-import 'screens/settings_screen.dart';
+// Screens
+import 'views/login/login_screen.dart';
+import 'views/home/home_screen.dart';
+import 'views/other_screen.dart';
+import 'views/settings/settings_screen.dart';
 
-import 'common/providers/auth_provider.dart';
-import 'common/providers/theme_provider.dart' hide themeDataMap;
+// Providers
+import 'providers/auth_provider.dart';
+import 'providers/theme_provider.dart' hide themeDataMap;
+import 'providers/language_provider.dart';
 
 class MyApp extends ConsumerWidget {
   const MyApp({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext contexht, WidgetRef ref) {
     final isLoggedIn = ref.watch(authProvider);
     final appTheme = ref.watch(themeProvider);
+    final localelang = ref.watch(languageProvider);
+
 
     final router = GoRouter(
       initialLocation: isLoggedIn ? '/home' : '/login',
@@ -24,23 +31,17 @@ class MyApp extends ConsumerWidget {
         GoRoute(
           path: '/',
           builder: (context, state) =>
-              isLoggedIn ? const HomeScreen() : const LoginScreen(),
+              isLoggedIn ? HomeScreen() : LoginScreen(),
         ),
-        GoRoute(
-          path: '/login',
-          builder: (context, state) => const LoginScreen(),
-        ),
+        GoRoute(path: '/login', builder: (context, state) => LoginScreen()),
         GoRoute(
           path: '/home',
-          builder: (context, state) => const HomeScreen(),
+          builder: (context, state) => HomeScreen(),
           routes: [
-            GoRoute(
-              path: 'other',
-              builder: (context, state) => const OtherScreen(),
-            ),
+            GoRoute(path: 'other', builder: (context, state) => OtherScreen()),
             GoRoute(
               path: 'settings',
-              builder: (context, state) => const SettingsScreen(),
+              builder: (context, state) => SettingsScreen(),
             ),
           ],
         ),
@@ -55,20 +56,35 @@ class MyApp extends ConsumerWidget {
       },
     );
 
-    // return MaterialApp.router(
-    //   debugShowCheckedModeBanner: false,
-    //   routerConfig: router,
-    //   title: 'Flutter GoRouter & Riverpod Demo',
-    //   theme: themeDataMap[appTheme], // Apply selected theme
-    // );
     return MaterialApp.router(
+      title: 'The Basic Bible App',
       debugShowCheckedModeBanner: false,
       routerConfig: router,
-      title: 'Flutter GoRouter & Riverpod Demo',
+      //Languages
+      locale: Locale(localelang),
+
+      // localizationsDelegates: [
+      //   GlobalMaterialLocalizations.delegate,
+      //   GlobalWidgetsLocalizations.delegate,
+      //   GlobalCupertinoLocalizations.delegate,
+      // ],
+      // supportedLocales: [
+      //   Locale('en'), // English
+      //   Locale('es'), // Spanish
+      // ],
+      //Themes
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: AppLocalizations.supportedLocales,
+
       theme: getThemeData(appTheme),
       darkTheme: appTheme == AppThemeMode.dark
           ? getThemeData(AppThemeMode.dark)
-          : ThemeData.dark(), // fallback for system dark
+          : ThemeData.dark(),
       themeMode: mapThemeMode(appTheme),
     );
   }

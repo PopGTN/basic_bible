@@ -1,0 +1,12 @@
+{
+  "@@locale": "es",
+  "home": "Inicio",
+  "bible": "Biblia",
+  "about": "Acerca de",
+  "settings": "Configuración",
+  "logout": "Cerrar sesión",
+  "goToOther": "Ir a otra página",
+  "aboutDescription": "Esta aplicación de la Biblia es un proyecto gratuito de PopGTN. Es un proyecto de práctica para aprender Flutter y Dart. La aplicación permite leer la Biblia, tomar notas, soporte TTS y más. Está inspirada en aplicaciones como YouVersion Bible, pero con funciones adicionales y una interfaz mejorada.",
+  "language": "Idioma",
+  "theme": "Tema"
+}
