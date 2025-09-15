@@ -147,7 +147,9 @@ class _ReferenceScreenState extends State<ReferenceScreen>
                       },
                       child: Padding(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 16.0, vertical: 14.0),
+                            // horizontal: 16.0, vertical: 14.0
+                            horizontal: 16, vertical: 12
+                        ),
                         child: Row(
                           children: [
                             Expanded(
@@ -223,7 +225,7 @@ class _ReferenceScreenState extends State<ReferenceScreen>
                                       '$chap',
                                       style: TextStyle(
                                         color: chipTextColor(),
-                                        fontSize: 18,
+                                        // fontSize: 18,
                                         fontWeight: FontWeight.w500,
                                       ),
                                     ),
