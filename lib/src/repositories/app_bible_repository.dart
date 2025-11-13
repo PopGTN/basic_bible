@@ -76,7 +76,10 @@ class AppBibleRepository {
       }
 
       final parser = BibleParser.fromString(content);
-      final books = await parser.books.toList();
+      final books = <Book>[];
+      await for (final book in parser.books) {
+        books.add(book);
+      }
       _cachedBooks = books.map((book) => BibleBook(
         id: book.id,
         name: book.title,
@@ -125,7 +128,10 @@ class AppBibleRepository {
         final content = utf8.decode(response.bodyBytes);
 
         final parser = BibleParser.fromString(content);
-        final books = await parser.books.toList();
+        final books = <Book>[];
+        await for (final book in parser.books) {
+          books.add(book);
+        }
         _cachedBooks = books.map((book) => BibleBook(
           id: book.id,
           name: book.title,
