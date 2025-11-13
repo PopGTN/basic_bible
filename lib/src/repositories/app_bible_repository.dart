@@ -87,13 +87,12 @@ class AppBibleRepository {
         bookNumber: book.num,
         chapters: book.chapters.map((chapter) => BibleChapter(
           number: chapter.num,
-          verses: chapter.verses.map((verse) => BibleVerse(
-            number: verse.num,
-            text: verse.text,
-            notes: verse.notes,
-            references: verse.references,
-          )).toList(),
-        )).toList(),
+                      verses: chapter.verses.map((verse) => BibleVerse(
+                        number: verse.num,
+                        text: verse.text,
+                        notes: List<String>.from(verse.notes),
+                        references: List<String>.from(verse.references),
+                      )).toList(),        )).toList(),
       )).toList();
 
       await _dbService.insertBible(translationId, _cachedBooks);
@@ -142,8 +141,8 @@ class AppBibleRepository {
             verses: chapter.verses.map((verse) => BibleVerse(
               number: verse.num,
               text: verse.text,
-              notes: verse.notes,
-              references: verse.references,
+              notes: List<String>.from(verse.notes),
+              references: List<String>.from(verse.references),
             )).toList(),
           )).toList(),
         )).toList();

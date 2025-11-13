@@ -28,7 +28,9 @@ dependencies:
       url: https://github.com/google/flutter-desktop-embedding.git
       path: plugins/window_size
   bible_parser_flutter:
-    path: /home/joshua/Documents/GitHub/bible_parser_flutter/
+    git:
+      url: https://github.com/PopGTN/bible_parser_flutter.git
+      ref: Bible-References
   equatable: ^2.0.7
   sqflite: ^2.4.2
   sqflite_common_ffi: ^2.3.6
