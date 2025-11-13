@@ -4,7 +4,7 @@
 ## Features
 These are feature that will try and at least have. The Ones Checked off are done!
 * [ ] offline Support
-* [ ] Read the bible
+* [x] Read the bible
 * [ ] Account system
   * [ ] some kinda way to make anonymous accounts. With encryption keys for tranfering notes and stuff.
 * [ ] Notes Syncing online
