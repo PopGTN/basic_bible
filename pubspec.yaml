@@ -27,6 +27,8 @@ dependencies:
     git:
       url: https://github.com/google/flutter-desktop-embedding.git
       path: plugins/window_size
+  bible_parser_flutter:
+    git: https://github.com/PopGTN/bible_parser_flutter.git
 
 dev_dependencies:
   flutter_test:
