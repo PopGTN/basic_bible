@@ -44,10 +44,6 @@ class MyApp extends ConsumerWidget {
               path: 'settings',
               builder: (context, state) => SettingsScreen(),
             ),
-            GoRoute(
-              path: 'reference',
-              builder: (context, state) => ReferenceScreen(),
-            ),
           ],
         ),
       ],

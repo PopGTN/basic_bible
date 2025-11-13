@@ -1,17 +1,13 @@
-// lib/src/providers/bible_provider.dart
+import 'package:bible_parser_flutter/bible_parser_flutter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../models/bibleModels/bibleBook.dart';
-import '../models/bibleModels/bibleChapter.dart';
-import '../models/bibleModels/bibleReference.dart';
-import '../models/bibleModels/bibleVersus.dart';
 import '../models/bible_models.dart';
-import '../repositories/bible_repository.dart';
+import '../repositories/app_bible_repository.dart';
 
 // Repository provider
-final bibleRepositoryProvider = Provider<BibleRepository>((ref) {
-  return BibleRepository();
+final bibleRepositoryProvider = Provider<AppBibleRepository>((ref) {
+  return AppBibleRepository();
 });
 
 // Current translation provider
@@ -121,7 +117,7 @@ final bibleBooksProvider = StateNotifierProvider<BibleBooksNotifier, AsyncValue<
 });
 
 class BibleBooksNotifier extends StateNotifier<AsyncValue<List<BibleBook>>> {
-  final BibleRepository repository;
+  final AppBibleRepository repository;
   String _currentTranslationId;
 
   BibleBooksNotifier(this.repository, this._currentTranslationId) : super(const AsyncValue.loading()) {
@@ -137,14 +133,29 @@ class BibleBooksNotifier extends StateNotifier<AsyncValue<List<BibleBook>>> {
       // Try to load from local first, then download if needed
       try {
         books = await repository.loadLocalBible(_currentTranslationId);
-      } catch (e) {
+      } on BibleParserException catch (e, st) {
+        if (mounted) {
+          state = AsyncValue.error('There was an error parsing the Bible file. Please try a different translation or contact support.', st);
+        }
+        return;
+      }
+      catch (e) {
         // Local load failed, try to download
         books = await repository.downloadBible(_currentTranslationId);
       }
 
-      state = AsyncValue.data(books);
-    } catch (e, st) {
-      state = AsyncValue.error(e, st);
+      if (mounted) {
+        state = AsyncValue.data(books);
+      }
+    } on BibleParserException catch (e, st) {
+      if (mounted) {
+        state = AsyncValue.error('There was an error parsing the Bible file. Please try a different translation or contact support.', st);
+      }
+    }
+    catch (e, st) {
+      if (mounted) {
+        state = AsyncValue.error(e, st);
+      }
     }
   }
 
@@ -161,93 +172,18 @@ class BibleBooksNotifier extends StateNotifier<AsyncValue<List<BibleBook>>> {
     try {
       final books = await repository.downloadBible(translationId);
       _currentTranslationId = translationId;
-      state = AsyncValue.data(books);
-    } catch (e, st) {
-      state = AsyncValue.error(e, st);
-    }
-  }
-}
-
-// Current chapter provider
-final currentChapterProvider = Provider<AsyncValue<BibleChapter?>>((ref) {
-  final booksAsync = ref.watch(bibleBooksProvider);
-  final reference = ref.watch(currentReferenceProvider);
-
-  return booksAsync.when(
-    data: (books) {
-      try {
-        final book = books.firstWhere((b) => b.id == reference.bookId);
-        final chapter = book.chapters.firstWhere((c) => c.number == reference.chapter);
-        return AsyncValue.data(chapter);
-      } catch (e) {
-        return AsyncValue.error(e, StackTrace.current);
+      if (mounted) {
+        state = AsyncValue.data(books);
       }
-    },
-    loading: () => const AsyncValue.loading(),
-    error: (e, st) => AsyncValue.error(e, st),
-  );
-});
-
-// Search provider
-final bibleSearchProvider = StateNotifierProvider<SearchNotifier, AsyncValue<List<SearchResult>>>((ref) {
-  final repository = ref.watch(bibleRepositoryProvider);
-  return SearchNotifier(repository);
-});
-
-class SearchNotifier extends StateNotifier<AsyncValue<List<SearchResult>>> {
-  final BibleRepository repository;
-
-  SearchNotifier(this.repository) : super(const AsyncValue.data([]));
-
-  Future<void> search(String query) async {
-    if (query.trim().isEmpty) {
-      state = const AsyncValue.data([]);
-      return;
+    } on BibleParserException catch (e, st) {
+      if (mounted) {
+        state = AsyncValue.error('There was an error parsing the Bible file. Please try a different translation or contact support.', st);
+      }
     }
-
-    state = const AsyncValue.loading();
-
-    try {
-      final verses = repository.searchText(query);
-      final results = verses.map((verse) {
-        // Find which book and chapter this verse belongs to
-        final books = repository.getAllBooks();
-        for (final book in books) {
-          for (final chapter in book.chapters) {
-            if (chapter.verses.contains(verse)) {
-              return SearchResult(
-                verse: verse,
-                bookName: book.name,
-                bookId: book.id,
-                chapterNumber: chapter.number,
-              );
-            }
-          }
-        }
-        return null;
-      }).where((result) => result != null).cast<SearchResult>().toList();
-
-      state = AsyncValue.data(results);
-    } catch (e, st) {
-      state = AsyncValue.error(e, st);
+    catch (e, st) {
+      if (mounted) {
+        state = AsyncValue.error(e, st);
+      }
     }
   }
-
-  void clearSearch() {
-    state = const AsyncValue.data([]);
-  }
-}
-
-class SearchResult {
-  final BibleVerse verse;
-  final String bookName;
-  final String bookId;
-  final int chapterNumber;
-
-  SearchResult({
-    required this.verse,
-    required this.bookName,
-    required this.bookId,
-    required this.chapterNumber,
-  });
 }

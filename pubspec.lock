@@ -44,11 +44,9 @@ packages:
   bible_parser_flutter:
     dependency: "direct main"
     description:
-      path: "."
-      ref: HEAD
-      resolved-ref: "9a85f72896c45fb9112bcdc8386b66c85fff0b5d"
-      url: "https://github.com/PopGTN/bible_parser_flutter.git"
-    source: git
+      path: "/home/joshua/Documents/GitHub/bible_parser_flutter/"
+      relative: false
+    source: path
     version: "0.1.0+4"
   boolean_selector:
     dependency: transitive
@@ -138,6 +136,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.1.3+1"
+  equatable:
+    dependency: "direct main"
+    description:
+      name: equatable
+      sha256: "567c64b3cb4cf82397aac55f4f0cbd3ca20d77c6c03bedbc4ceaddc08904aef7"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.0.7"
   fake_async:
     dependency: transitive
     description:
@@ -700,7 +706,7 @@ packages:
     source: hosted
     version: "1.10.1"
   sqflite:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: sqflite
       sha256: e2297b1da52f127bc7a3da11439985d9b536f75070f3325e62ada69a5c585d03
@@ -724,7 +730,7 @@ packages:
     source: hosted
     version: "2.5.6"
   sqflite_common_ffi:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: sqflite_common_ffi
       sha256: "9faa2fedc5385ef238ce772589f7718c24cdddd27419b609bb9c6f703ea27988"
@@ -732,7 +738,7 @@ packages:
     source: hosted
     version: "2.3.6"
   sqflite_common_ffi_web:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: sqflite_common_ffi_web
       sha256: "793c1ff5b0c95ac618e7731e209db99e96abff59ad3432a3c91bd2b1454a00d5"

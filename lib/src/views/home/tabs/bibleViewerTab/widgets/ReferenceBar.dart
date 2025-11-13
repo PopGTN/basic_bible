@@ -1,9 +1,5 @@
-// lib/src/views/home/tabs/widgets/ReferenceBar.dart
 import 'package:flutter/material.dart';
-import '../../../../../models/bibleModels/bibleBook.dart';
-import '../../../../../models/bibleModels/bibleReference.dart';
-// lib/src/views/home/tabs/widgets/ReferenceBar.dart - Enhanced with book categories
-import 'package:flutter/material.dart';
+import '../../../../../models/bible_models.dart';
 
 class ChapterBar extends StatelessWidget {
   const ChapterBar({
@@ -159,6 +155,9 @@ class _ReferencePickerState extends State<ReferencePicker> with TickerProviderSt
 
   @override
   Widget build(BuildContext context) {
+    if (widget.books.isEmpty) {
+      return const Center(child: CircularProgressIndicator());
+    }
     final selectedBook = widget.books.firstWhere(
           (book) => book.id == selectedBookId,
       orElse: () => widget.books.first,

@@ -6,10 +6,21 @@ import 'package:window_size/window_size.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'src/app.dart';
 
-void main(){
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+
+import 'package:sqflite_common_ffi_web/sqflite_ffi_web.dart';
+
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  if (kIsWeb) {
+    // Change default factory on the web
+    databaseFactory = databaseFactoryFfiWeb;
+  } else if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+    sqfliteFfiInit();
+    databaseFactory = databaseFactoryFfi;
+  }
   setupWindow();
-  runApp( ProviderScope(child: MyApp()));
+  runApp(ProviderScope(child: MyApp()));
 }
 
 const double minWindowWidth = 480;

@@ -1,10 +1,11 @@
+import 'package:basic_bible/src/views/home/tabs/bibleViewerTab/ReferenceScreen.dart';
 import 'package:basic_bible/src/views/home/tabs/bibleViewerTab/widgets/ReferenceBar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../models/bibleModels/bibleChapter.dart';
-import '../../../../models/bibleModels/bibleReference.dart';
+import '../../../../models/bible_models.dart';
 import '../../../../providers/bible_provider.dart';
+import '../../../../providers/current_chapter_provider.dart';
 
 class BibleViewerTab extends ConsumerStatefulWidget {
   final VoidCallback showBottomNav;
@@ -227,18 +228,6 @@ class _BibleViewerTabState extends ConsumerState<BibleViewerTab> {
                     value: 'web',
                     child: Text('World English Bible (WEB)'),
                   ),
-                  const PopupMenuItem(
-                    value: 'kjv_usfm',
-                    child: Text('KJV (USFM Format)'),
-                  ),
-                  const PopupMenuItem(
-                    value: 'web_usfm',
-                    child: Text('WEB (USFM Format)'),
-                  ),
-                  const PopupMenuItem(
-                    value: 'bbe',
-                    child: Text('Bible in Basic English'),
-                  ),
                 ],
               ),
             ),
@@ -299,24 +288,77 @@ class _BibleTextView extends StatelessWidget {
           final verse = chapter.verses[index - 1];
           return Padding(
             padding: const EdgeInsets.only(bottom: 8.0),
-            child: RichText(
-              text: TextSpan(
-                style: TextStyle(
-                  fontSize: fontSize,
-                  color: Theme.of(context).textTheme.bodyLarge?.color,
-                  height: 1.5,
-                ),
-                children: [
-                  TextSpan(
-                    text: '${verse.number} ',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Theme.of(context).colorScheme.primary,
-                      fontSize: fontSize - 2,
+            child: GestureDetector(
+              onTap: () {
+                if (verse.notes != null && verse.notes!.isNotEmpty) {
+                  showDialog(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      title: Text('Footnotes for Verse ${verse.number}'),
+                      content: SingleChildScrollView(
+                        child: ListBody(
+                          children: verse.notes!
+                              .map((note) => Text(note))
+                              .toList(),
+                        ),
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          child: const Text('Close'),
+                        ),
+                      ],
                     ),
+                  );
+                } else if (verse.references != null && verse.references!.isNotEmpty) {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => ReferenceScreen(
+                        references: verse.references!,
+                        currentReference: reference,
+                      ),
+                    ),
+                  );
+                }
+              },
+              child: RichText(
+                text: TextSpan(
+                  style: TextStyle(
+                    fontSize: fontSize,
+                    color: Theme.of(context).textTheme.bodyLarge?.color,
+                    height: 1.5,
                   ),
-                  TextSpan(text: verse.text),
-                ],
+                  children: [
+                    TextSpan(
+                      text: '${verse.number} ',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Theme.of(context).colorScheme.primary,
+                        fontSize: fontSize - 2,
+                      ),
+                    ),
+                    TextSpan(text: verse.text),
+                    if (verse.notes != null && verse.notes!.isNotEmpty)
+                      WidgetSpan(
+                        child: Icon(
+                          Icons.info_outline,
+                          size: fontSize,
+                          color: Theme.of(context).colorScheme.secondary,
+                        ),
+                      ),
+                    if (verse.references != null && verse.references!.isNotEmpty)
+                      WidgetSpan(
+                        child: Padding(
+                          padding: const EdgeInsets.only(left: 4.0),
+                          child: Icon(
+                            Icons.link, // Or another appropriate icon for references
+                            size: fontSize,
+                            color: Theme.of(context).colorScheme.tertiary,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
               ),
             ),
           );
@@ -437,7 +479,7 @@ class _ErrorView extends StatelessWidget {
               color: Theme.of(context).colorScheme.error,
             ),
             const SizedBox(height: 16),
-            Text(
+            SelectableText(
               message,
               style: Theme.of(context).textTheme.bodyLarge,
               textAlign: TextAlign.center,
