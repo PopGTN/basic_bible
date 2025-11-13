@@ -28,7 +28,7 @@ dependencies:
       url: https://github.com/google/flutter-desktop-embedding.git
       path: plugins/window_size
   bible_parser_flutter:
-    path: /home/joshua/Documents/GitHub/bible_parser_flutter/
+    path: /home/joshua/Documents/Flutter Apps/Bible App Projects/bible_parser_flutter
   equatable: ^2.0.7
   sqflite: ^2.4.2
   sqflite_common_ffi: ^2.3.6
@@ -46,8 +46,10 @@ flutter:
   generate: true # Add this line
   assets: 
   - "assets/icon/"
-  - "assets/bible/"
-
+  - "assets/bible/eng-web.usfx.xml"
+  - "assets/bible/eng-kjv2006_usfx.xml"  
+  - "assets/bible/asv_osis.xml"
+  
 flutter_launcher_icons:
   android: "launcher_icon"
   ios: true

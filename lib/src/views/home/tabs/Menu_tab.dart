@@ -4,16 +4,38 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:basic_bible/l10n/app_localizations.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:url_launcher/url_launcher_string.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+
 
 class MenuTab extends ConsumerWidget {
   const MenuTab({super.key});
 
-  Future<void> _openLink(String url) async {
-    final uri = Uri.parse(url);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
+Future<void> _openLink(String url) async {
+  final uri = Uri.tryParse(url);
+  if (uri == null) return;
+
+  if (kIsWeb) {
+    // On web, open in a new browser tab/window
+    try {
+      await launchUrlString(url, webOnlyWindowName: '_blank');
+    } catch (_) {
+      // ignore or log
     }
+    return;
   }
+
+  // On mobile/desktop, ask the OS to open the link in the external browser/app
+  try {
+    final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (!ok) {
+      // fallback to platform default behavior if external application failed
+      await launchUrl(uri, mode: LaunchMode.platformDefault);
+    }
+  } catch (_) {
+    // ignore or log; you could show a snackbar if you pass BuildContext
+  }
+}
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

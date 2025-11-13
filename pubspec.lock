@@ -44,7 +44,7 @@ packages:
   bible_parser_flutter:
     dependency: "direct main"
     description:
-      path: "/home/joshua/Documents/GitHub/bible_parser_flutter/"
+      path: "/home/joshua/Documents/Flutter Apps/Bible App Projects/bible_parser_flutter"
       relative: false
     source: path
     version: "0.1.0+4"
