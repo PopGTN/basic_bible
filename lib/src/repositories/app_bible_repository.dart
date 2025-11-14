@@ -3,13 +3,15 @@ import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:bible_parser_flutter/bible_parser_flutter.dart';
 import '../models/bible_models.dart';
-import '../services/database_service.dart';
+import '../services/app_database.dart';
 
 class AppBibleRepository {
-  final DatabaseService _dbService = DatabaseService.instance;
+  final AppDatabase _db;
 
   List<BibleBook> _cachedBooks = [];
   String? _currentTranslationId;
+
+  AppBibleRepository(this._db);
 
   /// Available Bible translations
   static final List<BibleTranslation> availableTranslations = [
@@ -45,18 +47,13 @@ class AppBibleRepository {
 
   /// Load Bible from local asset or cache
   Future<List<BibleBook>> loadLocalBible(String translationId) async {
-    if (await _dbService.isBibleCached(translationId)) {
-      _cachedBooks = await _dbService.getBible(translationId);
+    if (await _db.isBibleCached(translationId)) {
+      _cachedBooks = await _db.getBible(translationId);
       _currentTranslationId = translationId;
       return _cachedBooks;
     }
 
     try {
-      final translation = availableTranslations.firstWhere(
-            (t) => t.id == translationId,
-        orElse: () => throw Exception('Translation $translationId not found'),
-      );
-
       String content = '';
       
       // Try to load from assets first
@@ -96,7 +93,7 @@ class AppBibleRepository {
         )).toList(),
       )).toList();
 
-      await _dbService.insertBible(translationId, _cachedBooks);
+  await _db.insertBible(translationId, _cachedBooks);
       _currentTranslationId = translationId;
       return _cachedBooks;
     } catch (e) {
@@ -106,8 +103,8 @@ class AppBibleRepository {
 
   /// Download Bible from GitHub and cache it
   Future<List<BibleBook>> downloadBible(String translationId) async {
-    if (await _dbService.isBibleCached(translationId)) {
-      _cachedBooks = await _dbService.getBible(translationId);
+    if (await _db.isBibleCached(translationId)) {
+      _cachedBooks = await _db.getBible(translationId);
       _currentTranslationId = translationId;
       return _cachedBooks;
     }
@@ -148,7 +145,7 @@ class AppBibleRepository {
           )).toList(),
         )).toList();
 
-        await _dbService.insertBible(translationId, _cachedBooks);
+  await _db.insertBible(translationId, _cachedBooks);
         _currentTranslationId = translationId;
         return _cachedBooks;
       } else {
@@ -212,16 +209,16 @@ class AppBibleRepository {
 
   /// Check if a translation is cached
   Future<bool> isCached(String translationId) async {
-    return await _dbService.isBibleCached(translationId);
+    return await _db.isBibleCached(translationId);
   }
 
   /// Clear cache for a specific translation
   Future<void> clearCache(String translationId) async {
-    await _dbService.deleteBible(translationId);
+    await _db.deleteBible(translationId);
   }
 
   /// Clear all cache
   Future<void> clearAllCache() async {
-    await _dbService.deleteAllBibles();
+    await _db.deleteAllBibles();
   }
 }

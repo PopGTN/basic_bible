@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'tabs/home_tab.dart';
-import 'tabs/Menu_tab.dart';
-import 'tabs/bibleViewerTab/bibleViewer_tab.dart';
+import 'tabs/menu_tab.dart';
+import 'tabs/bibleViewerTab/bible_viewer_tab.dart';
 import 'package:basic_bible/l10n/app_localizations.dart';
+import 'package:basic_bible/src/services/font_size_service.dart';
+import 'package:basic_bible/src/providers/bible_provider.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -51,6 +55,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
     final t = AppLocalizations.of(context)!;
+   
 
     // Responsive checks
     final width = MediaQuery.of(context).size.width;
@@ -66,7 +71,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
     // Tab configuration (widgets, titles, icons)
     final tabs = [
-      {'widget': const HomeTab(), 'title': t.home, 'icon': Icons.home},
+      {'widget': const HomeTab(), 'title': t.home, 'icon': FontAwesomeIcons.house},
       {
         'widget': BibleViewerTab(
           showBottomNav: showBottomNav,
@@ -76,9 +81,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           isSmallDevice: isSmall,
         ),
         'title': t.bible,
-        'icon': Icons.menu_book,
+        'icon': FontAwesomeIcons.book,
       },
-      {'widget': const MenuTab(), 'title': t.menu, 'icon': Icons.menu},
+      {'widget': const MenuTab(), 'title': t.menu, 'icon': FontAwesomeIcons.bars},
     ];
 
     final current = tabs[_currentIndex]; // currently selected tab
@@ -145,6 +150,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   ) {
     final title = Text(tab['title'] as String);
 
+
     // Extra buttons only appear on Bible tab
     final actions = isBible
         ? [
@@ -157,14 +163,87 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               icon: const Icon(Icons.volume_up),
               onPressed: () {},
               tooltip: 'Play Audio',
+          
             ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: ActionChip(
-                label: const Text("KJV"),
-                avatar: const Icon(Icons.language),
-                onPressed: () {},
-              ),
+            // Translation selector (moves the popup from the viewer into the top AppBar)
+            Consumer(
+              builder: (context, ref, child) {
+                final currentTranslation = ref.watch(currentTranslationProvider);
+                final colors = Theme.of(context).colorScheme;
+                return Card(
+                  color: colors.secondary,
+                  elevation: 2,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  child: PopupMenuButton<String>(
+                    color: colors.surface, // menu background
+                    padding: EdgeInsets.zero,
+                    child: Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.translate, color: colors.onSecondary),
+                          const SizedBox(width: 4),
+                          Text(currentTranslation, style: TextStyle(color: colors.onSecondary)),
+                        ],
+                      ),
+                    ),
+                    onSelected: (translationId) async {
+                      ref.read(currentTranslationProvider.notifier)
+                          .setTranslation(translationId);
+                      ref.read(bibleBooksProvider.notifier)
+                          .changeTranslation(translationId);
+                    },
+                    itemBuilder: (context) => [
+                      PopupMenuItem(
+                        value: 'kjv',
+                        child: Text('King James Version (KJV)', style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
+                      ),
+                      PopupMenuItem(
+                        value: 'asv',
+                        child: Text('American Standard Version (ASV)', style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
+                      ),
+                      PopupMenuItem(
+                        value: 'web',
+                        child: Text('World English Bible (WEB)', style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+            // Font size selector for Bible text (uses shared service)
+            ValueListenableBuilder<double>(
+              valueListenable: FontSizeService.instance.notifier,
+              builder: (context, size, child) {
+                final choices = <double>[12, 14, 16, 18, 20, 22, 24];
+                final colors = Theme.of(context).colorScheme;
+                return Card(
+                  color: colors.secondary,
+                  elevation: 2,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  child: PopupMenuButton<double>(
+                    color: colors.surface,
+                    tooltip: 'Bible text size',
+                    initialValue: size,
+                    onSelected: (v) => FontSizeService.instance.setSize(v),
+                    child: Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.text_fields, color: colors.onSecondary),
+                          const SizedBox(width: 6),
+                          Text('${size.toInt()}', style: TextStyle(color: colors.onSecondary)),
+                        ],
+                      ),
+                    ),
+                    itemBuilder: (context) => choices
+                        .map((s) => PopupMenuItem(value: s, child: Text('${s.toInt()}', style: TextStyle(color: Theme.of(context).colorScheme.onSurface))))
+                        .toList(),
+                  ),
+                );
+              },
             ),
           ]
         : null;

@@ -4,10 +4,12 @@ import 'package:flutter_riverpod/legacy.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/bible_models.dart';
 import '../repositories/app_bible_repository.dart';
+import '../services/app_database.dart';
 
 // Repository provider
 final bibleRepositoryProvider = Provider<AppBibleRepository>((ref) {
-  return AppBibleRepository();
+  final db = ref.watch(appDatabaseProvider);
+  return AppBibleRepository(db);
 });
 
 // Current translation provider

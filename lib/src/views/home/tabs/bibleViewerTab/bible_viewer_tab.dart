@@ -2,6 +2,7 @@ import 'package:basic_bible/src/views/home/tabs/bibleViewerTab/ReferenceScreen.d
 import 'package:basic_bible/src/views/home/tabs/bibleViewerTab/widgets/ReferenceBar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:basic_bible/src/services/font_size_service.dart';
 
 import '../../../../models/bible_models.dart';
 import '../../../../providers/bible_provider.dart';
@@ -29,10 +30,9 @@ class BibleViewerTab extends ConsumerStatefulWidget {
 
 class _BibleViewerTabState extends ConsumerState<BibleViewerTab> {
   final ScrollController _scrollController = ScrollController();
-  static const double _bottomNavHeight = 56;
-  static const double _chapterBarHeight = 56;
+  // Removed local constants; layout spacing is handled by widgets directly.
   //TODO: Make The Text Size Changeable through Settings
-  double _fontSize = 16.0;
+  // Font size is now provided by FontSizeService; listen to changes in build
 
   double? _lastScroll;
   bool _isHiding = false;
@@ -92,8 +92,7 @@ class _BibleViewerTabState extends ConsumerState<BibleViewerTab> {
     final booksAsync = ref.watch(bibleBooksProvider);
     final currentReference = ref.watch(currentReferenceProvider);
     final chapterAsync = ref.watch(currentChapterProvider);
-    final isSmall = widget.isSmallDevice;
-    final bottomPadding = _bottomNavHeight + _chapterBarHeight;
+  final isSmall = widget.isSmallDevice;
 
     return Stack(
       children: [
@@ -116,23 +115,7 @@ class _BibleViewerTabState extends ConsumerState<BibleViewerTab> {
             ),
           ),
         ),*/
-        // Bible content
-        booksAsync.when(
-          data: (books) => chapterAsync.when(
-            data: (chapter) => chapter != null
-                ? _BibleTextView(
-              controller: _scrollController,
-              chapter: chapter,
-              reference: currentReference,
-              fontSize: _fontSize,
-            )
-                : const _ErrorView(message: 'Chapter not found'),
-            loading: () => const _LoadingView(),
-            error: (error, stack) => _ErrorView(message: 'Error: $error'),
-          ),
-          loading: () => const _LoadingView(),
-          error: (error, stack) => _ErrorView(message: 'Failed to load Bible: $error'),
-        ),
+        // Bible content is provided below and listens to global font-size
 
         // Chapter navigation bar
         Align(
@@ -163,35 +146,32 @@ class _BibleViewerTabState extends ConsumerState<BibleViewerTab> {
           ),
         ),
 
-        // Font size controls
-        Positioned(
-          top: 16,
-          right: 16,
-          child: SafeArea(
-            child: Card(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.add),
-                    onPressed: () => setState(() {
-                      if (_fontSize < 24) _fontSize += 2;
-                    }),
-                  ),
-                  Text('${_fontSize.toInt()}'),
-                  IconButton(
-                    icon: const Icon(Icons.remove),
-                    onPressed: () => setState(() {
-                      if (_fontSize > 12) _fontSize -= 2;
-                    }),
-                  ),
-                ],
+        // Bible content and font-size are driven by the shared FontSizeService.
+        // Wrap the content in a ValueListenableBuilder so updates to the
+        // global font size (from HomeScreen AppBar) rebuild the viewer.
+        ValueListenableBuilder<double>(
+          valueListenable: FontSizeService.instance.notifier,
+          builder: (context, size, child) {
+            return booksAsync.when(
+              data: (books) => chapterAsync.when(
+                data: (chapter) => chapter != null
+                    ? _BibleTextView(
+                        controller: _scrollController,
+                        chapter: chapter,
+                        reference: currentReference,
+                        fontSize: size,
+                      )
+                    : const _ErrorView(message: 'Chapter not found'),
+                loading: () => const _LoadingView(),
+                error: (error, stack) => _ErrorView(message: 'Error: $error'),
               ),
-            ),
-          ),
+              loading: () => const _LoadingView(),
+              error: (error, stack) => _ErrorView(message: 'Failed to load Bible: $error'),
+            );
+          },
         ),
 
-        // Translation selector
+  // Translation selector
         Positioned(
           top: 16,
           left: 16,
