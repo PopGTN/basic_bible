@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:bible_parser_flutter/bible_parser_flutter.dart';
@@ -72,28 +73,27 @@ class AppBibleRepository {
         throw Exception('Bible translation $translationId not found locally');
       }
 
-      final parser = BibleParser.fromString(content);
-      final books = <Book>[];
-      await for (final book in parser.books) {
-        books.add(book);
-      }
-      _cachedBooks = books.map((book) => BibleBook(
-        id: book.id,
-        name: book.title,
-        shortName: book.id,
-        bookNumber: book.num,
-        chapters: book.chapters.map((chapter) => BibleChapter(
-          number: chapter.num,
-          verses: chapter.verses.map((verse) => BibleVerse(
-            number: verse.num,
-            text: verse.text,
-            notes: verse.notes,
-            references: verse.references,
+      // Parsing can be CPU-intensive for large files. Run it in a
+      // background isolate so we don't block the UI thread.
+      final parsed = await compute(_parseBibleToSerializable, content);
+
+      _cachedBooks = parsed.map((book) => BibleBook(
+        id: book['id'] as String,
+        name: book['title'] as String,
+        shortName: book['id'] as String,
+        bookNumber: book['num'] as int,
+        chapters: (book['chapters'] as List<dynamic>).map((ch) => BibleChapter(
+          number: ch['number'] as int,
+          verses: (ch['verses'] as List<dynamic>).map((v) => BibleVerse(
+            number: v['number'] as int,
+            text: v['text'] as String,
+            notes: (v['notes'] as List<dynamic>?)?.cast<String>(),
+            references: (v['references'] as List<dynamic>?)?.cast<String>(),
           )).toList(),
         )).toList(),
       )).toList();
 
-  await _db.insertBible(translationId, _cachedBooks);
+      await _db.insertBible(translationId, _cachedBooks);
       _currentTranslationId = translationId;
       return _cachedBooks;
     } catch (e) {
@@ -122,30 +122,28 @@ class AppBibleRepository {
       final response = await http.get(Uri.parse(translation.githubUrl!));
 
       if (response.statusCode == 200) {
-        final content = utf8.decode(response.bodyBytes);
+          final content = utf8.decode(response.bodyBytes);
 
-        final parser = BibleParser.fromString(content);
-        final books = <Book>[];
-        await for (final book in parser.books) {
-          books.add(book);
-        }
-        _cachedBooks = books.map((book) => BibleBook(
-          id: book.id,
-          name: book.title,
-          shortName: book.id,
-          bookNumber: book.num,
-          chapters: book.chapters.map((chapter) => BibleChapter(
-            number: chapter.num,
-            verses: chapter.verses.map((verse) => BibleVerse(
-              number: verse.num,
-              text: verse.text,
-              notes: verse.notes,
-              references: verse.references,
+          // Parse in an isolate
+          final parsed = await compute(_parseBibleToSerializable, content);
+
+          _cachedBooks = parsed.map((book) => BibleBook(
+            id: book['id'] as String,
+            name: book['title'] as String,
+            shortName: book['id'] as String,
+            bookNumber: book['num'] as int,
+            chapters: (book['chapters'] as List<dynamic>).map((ch) => BibleChapter(
+              number: ch['number'] as int,
+              verses: (ch['verses'] as List<dynamic>).map((v) => BibleVerse(
+                number: v['number'] as int,
+                text: v['text'] as String,
+                notes: (v['notes'] as List<dynamic>?)?.cast<String>(),
+                references: (v['references'] as List<dynamic>?)?.cast<String>(),
+              )).toList(),
             )).toList(),
-          )).toList(),
-        )).toList();
+          )).toList();
 
-  await _db.insertBible(translationId, _cachedBooks);
+    await _db.insertBible(translationId, _cachedBooks);
         _currentTranslationId = translationId;
         return _cachedBooks;
       } else {
@@ -221,4 +219,27 @@ class AppBibleRepository {
   Future<void> clearAllCache() async {
     await _db.deleteAllBibles();
   }
+}
+
+/// Top-level parser function run inside an isolate via `compute`.
+/// It returns a JSON-serializable representation of the books.
+Future<List<Map<String, dynamic>>> _parseBibleToSerializable(String content) async {
+  final parser = BibleParser.fromString(content);
+  final List<Map<String, dynamic>> books = [];
+  await for (final book in parser.books) {
+    final List<Map<String, dynamic>> chapters = [];
+    for (final chapter in book.chapters) {
+      final verses = chapter.verses.map((v) => {
+        'number': v.num,
+        'text': v.text,
+        'notes': v.notes ?? <String>[],
+        'references': v.references ?? <String>[],
+      }).toList();
+
+      chapters.add({'number': chapter.num, 'verses': verses});
+    }
+
+    books.add({'id': book.id, 'title': book.title, 'num': book.num, 'chapters': chapters});
+  }
+  return books;
 }

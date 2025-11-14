@@ -164,8 +164,16 @@ class BibleBooksNotifier extends StateNotifier<AsyncValue<List<BibleBook>>> {
   Future<void> changeTranslation(String translationId) async {
     if (_currentTranslationId == translationId) return;
 
+    // Immediately mark loading so UI can show a spinner before heavy work starts.
+    if (_currentTranslationId == translationId) return;
     _currentTranslationId = translationId;
-    await loadBible();
+    if (mounted) {
+      state = const AsyncValue.loading();
+    }
+
+    // Kick off the actual load asynchronously (allow one event loop tick)
+    // so the UI has time to paint the loading state before parsing starts.
+    Future(() => loadBible());
   }
 
   Future<void> downloadTranslation(String translationId) async {

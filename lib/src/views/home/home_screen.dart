@@ -189,10 +189,22 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       ),
                     ),
                     onSelected: (translationId) async {
-                      ref.read(currentTranslationProvider.notifier)
-                          .setTranslation(translationId);
-                      ref.read(bibleBooksProvider.notifier)
-                          .changeTranslation(translationId);
+                      // Defer the heavy provider work until after the
+                      // popup route has been dismissed. If we trigger
+                      // state changes synchronously here we can cause
+                      // the widget that opened the popup to be
+                      // deactivated while the popup is still resolving
+                      // its ancestors which leads to the exception:
+                      // "Looking up a deactivated widget's ancestor is unsafe."
+                      // Using a microtask (or Future.delayed(Duration.zero))
+                      // schedules the work after the current frame so the
+                      // PopupMenuRoute can finish closing safely.
+                      Future.microtask(() async {
+                        await ref.read(currentTranslationProvider.notifier)
+                            .setTranslation(translationId);
+                        await ref.read(bibleBooksProvider.notifier)
+                            .changeTranslation(translationId);
+                      });
                     },
                     itemBuilder: (context) => [
                       PopupMenuItem(
