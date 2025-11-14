@@ -1,4 +1,4 @@
-import 'package:basic_bible/src/views/home/tabs/bibleViewerTab/ReferenceScreen.dart';
+import 'reference_screen.dart';
 import 'package:basic_bible/src/views/home/tabs/bibleViewerTab/widgets/ReferenceBar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -160,6 +160,7 @@ class _BibleViewerTabState extends ConsumerState<BibleViewerTab> {
                         chapter: chapter,
                         reference: currentReference,
                         fontSize: size,
+                        isSmallDevice: isSmall,
                       )
                     : const _ErrorView(message: 'Chapter not found'),
                 loading: () => const _LoadingView(),
@@ -171,48 +172,7 @@ class _BibleViewerTabState extends ConsumerState<BibleViewerTab> {
           },
         ),
 
-  // Translation selector
-        Positioned(
-          top: 16,
-          left: 16,
-          child: SafeArea(
-            child: Card(
-              child: PopupMenuButton<String>(
-                child: const Padding(
-                  padding: EdgeInsets.all(8.0),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.translate),
-                      SizedBox(width: 4),
-                      Text('Translation'),
-                    ],
-                  ),
-                ),
-                onSelected: (translationId) async {
-                  ref.read(currentTranslationProvider.notifier)
-                      .setTranslation(translationId);
-                  ref.read(bibleBooksProvider.notifier)
-                      .changeTranslation(translationId);
-                },
-                itemBuilder: (context) => [
-                  const PopupMenuItem(
-                    value: 'kjv',
-                    child: Text('King James Version (KJV)'),
-                  ),
-                  const PopupMenuItem(
-                    value: 'asv',
-                    child: Text('American Standard Version (ASV)'),
-                  ),
-                  const PopupMenuItem(
-                    value: 'web',
-                    child: Text('World English Bible (WEB)'),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
+        // Translation selector removed — translations are selected from HomeScreen
 
 
       ],
@@ -229,20 +189,22 @@ class _BibleTextView extends StatelessWidget {
     required this.chapter,
     required this.reference,
     required this.fontSize,
+    required this.isSmallDevice,
   });
 
   final ScrollController controller;
   final BibleChapter chapter;
   final BibleReference reference;
   final double fontSize;
+  final bool isSmallDevice;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(
+      padding: EdgeInsets.only(
         left: 16,
         right: 16,
-        top: 80, // Space for floating controls
+        top: isSmallDevice ? 16 : 80, // keep larger top space on tablet/desktop
         bottom: 72, // Space for chapter bar
       ),
       child: ListView.builder(
