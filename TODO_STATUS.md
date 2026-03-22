@@ -54,19 +54,17 @@ Separate from feature backlog — these affect correctness, safety, and maintain
 
 ## Recommended Next Step
 
-- `next` Separate OSIS and Zefania note content into `bodyText` when it is the sole note content — so the structured rendering path in the note sheet works for all three formats, not only USFX.
+- `next` Add `originRef` to `BibleCrossReference` to mirror the parser's new `CrossReference.originRef` field once it lands — then show it as a muted prefix in the cross-reference row in the note sheet.
 
 **Why this first:**
 
-- The note sheet now renders `bodyText` / `originRef` / `quotedText` as distinct visual elements for USFX footnotes.
-- OSIS and Zefania still only populate the legacy `text` field, so their footnotes still use the plain-text fallback path.
-- Populating `bodyText` for OSIS/Zefania is a pure parser change with no UI work required.
+- The footnote structured-rendering path is now complete for all three formats.
+- The parser's next task is `CrossReference.originRef` (USFX `<xo>`, OSIS `<reference type="source">`); once it lands the app model and note sheet UI need the same treatment as footnotes just received.
 
 **Definition of done:**
 
-- OSIS and Zefania `Footnote.bodyText` is populated when the note has no structural sub-tags (i.e. `bodyText = text` as a convenience).
-- At least one fixture test per format passes for the new field.
-- The structured rendering path in the note sheet is exercised for all three formats.
+- `BibleCrossReference` gains `originRef` and round-trips through JSON.
+- The note sheet renders origin ref as muted prefix text in cross-reference rows when present.
 
 ---
 
@@ -83,6 +81,7 @@ Separate from feature backlog — these affect correctness, safety, and maintain
 
 ## Completed Recently
 
+- `done` OSIS and Zefania footnotes now use the structured note sheet rendering path after the parser started populating `bodyText` for all three formats.
 - `done` Updated note sheet to render `bodyText`, `originRef`, and `quotedText` as distinct visual elements — origin ref in muted smaller text, body in normal weight, quoted text in italic; falls back to merged `text` for OSIS/Zefania.
 - `done` Mirrored parser `Footnote.bodyText` and `quotedText` fields into `BibleFootnote` and updated `_serializeFootnote` so structured footnote parts round-trip through the app cache.
 - `done` Tightened reader bottom overlay spacing by replacing the loose fixed gap above the floating reference bar with padding based on the bar's real height and inset.
