@@ -54,18 +54,17 @@ Separate from feature backlog — these affect correctness, safety, and maintain
 
 ## Recommended Next Step
 
-- `next` Add a `divineNameTag` span kind for `<nd>` (LORD / divine name) once the parser preserves it, then render it with small-caps or distinct styling in the verse reader.
+- `next` Wire USFX intro paragraph blocks (`introduction` kind) to the document-mode reader so book introductions render as distinct front-matter instead of being silently absent.
 
 **Why this first:**
 
-- `BibleCrossReference.originRef` is done and rendering in the note sheet.
-- The parser's next task is `<nd>` / `<add>` inline tag support; once those land the app needs matching span kinds and render treatment.
+- `divineNameTag` is done: `BibleVerseSpanKind` has the value, the parser emits it, and the reader renders it bold.
+- Intro paragraphs are the next parser-side gain: once the parser lands `<ip>`/`<imt>`/`<is>` support the app needs a matching document-block render path.
 
 **Definition of done:**
 
-- `BibleVerseSpanKind` gains `divineNameTag` (and confirms `translatorAddition` is wired).
-- The verse reader renders `divineNameTag` spans with small-caps or a distinct style.
-- `translatorAddition` spans render with italic or bracket style consistently.
+- `DocumentBlockKind.introduction` blocks render with distinct visual treatment (indented, slightly smaller or muted).
+- Book-level introductions from USFX sources are visible in document mode before the first chapter.
 
 ---
 
@@ -82,6 +81,7 @@ Separate from feature backlog — these affect correctness, safety, and maintain
 
 ## Completed Recently
 
+- `done` Added `divineNameTag` to `BibleVerseSpanKind` and wired bold rendering for it in both verse-list and document mode span helpers.
 - `done` Added `BibleCrossReference.originRef`, updated serializer, and wired it to the note sheet as a muted origin prefix on cross-reference rows.
 - `done` OSIS and Zefania footnotes now use the structured note sheet rendering path after the parser started populating `bodyText` for all three formats.
 - `done` Updated note sheet to render `bodyText`, `originRef`, and `quotedText` as distinct visual elements — origin ref in muted smaller text, body in normal weight, quoted text in italic; falls back to merged `text` for OSIS/Zefania.
