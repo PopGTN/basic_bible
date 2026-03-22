@@ -319,6 +319,38 @@ class AppDatabase extends _$AppDatabase {
     );
   }
 
+  Future<List<BibleTranslation>> getStoredTranslations() async {
+    final rows = await (select(
+      translations,
+    )..orderBy([(t) => OrderingTerm.desc(t.importedAt)])).get();
+
+    return rows
+        .map(
+          (row) => BibleTranslation(
+            id: row.id,
+            name: row.name,
+            language: row.language,
+            description: row.description,
+            isLocal: row.isLocal,
+            filePath: row.sourceType == BibleSourceType.asset.name
+                ? row.sourceLocation
+                : null,
+            format: BibleFormat.values.firstWhere(
+              (format) => format.name == row.format,
+              orElse: () => BibleFormat.auto,
+            ),
+            sourceType: BibleSourceType.values.firstWhere(
+              (sourceType) => sourceType.name == row.sourceType,
+              orElse: () => BibleSourceType.import,
+            ),
+            githubUrl: row.sourceType == BibleSourceType.download.name
+                ? row.sourceLocation
+                : null,
+          ),
+        )
+        .toList();
+  }
+
   // This method now maps the generated classes (e.g., BookEntry)
   // back to your UI models (e.g., BibleBook).
   Future<List<BibleBook>> getBible(String translationId) async {

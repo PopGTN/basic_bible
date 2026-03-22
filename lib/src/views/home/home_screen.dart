@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:file_selector/file_selector.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'tabs/home_tab.dart';
 import 'tabs/menu_tab.dart';
@@ -7,6 +8,7 @@ import 'tabs/bibleViewerTab/bible_viewer_tab.dart';
 import 'package:basic_bible/l10n/app_localizations.dart';
 import 'package:basic_bible/src/services/font_size_service.dart';
 import 'package:basic_bible/src/providers/bible_provider.dart';
+import 'package:basic_bible/src/repositories/app_bible_repository.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -16,6 +18,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
+  static const String _importTranslationMenuValue = '__import_translation__';
   int _currentIndex = 0; // currently selected tab index
 
   // Animation controllers for BottomNav + AppBar show/hide
@@ -51,6 +54,35 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   void showAppBar() => _appBarController.forward();
 
   void hideAppBar() => _appBarController.reverse();
+
+  Future<void> _importBibleFile(WidgetRef ref) async {
+    const xmlTypeGroup = XTypeGroup(
+      label: 'Bible XML',
+      extensions: <String>['xml', 'usfx', 'osis'],
+    );
+    final file = await openFile(acceptedTypeGroups: [xmlTypeGroup]);
+    if (file == null) return;
+
+    if (!mounted) return;
+    final messenger = ScaffoldMessenger.of(context);
+
+    try {
+      final importedTranslation = await ref
+          .read(bibleBooksProvider.notifier)
+          .importTranslation(file.path);
+      await ref
+          .read(currentTranslationProvider.notifier)
+          .setTranslation(importedTranslation.id);
+      ref.invalidate(availableTranslationsProvider);
+      if (!mounted) return;
+      messenger.showSnackBar(
+        SnackBar(content: Text('Imported ${importedTranslation.name}.')),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      messenger.showSnackBar(SnackBar(content: Text('Import failed: $error')));
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -224,7 +256,20 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 final currentTranslation = ref.watch(
                   currentTranslationProvider,
                 );
+                final translationsAsync = ref.watch(
+                  availableTranslationsProvider,
+                );
                 final colors = Theme.of(context).colorScheme;
+                final translations =
+                    translationsAsync.value ??
+                    AppBibleRepository.availableTranslations;
+                String? currentTranslationName;
+                for (final translation in translations) {
+                  if (translation.id == currentTranslation) {
+                    currentTranslationName = translation.name;
+                    break;
+                  }
+                }
                 return Card(
                   color: colors.secondary,
                   elevation: 2,
@@ -242,13 +287,18 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           Icon(Icons.translate, color: colors.onSecondary),
                           const SizedBox(width: 4),
                           Text(
-                            currentTranslation,
+                            currentTranslationName ?? currentTranslation,
                             style: TextStyle(color: colors.onSecondary),
                           ),
                         ],
                       ),
                     ),
                     onSelected: (translationId) async {
+                      if (translationId == _importTranslationMenuValue) {
+                        Future.microtask(() => _importBibleFile(ref));
+                        return;
+                      }
+
                       // Defer the heavy provider work until after the
                       // popup route has been dismissed. If we trigger
                       // state changes synchronously here we can cause
@@ -268,35 +318,29 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                             .changeTranslation(translationId);
                       });
                     },
-                    itemBuilder: (context) => [
-                      PopupMenuItem(
-                        value: 'kjv',
-                        child: Text(
-                          'King James Version (KJV)',
-                          style: TextStyle(
-                            color: Theme.of(context).colorScheme.onSurface,
+                    itemBuilder: (context) {
+                      final textStyle = TextStyle(
+                        color: Theme.of(context).colorScheme.onSurface,
+                      );
+                      return [
+                        for (final translation in translations)
+                          PopupMenuItem(
+                            value: translation.id,
+                            child: Text(translation.name, style: textStyle),
+                          ),
+                        const PopupMenuDivider(),
+                        PopupMenuItem(
+                          value: _importTranslationMenuValue,
+                          child: Row(
+                            children: [
+                              const Icon(Icons.upload_file),
+                              const SizedBox(width: 8),
+                              Text('Import Bible XML', style: textStyle),
+                            ],
                           ),
                         ),
-                      ),
-                      PopupMenuItem(
-                        value: 'asv',
-                        child: Text(
-                          'American Standard Version (ASV)',
-                          style: TextStyle(
-                            color: Theme.of(context).colorScheme.onSurface,
-                          ),
-                        ),
-                      ),
-                      PopupMenuItem(
-                        value: 'web',
-                        child: Text(
-                          'World English Bible (WEB)',
-                          style: TextStyle(
-                            color: Theme.of(context).colorScheme.onSurface,
-                          ),
-                        ),
-                      ),
-                    ],
+                      ];
+                    },
                   ),
                 );
               },

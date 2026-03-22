@@ -37,6 +37,7 @@ dependencies:
   # Drift (SQLite ORM) used for persistent caching  # Drift (SQLite ORM) used for persistent caching
   drift: ^2.7.0
   sqlite3_flutter_libs: ^0.5.40
+  file_selector: ^1.0.3
 
 dev_dependencies:
   flutter_test:

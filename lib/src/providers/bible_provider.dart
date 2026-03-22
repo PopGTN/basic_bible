@@ -2,6 +2,7 @@ import 'package:bible_parser_flutter/bible_parser_flutter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
 import '../models/bible_models.dart';
 import '../repositories/app_bible_repository.dart';
 import '../services/app_database.dart';
@@ -63,6 +64,13 @@ class ReaderLayoutModeNotifier extends StateNotifier<ReaderLayoutMode> {
     state = mode;
   }
 }
+
+final availableTranslationsProvider = FutureProvider<List<BibleTranslation>>((
+  ref,
+) async {
+  final repository = ref.watch(bibleRepositoryProvider);
+  return repository.getAvailableTranslations();
+});
 
 // Current reference provider
 final currentReferenceProvider =
@@ -248,6 +256,33 @@ class BibleBooksNotifier extends StateNotifier<AsyncValue<List<BibleBook>>> {
       if (mounted) {
         state = AsyncValue.error(e, st);
       }
+    }
+  }
+
+  Future<BibleTranslation> importTranslation(String filePath) async {
+    state = const AsyncValue.loading();
+
+    try {
+      final translation = await repository.importBibleFromFile(filePath);
+      _currentTranslationId = translation.id;
+      final books = repository.getAllBooks();
+      if (mounted) {
+        state = AsyncValue.data(books);
+      }
+      return translation;
+    } on BibleParserException catch (e, st) {
+      if (mounted) {
+        state = AsyncValue.error(
+          'There was an error parsing the Bible file. Please make sure the selected file is valid USFX, OSIS, or Zefania XML.',
+          st,
+        );
+      }
+      rethrow;
+    } catch (e, st) {
+      if (mounted) {
+        state = AsyncValue.error(e, st);
+      }
+      rethrow;
     }
   }
 }

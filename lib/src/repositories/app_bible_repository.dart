@@ -1,8 +1,11 @@
 import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:bible_parser_flutter/bible_parser_flutter.dart';
+import 'package:path/path.dart' as p;
 import '../models/bible_models.dart';
 import '../services/app_database.dart';
 
@@ -54,6 +57,18 @@ class AppBibleRepository {
       sourceType: BibleSourceType.asset,
     ),
   ];
+
+  Future<List<BibleTranslation>> getAvailableTranslations() async {
+    final storedTranslations = await _db.getStoredTranslations();
+    final builtInIds = availableTranslations.map((t) => t.id).toSet();
+
+    return [
+      ...availableTranslations,
+      ...storedTranslations.where(
+        (translation) => !builtInIds.contains(translation.id),
+      ),
+    ];
+  }
 
   /// Load Bible from local asset or cache
   Future<List<BibleBook>> loadLocalBible(String translationId) async {
@@ -129,6 +144,37 @@ class AppBibleRepository {
     } catch (e) {
       throw Exception('Failed to download Bible: $e');
     }
+  }
+
+  Future<BibleTranslation> importBibleFromFile(String filePath) async {
+    final file = File(filePath);
+    if (!await file.exists()) {
+      throw Exception('Selected Bible file does not exist.');
+    }
+
+    final content = await file.readAsString();
+    final parsed = await compute(_parseBibleToSerializable, content);
+    final importedBooks = parsed.map(_mapSerializableBook).toList();
+    if (importedBooks.isEmpty) {
+      throw Exception('The selected file did not contain any Bible books.');
+    }
+
+    final detectedFormat = _detectFormatFromContent(content);
+    final translation = await _buildImportedTranslation(
+      filePath: filePath,
+      format: detectedFormat,
+      importedBooks: importedBooks,
+    );
+
+    _cachedBooks = importedBooks;
+    await _db.insertBible(translation.id, importedBooks);
+    await _db.upsertTranslationMetadata(
+      translation: translation,
+      sourceLocation: filePath,
+      sourceTypeOverride: BibleSourceType.import,
+    );
+    _currentTranslationId = translation.id;
+    return translation;
   }
 
   /// Get a specific book
@@ -225,6 +271,82 @@ class AppBibleRepository {
     }
 
     throw Exception('Bible translation ${translation.id} not found locally');
+  }
+
+  Future<BibleTranslation> _buildImportedTranslation({
+    required String filePath,
+    required BibleFormat format,
+    required List<BibleBook> importedBooks,
+  }) async {
+    final storedIds =
+        (await _db.getStoredTranslations()).map((t) => t.id).toSet()
+          ..addAll(availableTranslations.map((t) => t.id));
+    final baseName = p.basenameWithoutExtension(filePath);
+    final sanitizedId = _sanitizeTranslationId(baseName);
+    var candidateId = sanitizedId;
+    var suffix = 2;
+    while (storedIds.contains(candidateId)) {
+      candidateId = '${sanitizedId}_$suffix';
+      suffix++;
+    }
+
+    final suggestedName = _buildImportedTranslationName(
+      filePath: filePath,
+      importedBooks: importedBooks,
+    );
+
+    return BibleTranslation(
+      id: candidateId,
+      name: suggestedName,
+      language: 'unknown',
+      description: 'Imported from ${p.basename(filePath)}',
+      isLocal: true,
+      filePath: filePath,
+      format: format,
+      sourceType: BibleSourceType.import,
+    );
+  }
+
+  BibleFormat _detectFormatFromContent(String content) {
+    final lowerContent = content.toLowerCase();
+    if (lowerContent.contains('<usfx')) return BibleFormat.usfx;
+    if (lowerContent.contains('<osis') || lowerContent.contains('<osistext')) {
+      return BibleFormat.osis;
+    }
+    if (lowerContent.contains('<xmlbible')) {
+      // The app model does not yet expose a dedicated Zefania enum value, so
+      // keep these imports as `auto` while the parser still detects them
+      // correctly from the XML content at runtime.
+      return BibleFormat.auto;
+    }
+    return BibleFormat.auto;
+  }
+
+  String _sanitizeTranslationId(String value) {
+    final normalized = value.toLowerCase().replaceAll(
+      RegExp(r'[^a-z0-9]+'),
+      '_',
+    );
+    return normalized.replaceAll(RegExp(r'^_+|_+$'), '').isEmpty
+        ? 'imported_bible'
+        : normalized.replaceAll(RegExp(r'^_+|_+$'), '');
+  }
+
+  String _buildImportedTranslationName({
+    required String filePath,
+    required List<BibleBook> importedBooks,
+  }) {
+    final baseName = p
+        .basenameWithoutExtension(filePath)
+        .replaceAll('_', ' ')
+        .trim();
+    if (baseName.isNotEmpty) {
+      return baseName;
+    }
+    if (importedBooks.isNotEmpty) {
+      return '${importedBooks.first.name} Import';
+    }
+    return 'Imported Bible';
   }
 }
 
