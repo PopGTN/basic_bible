@@ -51,6 +51,7 @@ Status meanings:
 - `blocked`: cannot move safely without another prerequisite or decision
 
 ## Completed Recently
+- `done` Corrected reader book-name fallback for cases like the `WEB` preface so placeholder names such as `Unknown` no longer outrank real TOC/display labels that the source already provides.
 - `done` Refreshed the public app README so it now reflects the shipped reader modes, versions screen, reference picker, theme options, translation handling, and the current partial-vs-finished feature boundaries more accurately.
 - `done` Tightened Bible load performance again by removing extra translation-metadata and cache-existence lookups from the cached local load path, and by starting translation switches immediately instead of deferring the next Bible load through an extra event-loop turn.
 - `done` Removed `Show Introductions` from the quick Bible viewer settings sheet so that toggle now lives only in the full Settings page instead of being duplicated across both settings surfaces.

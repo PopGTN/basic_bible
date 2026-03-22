@@ -84,7 +84,9 @@ BibleBook? resolveBookFromReference(
 
 String preferredBookName(BibleBook book) {
   final primaryName = book.name.trim();
-  if (primaryName.isNotEmpty) return primaryName;
+  if (primaryName.isNotEmpty && !_isPlaceholderBookName(primaryName, book.id)) {
+    return primaryName;
+  }
 
   for (final tocLabel in book.tocLabels) {
     final text = tocLabel.text.trim();
@@ -95,6 +97,17 @@ String preferredBookName(BibleBook book) {
   if (shortName.isNotEmpty) return shortName;
 
   return humanizeBookId(book.id);
+}
+
+bool _isPlaceholderBookName(String rawName, String bookId) {
+  final normalizedName = rawName.trim().toUpperCase();
+  if (normalizedName.isEmpty) return true;
+
+  // Some parser/source combinations still fall back to generic placeholders
+  // like "Unknown". When richer labels such as TOC entries exist, prefer
+  // those over carrying the placeholder into the reader UI.
+  return normalizedName == 'UNKNOWN' ||
+      normalizedName == bookId.trim().toUpperCase();
 }
 
 String displayBookNameForReference(
