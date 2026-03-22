@@ -51,6 +51,7 @@ Status meanings:
 - `blocked`: cannot move safely without another prerequisite or decision
 
 ## Completed Recently
+- `done` Added shell-level Bible warm-up so the current translation now starts loading in the background from the main app shell before the reader tab is opened, which is the preferred path before introducing a dedicated startup loading screen.
 - `done` Corrected reader book-name fallback for cases like the `WEB` preface so placeholder names such as `Unknown` no longer outrank real TOC/display labels that the source already provides.
 - `done` Refreshed the public app README so it now reflects the shipped reader modes, versions screen, reference picker, theme options, translation handling, and the current partial-vs-finished feature boundaries more accurately.
 - `done` Tightened Bible load performance again by removing extra translation-metadata and cache-existence lookups from the cached local load path, and by starting translation switches immediately instead of deferring the next Bible load through an extra event-loop turn.
@@ -337,7 +338,17 @@ What still needs to happen:
 What "done" should mean:
 - Inline markers appear beside the correct words consistently enough for prototyping and design work.
 
-#### F. Finish richer reader styling support
+#### F. Finish startup and background warm-up behavior
+What still needs to happen:
+- Preload the current Bible from the app shell before the user opens the reader whenever possible.
+- Confirm that tab switches, translation switches, and fresh app launches all benefit from that warm-up path.
+- Only add a dedicated startup loading screen if background warm-up still is not enough to hide the initial reader load well.
+
+What "done" should mean:
+- Opening the Bible tab usually feels instant for already-cached translations.
+- A dedicated startup warm-up screen is only needed, and only added, if background preload is still not enough.
+
+#### G. Finish richer reader styling support
 What still needs to happen:
 - Improve how the app visually distinguishes:
   - red-letter text
@@ -351,7 +362,7 @@ What still needs to happen:
 What "done" should mean:
 - Rich parser output is visible in the UI as distinct reading styles, not only as preserved metadata in storage.
 
-#### G. Finish translation-library management
+#### H. Finish translation-library management
 What still needs to happen:
 - Improve lifecycle handling for bundled, downloaded, and imported translations.
 - Add clearer user-facing status for what is installed locally and what came from import/download.
@@ -375,7 +386,7 @@ What "done" should mean:
 - Users can browse, search, filter, download, retry, and manage translations from a dedicated screen that matches the intended library UX more closely.
 - Translation switches preserve the same logical reading location intentionally, not only through tolerant fallback matching.
 
-#### H. Add online-only translation access
+#### I. Add online-only translation access
 What still needs to happen:
 - Decide whether remote translations should support a true "use online without downloading" mode.
 - Add explicit user choice between:
@@ -392,7 +403,7 @@ What "done" should mean:
 - Users are not forced to download a translation just to preview or read it over the internet.
 - The app clearly distinguishes local-library behavior from online-only viewing behavior.
 
-#### I. Finish web storage behavior
+#### J. Finish web storage behavior
 What still needs to happen:
 - Replace the current in-memory web fallback with a real persistent web storage path, if feasible for the chosen stack.
 - Verify imports and cached translations survive reloads on web the same way they do on desktop/mobile.
@@ -400,7 +411,7 @@ What still needs to happen:
 What "done" should mean:
 - Web no longer loses all cached Bible content on reload.
 
-#### J. Finish remaining architecture cleanup
+#### K. Finish remaining architecture cleanup
 What still needs to happen:
 - Move or clarify the remaining shared services/providers that still sit outside the feature-first structure.
 - Keep placeholder/legacy paths from slowly becoming active app paths again.

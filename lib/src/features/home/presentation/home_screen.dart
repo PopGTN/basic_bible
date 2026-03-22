@@ -12,14 +12,15 @@ import 'package:basic_bible/src/services/font_size_service.dart';
 
 import 'home_tab.dart';
 
-class HomeScreen extends StatefulWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
+class _HomeScreenState extends ConsumerState<HomeScreen>
+    with TickerProviderStateMixin {
   int _currentIndex = 0; // currently selected tab index
 
   // Animation controllers for BottomNav + AppBar show/hide
@@ -31,6 +32,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     super.initState();
     _bottomNavController = _createController();
     _appBarController = _createController();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      // Warm the current translation from the shell so Home/Menu tabs can
+      // hide the initial Bible load instead of waiting for the reader tab.
+      ref.read(bibleBooksProvider.notifier).preloadCurrentTranslation();
+    });
   }
 
   // Factory method for creating consistent controllers

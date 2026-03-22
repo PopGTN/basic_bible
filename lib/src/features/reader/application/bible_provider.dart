@@ -319,6 +319,11 @@ class BibleBooksNotifier extends StateNotifier<AsyncValue<List<BibleBook>>> {
     }
   }
 
+  Future<void> preloadCurrentTranslation() async {
+    if (state.isLoading || state.hasValue) return;
+    await loadBible(showLoading: false);
+  }
+
   Future<void> changeTranslation(String translationId) async {
     if (_currentTranslationId == translationId) return;
 
