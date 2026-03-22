@@ -130,8 +130,14 @@ ThemeData _buildMonochromeTheme({required Brightness brightness}) {
   final highSurface = isDark
       ? const Color(0xFF151515)
       : const Color(0xFFEAEAEA);
-  final outline = isDark ? const Color(0xFF2B2B2B) : const Color(0xFFD2D2D2);
+  final outline = isDark ? const Color(0xFF5B5B5B) : const Color(0xFFC3C3C3);
+  final outlineVariant = isDark
+      ? const Color(0xFF3D3D3D)
+      : const Color(0xFFD9D9D9);
   final secondary = isDark ? const Color(0xFFE6E6E6) : const Color(0xFF111111);
+  final onSurfaceVariant = isDark
+      ? const Color(0xFFD0D0D0)
+      : const Color(0xFF3A3A3A);
 
   final scheme = (isDark ? const ColorScheme.dark() : const ColorScheme.light())
       .copyWith(
@@ -140,15 +146,24 @@ ThemeData _buildMonochromeTheme({required Brightness brightness}) {
         onPrimary: foreground,
         secondary: secondary,
         onSecondary: background,
+        primaryContainer: highSurface,
+        onPrimaryContainer: foreground,
+        secondaryContainer: highSurface,
+        onSecondaryContainer: foreground,
+        tertiary: foreground,
+        onTertiary: background,
         surface: background,
         onSurface: foreground,
+        onSurfaceVariant: onSurfaceVariant,
         surfaceContainerLowest: background,
         surfaceContainerLow: lowSurface,
         surfaceContainer: midSurface,
         surfaceContainerHigh: midSurface,
         surfaceContainerHighest: highSurface,
-        outlineVariant: outline,
+        outline: outline,
+        outlineVariant: outlineVariant,
         shadow: isDark ? Colors.black : const Color(0x22000000),
+        surfaceTint: Colors.transparent,
       );
 
   return ThemeData(
@@ -164,6 +179,36 @@ ThemeData _buildMonochromeTheme({required Brightness brightness}) {
       foregroundColor: foreground,
       surfaceTintColor: Colors.transparent,
       elevation: 0,
+    ),
+    iconTheme: IconThemeData(color: foreground),
+    textButtonTheme: TextButtonThemeData(
+      style: TextButton.styleFrom(
+        foregroundColor: foreground,
+        textStyle: const TextStyle(fontWeight: FontWeight.w600),
+      ),
+    ),
+    outlinedButtonTheme: OutlinedButtonThemeData(
+      style: OutlinedButton.styleFrom(
+        foregroundColor: foreground,
+        side: BorderSide(color: outline),
+      ),
+    ),
+    inputDecorationTheme: InputDecorationTheme(
+      filled: true,
+      fillColor: midSurface,
+      hintStyle: TextStyle(color: onSurfaceVariant),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(18),
+        borderSide: BorderSide(color: outlineVariant),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(18),
+        borderSide: BorderSide(color: outlineVariant),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(18),
+        borderSide: BorderSide(color: foreground),
+      ),
     ),
     dividerColor: outline,
   );

@@ -15,6 +15,7 @@ class SettingsScreen extends ConsumerWidget {
     final selectedLanguage = ref.watch(languageProvider);
     final showBookIntroductions = ref.watch(showBookIntroductionsProvider);
     final showVerseSelector = ref.watch(showVerseSelectorProvider);
+    final colors = Theme.of(context).colorScheme;
 
     final languages = {
       'en': 'English',
@@ -43,13 +44,13 @@ class SettingsScreen extends ConsumerWidget {
               spacing: 12,
               children: AppThemeMode.values.map((themeMode) {
                 final isSelected = currentTheme == themeMode;
-                return ChoiceChip(
-                  label: Text(_themeModeToString(themeMode)),
-                  selected: isSelected,
-                  onSelected: (_) {
+                return _SettingsChoiceChip(
+                  label: _themeModeToString(themeMode),
+                  isSelected: isSelected,
+                  colors: colors,
+                  onSelected: () {
                     ref.read(themeProvider.notifier).setTheme(themeMode);
                   },
-                  selectedColor: Theme.of(context).colorScheme.primary,
                 );
               }).toList(),
             ),
@@ -65,13 +66,13 @@ class SettingsScreen extends ConsumerWidget {
               spacing: 12,
               children: languages.entries.map((entry) {
                 final isSelected = selectedLanguage == entry.key;
-                return ChoiceChip(
-                  label: Text(entry.value),
-                  selected: isSelected,
-                  onSelected: (_) {
+                return _SettingsChoiceChip(
+                  label: entry.value,
+                  isSelected: isSelected,
+                  colors: colors,
+                  onSelected: () {
                     ref.read(languageProvider.notifier).setLanguage(entry.key);
                   },
-                  selectedColor: Theme.of(context).colorScheme.primary,
                 );
               }).toList(),
             ),
@@ -129,5 +130,38 @@ class SettingsScreen extends ConsumerWidget {
       case AppThemeMode.red:
         return "Red Theme";
     }
+  }
+}
+
+class _SettingsChoiceChip extends StatelessWidget {
+  const _SettingsChoiceChip({
+    required this.label,
+    required this.isSelected,
+    required this.colors,
+    required this.onSelected,
+  });
+
+  final String label;
+  final bool isSelected;
+  final ColorScheme colors;
+  final VoidCallback onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return ChoiceChip(
+      label: Text(label),
+      selected: isSelected,
+      onSelected: (_) => onSelected(),
+      showCheckmark: false,
+      selectedColor: colors.surfaceContainerHighest,
+      backgroundColor: colors.surfaceContainerLow,
+      side: BorderSide(
+        color: isSelected ? colors.onSurface : colors.outlineVariant,
+      ),
+      labelStyle: TextStyle(
+        color: isSelected ? colors.onSurface : colors.onSurfaceVariant,
+        fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+      ),
+    );
   }
 }
