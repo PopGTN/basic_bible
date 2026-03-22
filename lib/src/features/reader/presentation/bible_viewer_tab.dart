@@ -275,6 +275,10 @@ class _BibleTextViewState extends State<_BibleTextView> {
   }
 
   Widget _buildChapterHeader(BuildContext context) {
+    final primaryTocLabel = widget.book.tocLabels.isNotEmpty
+        ? widget.book.tocLabels.first.text
+        : null;
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 16.0),
       child: Column(
@@ -296,6 +300,19 @@ class _BibleTextViewState extends State<_BibleTextView> {
             ),
             textAlign: TextAlign.center,
           ),
+          if (primaryTocLabel != null &&
+              primaryTocLabel.toLowerCase() != widget.book.name.toLowerCase())
+            Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: Text(
+                primaryTocLabel,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  fontStyle: FontStyle.italic,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
         ],
       ),
     );
@@ -310,12 +327,14 @@ class _BibleTextViewState extends State<_BibleTextView> {
     // Book introductions are only shown at the start of the book to avoid
     // repeating long front-matter blocks on every chapter view.
     return [
-      for (final block in widget.book.introductionBlocks)
-        _DocumentBlockView(
-          block: block,
-          fontSize: widget.fontSize,
-          isEmphasized: true,
-        ),
+      _DocumentBlockSection(
+        title: widget.book.tocLabels.isNotEmpty
+            ? widget.book.tocLabels.first.text
+            : widget.book.name,
+        eyebrow: 'Introduction',
+        blocks: widget.book.introductionBlocks,
+        fontSize: widget.fontSize,
+      ),
     ];
   }
 
@@ -325,9 +344,27 @@ class _BibleTextViewState extends State<_BibleTextView> {
         .toList();
     if (visibleBlocks.isEmpty) return const [];
 
+    final headings = visibleBlocks
+        .where((block) => block.kind == BibleDocumentBlockKind.heading)
+        .toList();
+    final supportingBlocks = visibleBlocks
+        .where((block) => block.kind != BibleDocumentBlockKind.heading)
+        .toList();
+
     return [
-      for (final block in visibleBlocks)
-        _DocumentBlockView(block: block, fontSize: widget.fontSize),
+      for (final block in headings)
+        _DocumentBlockView(
+          block: block,
+          fontSize: widget.fontSize,
+          isEmphasized: true,
+        ),
+      if (supportingBlocks.isNotEmpty)
+        _DocumentBlockSection(
+          title: 'Chapter Notes',
+          eyebrow: 'Document',
+          blocks: supportingBlocks,
+          fontSize: widget.fontSize,
+        ),
     ];
   }
 
@@ -993,7 +1030,9 @@ class _DocumentBlockView extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final style = switch (block.kind) {
-      BibleDocumentBlockKind.heading => theme.textTheme.titleLarge,
+      BibleDocumentBlockKind.heading => theme.textTheme.titleLarge?.copyWith(
+        fontWeight: FontWeight.w700,
+      ),
       BibleDocumentBlockKind.preface ||
       BibleDocumentBlockKind.introduction => theme.textTheme.bodyLarge,
       BibleDocumentBlockKind.poetry => theme.textTheme.bodyLarge?.copyWith(
@@ -1013,6 +1052,69 @@ class _DocumentBlockView extends StatelessWidget {
           color: isEmphasized ? theme.colorScheme.secondary : style.color,
           height: 1.5,
         ),
+        textAlign: block.kind == BibleDocumentBlockKind.heading
+            ? TextAlign.center
+            : TextAlign.start,
+      ),
+    );
+  }
+}
+
+class _DocumentBlockSection extends StatelessWidget {
+  const _DocumentBlockSection({
+    required this.title,
+    required this.blocks,
+    required this.fontSize,
+    this.eyebrow,
+  });
+
+  final String title;
+  final String? eyebrow;
+  final List<BibleDocumentBlock> blocks;
+  final double fontSize;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    // Grouping front matter and supporting chapter blocks into a single
+    // styled section keeps them readable without making them feel like
+    // parser-debug output dumped between verses.
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 18),
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest.withValues(
+          alpha: 0.55,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.55),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (eyebrow != null)
+            Text(
+              eyebrow!,
+              style: theme.textTheme.labelMedium?.copyWith(
+                color: theme.colorScheme.secondary,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.6,
+              ),
+            ),
+          Text(
+            title,
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 10),
+          for (final block in blocks)
+            _DocumentBlockView(block: block, fontSize: fontSize),
+        ],
       ),
     );
   }

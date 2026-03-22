@@ -35,6 +35,7 @@ Status meanings:
 - `blocked`: cannot move safely without another prerequisite or decision
 
 ## Completed Recently
+- `done` Improved front-matter and section-layout rendering so introductions, headings, and other non-verse blocks now read like intentional document sections instead of plain parser output appended between verses.
 - `done` Improved document-mode fidelity so poetry-style paragraph starts and source-driven line breaks from the parser now render more like the source document instead of being merged back into one prose block.
 - `done` Rewrote `README.md` so it now reflects the real app status, shipped reader capabilities, current parser support, and active development gaps instead of acting only as an old wish-list snapshot.
 - `done` Reorganized the active app paths around feature folders so auth, home shell, reader, library data, menu, and settings code now live under `lib/src/features/` instead of being split across generic provider/view/repository roots.
@@ -90,17 +91,17 @@ Status meanings:
 - `in_progress` Reader modes now better match the intended behavior, but document-mode fidelity is still limited by how much positional structure the parser currently preserves.
 
 ## Recommended Next Step
-- `next` Improve front-matter and section-layout rendering so introductions, headings, and richer non-verse document content feel intentional in the reader instead of just appended blocks.
+- `next` Expand parser-side layout coverage for more front-matter and section tags so the reader has richer source structure to work with instead of only a few normalized block types.
 
 Why this is next:
-- The main reading flow now follows source paragraphs and lines better.
-- The next visible formatting gap is how introductions, headings, and other non-verse blocks are presented around the text.
-- This keeps the work focused on prototype-quality reading behavior instead of jumping back into infrastructure.
+- The reader presentation is much better than it was, but it still depends on relatively thin parser output for many non-verse sections.
+- The next formatting gap is upstream: more source layout needs to survive parsing before the app can render it faithfully.
+- This keeps the work focused on formatting fidelity, which is the current prototype priority.
 
 Definition of done for this step:
-- Book introductions and chapter-level document blocks render in a way that feels like part of the reading experience, not a debug dump of parsed blocks.
-- Headings, prefaces, and non-verse blocks have clearer hierarchy and spacing.
-- The reader still behaves cleanly in both `Verse List` and `Document` modes.
+- More front-matter and section-layout tags from USFX, OSIS, and Zefania are preserved in the shared parser model.
+- The app can distinguish more layout cases without guessing from plain text.
+- Reader rendering quality improves because the parser is providing richer structure, not because the UI is hardcoding more heuristics.
 
 ## Prioritized Backlog
 
