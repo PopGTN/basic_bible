@@ -1,4 +1,5 @@
 import 'reference_screen.dart';
+import 'package:basic_bible/src/utils/reference_utils.dart';
 import 'package:basic_bible/src/views/home/tabs/bibleViewerTab/widgets/reference_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -159,6 +160,9 @@ class _BibleViewerTabState extends ConsumerState<BibleViewerTab> {
                 data: (chapter) => chapter != null
                     ? _BibleTextView(
                         controller: _scrollController,
+                        book: books.firstWhere(
+                          (book) => book.id == currentReference.bookId,
+                        ),
                         chapter: chapter,
                         reference: currentReference,
                         fontSize: size,
@@ -185,6 +189,7 @@ class _BibleViewerTabState extends ConsumerState<BibleViewerTab> {
 class _BibleTextView extends StatelessWidget {
   const _BibleTextView({
     required this.controller,
+    required this.book,
     required this.chapter,
     required this.reference,
     required this.fontSize,
@@ -192,6 +197,7 @@ class _BibleTextView extends StatelessWidget {
   });
 
   final ScrollController controller;
+  final BibleBook book;
   final BibleChapter chapter;
   final BibleReference reference;
   final double fontSize;
@@ -199,6 +205,13 @@ class _BibleTextView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final contentWidgets = <Widget>[
+      _buildChapterHeader(context),
+      ..._buildBookIntroductionBlocks(context),
+      ..._buildChapterBlocks(context),
+      ...chapter.verses.map((verse) => _buildVerse(context, verse)),
+    ];
+
     return Padding(
       padding: EdgeInsets.only(
         left: 16,
@@ -208,112 +221,199 @@ class _BibleTextView extends StatelessWidget {
       ),
       child: ListView.builder(
         controller: controller,
-        itemCount: chapter.verses.length + 1, // +1 for chapter title
-        itemBuilder: (context, index) {
-          if (index == 0) {
-            // Chapter title
-            final bookName = _getBookName(reference.bookId);
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 16.0),
-              child: Text(
-                '$bookName ${reference.chapter}',
-                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  fontSize: fontSize + 4,
-                  fontWeight: FontWeight.bold,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            );
-          }
-
-          final verse = chapter.verses[index - 1];
-          final hasFootnotes =
-              verse.footnotes.isNotEmpty ||
-              (verse.notes != null && verse.notes!.isNotEmpty);
-          final hasReferences =
-              verse.crossReferences.isNotEmpty ||
-              (verse.references != null && verse.references!.isNotEmpty);
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 8.0),
-            child: GestureDetector(
-              onTap: () {
-                if (hasFootnotes) {
-                  showDialog(
-                    context: context,
-                    builder: (context) => AlertDialog(
-                      title: Text('Footnotes for Verse ${verse.number}'),
-                      content: SingleChildScrollView(
-                        child: ListBody(
-                          children: _buildFootnoteWidgets(context, verse),
-                        ),
-                      ),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.of(context).pop(),
-                          child: const Text('Close'),
-                        ),
-                      ],
-                    ),
-                  );
-                } else if (hasReferences) {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (context) => ReferenceScreen(
-                        references: _referenceLabels(verse),
-                        currentReference: reference,
-                      ),
-                    ),
-                  );
-                }
-              },
-              child: RichText(
-                text: TextSpan(
-                  style: TextStyle(
-                    fontSize: fontSize,
-                    color: Theme.of(context).textTheme.bodyLarge?.color,
-                    height: 1.5,
-                  ),
-                  children: [
-                    TextSpan(
-                      text: '${verse.number} ',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: Theme.of(context).colorScheme.primary,
-                        fontSize: fontSize - 2,
-                      ),
-                    ),
-                    ..._buildVerseContentSpans(context, verse),
-                    if (hasFootnotes)
-                      WidgetSpan(
-                        child: Icon(
-                          Icons.info_outline,
-                          size: fontSize,
-                          color: Theme.of(context).colorScheme.secondary,
-                        ),
-                      ),
-                    if (hasReferences)
-                      WidgetSpan(
-                        child: Padding(
-                          padding: const EdgeInsets.only(left: 4.0),
-                          child: Icon(
-                            Icons
-                                .link, // Or another appropriate icon for references
-                            size: fontSize,
-                            color: Theme.of(context).colorScheme.tertiary,
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-            ),
-          );
-        },
+        itemCount: contentWidgets.length,
+        itemBuilder: (context, index) => contentWidgets[index],
       ),
     );
   }
 
-  List<Widget> _buildFootnoteWidgets(BuildContext context, BibleVerse verse) {
+  Widget _buildChapterHeader(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16.0),
+      child: Column(
+        children: [
+          Text(
+            book.name,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              color: Theme.of(context).colorScheme.secondary,
+              letterSpacing: 0.6,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            '${bookIdToName(reference.bookId)} ${reference.chapter}',
+            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+              fontSize: fontSize + 4,
+              fontWeight: FontWeight.bold,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  List<Widget> _buildBookIntroductionBlocks(BuildContext context) {
+    if (reference.chapter != 1 || book.introductionBlocks.isEmpty) {
+      return const [];
+    }
+
+    // Book introductions are only shown at the start of the book to avoid
+    // repeating long front-matter blocks on every chapter view.
+    return [
+      for (final block in book.introductionBlocks)
+        _DocumentBlockView(
+          block: block,
+          fontSize: fontSize,
+          isEmphasized: true,
+        ),
+    ];
+  }
+
+  List<Widget> _buildChapterBlocks(BuildContext context) {
+    if (chapter.blocks.isEmpty) return const [];
+
+    return [
+      for (final block in chapter.blocks)
+        _DocumentBlockView(block: block, fontSize: fontSize),
+    ];
+  }
+
+  Widget _buildVerse(BuildContext context, BibleVerse verse) {
+    final hasFootnotes =
+        verse.footnotes.isNotEmpty ||
+        (verse.notes != null && verse.notes!.isNotEmpty);
+    final hasReferences =
+        verse.crossReferences.isNotEmpty ||
+        (verse.references != null && verse.references!.isNotEmpty);
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8.0),
+      child: GestureDetector(
+        onTap: () {
+          if (hasFootnotes || hasReferences) {
+            _showVerseDetailsSheet(context, verse);
+          }
+        },
+        child: RichText(
+          text: TextSpan(
+            style: TextStyle(
+              fontSize: fontSize,
+              color: Theme.of(context).textTheme.bodyLarge?.color,
+              height: 1.5,
+            ),
+            children: [
+              TextSpan(
+                text: '${verse.number} ',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.primary,
+                  fontSize: fontSize - 2,
+                ),
+              ),
+              ..._buildVerseContentSpans(context, verse),
+              if (hasFootnotes)
+                WidgetSpan(
+                  child: Icon(
+                    Icons.info_outline,
+                    size: fontSize,
+                    color: Theme.of(context).colorScheme.secondary,
+                  ),
+                ),
+              if (hasReferences)
+                WidgetSpan(
+                  child: Padding(
+                    padding: const EdgeInsets.only(left: 4.0),
+                    child: Icon(
+                      Icons.link,
+                      size: fontSize,
+                      color: Theme.of(context).colorScheme.tertiary,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showVerseDetailsSheet(BuildContext context, BibleVerse verse) {
+    final footnotes = _footnoteLines(verse);
+    final references = _structuredReferences(verse);
+
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (context) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Verse ${verse.number}',
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                  if (footnotes.isNotEmpty) ...[
+                    const SizedBox(height: 16),
+                    Text(
+                      'Footnotes',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 8),
+                    for (final note in footnotes)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: Text(
+                          note,
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
+                      ),
+                  ],
+                  if (references.isNotEmpty) ...[
+                    const SizedBox(height: 16),
+                    Text(
+                      'Cross-References',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 8),
+                    for (final referenceEntry in references)
+                      ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: Text(referenceEntry.label),
+                        subtitle: referenceEntry.target != null
+                            ? Text(referenceEntry.target!)
+                            : null,
+                        trailing: const Icon(Icons.chevron_right),
+                        onTap: () {
+                          Navigator.of(context).pop();
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) => ReferenceScreen(
+                                references: [referenceEntry.label],
+                                currentReference: reference,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  List<String> _footnoteLines(BibleVerse verse) {
     if (verse.footnotes.isNotEmpty) {
       return verse.footnotes.map((footnote) {
         final label = [
@@ -323,31 +423,26 @@ class _BibleTextView extends StatelessWidget {
             footnote.label,
         ].join(' ');
 
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 8),
-          child: Text(
-            label.isEmpty ? footnote.text : '$label ${footnote.text}',
-            style: Theme.of(context).textTheme.bodyMedium,
-          ),
-        );
+        final referenceSuffix = footnote.references.isEmpty
+            ? ''
+            : ' (${footnote.references.map((ref) => ref.label).join(', ')})';
+
+        return label.isEmpty
+            ? '${footnote.text}$referenceSuffix'
+            : '$label ${footnote.text}$referenceSuffix';
       }).toList();
     }
 
-    return (verse.notes ?? const [])
-        .map(
-          (note) => Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: Text(note),
-          ),
-        )
-        .toList();
+    return verse.notes ?? const [];
   }
 
-  List<String> _referenceLabels(BibleVerse verse) {
+  List<BibleCrossReference> _structuredReferences(BibleVerse verse) {
     if (verse.crossReferences.isNotEmpty) {
-      return verse.crossReferences.map((ref) => ref.label).toList();
+      return verse.crossReferences;
     }
-    return verse.references ?? const [];
+    return (verse.references ?? const [])
+        .map((reference) => BibleCrossReference(label: reference))
+        .toList();
   }
 
   List<InlineSpan> _buildVerseContentSpans(
@@ -430,77 +525,45 @@ class _BibleTextView extends StatelessWidget {
         return null;
     }
   }
+}
 
-  String _getBookName(String bookId) {
-    const bookNames = {
-      'GEN': 'Genesis',
-      'EXO': 'Exodus',
-      'LEV': 'Leviticus',
-      'NUM': 'Numbers',
-      'DEU': 'Deuteronomy',
-      'JOS': 'Joshua',
-      'JDG': 'Judges',
-      'RUT': 'Ruth',
-      '1SA': '1 Samuel',
-      '2SA': '2 Samuel',
-      '1KI': '1 Kings',
-      '2KI': '2 Kings',
-      '1CH': '1 Chronicles',
-      '2CH': '2 Chronicles',
-      'EZR': 'Ezra',
-      'NEH': 'Nehemiah',
-      'EST': 'Esther',
-      'JOB': 'Job',
-      'PSA': 'Psalms',
-      'PRO': 'Proverbs',
-      'ECC': 'Ecclesiastes',
-      'SNG': 'Song of Songs',
-      'ISA': 'Isaiah',
-      'JER': 'Jeremiah',
-      'LAM': 'Lamentations',
-      'EZK': 'Ezekiel',
-      'DAN': 'Daniel',
-      'HOS': 'Hosea',
-      'JOL': 'Joel',
-      'AMO': 'Amos',
-      'OBA': 'Obadiah',
-      'JON': 'Jonah',
-      'MIC': 'Micah',
-      'NAM': 'Nahum',
-      'HAB': 'Habakkuk',
-      'ZEP': 'Zephaniah',
-      'HAG': 'Haggai',
-      'ZEC': 'Zechariah',
-      'MAL': 'Malachi',
-      'MAT': 'Matthew',
-      'MRK': 'Mark',
-      'LUK': 'Luke',
-      'JHN': 'John',
-      'ACT': 'Acts',
-      'ROM': 'Romans',
-      '1CO': '1 Corinthians',
-      '2CO': '2 Corinthians',
-      'GAL': 'Galatians',
-      'EPH': 'Ephesians',
-      'PHP': 'Philippians',
-      'COL': 'Colossians',
-      '1TH': '1 Thessalonians',
-      '2TH': '2 Thessalonians',
-      '1TI': '1 Timothy',
-      '2TI': '2 Timothy',
-      'TIT': 'Titus',
-      'PHM': 'Philemon',
-      'HEB': 'Hebrews',
-      'JAS': 'James',
-      '1PE': '1 Peter',
-      '2PE': '2 Peter',
-      '1JN': '1 John',
-      '2JN': '2 John',
-      '3JN': '3 John',
-      'JUD': 'Jude',
-      'REV': 'Revelation',
+class _DocumentBlockView extends StatelessWidget {
+  const _DocumentBlockView({
+    required this.block,
+    required this.fontSize,
+    this.isEmphasized = false,
+  });
+
+  final BibleDocumentBlock block;
+  final double fontSize;
+  final bool isEmphasized;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final style = switch (block.kind) {
+      BibleDocumentBlockKind.heading => theme.textTheme.titleLarge,
+      BibleDocumentBlockKind.preface ||
+      BibleDocumentBlockKind.introduction => theme.textTheme.bodyLarge,
+      BibleDocumentBlockKind.poetry => theme.textTheme.bodyLarge?.copyWith(
+        fontStyle: FontStyle.italic,
+      ),
+      _ => theme.textTheme.bodyMedium,
     };
-    return bookNames[bookId] ?? bookId;
+
+    return Padding(
+      padding: EdgeInsets.only(
+        bottom: block.kind == BibleDocumentBlockKind.heading ? 12 : 10,
+      ),
+      child: Text(
+        block.text,
+        style: style?.copyWith(
+          fontSize: (style.fontSize ?? fontSize) + (isEmphasized ? 1 : 0),
+          color: isEmphasized ? theme.colorScheme.secondary : style.color,
+          height: 1.5,
+        ),
+      ),
+    );
   }
 }
 

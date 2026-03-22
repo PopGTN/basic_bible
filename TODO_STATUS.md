@@ -35,6 +35,7 @@ Status meanings:
 - `blocked`: cannot move safely without another prerequisite or decision
 
 ## Completed Recently
+- `done` Rendered structured book/chapter document blocks in the reader and replaced the old verse tap fallback with a richer bottom sheet for footnotes and cross-references.
 - `done` Brought the Zefania parser up to the same shared rich-model direction as the other supported formats, including structured introduction blocks, chapter headings, notes, references, and styled verse spans.
 - `done` Completed the first end-to-end rich-text slice: the reader now renders structured verse spans and the parser/app pipeline preserves those spans through local storage.
 - `done` Normalized app-side book IDs to the uppercase form the reader/navigation code already expects, which keeps parsed content aligned with the app's existing reference model.
@@ -58,27 +59,28 @@ Status meanings:
 
 ## Current Status
 - `in_progress` The project now persists cached Bible data on disk for non-web platforms, but the web path still falls back to in-memory storage.
-- `in_progress` The app now renders rich verse spans end to end for the parser output it receives, including red-letter text, translator additions, and some poetry/word metadata styling, but introductions/front matter and richer note/reference UI still need better presentation.
+- `in_progress` The app now renders rich verse spans end to end for the parser output it receives, including red-letter text, translator additions, some poetry/word metadata styling, and structured intro/heading blocks, but the note/reference UX can still be polished further.
 - `in_progress` The README is currently more of a feature wish list than a maintained reflection of actual repo status.
 - `in_progress` The app structure is cleaner, but the codebase is still not fully feature-sliced. Bible import, library management, reader UI, and settings are still spread across shared folders rather than organized as strict feature modules.
 - `in_progress` The project now has a plain-language documentation note explaining that Bible formatting support must preserve structure, not only flattened verse text.
 - `in_progress` The current parser model is still limited to books, chapters, and verses. It does not yet preserve introductions, prefaces, TOC labels, or book-level front matter that already exists in some USFX and OSIS files.
 - `in_progress` The long-term product goal is full-fidelity support for the Bible source formats in use, which means preserving as much meaningful USFX, OSIS, and Zefania structure as is practical instead of only rendering simplified verse text.
 - `in_progress` Phase 1 parser/app-model planning is being documented so future implementation work starts from a shared spec instead of ad hoc parser changes.
-- `in_progress` Phase 1 shared-model implementation is now real across USFX, OSIS, and Zefania at a partial-rich level, but richer front-matter rendering and better structured note/reference UI still need the same treatment in the app.
+- `in_progress` Phase 1 shared-model implementation is now real across USFX, OSIS, and Zefania at a partial-rich level, and the reader now renders intro/heading blocks, but better structured note/reference navigation still needs polish.
+- `in_progress` Reader rendering now uses the structured parser output for intro blocks and richer verse details, but there is still room to improve the presentation and navigation flow around those details.
 
 ## Recommended Next Step
-- `next` Improve the reader UX around the richer parsed data by rendering book/chapter introduction blocks and giving structured footnotes/cross-references a better UI than the current fallback dialogs.
+- `next` Polish the reader UX around structured notes and references, especially direct navigation from structured targets and clearer presentation for verse details in longer passages.
 
 Why this is next:
 - The parser and storage path now produce and preserve richer verse data.
 - The reader now uses structured spans instead of flattening everything back to `verse.text`.
-- The biggest remaining user-visible gap is that front matter and notes are still presented with temporary UI rather than integrated reader UX.
+- The next biggest user-visible gap is navigation and presentation quality inside the new verse-detail UI.
 
 Definition of done for this step:
-- Book/chapter introduction blocks can be shown in the reader when present.
-- Structured footnotes and cross-references use their richer metadata in the UI instead of only legacy string fallbacks.
-- Existing plain-text reading and navigation still work.
+- Structured cross-reference targets can be used more directly instead of relying mostly on label parsing.
+- Verse-detail UI remains readable when many notes/references exist.
+- Existing reading and navigation still work.
 
 ## Prioritized Backlog
 
