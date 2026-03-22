@@ -507,7 +507,11 @@ Map<String, dynamic> _serializeVerseSpan(VerseSpan span) {
 }
 
 Map<String, dynamic> _serializeCrossReference(CrossReference reference) {
-  return {'label': reference.label, 'target': reference.target};
+  return {
+    'label': reference.label,
+    'target': reference.target,
+    'marker': reference.marker,
+  };
 }
 
 Map<String, dynamic> _serializeFootnote(Footnote footnote) {

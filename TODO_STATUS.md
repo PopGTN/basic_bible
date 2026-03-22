@@ -35,6 +35,7 @@ Status meanings:
 - `blocked`: cannot move safely without another prerequisite or decision
 
 ## Completed Recently
+- `done` Added inline annotation anchors so note/reference markers can now render beside the words they attach to when the parser preserves those anchors, instead of only appearing in a verse-level sheet.
 - `done` Polished document-mode paragraph rendering so prose sections read more like real paragraphs and annotation buttons stay available there instead of disappearing outside verse-list mode.
 - `done` Reworked verse annotation interaction so side icons open a more reference-app-like bottom sheet with verse context and lettered annotation rows instead of relying on tapping the whole verse for a generic details panel.
 - `done` Improved front-matter and section-layout rendering so introductions, headings, and other non-verse blocks now read like intentional document sections instead of plain parser output appended between verses.

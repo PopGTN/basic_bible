@@ -60,22 +60,24 @@ class BibleVerseSpan extends Equatable {
 class BibleCrossReference extends Equatable {
   final String label;
   final String? target;
+  final String? marker;
 
-  const BibleCrossReference({required this.label, this.target});
+  const BibleCrossReference({required this.label, this.target, this.marker});
 
   factory BibleCrossReference.fromJson(Map<String, dynamic> json) {
     return BibleCrossReference(
       label: json['label'] as String,
       target: json['target'] as String?,
+      marker: json['marker'] as String?,
     );
   }
 
   Map<String, dynamic> toJson() {
-    return {'label': label, 'target': target};
+    return {'label': label, 'target': target, 'marker': marker};
   }
 
   @override
-  List<Object?> get props => [label, target];
+  List<Object?> get props => [label, target, marker];
 }
 
 class BibleFootnote extends Equatable {

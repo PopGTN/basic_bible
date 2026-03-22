@@ -764,7 +764,9 @@ class _BibleTextViewState extends State<_BibleTextView> {
     for (final reference in references) {
       entries.add(
         _VerseAnnotationEntry(
-          marker: nextMarker(),
+          marker: reference.marker?.trim().isNotEmpty == true
+              ? reference.marker!.trim().toLowerCase()
+              : nextMarker(),
           body: reference.label,
           reference: reference,
         ),
@@ -799,17 +801,24 @@ class _BibleTextViewState extends State<_BibleTextView> {
     final baseColor = Theme.of(context).textTheme.bodyLarge?.color;
     final secondaryColor = Theme.of(context).colorScheme.secondary;
 
-    return spans.map((span) {
-      return TextSpan(
-        text: _spanText(span),
-        style: TextStyle(
-          color: _spanColor(span.kind, baseColor, secondaryColor),
-          fontStyle: _spanFontStyle(span.kind),
-          fontWeight: _spanFontWeight(span.kind),
-          decoration: _spanDecoration(span.kind),
+    final inlineSpans = <InlineSpan>[];
+
+    for (final span in spans) {
+      inlineSpans.add(
+        TextSpan(
+          text: _spanText(span),
+          style: TextStyle(
+            color: _spanColor(span.kind, baseColor, secondaryColor),
+            fontStyle: _spanFontStyle(span.kind),
+            fontWeight: _spanFontWeight(span.kind),
+            decoration: _spanDecoration(span.kind),
+          ),
         ),
       );
-    }).toList();
+      inlineSpans.addAll(_buildInlineAnnotationMarkers(context, span));
+    }
+
+    return inlineSpans;
   }
 
   List<BibleVerseSpan> _displaySpans(BibleVerse verse) {
@@ -857,6 +866,48 @@ class _BibleTextViewState extends State<_BibleTextView> {
       }
     }
     return span.text;
+  }
+
+  List<InlineSpan> _buildInlineAnnotationMarkers(
+    BuildContext context,
+    BibleVerseSpan span,
+  ) {
+    final markers = <String>[
+      ..._splitAnnotationMarkers(span.metadata['footnoteMarkers']),
+      ..._splitAnnotationMarkers(span.metadata['referenceMarkers']),
+    ];
+
+    if (markers.isEmpty) return const [];
+
+    final color = Theme.of(context).colorScheme.onSurfaceVariant;
+
+    return [
+      for (final marker in markers)
+        WidgetSpan(
+          alignment: PlaceholderAlignment.top,
+          child: Padding(
+            padding: const EdgeInsets.only(left: 1),
+            child: Text(
+              marker,
+              style: TextStyle(
+                fontSize: widget.fontSize * 0.58,
+                height: 1,
+                fontWeight: FontWeight.w700,
+                color: color,
+              ),
+            ),
+          ),
+        ),
+    ];
+  }
+
+  List<String> _splitAnnotationMarkers(String? rawValue) {
+    if (rawValue == null || rawValue.isEmpty) return const [];
+    return rawValue
+        .split('|')
+        .map((value) => value.trim())
+        .where((value) => value.isNotEmpty)
+        .toList();
   }
 
   Color? _spanColor(
