@@ -51,6 +51,7 @@ Status meanings:
 - `blocked`: cannot move safely without another prerequisite or decision
 
 ## Completed Recently
+- `done` Moved the reader chapter/reference bar to the bottom on every screen size, switched the wider layouts off the old top-mounted placement, and rebalanced the reader padding so content clears the bottom floating bar instead of leaving a fake top gap.
 - `done` Improved the Bible viewer overflow menu contrast by forcing the dropdown item icons to use the popup's high-contrast `onSurface` color instead of inheriting a dimmer default tint.
 - `done` Unified the References screen picker tiles so chapter picks now use the same square size, spacing, radius, and selected styling as the verse picks instead of rendering as a larger older-looking grid.
 - `done` Optimized Bible viewer loading by keeping previously opened translations hot in memory, stopping the reader books provider from recreating itself on every translation change, and switching the continuous whole-Bible reader to a lazy builder with coalesced visible-chapter syncing instead of rebuilding the full section list on every update.

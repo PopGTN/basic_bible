@@ -97,7 +97,7 @@ class _BibleViewerTabState extends ConsumerState<BibleViewerTab> {
     final continuousScrolling = ref.watch(continuousScrollingProvider);
     final showBookIntroductions = ref.watch(showBookIntroductionsProvider);
     final showVerseSelector = ref.watch(showVerseSelectorProvider);
-    final isSmall = widget.isSmallDevice;
+    const readerBarBottomPadding = 96.0;
 
     final displayReference =
         continuousScrolling && _continuousVisibleReference != null
@@ -126,7 +126,8 @@ class _BibleViewerTabState extends ConsumerState<BibleViewerTab> {
                         layoutMode: layoutMode,
                         continuousScrolling: continuousScrolling,
                         showBookIntroductions: showBookIntroductions,
-                        isSmallDevice: isSmall,
+                        isSmallDevice: widget.isSmallDevice,
+                        bottomOverlayPadding: readerBarBottomPadding,
                         onVisibleReferenceChanged: (reference) {
                           if (_continuousVisibleReference == reference) return;
                           setState(() {
@@ -165,13 +166,13 @@ class _BibleViewerTabState extends ConsumerState<BibleViewerTab> {
 
         // Chapter navigation bar
         Align(
-          alignment: isSmall ? Alignment.bottomCenter : Alignment.topCenter,
+          alignment: Alignment.bottomCenter,
           child: SafeArea(
-            top: !isSmall,
-            bottom: isSmall,
+            top: false,
+            bottom: true,
             child: ChapterBar(
               barHeight: 56,
-              isFloating: isSmall,
+              isFloating: true,
               reference: displayReference,
               books: booksAsync.value ?? const [],
               showVerseSelector: showVerseSelector,
@@ -284,6 +285,7 @@ class _BibleTextView extends StatefulWidget {
     required this.continuousScrolling,
     required this.showBookIntroductions,
     required this.isSmallDevice,
+    required this.bottomOverlayPadding,
     required this.onVisibleReferenceChanged,
   });
 
@@ -298,6 +300,7 @@ class _BibleTextView extends StatefulWidget {
   final bool continuousScrolling;
   final bool showBookIntroductions;
   final bool isSmallDevice;
+  final double bottomOverlayPadding;
   final ValueChanged<BibleReference> onVisibleReferenceChanged;
 
   @override
@@ -502,8 +505,10 @@ class _BibleTextViewState extends State<_BibleTextView> {
       padding: EdgeInsets.only(
         left: 16,
         right: 16,
-        top: widget.isSmallDevice ? 16 : 80,
-        bottom: 72,
+        top: 16,
+        // Keep the last verses and chapter blocks clear of the floating
+        // bottom reference bar on every layout size, not only on phones.
+        bottom: widget.bottomOverlayPadding,
       ),
       child: ListView.builder(
         controller: widget.controller,
@@ -756,8 +761,8 @@ class _BibleTextViewState extends State<_BibleTextView> {
       padding: EdgeInsets.only(
         left: 16,
         right: 16,
-        top: widget.isSmallDevice ? 16 : 80,
-        bottom: 72,
+        top: 16,
+        bottom: widget.bottomOverlayPadding,
       ),
       itemCount: _continuousSections.length,
       itemBuilder: (context, index) {
