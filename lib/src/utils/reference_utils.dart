@@ -82,6 +82,35 @@ BibleBook? resolveBookFromReference(
   return null;
 }
 
+String preferredBookName(BibleBook book) {
+  final primaryName = book.name.trim();
+  if (primaryName.isNotEmpty) return primaryName;
+
+  for (final tocLabel in book.tocLabels) {
+    final text = tocLabel.text.trim();
+    if (text.isNotEmpty) return text;
+  }
+
+  final shortName = book.shortName.trim();
+  if (shortName.isNotEmpty) return shortName;
+
+  return bookIdToName(book.id);
+}
+
+String displayBookNameForReference(
+  List<BibleBook> books,
+  String referenceBookId,
+) {
+  final currentBook = resolveBookFromReference(books, referenceBookId);
+  if (currentBook != null) {
+    return preferredBookName(currentBook);
+  }
+
+  final normalizedId =
+      _normalizeStructuredBookId(referenceBookId) ?? referenceBookId;
+  return bookIdToName(normalizedId);
+}
+
 String? _mapBookNameToId(String bookName) {
   const bookNameToIdMap = {
     'Genesis': 'GEN',
@@ -349,7 +378,42 @@ String bookIdToName(String bookId) {
     'JUD': 'Jude',
     'REV': 'Revelation',
   };
-  return map[bookId] ?? bookId;
+  final normalizedId = bookId.trim().toUpperCase();
+  final mapped = map[normalizedId];
+  if (mapped != null) return mapped;
+
+  final normalizedStructured =
+      _normalizeStructuredBookId(normalizedId) ?? normalizedId;
+  final normalizedMapped = map[normalizedStructured];
+  if (normalizedMapped != null) return normalizedMapped;
+
+  final prettified = _prettifyFallbackBookId(normalizedStructured);
+
+  return prettified.isEmpty ? normalizedId : prettified;
+}
+
+String _prettifyFallbackBookId(String rawValue) {
+  final buffer = StringBuffer();
+  for (var index = 0; index < rawValue.length; index++) {
+    final char = rawValue[index];
+    final previous = index > 0 ? rawValue[index - 1] : '';
+
+    if (char == '_') {
+      buffer.write(' ');
+      continue;
+    }
+
+    final isDigit = RegExp(r'\d').hasMatch(char);
+    final previousIsLetter =
+        previous.isNotEmpty && RegExp(r'[A-Za-z]').hasMatch(previous);
+    if (isDigit && previousIsLetter) {
+      buffer.write(' ');
+    }
+
+    buffer.write(char);
+  }
+
+  return buffer.toString().replaceAll(RegExp(r'\s+'), ' ').trim();
 }
 
 BibleBookType getBookType(String bookId) {

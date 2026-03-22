@@ -24,10 +24,11 @@ class ChapterBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final currentBook = resolveBookFromReference(books, reference.bookId);
     final colors = Theme.of(context).colorScheme;
-    final referenceBookName =
-        currentBook?.name ?? bookIdToName(reference.bookId);
+    final referenceBookName = displayBookNameForReference(
+      books,
+      reference.bookId,
+    );
     final referenceLabel = '$referenceBookName ${reference.chapter}';
 
     if (isFloating) {
@@ -602,16 +603,21 @@ class _BooksList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (books.isEmpty) {
+    final visibleBooks = books
+        .where((book) => preferredBookName(book).trim().isNotEmpty)
+        .toList();
+
+    if (visibleBooks.isEmpty) {
       return const Center(child: Text('No books found'));
     }
 
     return ListView.builder(
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      itemCount: books.length,
+      itemCount: visibleBooks.length,
       itemBuilder: (context, index) {
-        final book = books[index];
+        final book = visibleBooks[index];
         final isSelected = book.id == selectedBookId;
+        final displayName = preferredBookName(book).trim();
 
         return Card(
           margin: const EdgeInsets.only(bottom: 4),
@@ -622,7 +628,7 @@ class _BooksList extends StatelessWidget {
             dense: true,
             selected: isSelected,
             title: Text(
-              book.name,
+              displayName,
               style: TextStyle(
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
               ),

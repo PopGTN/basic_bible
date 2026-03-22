@@ -486,7 +486,7 @@ class _BibleTextViewState extends State<_BibleTextView> {
   Widget _buildChapterHeader(BuildContext context) {
     return _buildCenteredChapterHeader(
       context,
-      bookName: widget.book.name,
+      bookName: preferredBookName(widget.book),
       chapterNumber: widget.reference.chapter,
     );
   }
@@ -507,9 +507,12 @@ class _BibleTextViewState extends State<_BibleTextView> {
     BibleBook book, {
     required bool showForCurrentSection,
   }) {
+    final visibleBlocks = book.introductionBlocks
+        .where((block) => block.text.trim().isNotEmpty)
+        .toList();
     if (!widget.showBookIntroductions ||
         !showForCurrentSection ||
-        book.introductionBlocks.isEmpty) {
+        visibleBlocks.isEmpty) {
       return const [];
     }
 
@@ -517,9 +520,9 @@ class _BibleTextViewState extends State<_BibleTextView> {
     // repeating long front-matter blocks on every chapter view.
     return [
       _DocumentBlockSection(
-        title: book.name,
+        title: preferredBookName(book),
         eyebrow: 'Introduction',
-        blocks: book.introductionBlocks,
+        blocks: visibleBlocks,
         fontSize: widget.fontSize,
       ),
     ];
@@ -527,7 +530,11 @@ class _BibleTextViewState extends State<_BibleTextView> {
 
   List<Widget> _buildChapterBlocks(BuildContext context) {
     final visibleBlocks = widget.chapter.blocks
-        .where((block) => block.kind != BibleDocumentBlockKind.paragraph)
+        .where(
+          (block) =>
+              block.kind != BibleDocumentBlockKind.paragraph &&
+              block.text.trim().isNotEmpty,
+        )
         .toList();
     if (visibleBlocks.isEmpty) return const [];
 
@@ -779,7 +786,7 @@ class _BibleTextViewState extends State<_BibleTextView> {
   ) {
     return _buildCenteredChapterHeader(
       context,
-      bookName: book.name,
+      bookName: preferredBookName(book),
       chapterNumber: chapterNumber,
     );
   }
@@ -860,7 +867,11 @@ class _BibleTextViewState extends State<_BibleTextView> {
     BibleChapter chapter,
   ) {
     final visibleBlocks = chapter.blocks
-        .where((block) => block.kind != BibleDocumentBlockKind.paragraph)
+        .where(
+          (block) =>
+              block.kind != BibleDocumentBlockKind.paragraph &&
+              block.text.trim().isNotEmpty,
+        )
         .toList();
     if (visibleBlocks.isEmpty) return const [];
 
@@ -1180,7 +1191,7 @@ class _BibleTextViewState extends State<_BibleTextView> {
       builder: (context) {
         return _VerseDetailsSheet(
           referenceLabel:
-              '${bookIdToName(widget.reference.bookId)} $chapterNumber:${verse.number}',
+              '${displayBookNameForReference(widget.books, widget.reference.bookId)} $chapterNumber:${verse.number}',
           verse: verse,
           annotationEntries: annotationEntries,
           onReferenceTap: (referenceEntry) =>
