@@ -440,7 +440,10 @@ class _BibleTextViewState extends State<_BibleTextView> {
 
     final paragraphBlocksByVerse = <int, List<BibleDocumentBlock>>{};
     for (final block in widget.chapter.blocks) {
-      if (block.kind != BibleDocumentBlockKind.paragraph) continue;
+      if (block.kind != BibleDocumentBlockKind.paragraph &&
+          block.kind != BibleDocumentBlockKind.poetry) {
+        continue;
+      }
       final beforeVerse = int.tryParse(block.metadata['beforeVerse'] ?? '');
       if (beforeVerse == null) continue;
       paragraphBlocksByVerse
@@ -703,17 +706,21 @@ class _BibleTextViewState extends State<_BibleTextView> {
       var text = span.text.trim();
       if (text.isEmpty) continue;
 
+      final startsNewLine = span.metadata['lineStart'] == 'true';
+
       // Some source formats split every word into separate rich spans.
       // Reinsert display spacing here so tag-heavy sources like KJV do not
       // collapse into "wordstucktogether" when rendered span-by-span.
-      if (_shouldInsertSpace(previousText, text)) {
+      if (startsNewLine) {
+        text = '\n$text';
+      } else if (_shouldInsertSpace(previousText, text)) {
         text = ' $text';
       }
 
       displaySpans.add(
         BibleVerseSpan(text: text, kind: span.kind, metadata: span.metadata),
       );
-      previousText = text;
+      previousText = startsNewLine ? text.trimLeft() : text;
     }
 
     return displaySpans;

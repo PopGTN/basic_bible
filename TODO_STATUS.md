@@ -35,6 +35,7 @@ Status meanings:
 - `blocked`: cannot move safely without another prerequisite or decision
 
 ## Completed Recently
+- `done` Improved document-mode fidelity so poetry-style paragraph starts and source-driven line breaks from the parser now render more like the source document instead of being merged back into one prose block.
 - `done` Rewrote `README.md` so it now reflects the real app status, shipped reader capabilities, current parser support, and active development gaps instead of acting only as an old wish-list snapshot.
 - `done` Reorganized the active app paths around feature folders so auth, home shell, reader, library data, menu, and settings code now live under `lib/src/features/` instead of being split across generic provider/view/repository roots.
 - `done` Cleaned up downloaded-translation lifecycle handling so stored metadata now overrides built-in defaults when a bundled translation has been downloaded, and the picker reflects whether a translation is bundled, downloaded, or imported.
@@ -89,17 +90,17 @@ Status meanings:
 - `in_progress` Reader modes now better match the intended behavior, but document-mode fidelity is still limited by how much positional structure the parser currently preserves.
 
 ## Recommended Next Step
-- `next` Improve document-mode fidelity by preserving more source structure for poetry, line breaks, and paragraph boundaries across the supported Bible formats.
+- `next` Improve front-matter and section-layout rendering so introductions, headings, and richer non-verse document content feel intentional in the reader instead of just appended blocks.
 
 Why this is next:
-- The reader now has a true `Document` mode, but its quality still depends on how much source structure the parser keeps.
-- This is the clearest remaining user-facing quality gap in the reading experience.
-- It continues the one-feature-at-a-time workflow without mixing another broad refactor into the repo.
+- The main reading flow now follows source paragraphs and lines better.
+- The next visible formatting gap is how introductions, headings, and other non-verse blocks are presented around the text.
+- This keeps the work focused on prototype-quality reading behavior instead of jumping back into infrastructure.
 
 Definition of done for this step:
-- USFX, OSIS, and Zefania preserve more paragraph, poetry, and line-break structure where their source files expose it.
-- The reader uses that richer structure without flattening it back into generic prose.
-- Document mode is visibly closer to the source document layout.
+- Book introductions and chapter-level document blocks render in a way that feels like part of the reading experience, not a debug dump of parsed blocks.
+- Headings, prefaces, and non-verse blocks have clearer hierarchy and spacing.
+- The reader still behaves cleanly in both `Verse List` and `Document` modes.
 
 ## Prioritized Backlog
 
