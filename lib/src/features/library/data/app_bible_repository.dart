@@ -79,14 +79,23 @@ class AppBibleRepository {
 
   /// Load Bible from local asset or cache
   Future<List<BibleBook>> loadLocalBible(String translationId) async {
+    final translation = await _getTranslation(translationId);
+
     if (await _db.isBibleCached(translationId)) {
-      _cachedBooks = await _db.getBible(translationId);
-      _currentTranslationId = translationId;
-      return _cachedBooks;
+      final cachedBooks = await _db.getBible(translationId);
+      if (!_needsInlineAnchorRefresh(cachedBooks)) {
+        _cachedBooks = cachedBooks;
+        _currentTranslationId = translationId;
+        return _cachedBooks;
+      }
+
+      // Older cached parses predate inline anchor metadata. Rebuild those
+      // local copies from source so the reader can render note letters at the
+      // word they belong to instead of silently staying on stale cached data.
+      await _db.deleteBible(translationId);
     }
 
     try {
-      final translation = await _getTranslation(translationId);
       final content = await _loadLocalContent(translation);
 
       // Parsing can be CPU-intensive for large files. Run it in a
@@ -109,13 +118,20 @@ class AppBibleRepository {
 
   /// Download Bible from GitHub and cache it
   Future<List<BibleBook>> downloadBible(String translationId) async {
-    if (await _db.isBibleCached(translationId)) {
-      _cachedBooks = await _db.getBible(translationId);
-      _currentTranslationId = translationId;
-      return _cachedBooks;
-    }
-
     final translation = await _getTranslation(translationId);
+
+    if (await _db.isBibleCached(translationId)) {
+      final cachedBooks = await _db.getBible(translationId);
+      if (!_needsInlineAnchorRefresh(cachedBooks)) {
+        _cachedBooks = cachedBooks;
+        _currentTranslationId = translationId;
+        return _cachedBooks;
+      }
+
+      // Downloaded translations can also be stale if they were cached before
+      // inline anchor support existed, so refresh them from the remote source.
+      await _db.deleteBible(translationId);
+    }
 
     if (translation.githubUrl == null) {
       throw Exception('No download URL for translation $translationId');
@@ -386,6 +402,29 @@ class AppBibleRepository {
       return '${importedBooks.first.name} Import';
     }
     return 'Imported Bible';
+  }
+
+  bool _needsInlineAnchorRefresh(List<BibleBook> books) {
+    for (final book in books) {
+      for (final chapter in book.chapters) {
+        for (final verse in chapter.verses) {
+          final hasAnnotations =
+              verse.footnotes.isNotEmpty || verse.crossReferences.isNotEmpty;
+          if (!hasAnnotations) continue;
+
+          final hasAnchoredMarkers = verse.spans.any(
+            (span) =>
+                (span.metadata['footnoteMarkers']?.isNotEmpty ?? false) ||
+                (span.metadata['referenceMarkers']?.isNotEmpty ?? false),
+          );
+          if (!hasAnchoredMarkers) {
+            return true;
+          }
+        }
+      }
+    }
+
+    return false;
   }
 }
 
