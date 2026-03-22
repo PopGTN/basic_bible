@@ -13,6 +13,7 @@ enum BibleVerseSpanKind {
   quote,
   poetry,
   word,
+  divineNameTag, // <nd> in USFX, <divineName> in OSIS — LORD / divine name
 }
 
 enum BibleDocumentBlockKind {

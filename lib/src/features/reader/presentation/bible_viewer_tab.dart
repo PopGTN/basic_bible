@@ -1535,6 +1535,8 @@ class _BibleTextViewState extends State<_BibleTextView> {
     switch (kind) {
       case BibleVerseSpanKind.wordsOfJesus:
         return FontWeight.w600;
+      case BibleVerseSpanKind.divineNameTag:
+        return FontWeight.w700;
       case BibleVerseSpanKind.word:
         return FontWeight.w500;
       default:
@@ -1922,6 +1924,8 @@ class _VersePreviewText {
     switch (kind) {
       case BibleVerseSpanKind.wordsOfJesus:
         return FontWeight.w600;
+      case BibleVerseSpanKind.divineNameTag:
+        return FontWeight.w700;
       case BibleVerseSpanKind.word:
         return FontWeight.w500;
       default:
