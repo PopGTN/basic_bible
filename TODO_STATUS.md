@@ -35,6 +35,7 @@ Status meanings:
 - `blocked`: cannot move safely without another prerequisite or decision
 
 ## Completed Recently
+- `done` Brought the Zefania parser up to the same shared rich-model direction as the other supported formats, including structured introduction blocks, chapter headings, notes, references, and styled verse spans.
 - `done` Completed the first end-to-end rich-text slice: the reader now renders structured verse spans and the parser/app pipeline preserves those spans through local storage.
 - `done` Normalized app-side book IDs to the uppercase form the reader/navigation code already expects, which keeps parsed content aligned with the app's existing reference model.
 - `done` Carried the richer parser output through `basic_bible` so book/chapter/verse metadata now survives repository mapping and local Drift storage instead of being flattened away.
@@ -64,7 +65,7 @@ Status meanings:
 - `in_progress` The current parser model is still limited to books, chapters, and verses. It does not yet preserve introductions, prefaces, TOC labels, or book-level front matter that already exists in some USFX and OSIS files.
 - `in_progress` The long-term product goal is full-fidelity support for the Bible source formats in use, which means preserving as much meaningful USFX, OSIS, and Zefania structure as is practical instead of only rendering simplified verse text.
 - `in_progress` Phase 1 parser/app-model planning is being documented so future implementation work starts from a shared spec instead of ad hoc parser changes.
-- `in_progress` Phase 1 shared-model implementation is now real in the app for USFX and OSIS rich spans, but Zefania and richer front-matter rendering still need the same treatment.
+- `in_progress` Phase 1 shared-model implementation is now real across USFX, OSIS, and Zefania at a partial-rich level, but richer front-matter rendering and better structured note/reference UI still need the same treatment in the app.
 
 ## Recommended Next Step
 - `next` Improve the reader UX around the richer parsed data by rendering book/chapter introduction blocks and giving structured footnotes/cross-references a better UI than the current fallback dialogs.
