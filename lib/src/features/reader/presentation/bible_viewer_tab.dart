@@ -442,12 +442,16 @@ class _BibleTextViewState extends State<_BibleTextView> {
     int chapterNumber,
     BibleVerse verse,
   ) {
-    final primary = Theme.of(context).colorScheme.primary;
+    final colors = Theme.of(context).colorScheme;
+    // Reader numbers need their own contrast path because monochrome themes
+    // intentionally set `primary` to the page background.
+    final base = Color.lerp(colors.onSurfaceVariant, colors.onSurface, 0.3) ??
+        colors.onSurfaceVariant;
     if (!_hasActiveVerseFocus ||
         _isFocusedVerse(bookId, chapterNumber, verse)) {
-      return primary;
+      return base;
     }
-    return primary.withValues(alpha: 0.45);
+    return base.withValues(alpha: 0.58);
   }
 
   @override
