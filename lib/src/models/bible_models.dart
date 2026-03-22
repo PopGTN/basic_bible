@@ -84,12 +84,16 @@ class BibleFootnote extends Equatable {
   final String text;
   final String? marker;
   final String? label;
+  final String? bodyText;
+  final String? quotedText;
   final List<BibleCrossReference> references;
 
   const BibleFootnote({
     required this.text,
     this.marker,
     this.label,
+    this.bodyText,
+    this.quotedText,
     this.references = const [],
   });
 
@@ -98,6 +102,8 @@ class BibleFootnote extends Equatable {
       text: json['text'] as String,
       marker: json['marker'] as String?,
       label: json['label'] as String?,
+      bodyText: json['bodyText'] as String?,
+      quotedText: json['quotedText'] as String?,
       references: (json['references'] as List<dynamic>? ?? const [])
           .map((e) => BibleCrossReference.fromJson(e as Map<String, dynamic>))
           .toList(),
@@ -109,12 +115,14 @@ class BibleFootnote extends Equatable {
       'text': text,
       'marker': marker,
       'label': label,
+      'bodyText': bodyText,
+      'quotedText': quotedText,
       'references': references.map((e) => e.toJson()).toList(),
     };
   }
 
   @override
-  List<Object?> get props => [text, marker, label, references];
+  List<Object?> get props => [text, marker, label, bodyText, quotedText, references];
 }
 
 class BibleDocumentBlock extends Equatable {

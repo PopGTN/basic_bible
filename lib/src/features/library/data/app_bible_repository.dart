@@ -627,6 +627,8 @@ Map<String, dynamic> _serializeFootnote(Footnote footnote) {
     'text': footnote.text,
     'marker': footnote.marker,
     'label': footnote.label,
+    'bodyText': footnote.bodyText,
+    'quotedText': footnote.quotedText,
     'references': footnote.references.map(_serializeCrossReference).toList(),
   };
 }
