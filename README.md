@@ -67,13 +67,92 @@ This README is intentionally status-focused. It should reflect what the repo act
 
 The app uses the local `bible_parser_flutter` package and stores parsed Bible data in a shared local model.
 
-Current parser/app direction:
+The goal is to support **every meaningful feature** each format can express — not just plain verse text. The tables below show current progress. Every `❌ Not yet` row is planned work, not an intentional omission.
 
-- USFX: partial rich support
-- OSIS: partial rich support
-- Zefania: partial rich support
+**Status key:**
 
-This means the app now preserves and renders more than plain verse text, but it does not yet claim full lossless support for everything those formats can express.
+- ✅ Supported — preserved through parser and stored in the app
+- ⚠️ Partial — some coverage but incomplete or lossy
+- ❌ Not yet — format supports it; parser and app do not yet preserve it
+
+### USFX
+
+| Feature | Status |
+| --- | --- |
+| Books / chapters / verses | ✅ |
+| Words of Jesus (`<wj>`) | ⚠️ Partial |
+| Translator additions (`<add>`) | ⚠️ Partial |
+| Footnotes (`<f>`) with label (`<fr>`) and body (`<ft>`) | ⚠️ Partial — nested parts not yet split |
+| Footnote quote / alt quote (`<fq>`, `<fqa>`) | ❌ Not yet |
+| Cross-references (`<x>`) with targets (`<ref tgt="...">`) | ⚠️ Partial |
+| Cross-ref origin (`<xo>`) | ❌ Not yet |
+| Quote attribution (`<q who="...">`) | ❌ Not yet |
+| Poetry / quote lines (`<q level="...">`) | ⚠️ Partial |
+| Strong's word metadata (`<w s="...">`) | ⚠️ Partial |
+| Word morphology (`<w m="...">`) and lemma (`<w l="...">`) | ❌ Not yet |
+| Book heading (`<h>`) | ✅ |
+| TOC labels (`<toc>`) | ✅ |
+| Section headings (`<s>`, `<s1>`, `<s2>`) | ⚠️ Partial |
+| Paragraph starts / breaks (`<p>`, `<b>`) | ⚠️ Partial |
+| Intro paragraphs (`<ip>`, `<imt>`, `<is>`) | ❌ Not yet |
+| Intro outline entries (`<io1>`, `<io2>`) | ❌ Not yet |
+| Chapter description (`<cd>`) | ❌ Not yet |
+| List items (`<li1>`, `<li2>`, `<li3>`) | ✅ |
+| Intro list items (`<ili1>`, `<ili2>`) | ✅ |
+| Divine name / LORD (`<nd>`) | ❌ Not yet |
+| Proper name (`<pn>`) | ❌ Not yet |
+| Selah / music cue (`<qs>`) | ❌ Not yet |
+| Acrostic heading (`<qa>`) | ❌ Not yet |
+| Inline emphasis (`<em>`, `<bd>`, `<it>`) | ❌ Not yet |
+
+### OSIS
+
+| Feature | Status |
+| --- | --- |
+| Books / chapters / verses (including milestone sID/eID) | ✅ |
+| Words of Jesus (`<q who="Jesus">`) | ⚠️ Partial |
+| Translator additions (`<transChange type="added">`) | ⚠️ Partial |
+| Footnotes (`<note type="footnote">`) | ⚠️ Partial — nested parts incomplete |
+| Study notes (`<note type="study">`) | ❌ Not yet — not distinguished from footnotes |
+| Cross-references (`<note type="crossReference">`) | ⚠️ Partial |
+| Reference targets (`<reference osisRef="...">`) | ⚠️ Partial |
+| Book title (`<title type="main">`) | ✅ |
+| Section heading (`<title type="section">`) | ⚠️ Partial |
+| Running head (`<title type="runningHead">`) | ❌ Not yet |
+| Canonical title / short title | ✅ |
+| Psalm superscription (`<title type="psalm">`) | ⚠️ Partial — positioning partial |
+| Poetry line group (`<lg>`) | ✅ |
+| Poetry line (`<l level="...">`) | ⚠️ Partial |
+| Paragraph (`<p>`) | ⚠️ Partial |
+| Line break (`<lb />`) | ✅ |
+| Speaker attribution (`<speaker>`) | ✅ |
+| Tables (`<table>`, `<row>`, `<cell>`) | ❌ Not yet |
+| Lists / items (`<list>`, `<item>`) | ✅ |
+| Strong's numbers (`<w lemma="strong:H1">`) | ⚠️ Partial |
+| Morphology (`<w morph="...">`) | ❌ Not yet |
+| Nested section divs | ✅ |
+| Book introduction (`<div type="introduction">`) | ⚠️ Partial |
+| Colophon (`<div type="colophon">`) | ❌ Not yet |
+| Catchword / gloss | ❌ Not yet |
+
+### Zefania
+
+| Feature | Status |
+| --- | --- |
+| Books / chapters / verses | ✅ |
+| Bible metadata (`<INFORMATION>`) | ✅ |
+| Book prolog (`<PROLOG>`) | ✅ |
+| Chapter caption (`<CAPTION>`) | ✅ |
+| Footnotes (`<NOTE>`) | ⚠️ Partial |
+| Cross-references (`<XREF>`) | ⚠️ Partial |
+| Styled text (`<STYLE type="...">`) | ⚠️ Partial — span kind inferred from type name |
+| Words of Jesus (via `<STYLE>`) | ⚠️ Partial — inferred, not explicit |
+| Translator additions (via `<STYLE>`) | ⚠️ Partial — inferred, not explicit |
+| Paragraph (`<PARA>`) | ✅ |
+| Line break (`<BR />`) | ❌ Not yet |
+| Grammar metadata (`<gr>`) | ⚠️ Partial |
+
+For the complete per-tag breakdown including specific XML attributes, see `bible_parser_flutter/README.md`.
 
 ## Project Structure
 

@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:basic_bible/src/widgets/app_back_button.dart';
 
 class ComingSoonScreen extends StatelessWidget {
   final String featureKey;
 
-  const ComingSoonScreen({
-    super.key,
-    required this.featureKey,
-  });
+  const ComingSoonScreen({super.key, required this.featureKey});
 
   static const Map<String, String> _featureTitles = {
     'notes': 'Notes',
@@ -20,10 +18,11 @@ class ComingSoonScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final title = _featureTitles[featureKey.toLowerCase()] ?? _humanize(featureKey);
+    final title =
+        _featureTitles[featureKey.toLowerCase()] ?? _humanize(featureKey);
 
     return Scaffold(
-      appBar: AppBar(title: Text(title)),
+      appBar: AppBar(leading: const AppBackButton(), title: Text(title)),
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(24),

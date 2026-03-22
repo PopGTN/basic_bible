@@ -54,17 +54,17 @@ Separate from feature backlog — these affect correctness, safety, and maintain
 
 ## Recommended Next Step
 
-- `next` Once parser poetry fidelity work lands (stanza breaks, quote attribution metadata), add matching document-block and span metadata rendering in the verse reader.
+- `next` Finish the focused References-screen regression check so changing references from the picker always keeps the whole-Bible scroller and visible-position state in sync.
 
 **Why this first:**
 
-- `divineNameTag` is done: `BibleVerseSpanKind` has the value, the parser emits it, and the reader renders it bold.
-- Intro paragraphs are the next parser-side gain: once the parser lands `<ip>`/`<imt>`/`<is>` support the app needs a matching document-block render path.
+- The picker layout is now more responsive on both narrow and wide screens, so the remaining reference-flow problem is behavioral rather than visual.
+- This is the clearest unresolved gap still called out in `Current Status`, and it directly affects navigation confidence in the reader.
 
 **Definition of done:**
 
-- `DocumentBlockKind.introduction` blocks render with distinct visual treatment (indented, slightly smaller or muted).
-- Book-level introductions from USFX sources are visible in document mode before the first chapter.
+- Picking a book/chapter/verse from the References screen always lands on the correct visible location in both normal and continuous reading modes.
+- Returning from the picker does not leave the reference bar, selected reference, and visible scroller position disagreeing about the current location.
 
 ---
 
@@ -81,21 +81,16 @@ Separate from feature backlog — these affect correctness, safety, and maintain
 
 ## Completed Recently
 
+- `done` Reworked the References picker layout so it now adapts more cleanly across mobile and desktop: phones keep a tighter one-book-at-a-time card flow with adaptive chapter/verse grids, while wider screens use a split book-list/detail-pane layout with clearer search and selection context.
+- `done` Fixed verse focus highlight re-appearing when returning to Bible tab — `_showSelectedVerseFocus` now starts as `false` and only enables on explicit navigation events (cross-ref/footnote jumps).
+- `done` Fixed `wordsOfJesus` and `word` spans not dimming when another verse is focused — `_spanColor` now respects the base color alpha for all span kinds.
+- `done` Fixed verse focus not dismissing on desktop mouse scroll — wrapped build in `Listener(onPointerSignal:)` to catch `PointerScrollEvent`.
+- `done` Added `<q who="...">` speaker attribution metadata to OSIS parser — non-Jesus speakers now emit `quoteWho` in span metadata.
 - `done` Added `emphasis`, `bold`, `italic`, `properName`, `selah`, `acrosticHeading` to `BibleVerseSpanKind` with matching render styles (italic, bold w700, underline).
 - `done` Added `divineNameTag` to `BibleVerseSpanKind` and wired bold rendering for it in both verse-list and document mode span helpers.
 - `done` Added `BibleCrossReference.originRef`, updated serializer, and wired it to the note sheet as a muted origin prefix on cross-reference rows.
 - `done` OSIS and Zefania footnotes now use the structured note sheet rendering path after the parser started populating `bodyText` for all three formats.
 - `done` Updated note sheet to render `bodyText`, `originRef`, and `quotedText` as distinct visual elements — origin ref in muted smaller text, body in normal weight, quoted text in italic; falls back to merged `text` for OSIS/Zefania.
-- `done` Mirrored parser `Footnote.bodyText` and `quotedText` fields into `BibleFootnote` and updated `_serializeFootnote` so structured footnote parts round-trip through the app cache.
-- `done` Tightened reader bottom overlay spacing by replacing the loose fixed gap above the floating reference bar with padding based on the bar's real height and inset.
-- `done` Fixed Bible viewer verse-number contrast — verse numbers no longer disappear in the monochrome Pure Black and Pure White themes.
-- `done` Removed the separate OLED Black theme, kept Pure Black as the single true-black option, and fixed Home-tab button readability in monochrome themes.
-- `done` Changed the app identifier from `com.example.basic_bible` to `ca.joshuamc.basic_bible` across Android, Kotlin, and Linux.
-- `done` Made app startup configurable — added persisted settings for opening directly on the Bible tab and for disabling the login gate.
-- `done` Added shell-level Bible warm-up so the current translation starts loading in the background before the reader tab is opened.
-- `done` Added explicit local Bible import flows so users can pick USFX, OSIS, or Zefania XML files and reopen them from the translation picker on later launches.
-- `done` Finished structured cross-reference navigation so verse-detail taps now use parser-provided targets directly.
-- `done` Brought OSIS and Zefania onto the same structured paragraph-block path as USFX.
 
 ---
 
@@ -181,6 +176,7 @@ Scope:
 - Improve the note sheet so it reflects parser structure more faithfully.
 - Keep direct navigation using structured cross-reference targets.
 - Ensure popup previews use the same anchor logic as the main reader.
+- Add "go back" navigation after a cross-reference or footnote verse jump, so the user can return to the verse they were reading before the jump.
 
 ### 7. Finish startup and background warm-up behavior
 
