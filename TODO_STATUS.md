@@ -51,6 +51,9 @@ Status meanings:
 - `blocked`: cannot move safely without another prerequisite or decision
 
 ## Completed Recently
+- `done` Replaced the boxed selected-verse highlight with a softer temporary focus state: the chosen verse now stays visually emphasized without a background box until the user touches the screen to scroll.
+- `done` Hardened reader reference fallback so switching to a translation that does not contain the previously saved book/chapter no longer throws `Bad state: No element`; the reader now falls back safely to the first available matching content.
+- `done` Fixed bundled translation resolution so built-in entries like ASV always keep their shipped asset fallback even when stored lifecycle metadata exists, instead of accidentally behaving like remote-only translations.
 - `done` Hardened the verse-detail popup preview so note letters stay visible there: anchored markers now render with stronger superscript styling, and the sheet falls back to its annotation-entry letters when a verse does not carry anchor metadata.
 - `done` Fixed stale cached translations that were hiding inline annotation letters by rebuilding older local Bible copies when they predate the newer per-span anchor metadata.
 - `done` Fixed the verse-detail popup preview so inline note/reference letters now render beside their anchored words there too, instead of being appended at the end of the verse text.
@@ -247,6 +250,114 @@ Implementation note:
 
 README.md reminder:
 - Update the README only when major fidelity features are actually user-visible, not when the backlog item is created.
+
+## Remaining Work, Written Out
+
+### App: What is still left to add
+
+#### A. Finish reader document-mode fidelity
+What still needs to happen:
+- Render more parser-provided block types differently instead of treating many of them as generic headings or generic paragraphs.
+- Preserve more source-driven spacing, section breaks, poetry layout, and front-matter layout in the actual UI.
+- Reduce app-side guessing where the parser already knows something more specific.
+
+What "done" should mean:
+- `Document` mode feels like it is following the source file structure, not rebuilding the chapter from generic text blocks.
+- Poetry, headings, intros, and prose sections each render with their own clearer visual treatment.
+
+#### B. Finish front matter and introduction rendering
+What still needs to happen:
+- Show book-level introductions more intentionally.
+- Support Bible-level front matter once the parser exposes it more clearly.
+- Render TOC labels, prefaces, intros, and non-verse content in a way that feels like real reading content instead of technical parser output.
+
+What "done" should mean:
+- Front matter is visible, readable, and clearly separated from normal verse flow.
+- The app can present book intros and prefaces as part of the reading experience.
+
+#### C. Finish structured footnote UX
+What still needs to happen:
+- Improve the note sheet so it reflects parser structure more faithfully.
+- Preserve annotation order and grouping as the source intended.
+- Show note markers more clearly in verse text, document mode, and the popup preview.
+- Reduce fallback logic that invents marker ordering when real parser data exists.
+
+What "done" should mean:
+- Footnotes feel anchored, readable, and consistent between the verse view and the bottom sheet.
+- The app is using structured note data first, not plain-text fallback first.
+
+#### D. Finish structured cross-reference UX
+What still needs to happen:
+- Improve how cross-references are presented when many exist on one verse.
+- Keep direct navigation using structured targets.
+- Optionally show destination context or grouped reference sections later.
+
+What "done" should mean:
+- Cross-references are easy to scan and navigate without relying on fragile label parsing.
+
+#### E. Finish inline annotation marker fidelity
+What still needs to happen:
+- Keep note/reference letters positioned more faithfully in both verse-list mode and document mode.
+- Ensure popup previews use the same anchor logic as the main reader.
+- Reduce cases where marker placement still depends on fallback ordering rather than true parser anchor data.
+
+What "done" should mean:
+- Inline markers appear beside the correct words consistently enough for prototyping and design work.
+
+#### F. Finish richer reader styling support
+What still needs to happen:
+- Improve how the app visually distinguishes:
+  - red-letter text
+  - translator additions
+  - poetry
+  - headings
+  - introductions
+  - note markers
+- Keep styling driven by data, not by translation-specific heuristics.
+
+What "done" should mean:
+- Rich parser output is visible in the UI as distinct reading styles, not only as preserved metadata in storage.
+
+#### G. Finish translation-library management
+What still needs to happen:
+- Improve lifecycle handling for bundled, downloaded, and imported translations.
+- Add clearer user-facing status for what is installed locally and what came from import/download.
+- Make stale-cache refresh and translation replacement behavior more intentional and visible.
+
+What "done" should mean:
+- The translation picker behaves like a real library manager instead of a thin list of IDs.
+
+#### H. Finish web storage behavior
+What still needs to happen:
+- Replace the current in-memory web fallback with a real persistent web storage path, if feasible for the chosen stack.
+- Verify imports and cached translations survive reloads on web the same way they do on desktop/mobile.
+
+What "done" should mean:
+- Web no longer loses all cached Bible content on reload.
+
+#### I. Finish remaining architecture cleanup
+What still needs to happen:
+- Move or clarify the remaining shared services/providers that still sit outside the feature-first structure.
+- Keep placeholder/legacy paths from slowly becoming active app paths again.
+- Continue tightening ownership boundaries between library, parser integration, and reader presentation.
+
+What "done" should mean:
+- The active app structure is consistently feature-first and easier for other developers or agents to extend safely.
+
+#### J. Finish README and public-facing docs as features land
+What still needs to happen:
+- Keep `README.md` aligned with real user-visible behavior.
+- Update docs when front matter, richer notes, or other fidelity features become clearly usable in the UI.
+
+What "done" should mean:
+- The project docs describe the actual app, not the intended app.
+
+### App: Recommended remaining implementation order
+1. Finish document-mode fidelity and front-matter rendering.
+2. Finish footnote and cross-reference UX using the structured parser data more faithfully.
+3. Finish inline marker fidelity and rich reader styling polish.
+4. Finish translation-library management and web persistence.
+5. Finish remaining architecture/doc cleanup once the formatting prototype is stable.
 
 ## Blockers / Risks
 - `blocked` Rich parser features cannot be implemented cleanly in the app without expanding the current verse/data model.

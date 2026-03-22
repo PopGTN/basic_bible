@@ -160,8 +160,9 @@ class _BibleViewerTabState extends ConsumerState<BibleViewerTab> {
                 data: (chapter) => chapter != null
                     ? _BibleTextView(
                         controller: _scrollController,
-                        book: books.firstWhere(
-                          (book) => book.id == currentReference.bookId,
+                        book: _resolveCurrentBook(
+                          books,
+                          currentReference.bookId,
                         ),
                         chapter: chapter,
                         reference: currentReference,
@@ -184,6 +185,20 @@ class _BibleViewerTabState extends ConsumerState<BibleViewerTab> {
       ],
     );
   }
+}
+
+BibleBook _resolveCurrentBook(List<BibleBook> books, String bookId) {
+  if (books.isEmpty) {
+    return const BibleBook(
+      id: '',
+      name: 'Unknown',
+      shortName: '',
+      bookNumber: 0,
+    );
+  }
+
+  final matchingBooks = books.where((book) => book.id == bookId);
+  return matchingBooks.isNotEmpty ? matchingBooks.first : books.first;
 }
 
 /// Bible text display widget
@@ -212,6 +227,7 @@ class _BibleTextView extends StatefulWidget {
 
 class _BibleTextViewState extends State<_BibleTextView> {
   final Map<int, GlobalKey> _verseKeys = <int, GlobalKey>{};
+  bool _showSelectedVerseFocus = true;
 
   @override
   void initState() {
@@ -224,6 +240,7 @@ class _BibleTextViewState extends State<_BibleTextView> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.reference != widget.reference ||
         oldWidget.chapter != widget.chapter) {
+      _showSelectedVerseFocus = true;
       _scheduleVerseFocus();
     }
   }
@@ -245,6 +262,35 @@ class _BibleTextViewState extends State<_BibleTextView> {
     });
   }
 
+  bool get _hasActiveVerseFocus =>
+      _showSelectedVerseFocus && widget.reference.verse != null;
+
+  bool _isFocusedVerse(BibleVerse verse) =>
+      _hasActiveVerseFocus && widget.reference.verse == verse.number;
+
+  void _dismissSelectedVerseFocus() {
+    if (!_hasActiveVerseFocus || !mounted) return;
+    setState(() {
+      _showSelectedVerseFocus = false;
+    });
+  }
+
+  Color? _verseTextColor(BuildContext context, BibleVerse verse) {
+    final baseColor = Theme.of(context).textTheme.bodyLarge?.color;
+    if (!_hasActiveVerseFocus) return baseColor;
+    return _isFocusedVerse(verse)
+        ? baseColor
+        : baseColor?.withValues(alpha: 0.5);
+  }
+
+  Color _verseNumberColor(BuildContext context, BibleVerse verse) {
+    final primary = Theme.of(context).colorScheme.primary;
+    if (!_hasActiveVerseFocus || _isFocusedVerse(verse)) {
+      return primary;
+    }
+    return primary.withValues(alpha: 0.45);
+  }
+
   @override
   Widget build(BuildContext context) {
     final contentWidgets = <Widget>[
@@ -257,19 +303,30 @@ class _BibleTextViewState extends State<_BibleTextView> {
         _buildDocumentReadingView(context),
     ];
 
-    return Padding(
-      padding: EdgeInsets.only(
-        left: 16,
-        right: 16,
-        top: widget.isSmallDevice
-            ? 16
-            : 80, // keep larger top space on tablet/desktop
-        bottom: 72, // Space for chapter bar
-      ),
-      child: ListView.builder(
-        controller: widget.controller,
-        itemCount: contentWidgets.length,
-        itemBuilder: (context, index) => contentWidgets[index],
+    return NotificationListener<ScrollStartNotification>(
+      onNotification: (notification) {
+        if (notification.dragDetails != null) {
+          // Keep the selected-verse focus treatment only until the user starts
+          // interacting with the scroll view. Programmatic scrolling from a
+          // verse jump should not immediately clear the visual focus.
+          _dismissSelectedVerseFocus();
+        }
+        return false;
+      },
+      child: Padding(
+        padding: EdgeInsets.only(
+          left: 16,
+          right: 16,
+          top: widget.isSmallDevice
+              ? 16
+              : 80, // keep larger top space on tablet/desktop
+          bottom: 72, // Space for chapter bar
+        ),
+        child: ListView.builder(
+          controller: widget.controller,
+          itemCount: contentWidgets.length,
+          itemBuilder: (context, index) => contentWidgets[index],
+        ),
       ),
     );
   }
@@ -371,6 +428,8 @@ class _BibleTextViewState extends State<_BibleTextView> {
   Widget _buildVerse(BuildContext context, BibleVerse verse) {
     final verseKey = _verseKeys.putIfAbsent(verse.number, GlobalKey.new);
     final hasAnnotations = _hasAnnotations(verse);
+    final bodyColor = _verseTextColor(context, verse);
+    final numberColor = _verseNumberColor(context, verse);
 
     return Padding(
       key: verseKey,
@@ -378,14 +437,7 @@ class _BibleTextViewState extends State<_BibleTextView> {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 220),
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-        decoration: BoxDecoration(
-          color: widget.reference.verse == verse.number
-              ? Theme.of(
-                  context,
-                ).colorScheme.primaryContainer.withValues(alpha: 0.35)
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(10),
-        ),
+        decoration: const BoxDecoration(color: Colors.transparent),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -394,7 +446,7 @@ class _BibleTextViewState extends State<_BibleTextView> {
                 text: TextSpan(
                   style: TextStyle(
                     fontSize: widget.fontSize,
-                    color: Theme.of(context).textTheme.bodyLarge?.color,
+                    color: bodyColor,
                     height: 1.5,
                   ),
                   children: [
@@ -402,11 +454,15 @@ class _BibleTextViewState extends State<_BibleTextView> {
                       text: '${verse.number} ',
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
-                        color: Theme.of(context).colorScheme.primary,
+                        color: numberColor,
                         fontSize: widget.fontSize - 2,
                       ),
                     ),
-                    ..._buildVerseContentSpans(context, verse),
+                    ..._buildVerseContentSpans(
+                      context,
+                      verse,
+                      bodyColor: bodyColor,
+                    ),
                   ],
                 ),
               ),
@@ -535,6 +591,7 @@ class _BibleTextViewState extends State<_BibleTextView> {
             alignment: PlaceholderAlignment.middle,
           ),
           for (final verse in section.verses) ...[
+            ...[],
             WidgetSpan(
               child: SizedBox(
                 key: _verseKeys.putIfAbsent(verse.number, GlobalKey.new),
@@ -546,16 +603,15 @@ class _BibleTextViewState extends State<_BibleTextView> {
               text: '${verse.number} ',
               style: TextStyle(
                 fontWeight: FontWeight.bold,
-                color: Theme.of(context).colorScheme.primary,
+                color: _verseNumberColor(context, verse),
                 fontSize: widget.fontSize - 2,
-                backgroundColor: widget.reference.verse == verse.number
-                    ? Theme.of(
-                        context,
-                      ).colorScheme.primaryContainer.withValues(alpha: 0.45)
-                    : null,
               ),
             ),
-            ..._buildVerseContentSpans(context, verse),
+            ..._buildVerseContentSpans(
+              context,
+              verse,
+              bodyColor: _verseTextColor(context, verse),
+            ),
             if (_hasAnnotations(verse))
               WidgetSpan(
                 alignment: PlaceholderAlignment.middle,
@@ -597,15 +653,15 @@ class _BibleTextViewState extends State<_BibleTextView> {
                     text: '${verse.number} ',
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      color: Theme.of(context).colorScheme.primary,
+                      color: _verseNumberColor(context, verse),
                       fontSize: widget.fontSize - 2,
-                      backgroundColor: widget.reference.verse == verse.number
-                          ? Theme.of(context).colorScheme.primaryContainer
-                                .withValues(alpha: 0.45)
-                          : null,
                     ),
                   ),
-                  ..._buildVerseContentSpans(context, verse),
+                  ..._buildVerseContentSpans(
+                    context,
+                    verse,
+                    bodyColor: _verseTextColor(context, verse),
+                  ),
                   if (_hasAnnotations(verse))
                     WidgetSpan(
                       alignment: PlaceholderAlignment.middle,
@@ -791,14 +847,20 @@ class _BibleTextViewState extends State<_BibleTextView> {
 
   List<InlineSpan> _buildVerseContentSpans(
     BuildContext context,
-    BibleVerse verse,
-  ) {
+    BibleVerse verse, {
+    Color? bodyColor,
+  }) {
     final spans = _displaySpans(verse);
     if (spans.isEmpty) {
-      return [TextSpan(text: verse.text)];
+      return [
+        TextSpan(
+          text: verse.text,
+          style: TextStyle(color: bodyColor),
+        ),
+      ];
     }
 
-    final baseColor = Theme.of(context).textTheme.bodyLarge?.color;
+    final baseColor = bodyColor ?? Theme.of(context).textTheme.bodyLarge?.color;
     final secondaryColor = Theme.of(context).colorScheme.secondary;
 
     final inlineSpans = <InlineSpan>[];
