@@ -7,6 +7,7 @@ import 'package:basic_bible/l10n/app_localizations.dart';
 // Screens
 import 'features/auth/presentation/login_screen.dart';
 import 'features/home/presentation/home_screen.dart';
+import 'features/library/presentation/versions_screen.dart';
 import 'views/other_screen.dart';
 import 'features/settings/presentation/settings_screen.dart';
 import 'views/placeholder/coming_soon_screen.dart';
@@ -25,14 +26,13 @@ class MyApp extends ConsumerWidget {
     final appTheme = ref.watch(themeProvider);
     final localelang = ref.watch(languageProvider);
 
-
     final router = GoRouter(
       initialLocation: isLoggedIn ? '/home' : '/login',
       routes: [
         GoRoute(
           path: '/',
           builder: (context, state) =>
-          isLoggedIn ? HomeScreen() : LoginScreen(),
+              isLoggedIn ? HomeScreen() : LoginScreen(),
         ),
         GoRoute(path: '/login', builder: (context, state) => LoginScreen()),
         GoRoute(
@@ -46,6 +46,10 @@ class MyApp extends ConsumerWidget {
           builder: (context, state) => HomeScreen(),
           routes: [
             GoRoute(path: 'other', builder: (context, state) => OtherScreen()),
+            GoRoute(
+              path: 'translations',
+              builder: (context, state) => const VersionsScreen(),
+            ),
             GoRoute(
               path: 'settings',
               builder: (context, state) => SettingsScreen(),
@@ -85,5 +89,4 @@ class MyApp extends ConsumerWidget {
       themeMode: mapThemeMode(appTheme),
     );
   }
-
 }

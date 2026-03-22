@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:file_selector/file_selector.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
 import 'package:basic_bible/l10n/app_localizations.dart';
@@ -8,7 +7,6 @@ import 'package:basic_bible/src/features/library/data/app_bible_repository.dart'
 import 'package:basic_bible/src/features/menu/presentation/menu_tab.dart';
 import 'package:basic_bible/src/features/reader/application/bible_provider.dart';
 import 'package:basic_bible/src/features/reader/presentation/bible_viewer_tab.dart';
-import 'package:basic_bible/src/models/bible_models.dart';
 import 'package:basic_bible/src/providers/theme_provider.dart';
 import 'package:basic_bible/src/services/font_size_service.dart';
 
@@ -22,7 +20,6 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
-  static const String _importTranslationMenuValue = '__import_translation__';
   int _currentIndex = 0; // currently selected tab index
 
   // Animation controllers for BottomNav + AppBar show/hide
@@ -121,35 +118,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         context.go('/coming-soon/related-content');
       case _BibleViewerMenuAction.fontsAndSettings:
         _showBibleViewerSettings(context, ref);
-    }
-  }
-
-  Future<void> _importBibleFile(WidgetRef ref) async {
-    const xmlTypeGroup = XTypeGroup(
-      label: 'Bible XML',
-      extensions: <String>['xml', 'usfx', 'osis'],
-    );
-    final file = await openFile(acceptedTypeGroups: [xmlTypeGroup]);
-    if (file == null) return;
-
-    if (!mounted) return;
-    final messenger = ScaffoldMessenger.of(context);
-
-    try {
-      final importedTranslation = await ref
-          .read(bibleBooksProvider.notifier)
-          .importTranslation(file.path);
-      await ref
-          .read(currentTranslationProvider.notifier)
-          .setTranslation(importedTranslation.id);
-      ref.invalidate(availableTranslationsProvider);
-      if (!mounted) return;
-      messenger.showSnackBar(
-        SnackBar(content: Text('Imported ${importedTranslation.name}.')),
-      );
-    } catch (error) {
-      if (!mounted) return;
-      messenger.showSnackBar(SnackBar(content: Text('Import failed: $error')));
     }
   }
 
@@ -311,7 +279,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 );
               },
             ),
-            // Translation selector (moves the popup from the viewer into the top AppBar)
+            // Translation entry point for the dedicated Versions screen.
             Consumer(
               builder: (context, ref, child) {
                 final currentTranslation = ref.watch(
@@ -337,9 +305,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(20),
                   ),
-                  child: PopupMenuButton<String>(
-                    color: colors.surface, // menu background
-                    padding: EdgeInsets.zero,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(20),
+                    onTap: () => context.push('/home/translations'),
                     child: Padding(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 12,
@@ -357,74 +325,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         ],
                       ),
                     ),
-                    onSelected: (translationId) async {
-                      if (translationId == _importTranslationMenuValue) {
-                        Future.microtask(() => _importBibleFile(ref));
-                        return;
-                      }
-
-                      // Defer the heavy provider work until after the
-                      // popup route has been dismissed. If we trigger
-                      // state changes synchronously here we can cause
-                      // the widget that opened the popup to be
-                      // deactivated while the popup is still resolving
-                      // its ancestors which leads to the exception:
-                      // "Looking up a deactivated widget's ancestor is unsafe."
-                      // Using a microtask (or Future.delayed(Duration.zero))
-                      // schedules the work after the current frame so the
-                      // PopupMenuRoute can finish closing safely.
-                      Future.microtask(() async {
-                        await ref
-                            .read(currentTranslationProvider.notifier)
-                            .setTranslation(translationId);
-                        await ref
-                            .read(bibleBooksProvider.notifier)
-                            .changeTranslation(translationId);
-                      });
-                    },
-                    itemBuilder: (context) {
-                      final textStyle = TextStyle(
-                        color: Theme.of(context).colorScheme.onSurface,
-                      );
-                      return [
-                        for (final translation in translations)
-                          PopupMenuItem(
-                            value: translation.id,
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    translation.name,
-                                    style: textStyle,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Text(
-                                  _translationSourceLabel(translation),
-                                  style: textStyle.copyWith(
-                                    fontSize: 12,
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.onSurfaceVariant,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        const PopupMenuDivider(),
-                        PopupMenuItem(
-                          value: _importTranslationMenuValue,
-                          child: Row(
-                            children: [
-                              const Icon(Icons.upload_file),
-                              const SizedBox(width: 8),
-                              Text('Import Bible XML', style: textStyle),
-                            ],
-                          ),
-                        ),
-                      ];
-                    },
                   ),
                 );
               },
@@ -458,14 +358,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         ),
       ),
     );
-  }
-
-  String _translationSourceLabel(BibleTranslation translation) {
-    return switch (translation.sourceType) {
-      BibleSourceType.asset => 'Bundled',
-      BibleSourceType.download => 'Downloaded',
-      BibleSourceType.import => 'Imported',
-    };
   }
 }
 

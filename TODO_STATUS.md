@@ -51,6 +51,9 @@ Status meanings:
 - `blocked`: cannot move safely without another prerequisite or decision
 
 ## Completed Recently
+- `done` Added a first dedicated `Versions` screen for translation selection, wired the reader translation pill to open it, added simple row action buttons for future library features, and added an `Import Bible XML` entry to the top-right menu there.
+- `done` Strengthened the small-screen floating reference bar background so it now reads as a real pill control with visible fill, border, and shadow instead of blending into the reading surface.
+- `done` Restyled the small-screen chapter/reference bar so the scrolled reader now uses a flatter floating pill reference control with centered book-chapter text, matching the current prototype direction more closely.
 - `done` Improved Bible load performance by keeping the active translation hot in memory and replacing the old nested cached-Bible rebuild queries with bulk book/chapter/verse fetches.
 - `done` Added a persisted `Continuous Scrolling` reader mode and cleaned the chapter header so the viewer now shows only the chapter number on the second line instead of repeating the book name there.
 - `done` Added explicit back navigation to unfinished routed pages so placeholder screens, settings, and other non-tab pages can always return to the previous screen or fall back to `/home` instead of trapping the user in a dead-end route.
@@ -109,12 +112,11 @@ Status meanings:
 - `in_progress` The active app code is mostly organized under `lib/src/features/`, but some shared providers/services and placeholder routes still sit outside that feature-first structure.
 
 ## Recommended Next Step
-- `next` Expand parser-side layout coverage for more front-matter and section tags so the reader has richer source structure to work with instead of only a few normalized block types.
+- `next` Return to parser-side layout fidelity work so more front-matter and section tags survive into the reader instead of being normalized away too early.
 
 Why this is next:
-- The reader presentation is much better than it was, but it still depends on relatively thin parser output for many non-verse sections.
-- The next formatting gap is upstream: more source layout needs to survive parsing before the app can render it faithfully.
-- This keeps the work focused on formatting fidelity, which is the current prototype priority.
+- The translation selection flow now has a real screen, but the biggest remaining prototype gap is still formatting fidelity.
+- The reader can only render what the parser preserves, so upstream structure is still the highest-value source of visible improvement.
 
 Definition of done for this step:
 - More front-matter and section-layout tags from USFX, OSIS, and Zefania are preserved in the shared parser model.
@@ -327,11 +329,41 @@ What still needs to happen:
 - Improve lifecycle handling for bundled, downloaded, and imported translations.
 - Add clearer user-facing status for what is installed locally and what came from import/download.
 - Make stale-cache refresh and translation replacement behavior more intentional and visible.
+- Add a real `Versions` screen instead of relying only on the current picker flow.
+- Support grouped library sections such as:
+  - downloaded
+  - available by language
+  - failed downloads
+  - imported/local files
+- Add search, language filtering, and clearer per-translation actions.
+- Show clearer status icons for:
+  - available online
+  - downloaded locally
+  - audio availability
+  - failed download / retry state
 
 What "done" should mean:
 - The translation picker behaves like a real library manager instead of a thin list of IDs.
+- Users can browse, search, filter, download, retry, and manage translations from a dedicated screen that matches the intended library UX more closely.
 
-#### H. Finish web storage behavior
+#### H. Add online-only translation access
+What still needs to happen:
+- Decide whether remote translations should support a true "use online without downloading" mode.
+- Add explicit user choice between:
+  - download for offline/local use
+  - stream/view online without keeping a full local copy
+- Keep the local-library path for users who do want offline storage.
+- Make it obvious in the UI which translations are:
+  - installed locally
+  - available online only
+  - temporarily streaming
+- Decide how reading state, caching, and failure/retry behavior should work when the user chooses online-only access.
+
+What "done" should mean:
+- Users are not forced to download a translation just to preview or read it over the internet.
+- The app clearly distinguishes local-library behavior from online-only viewing behavior.
+
+#### I. Finish web storage behavior
 What still needs to happen:
 - Replace the current in-memory web fallback with a real persistent web storage path, if feasible for the chosen stack.
 - Verify imports and cached translations survive reloads on web the same way they do on desktop/mobile.
@@ -339,7 +371,7 @@ What still needs to happen:
 What "done" should mean:
 - Web no longer loses all cached Bible content on reload.
 
-#### I. Finish remaining architecture cleanup
+#### J. Finish remaining architecture cleanup
 What still needs to happen:
 - Move or clarify the remaining shared services/providers that still sit outside the feature-first structure.
 - Keep placeholder/legacy paths from slowly becoming active app paths again.
@@ -348,7 +380,7 @@ What still needs to happen:
 What "done" should mean:
 - The active app structure is consistently feature-first and easier for other developers or agents to extend safely.
 
-#### J. Finish README and public-facing docs as features land
+#### K. Finish README and public-facing docs as features land
 What still needs to happen:
 - Keep `README.md` aligned with real user-visible behavior.
 - Update docs when front matter, richer notes, or other fidelity features become clearly usable in the UI.
@@ -360,8 +392,9 @@ What "done" should mean:
 1. Finish document-mode fidelity and front-matter rendering.
 2. Finish footnote and cross-reference UX using the structured parser data more faithfully.
 3. Finish inline marker fidelity and rich reader styling polish.
-4. Finish translation-library management and web persistence.
-5. Finish remaining architecture/doc cleanup once the formatting prototype is stable.
+4. Build the real translation-library / `Versions` screen and decide online-only vs download behavior.
+5. Finish translation-library management and web persistence.
+6. Finish remaining architecture/doc cleanup once the formatting prototype is stable.
 
 ## Blockers / Risks
 - `blocked` Rich parser features cannot be implemented cleanly in the app without expanding the current verse/data model.
