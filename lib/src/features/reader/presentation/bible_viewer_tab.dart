@@ -5,6 +5,7 @@ import 'package:basic_bible/src/features/reader/presentation/widgets/reference_b
 import 'package:basic_bible/src/models/bible_models.dart';
 import 'package:basic_bible/src/services/font_size_service.dart';
 import 'package:basic_bible/src/utils/reference_utils.dart';
+import 'package:flutter/gestures.dart' show PointerScrollEvent;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -458,25 +459,32 @@ class _BibleTextViewState extends State<_BibleTextView> {
 
   @override
   Widget build(BuildContext context) {
-    return NotificationListener<ScrollStartNotification>(
-      onNotification: (notification) {
-        if (notification.dragDetails != null) {
-          // Keep the selected-verse focus treatment only until the user starts
-          // interacting with the scroll view. Programmatic scrolling from a
-          // verse jump should not immediately clear the visual focus.
-          _dismissSelectedVerseFocus();
-        }
-        return false;
+    // Listener catches mouse-wheel scroll (PointerScrollEvent) on desktop,
+    // which does not set dragDetails on ScrollStartNotification.
+    return Listener(
+      onPointerSignal: (event) {
+        if (event is PointerScrollEvent) _dismissSelectedVerseFocus();
       },
-      child: widget.continuousScrolling
-          ? NotificationListener<ScrollUpdateNotification>(
-              onNotification: (notification) {
-                _queueVisibleChapterSync(context);
-                return false;
-              },
-              child: _buildContinuousReadingView(context),
-            )
-          : _buildSingleChapterView(context),
+      child: NotificationListener<ScrollStartNotification>(
+        onNotification: (notification) {
+          if (notification.dragDetails != null) {
+            // Keep the selected-verse focus treatment only until the user starts
+            // interacting with the scroll view. Programmatic scrolling from a
+            // verse jump should not immediately clear the visual focus.
+            _dismissSelectedVerseFocus();
+          }
+          return false;
+        },
+        child: widget.continuousScrolling
+            ? NotificationListener<ScrollUpdateNotification>(
+                onNotification: (notification) {
+                  _queueVisibleChapterSync(context);
+                  return false;
+                },
+                child: _buildContinuousReadingView(context),
+              )
+            : _buildSingleChapterView(context),
+      ),
     );
   }
 
@@ -1510,11 +1518,14 @@ class _BibleTextViewState extends State<_BibleTextView> {
     Color? baseColor,
     Color secondaryColor,
   ) {
+    // Carry the dimming alpha from baseColor so verse-focus fading applies
+    // uniformly to all span kinds, including red-letter and word spans.
+    final alpha = baseColor?.a ?? 1.0;
     switch (kind) {
       case BibleVerseSpanKind.wordsOfJesus:
-        return Colors.red.shade700;
+        return Colors.red.shade700.withValues(alpha: alpha);
       case BibleVerseSpanKind.word:
-        return secondaryColor;
+        return secondaryColor.withValues(alpha: alpha);
       default:
         return baseColor;
     }
