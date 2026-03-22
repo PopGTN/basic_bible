@@ -51,6 +51,7 @@ Status meanings:
 - `blocked`: cannot move safely without another prerequisite or decision
 
 ## Completed Recently
+- `done` Tightened the reader bottom overlay spacing by replacing the loose fixed gap above the floating reference bar with padding based on the bar's real height and inset, so the blank strip above the bar is gone without covering the last verses.
 - `done` Fixed Bible viewer verse-number contrast by moving the reader number styling off `colorScheme.primary` and onto a dedicated readable contrast path, so verse numbers no longer disappear in the monochrome `Pure Black` and `Pure White` themes.
 - `done` Removed the separate `OLED Black` theme, kept `Pure Black` as the single true-black option, and fixed Home-tab button readability in the monochrome themes by replacing hardcoded button colors with theme-driven container colors and by adding explicit elevated-button styling to the shared monochrome theme path.
 - `done` Tightened the monochrome `Pure Black` and `Pure White` theme behavior by giving both themes explicit switch outline styling and explicit bottom-tab selected/unselected colors, so switch borders stay visible and the active tab icon no longer disappears against matching backgrounds.

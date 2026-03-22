@@ -97,7 +97,9 @@ class _BibleViewerTabState extends ConsumerState<BibleViewerTab> {
     final continuousScrolling = ref.watch(continuousScrollingProvider);
     final showBookIntroductions = ref.watch(showBookIntroductionsProvider);
     final showVerseSelector = ref.watch(showVerseSelectorProvider);
-    const readerBarBottomPadding = 96.0;
+    const readerBarHeight = 56.0;
+    const readerBarBottomInset = 12.0;
+    const readerBarBottomPadding = readerBarHeight + readerBarBottomInset + 8;
 
     final displayReference =
         continuousScrolling && _continuousVisibleReference != null
@@ -171,7 +173,7 @@ class _BibleViewerTabState extends ConsumerState<BibleViewerTab> {
             top: false,
             bottom: true,
             child: ChapterBar(
-              barHeight: 56,
+              barHeight: readerBarHeight,
               isFloating: true,
               reference: displayReference,
               books: booksAsync.value ?? const [],
