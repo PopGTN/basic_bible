@@ -332,7 +332,9 @@ class AppDatabase extends _$AppDatabase {
             language: row.language,
             description: row.description,
             isLocal: row.isLocal,
-            filePath: row.sourceType == BibleSourceType.asset.name
+            filePath:
+                row.sourceType == BibleSourceType.asset.name ||
+                    row.sourceType == BibleSourceType.import.name
                 ? row.sourceLocation
                 : null,
             format: BibleFormat.values.firstWhere(

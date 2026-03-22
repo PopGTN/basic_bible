@@ -17,8 +17,8 @@ class AppBibleRepository {
 
   AppBibleRepository(this._db);
 
-  /// Available Bible translations
-  static final List<BibleTranslation> availableTranslations = [
+  /// Built-in Bible translations bundled with the app.
+  static final List<BibleTranslation> builtInTranslations = [
     // USFX translations
     BibleTranslation(
       id: 'kjv',
@@ -60,10 +60,10 @@ class AppBibleRepository {
 
   Future<List<BibleTranslation>> getAvailableTranslations() async {
     final storedTranslations = await _db.getStoredTranslations();
-    final builtInIds = availableTranslations.map((t) => t.id).toSet();
+    final builtInIds = builtInTranslations.map((t) => t.id).toSet();
 
     return [
-      ...availableTranslations,
+      ...builtInTranslations,
       ...storedTranslations.where(
         (translation) => !builtInIds.contains(translation.id),
       ),
@@ -79,8 +79,8 @@ class AppBibleRepository {
     }
 
     try {
-      final translation = _getTranslation(translationId);
-      final content = await _loadAssetContent(translation);
+      final translation = await _getTranslation(translationId);
+      final content = await _loadLocalContent(translation);
 
       // Parsing can be CPU-intensive for large files. Run it in a
       // background isolate so we don't block the UI thread.
@@ -108,10 +108,7 @@ class AppBibleRepository {
       return _cachedBooks;
     }
 
-    final translation = availableTranslations.firstWhere(
-      (t) => t.id == translationId,
-      orElse: () => throw Exception('Translation $translationId not found'),
-    );
+    final translation = await _getTranslation(translationId);
 
     if (translation.githubUrl == null) {
       throw Exception('No download URL for translation $translationId');
@@ -244,33 +241,65 @@ class AppBibleRepository {
     await _db.deleteAllBibles();
   }
 
-  BibleTranslation _getTranslation(String translationId) {
-    return availableTranslations.firstWhere(
-      (t) => t.id == translationId,
-      orElse: () => throw Exception('Translation $translationId not found'),
-    );
+  Future<BibleTranslation> _getTranslation(String translationId) async {
+    try {
+      return builtInTranslations.firstWhere((t) => t.id == translationId);
+    } catch (_) {
+      final storedTranslations = await _db.getStoredTranslations();
+      return storedTranslations.firstWhere(
+        (t) => t.id == translationId,
+        orElse: () => throw Exception('Translation $translationId not found'),
+      );
+    }
+  }
+
+  Future<String> _loadLocalContent(BibleTranslation translation) async {
+    switch (translation.sourceType) {
+      case BibleSourceType.asset:
+        return _loadAssetContent(translation);
+      case BibleSourceType.import:
+        return _loadImportedContent(translation);
+      case BibleSourceType.download:
+        throw Exception(
+          'Downloaded translation ${translation.id} is not available locally without cache.',
+        );
+    }
+  }
+
+  Future<String> _loadImportedContent(BibleTranslation translation) async {
+    final filePath = translation.filePath;
+    if (filePath == null || filePath.isEmpty) {
+      throw Exception(
+        'Imported translation ${translation.id} is missing a file path.',
+      );
+    }
+
+    final file = File(filePath);
+    if (!await file.exists()) {
+      throw Exception('Imported translation file was not found: $filePath');
+    }
+
+    return file.readAsString();
   }
 
   Future<String> _loadAssetContent(BibleTranslation translation) async {
-    final candidatePaths = <String>[
-      if (translation.filePath != null) translation.filePath!,
-      'assets/bible/${translation.id}.usfm',
-      'assets/bible/${translation.id}.usfx',
-      'assets/bible/${translation.id}.txt',
-      'assets/bible/${translation.id}.xml',
-    ];
-
-    // Prefer the explicit configured asset path first. The fallback guesses
-    // are here to keep older translation-id-based behavior working where possible.
-    for (final assetPath in candidatePaths) {
-      try {
-        return await rootBundle.loadString(assetPath);
-      } catch (_) {
-        // Continue to the next candidate path.
-      }
+    final assetPath = translation.filePath;
+    if (assetPath == null || assetPath.isEmpty) {
+      throw Exception(
+        'Bundled translation ${translation.id} is missing an asset path.',
+      );
     }
 
-    throw Exception('Bible translation ${translation.id} not found locally');
+    // Built-in translations must use their explicit configured asset path.
+    // Falling back to guessed filenames hides metadata drift and breaks the
+    // unified translation-library model introduced by imports.
+    try {
+      return await rootBundle.loadString(assetPath);
+    } catch (error) {
+      throw Exception(
+        'Bundled translation ${translation.id} was not found at $assetPath: $error',
+      );
+    }
   }
 
   Future<BibleTranslation> _buildImportedTranslation({
@@ -280,7 +309,7 @@ class AppBibleRepository {
   }) async {
     final storedIds =
         (await _db.getStoredTranslations()).map((t) => t.id).toSet()
-          ..addAll(availableTranslations.map((t) => t.id));
+          ..addAll(builtInTranslations.map((t) => t.id));
     final baseName = p.basenameWithoutExtension(filePath);
     final sanitizedId = _sanitizeTranslationId(baseName);
     var candidateId = sanitizedId;

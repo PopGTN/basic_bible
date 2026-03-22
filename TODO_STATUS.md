@@ -35,6 +35,7 @@ Status meanings:
 - `blocked`: cannot move safely without another prerequisite or decision
 
 ## Completed Recently
+- `done` Finished translation asset lookup cleanup by removing filename-guess fallback logic and unifying built-in/imported translation resolution through explicit metadata.
 - `done` Added explicit local Bible import flows so users can pick USFX, OSIS, or Zefania XML files, store them as managed local translations, and reopen them from the translation picker on later launches.
 - `done` Finished structured cross-reference navigation so verse-detail taps now use parser-provided targets like `JHN.1.1` directly and only fall back to label parsing when no structured target is available.
 - `done` Brought OSIS and Zefania onto the same structured paragraph-block path as USFX so all supported formats can drive paragraph mode from parsed document markers instead of app-side guessing.
@@ -79,20 +80,20 @@ Status meanings:
 - `in_progress` Paragraph mode now follows structured paragraph-start blocks from all three supported parser formats, but source fidelity is still only as good as the markers each input file actually exposes.
 - `in_progress` Structured cross-reference targets now navigate directly in the reader, but the broader note/reference experience can still be improved when a verse has many annotations.
 - `in_progress` Sequential feature workflow is now the active delivery model: finish one tracked feature, verify it, commit it, then move to the next tracked feature.
-- `in_progress` Imported translations now participate in the same translation picker as bundled ones, but bundled/local asset handling still has filename and metadata cleanup work remaining.
+- `in_progress` Built-in and imported translations now resolve through the same explicit metadata path, but downloaded translations and broader translation-library management can still be cleaned up further over time.
 
 ## Recommended Next Step
-- `next` Finish translation asset lookup cleanup so bundled translations and imported translations use one cleaner translation-library model without filename guessing fallbacks.
+- `next` Improve the verse-detail note/reference UX so heavily annotated verses remain readable and easier to navigate without falling back to a very plain list presentation.
 
 Why this is next:
-- The new import feature works, so the next highest-value follow-up is cleaning up how bundled translations are identified and loaded.
-- That removes the remaining mismatch between hardcoded translation IDs, fallback asset guesses, and the new translation-library direction.
-- It is still a single bounded feature that fits the one-feature-at-a-time workflow.
+- The reader now has richer source data and direct cross-reference navigation, but the note/reference sheet is still the roughest part of the reading experience.
+- It is a focused UI feature with a clear completion boundary.
+- It builds directly on the parser and navigation work already finished.
 
 Definition of done for this step:
-- Bundled translations load without relying on filename-guess fallback logic.
-- Translation metadata remains consistent across bundled, downloaded, and imported entries.
-- Existing reading and import flows still work.
+- Footnotes and cross-references remain readable when a verse has many entries.
+- Structured reference targets are presented clearly inside the verse-detail UI.
+- Existing reading and navigation still work.
 
 ## Prioritized Backlog
 

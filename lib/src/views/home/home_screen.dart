@@ -262,7 +262,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 final colors = Theme.of(context).colorScheme;
                 final translations =
                     translationsAsync.value ??
-                    AppBibleRepository.availableTranslations;
+                    AppBibleRepository.builtInTranslations;
                 String? currentTranslationName;
                 for (final translation in translations) {
                   if (translation.id == currentTranslation) {
