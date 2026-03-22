@@ -81,12 +81,9 @@ Status meanings:
 ## Current Status
 - `in_progress` The project now persists cached Bible data on disk for non-web platforms, but the web path still falls back to in-memory storage.
 - `in_progress` The app now renders rich verse spans end to end for the parser output it receives, including red-letter text, translator additions, some poetry/word metadata styling, structured intro/heading blocks, and both verse-list and paragraph reading modes, but the note/reference UX can still be polished further.
-- `in_progress` The README is currently more of a feature wish list than a maintained reflection of actual repo status.
 - `in_progress` The active app flows are now much more feature-sliced under `lib/src/features/`, but shared theme/language providers, generic models/services, and placeholder routes still live in shared roots.
-- `in_progress` The project now has a plain-language documentation note explaining that Bible formatting support must preserve structure, not only flattened verse text.
-- `in_progress` The current parser model is still limited to books, chapters, and verses. It does not yet preserve introductions, prefaces, TOC labels, or book-level front matter that already exists in some USFX and OSIS files.
+- `in_progress` The parser/app model now supports richer intro, heading, and annotation structures, but parser coverage is still incomplete for many non-verse layout cases and source-specific tags.
 - `in_progress` The long-term product goal is full-fidelity support for the Bible source formats in use, which means preserving as much meaningful USFX, OSIS, and Zefania structure as is practical instead of only rendering simplified verse text.
-- `in_progress` Phase 1 parser/app-model planning is being documented so future implementation work starts from a shared spec instead of ad hoc parser changes.
 - `in_progress` Phase 1 shared-model implementation is now real across USFX, OSIS, and Zefania at a partial-rich level, and the reader now renders intro/heading blocks, but better structured note/reference navigation still needs polish.
 - `in_progress` Reader rendering now uses the structured parser output for intro blocks and richer verse details, but there is still room to improve the presentation and navigation flow around those details.
 - `in_progress` Reader text-quality work has fixed rich-span spacing in KJV-style sources and added a second paragraph-style reading mode alongside the verse-list layout, but paragraph boundaries can still become richer if the parser preserves more of them over time.
