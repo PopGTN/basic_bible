@@ -88,21 +88,20 @@ class AppBibleRepository {
       return memoryCached;
     }
 
-    final translation = await _getTranslation(translationId);
-
-    if (await _db.isBibleCached(translationId)) {
-      final cachedBooks = await _db.getBible(translationId);
+    final cachedBooks = await _db.getBible(translationId);
+    if (cachedBooks.isNotEmpty) {
       if (!_needsInlineAnchorRefresh(cachedBooks)) {
         return _rememberLoadedTranslation(translationId, cachedBooks);
       }
 
-      // Older cached parses predate inline anchor metadata. Rebuild those
-      // local copies from source so the reader can render note letters at the
-      // word they belong to instead of silently staying on stale cached data.
+      // When the Bible is already cached locally, return that path first
+      // instead of spending more time resolving translation metadata or
+      // re-checking existence through extra DB round trips.
       await _db.deleteBible(translationId);
     }
 
     try {
+      final translation = await _getTranslation(translationId);
       final content = await _loadLocalContent(translation);
 
       // Parsing can be CPU-intensive for large files. Run it in a
@@ -129,10 +128,8 @@ class AppBibleRepository {
       return memoryCached;
     }
 
-    final translation = await _getTranslation(translationId);
-
-    if (await _db.isBibleCached(translationId)) {
-      final cachedBooks = await _db.getBible(translationId);
+    final cachedBooks = await _db.getBible(translationId);
+    if (cachedBooks.isNotEmpty) {
       if (!_needsInlineAnchorRefresh(cachedBooks)) {
         return _rememberLoadedTranslation(translationId, cachedBooks);
       }
@@ -141,6 +138,8 @@ class AppBibleRepository {
       // inline anchor support existed, so refresh them from the remote source.
       await _db.deleteBible(translationId);
     }
+
+    final translation = await _getTranslation(translationId);
 
     if (translation.githubUrl == null) {
       throw Exception('No download URL for translation $translationId');

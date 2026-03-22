@@ -51,6 +51,7 @@ Status meanings:
 - `blocked`: cannot move safely without another prerequisite or decision
 
 ## Completed Recently
+- `done` Tightened Bible load performance again by removing extra translation-metadata and cache-existence lookups from the cached local load path, and by starting translation switches immediately instead of deferring the next Bible load through an extra event-loop turn.
 - `done` Removed `Show Introductions` from the quick Bible viewer settings sheet so that toggle now lives only in the full Settings page instead of being duplicated across both settings surfaces.
 - `done` Added a softer built-in-style `Soft Dark` theme option alongside `Pure Black`, and wired it into both Settings and the quick reader theme picker so users can keep a dark UI without losing selected switches, chips, and other controls against fully black surfaces.
 - `done` Tuned the monochrome theme contrast so pure black mode now uses stronger variant/outline colors, visible text-button defaults, and clearer settings chips instead of letting several controls disappear into black surfaces.

@@ -263,6 +263,7 @@ final bibleBooksProvider =
 class BibleBooksNotifier extends StateNotifier<AsyncValue<List<BibleBook>>> {
   final AppBibleRepository repository;
   String _currentTranslationId;
+  int _loadGeneration = 0;
 
   BibleBooksNotifier(this.repository, this._currentTranslationId)
     : super(_initialBibleBooksState(repository, _currentTranslationId)) {
@@ -272,6 +273,8 @@ class BibleBooksNotifier extends StateNotifier<AsyncValue<List<BibleBook>>> {
   }
 
   Future<void> loadBible({bool showLoading = true}) async {
+    final requestedTranslationId = _currentTranslationId;
+    final loadGeneration = ++_loadGeneration;
     if (showLoading || !state.hasValue) {
       state = const AsyncValue.loading();
     }
@@ -281,9 +284,9 @@ class BibleBooksNotifier extends StateNotifier<AsyncValue<List<BibleBook>>> {
 
       // Try to load from local first, then download if needed
       try {
-        books = await repository.loadLocalBible(_currentTranslationId);
+        books = await repository.loadLocalBible(requestedTranslationId);
       } on BibleParserException catch (e, st) {
-        if (mounted) {
+        if (mounted && loadGeneration == _loadGeneration) {
           state = AsyncValue.error(
             'There was an error parsing the Bible file. Please try a different translation or contact support.',
             st,
@@ -292,21 +295,25 @@ class BibleBooksNotifier extends StateNotifier<AsyncValue<List<BibleBook>>> {
         return;
       } catch (e) {
         // Local load failed, try to download
-        books = await repository.downloadBible(_currentTranslationId);
+        books = await repository.downloadBible(requestedTranslationId);
       }
 
-      if (mounted) {
+      // If the user already switched again while this load was running, keep
+      // the newer request in control instead of repainting stale Bible data.
+      if (mounted &&
+          loadGeneration == _loadGeneration &&
+          requestedTranslationId == _currentTranslationId) {
         state = AsyncValue.data(books);
       }
     } on BibleParserException catch (e, st) {
-      if (mounted) {
+      if (mounted && loadGeneration == _loadGeneration) {
         state = AsyncValue.error(
           'There was an error parsing the Bible file. Please try a different translation or contact support.',
           st,
         );
       }
     } catch (e, st) {
-      if (mounted) {
+      if (mounted && loadGeneration == _loadGeneration) {
         state = AsyncValue.error(e, st);
       }
     }
@@ -326,7 +333,7 @@ class BibleBooksNotifier extends StateNotifier<AsyncValue<List<BibleBook>>> {
 
     // When we already have a rendered translation on screen, keep it visible
     // until the next translation has finished loading from disk/network.
-    Future(() => loadBible(showLoading: !state.hasValue));
+    loadBible(showLoading: !state.hasValue);
   }
 
   Future<void> downloadTranslation(String translationId) async {
