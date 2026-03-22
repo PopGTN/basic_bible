@@ -321,10 +321,13 @@ class _BibleTextViewState extends State<_BibleTextView> {
   }
 
   List<Widget> _buildChapterBlocks(BuildContext context) {
-    if (widget.chapter.blocks.isEmpty) return const [];
+    final visibleBlocks = widget.chapter.blocks
+        .where((block) => block.kind != BibleDocumentBlockKind.paragraph)
+        .toList();
+    if (visibleBlocks.isEmpty) return const [];
 
     return [
-      for (final block in widget.chapter.blocks)
+      for (final block in visibleBlocks)
         _DocumentBlockView(block: block, fontSize: widget.fontSize),
     ];
   }
@@ -403,37 +406,132 @@ class _BibleTextViewState extends State<_BibleTextView> {
   }
 
   Widget _buildParagraphReadingView(BuildContext context) {
+    final sections = _buildParagraphSections();
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
-      child: RichText(
-        text: TextSpan(
-          style: TextStyle(
-            fontSize: widget.fontSize,
-            color: Theme.of(context).textTheme.bodyLarge?.color,
-            height: 1.7,
-          ),
-          children: [
-            for (final verse in widget.chapter.verses) ...[
-              TextSpan(
-                text: '${verse.number} ',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: Theme.of(context).colorScheme.primary,
-                  fontSize: widget.fontSize - 2,
-                  backgroundColor: widget.reference.verse == verse.number
-                      ? Theme.of(
-                          context,
-                        ).colorScheme.primaryContainer.withValues(alpha: 0.45)
-                      : null,
-                ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          for (final section in sections)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  for (final block in section.leadingBlocks)
+                    if (block.text.trim().isNotEmpty)
+                      _DocumentBlockView(
+                        block: block,
+                        fontSize: widget.fontSize,
+                      ),
+                  RichText(
+                    text: TextSpan(
+                      style: TextStyle(
+                        fontSize: widget.fontSize,
+                        color: Theme.of(context).textTheme.bodyLarge?.color,
+                        height: 1.7,
+                      ),
+                      children: [
+                        for (final verse in section.verses) ...[
+                          WidgetSpan(
+                            child: SizedBox(
+                              key: _verseKeys.putIfAbsent(
+                                verse.number,
+                                GlobalKey.new,
+                              ),
+                              width: 0,
+                              height: 0,
+                            ),
+                          ),
+                          TextSpan(
+                            text: '${verse.number} ',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Theme.of(context).colorScheme.primary,
+                              fontSize: widget.fontSize - 2,
+                              backgroundColor:
+                                  widget.reference.verse == verse.number
+                                  ? Theme.of(context)
+                                        .colorScheme
+                                        .primaryContainer
+                                        .withValues(alpha: 0.45)
+                                  : null,
+                            ),
+                          ),
+                          ..._buildVerseContentSpans(context, verse),
+                          const TextSpan(text: ' '),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
               ),
-              ..._buildVerseContentSpans(context, verse),
-              const TextSpan(text: ' '),
-            ],
-          ],
-        ),
+            ),
+        ],
       ),
     );
+  }
+
+  List<_ParagraphSection> _buildParagraphSections() {
+    if (widget.chapter.verses.isEmpty) return const [];
+
+    final paragraphBlocksByVerse = <int, List<BibleDocumentBlock>>{};
+    for (final block in widget.chapter.blocks) {
+      if (block.kind != BibleDocumentBlockKind.paragraph) continue;
+      final beforeVerse = int.tryParse(block.metadata['beforeVerse'] ?? '');
+      if (beforeVerse == null) continue;
+      paragraphBlocksByVerse
+          .putIfAbsent(beforeVerse, () => <BibleDocumentBlock>[])
+          .add(block);
+    }
+
+    if (paragraphBlocksByVerse.isEmpty) {
+      return [
+        _ParagraphSection(
+          leadingBlocks: const [],
+          verses: widget.chapter.verses,
+        ),
+      ];
+    }
+
+    final sections = <_ParagraphSection>[];
+    final firstVerseNumber = widget.chapter.verses.first.number;
+    var currentLeadingBlocks = List<BibleDocumentBlock>.from(
+      paragraphBlocksByVerse[firstVerseNumber] ?? const [],
+    );
+    var currentVerses = <BibleVerse>[];
+
+    for (final verse in widget.chapter.verses) {
+      final paragraphStartBlocks = paragraphBlocksByVerse[verse.number];
+      if (paragraphStartBlocks != null && currentVerses.isNotEmpty) {
+        // Start a new rendered paragraph only when the source says the next
+        // verse begins a new paragraph. This keeps paragraph mode tied to the
+        // imported document structure instead of a UI-only guess.
+        sections.add(
+          _ParagraphSection(
+            leadingBlocks: currentLeadingBlocks,
+            verses: currentVerses,
+          ),
+        );
+        currentLeadingBlocks = List<BibleDocumentBlock>.from(
+          paragraphStartBlocks,
+        );
+        currentVerses = <BibleVerse>[];
+      }
+      currentVerses.add(verse);
+    }
+
+    if (currentVerses.isNotEmpty) {
+      sections.add(
+        _ParagraphSection(
+          leadingBlocks: currentLeadingBlocks,
+          verses: currentVerses,
+        ),
+      );
+    }
+
+    return sections;
   }
 
   void _showVerseDetailsSheet(BuildContext context, BibleVerse verse) {
@@ -655,6 +753,13 @@ class _BibleTextViewState extends State<_BibleTextView> {
         return null;
     }
   }
+}
+
+class _ParagraphSection {
+  const _ParagraphSection({required this.leadingBlocks, required this.verses});
+
+  final List<BibleDocumentBlock> leadingBlocks;
+  final List<BibleVerse> verses;
 }
 
 class _DocumentBlockView extends StatelessWidget {
