@@ -4,7 +4,9 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:window_size/window_size.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'src/app.dart';
+import 'src/services/shared_preferences_provider.dart';
 
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
@@ -12,6 +14,9 @@ import 'package:sqflite_common_ffi_web/sqflite_ffi_web.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // Bootstrap prefs before runApp so startup routing and tab selection can
+  // read their persisted values synchronously instead of flashing the wrong UI.
+  final prefs = await SharedPreferences.getInstance();
   if (kIsWeb) {
     // Change default factory on the web
     databaseFactory = databaseFactoryFfiWeb;
@@ -20,7 +25,12 @@ void main() async {
     databaseFactory = databaseFactoryFfi;
   }
   setupWindow();
-  runApp(ProviderScope(child: MyApp()));
+  runApp(
+    ProviderScope(
+      overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+      child: const MyApp(),
+    ),
+  );
 }
 
 const double minWindowWidth = 480;
@@ -28,8 +38,7 @@ const double minWindowHeight = 854;
 // const double maxWindowWidth = 480;
 // const double maxWindowHeight = 854;
 void setupWindow() {
-  if (!kIsWeb &&
-      (Platform.isWindows || Platform.isLinux || Platform.isMacOS)) {
+  if (!kIsWeb && (Platform.isWindows || Platform.isLinux || Platform.isMacOS)) {
     setWindowTitle('The Basic Bible App');
 
     // Minimum size
@@ -44,7 +53,7 @@ void setupWindow() {
         setWindowFrame(
           Rect.fromCenter(
             center: screen.frame.center,
-            width: 800,  // use a reasonable default, not minWindow
+            width: 800, // use a reasonable default, not minWindow
             height: 600, // use a reasonable default
           ),
         );
@@ -52,4 +61,3 @@ void setupWindow() {
     });
   }
 }
-

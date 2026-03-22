@@ -7,6 +7,7 @@ import 'package:basic_bible/src/features/library/data/app_bible_repository.dart'
 import 'package:basic_bible/src/features/menu/presentation/menu_tab.dart';
 import 'package:basic_bible/src/features/reader/application/bible_provider.dart';
 import 'package:basic_bible/src/features/reader/presentation/bible_viewer_tab.dart';
+import 'package:basic_bible/src/features/settings/application/app_preferences_provider.dart';
 import 'package:basic_bible/src/providers/theme_provider.dart';
 import 'package:basic_bible/src/services/font_size_service.dart';
 
@@ -21,7 +22,7 @@ class HomeScreen extends ConsumerStatefulWidget {
 
 class _HomeScreenState extends ConsumerState<HomeScreen>
     with TickerProviderStateMixin {
-  int _currentIndex = 0; // currently selected tab index
+  late int _currentIndex; // currently selected tab index
 
   // Animation controllers for BottomNav + AppBar show/hide
   late final AnimationController _bottomNavController;
@@ -30,6 +31,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   @override
   void initState() {
     super.initState();
+    // Startup tab selection is read once from persisted settings so the shell
+    // opens on Bible when requested without fighting later manual tab changes.
+    _currentIndex = ref.read(openBibleTabByDefaultProvider) ? 1 : 0;
     _bottomNavController = _createController();
     _appBarController = _createController();
     WidgetsBinding.instance.addPostFrameCallback((_) {

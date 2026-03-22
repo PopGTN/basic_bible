@@ -12,6 +12,9 @@ This README is intentionally status-focused. It should reflect what the repo act
 - Switch between bundled, cached, downloaded, and imported translations.
 - Import local Bible XML files in USFX, OSIS, and Zefania formats.
 - Use the dedicated `Versions` screen to select translations.
+- Control startup behavior from Settings, including:
+  - opening directly on the Bible tab by default
+  - turning the sample login gate on or off
 - Open a full-screen `References` picker with:
   - search
   - canonical or alphabetical ordering

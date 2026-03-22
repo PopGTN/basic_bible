@@ -1,4 +1,5 @@
 import 'package:basic_bible/src/features/auth/application/auth_provider.dart';
+import 'package:basic_bible/src/features/settings/application/app_preferences_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -10,35 +11,36 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 class MenuTab extends ConsumerWidget {
   const MenuTab({super.key});
 
-Future<void> _openLink(String url) async {
-  final uri = Uri.tryParse(url);
-  if (uri == null) return;
+  Future<void> _openLink(String url) async {
+    final uri = Uri.tryParse(url);
+    if (uri == null) return;
 
-  if (kIsWeb) {
-    // On web, open in a new browser tab/window
+    if (kIsWeb) {
+      // On web, open in a new browser tab/window
+      try {
+        await launchUrlString(url, webOnlyWindowName: '_blank');
+      } catch (_) {
+        // ignore or log
+      }
+      return;
+    }
+
+    // On mobile/desktop, ask the OS to open the link in the external browser/app
     try {
-      await launchUrlString(url, webOnlyWindowName: '_blank');
+      final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (!ok) {
+        // fallback to platform default behavior if external application failed
+        await launchUrl(uri, mode: LaunchMode.platformDefault);
+      }
     } catch (_) {
-      // ignore or log
+      // ignore or log; you could show a snackbar if you pass BuildContext
     }
-    return;
   }
-
-  // On mobile/desktop, ask the OS to open the link in the external browser/app
-  try {
-    final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
-    if (!ok) {
-      // fallback to platform default behavior if external application failed
-      await launchUrl(uri, mode: LaunchMode.platformDefault);
-    }
-  } catch (_) {
-    // ignore or log; you could show a snackbar if you pass BuildContext
-  }
-}
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final t = AppLocalizations.of(context)!;
+    final requireDummyLogin = ref.watch(requireDummyLoginProvider);
 
     return ListView(
       padding: const EdgeInsets.all(8.0),
@@ -50,7 +52,9 @@ Future<void> _openLink(String url) async {
             children: [
               const CircleAvatar(
                 radius: 30,
-                backgroundImage: AssetImage('assets/images/profile_placeholder.png'),
+                backgroundImage: AssetImage(
+                  'assets/images/profile_placeholder.png',
+                ),
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -87,7 +91,7 @@ Future<void> _openLink(String url) async {
         ),
 
         const Divider(),
-        
+
         // About
         ListTile(
           leading: const Icon(Icons.info_outline),
@@ -98,7 +102,7 @@ Future<void> _openLink(String url) async {
         //Donate
         ListTile(
           leading: const Icon(Icons.help_outline),
-           title: Text("Donate"),
+          title: Text("Donate"),
           onTap: () => context.go('/coming-soon/donate'),
         ),
         // Help
@@ -131,18 +135,18 @@ Future<void> _openLink(String url) async {
 
         const Divider(),
 
-        // Logout
-        ListTile(
-          leading: const Icon(Icons.logout, color: Colors.redAccent),
-          title: Text(
-            t.logout,
-            style: const TextStyle(color: Colors.redAccent),
+        if (requireDummyLogin)
+          ListTile(
+            leading: const Icon(Icons.logout, color: Colors.redAccent),
+            title: Text(
+              t.logout,
+              style: const TextStyle(color: Colors.redAccent),
+            ),
+            onTap: () {
+              ref.read(authProvider.notifier).logout();
+              // context.go('/login');
+            },
           ),
-          onTap: () {
-            ref.read(authProvider.notifier).logout();
-            // context.go('/login');
-          },
-        ),
       ],
     );
   }

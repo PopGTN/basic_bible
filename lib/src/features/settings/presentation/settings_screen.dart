@@ -1,5 +1,6 @@
 import 'package:basic_bible/l10n/app_localizations.dart';
 import 'package:basic_bible/src/features/reader/application/bible_provider.dart';
+import 'package:basic_bible/src/features/settings/application/app_preferences_provider.dart';
 import 'package:basic_bible/src/widgets/app_back_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -15,6 +16,8 @@ class SettingsScreen extends ConsumerWidget {
     final selectedLanguage = ref.watch(languageProvider);
     final showBookIntroductions = ref.watch(showBookIntroductionsProvider);
     final showVerseSelector = ref.watch(showVerseSelectorProvider);
+    final openBibleTabByDefault = ref.watch(openBibleTabByDefaultProvider);
+    final requireDummyLogin = ref.watch(requireDummyLoginProvider);
     final colors = Theme.of(context).colorScheme;
 
     final languages = {
@@ -75,6 +78,37 @@ class SettingsScreen extends ConsumerWidget {
                   },
                 );
               }).toList(),
+            ),
+            const SizedBox(height: 20),
+
+            Text(
+              'App Startup',
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 10),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Open Bible Tab By Default'),
+              subtitle: const Text(
+                'Start on the Bible page instead of the Home tab when the app opens.',
+              ),
+              value: openBibleTabByDefault,
+              onChanged: (value) {
+                ref
+                    .read(openBibleTabByDefaultProvider.notifier)
+                    .setEnabled(value);
+              },
+            ),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Require Dummy Login'),
+              subtitle: const Text(
+                'Keep the sample login screen turned on before entering the app.',
+              ),
+              value: requireDummyLogin,
+              onChanged: (value) {
+                ref.read(requireDummyLoginProvider.notifier).setEnabled(value);
+              },
             ),
             const SizedBox(height: 20),
 
