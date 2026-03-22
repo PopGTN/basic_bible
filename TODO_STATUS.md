@@ -35,6 +35,7 @@ Status meanings:
 - `blocked`: cannot move safely without another prerequisite or decision
 
 ## Completed Recently
+- `done` Finished structured cross-reference navigation so verse-detail taps now use parser-provided targets like `JHN.1.1` directly and only fall back to label parsing when no structured target is available.
 - `done` Brought OSIS and Zefania onto the same structured paragraph-block path as USFX so all supported formats can drive paragraph mode from parsed document markers instead of app-side guessing.
 - `done` Switched paragraph mode from a UI-only "join the whole chapter" fallback to document-driven grouping by preserving chapter paragraph markers from the source content and rendering multiple paragraph sections in the reader.
 - `done` Confirmed that the first paragraph-mode implementation was app-driven instead of source-driven, and identified the missing piece: in-chapter paragraph markers were not being preserved from the source documents.
@@ -73,22 +74,23 @@ Status meanings:
 - `in_progress` Phase 1 parser/app-model planning is being documented so future implementation work starts from a shared spec instead of ad hoc parser changes.
 - `in_progress` Phase 1 shared-model implementation is now real across USFX, OSIS, and Zefania at a partial-rich level, and the reader now renders intro/heading blocks, but better structured note/reference navigation still needs polish.
 - `in_progress` Reader rendering now uses the structured parser output for intro blocks and richer verse details, but there is still room to improve the presentation and navigation flow around those details.
-- `in_progress` Reference selection is working again for chapters and verses, but structured cross-reference targets should still navigate more directly than the current label-based fallback.
 - `in_progress` Reader text-quality work has fixed rich-span spacing in KJV-style sources and added a second paragraph-style reading mode alongside the verse-list layout, but paragraph boundaries can still become richer if the parser preserves more of them over time.
 - `in_progress` Paragraph mode now follows structured paragraph-start blocks from all three supported parser formats, but source fidelity is still only as good as the markers each input file actually exposes.
+- `in_progress` Structured cross-reference targets now navigate directly in the reader, but the broader note/reference experience can still be improved when a verse has many annotations.
+- `in_progress` Sequential feature workflow is now the active delivery model: finish one tracked feature, verify it, commit it, then move to the next tracked feature.
 
 ## Recommended Next Step
-- `next` Use structured cross-reference targets directly in navigation so note/reference taps do not rely mostly on parsing display labels.
+- `next` Build explicit local Bible import flows for USFX, OSIS, and Zefania so users can add translations as a managed local library instead of relying only on bundled/downloaded sources.
 
 Why this is next:
-- The parser and storage path now produce and preserve richer verse data.
-- The reader now uses structured spans instead of flattening everything back to `verse.text`.
-- The next biggest user-visible gap is navigation and presentation quality inside the new verse-detail UI.
+- The parser, storage, and reader path are now strong enough that import is the next major product gap.
+- It converts the current parser/storage work into a real user-facing library feature.
+- It also fits the new one-feature-at-a-time workflow cleanly because it has a clear product boundary.
 
 Definition of done for this step:
-- Structured cross-reference targets can be used directly instead of relying mostly on label parsing.
-- Verse-detail UI remains readable when many notes/references exist.
-- Existing reading and navigation still work.
+- Users can choose a local Bible file and import it into app-managed storage.
+- Imported translations persist in the local library metadata.
+- Existing bundled/downloaded translation flows still work.
 
 ## Prioritized Backlog
 

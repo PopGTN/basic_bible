@@ -587,11 +587,29 @@ class _BibleTextViewState extends State<_BibleTextView> {
                             : null,
                         trailing: const Icon(Icons.chevron_right),
                         onTap: () {
+                          final parsedReference = parseAnyReference(
+                            target: referenceEntry.target,
+                            label: referenceEntry.label,
+                          );
+
+                          if (parsedReference != null) {
+                            // Use the parser-provided target first so taps can
+                            // go straight to the intended verse instead of
+                            // depending on display-label parsing.
+                            final referenceNotifier = ProviderScope.containerOf(
+                              context,
+                              listen: false,
+                            ).read(currentReferenceProvider.notifier);
+                            referenceNotifier.setReference(parsedReference);
+                            Navigator.of(context).pop();
+                            return;
+                          }
+
                           Navigator.of(context).pop();
                           Navigator.of(context).push(
                             MaterialPageRoute(
                               builder: (context) => ReferenceScreen(
-                                references: [referenceEntry.label],
+                                references: [referenceEntry],
                                 currentReference: widget.reference,
                               ),
                             ),
