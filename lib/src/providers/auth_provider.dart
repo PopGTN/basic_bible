@@ -1,4 +1,4 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -17,7 +17,7 @@ class AuthNotifier extends StateNotifier<bool> {
     } catch (e) {
       // Handle errors if needed
       state = false;
-      print('Login error: $e');
+      debugPrint('Login error: $e');
 
     }
   }
@@ -29,7 +29,7 @@ class AuthNotifier extends StateNotifier<bool> {
       if (mounted) state = true;
     } catch (e) {
       // handle error
-        print('Login error: $e');
+      debugPrint('Login error: $e');
     }
   }
 
@@ -40,7 +40,7 @@ class AuthNotifier extends StateNotifier<bool> {
       if (mounted) state = false;
     } catch (e) {
       // handle error
-      print('Logout error: $e');
+      debugPrint('Logout error: $e');
     }
   }
 }

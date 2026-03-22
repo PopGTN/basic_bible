@@ -32,7 +32,7 @@ class ChapterBar extends StatelessWidget {
         color: Theme.of(context).colorScheme.surfaceContainerHighest,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 4,
             offset: const Offset(0, -2),
           ),
@@ -323,7 +323,7 @@ class _ReferencePickerState extends State<ReferencePicker> with TickerProviderSt
                                   decoration: BoxDecoration(
                                     color: isSelected
                                         ? Theme.of(context).colorScheme.primary
-                                        : Theme.of(context).colorScheme.surfaceVariant,
+                                        : Theme.of(context).colorScheme.surfaceContainerHighest,
                                     borderRadius: BorderRadius.circular(8),
                                     border: isSelected ? Border.all(
                                       color: Theme.of(context).colorScheme.primary,

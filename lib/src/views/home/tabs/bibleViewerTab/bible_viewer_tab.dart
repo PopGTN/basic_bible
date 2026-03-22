@@ -1,5 +1,5 @@
 import 'reference_screen.dart';
-import 'package:basic_bible/src/views/home/tabs/bibleViewerTab/widgets/ReferenceBar.dart';
+import 'package:basic_bible/src/views/home/tabs/bibleViewerTab/widgets/reference_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:basic_bible/src/services/font_size_service.dart';

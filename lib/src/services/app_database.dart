@@ -4,9 +4,14 @@
 // Remove these ignores once the analyzer no longer reports generated-symbol
 // errors (they are a temporary workaround).
 // ignore_for_file: uri_has_not_been_generated, undefined_identifier, undefined_method, undefined_getter, override_on_non_overriding_member, unnecessary_brace_in_string_interps
+import 'dart:io';
+
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 
 // Import your app's models. We will still need them in the repository.
 import '../models/bible_models.dart';
@@ -15,11 +20,28 @@ part 'app_database.g.dart'; // This file will be generated
 
 // --- 1. Define Tables ---
 
+@DataClassName('TranslationEntry')
+class Translations extends Table {
+  TextColumn get id => text()();
+  TextColumn get name => text()();
+  TextColumn get language => text()();
+  TextColumn get description => text()();
+  TextColumn get format => text()();
+  TextColumn get sourceType => text()();
+  TextColumn get sourceLocation => text().nullable()();
+  BoolColumn get isLocal => boolean().withDefault(const Constant(false))();
+  DateTimeColumn get importedAt => dateTime().withDefault(currentDateAndTime)();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
 // SIMPLIFIED: We removed `extending: BibleBook`.
 // Drift will now generate a class called `BookEntry`.
 @DataClassName('BookEntry') 
 class Books extends Table {
   TextColumn get id => text()(); // e.g., "kjv_GEN"
+  TextColumn get translationId => text().references(Translations, #id)();
   TextColumn get name => text()();
   TextColumn get shortName => text()();
   IntColumn get bookNumber => integer()();
@@ -37,6 +59,11 @@ class Chapters extends Table {
   IntColumn get id => integer().autoIncrement()();
   TextColumn get bookId => text().references(Books, #id)(); // Foreign key
   IntColumn get number => integer()();
+
+  @override
+  List<Set<Column<Object>>> get uniqueKeys => [
+        {bookId, number},
+      ];
 }
 
 // This converter is still correct
@@ -60,19 +87,24 @@ class Verses extends Table {
   TextColumn get verseText => text()();
   TextColumn get notes => text().map(const StringListConverter()).nullable()();
   TextColumn get references => text().map(const StringListConverter()).nullable()();
+
+  @override
+  List<Set<Column<Object>>> get uniqueKeys => [
+        {chapterId, number},
+      ];
 }
 
 
 // --- 2. Define Database Class ---
 
-@DriftDatabase(tables: [Books, Chapters, Verses])
+@DriftDatabase(tables: [Translations, Books, Chapters, Verses])
 class AppDatabase extends _$AppDatabase {
   // Use super-parameters to keep the constructor concise and satisfy the
   // `use_super_parameters` analyzer hint.
   AppDatabase(super.e);
 
   @override
-  int get schemaVersion => 2; // Matches your old _databaseVersion
+  int get schemaVersion => 3;
   
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -80,6 +112,7 @@ class AppDatabase extends _$AppDatabase {
       await m.deleteTable(verses.actualTableName);
       await m.deleteTable(chapters.actualTableName);
       await m.deleteTable(books.actualTableName);
+      await m.deleteTable(translations.actualTableName);
       await m.createAll();
     },
     onCreate: (m) => m.createAll(),
@@ -95,17 +128,41 @@ class AppDatabase extends _$AppDatabase {
     // rows weren't reliably committed, causing lookups (like getChapter)
     // to fail. This sequential approach is simpler and deterministic.
     await transaction(() async {
+      await (delete(verses)
+            ..where((v) => v.chapterId.isInQuery(
+                  selectOnly(chapters)
+                    ..addColumns([chapters.id])
+                    ..where(chapters.bookId.isInQuery(
+                      selectOnly(books)
+                        ..addColumns([books.id])
+                        ..where(books.translationId.equals(translationId)),
+                    )),
+                )))
+          .go();
+      await (delete(chapters)
+            ..where((c) => c.bookId.isInQuery(
+                  selectOnly(books)
+                    ..addColumns([books.id])
+                    ..where(books.translationId.equals(translationId)),
+                )))
+          .go();
+      await (delete(books)..where((b) => b.translationId.equals(translationId))).go();
+
       for (final book in bibleBooks) {
         final bookId = '${translationId}_${book.id}';
 
         // Insert or replace the book to avoid UNIQUE constraint errors
-        await into(books).insert(BooksCompanion.insert(
-          id: bookId,
-          name: book.name,
-          shortName: book.shortName,
-          bookNumber: book.bookNumber,
-          bookType: book.bookType.index,
-        ), mode: InsertMode.insertOrReplace);
+        await into(books).insert(
+          BooksCompanion(
+            id: Value(bookId),
+            translationId: Value(translationId),
+            name: Value(book.name),
+            shortName: Value(book.shortName),
+            bookNumber: Value(book.bookNumber),
+            bookType: Value(book.bookType.index),
+          ),
+          mode: InsertMode.insertOrReplace,
+        );
 
         for (final chapter in book.chapters) {
           final chapterId = await into(chapters).insert(
@@ -137,26 +194,49 @@ class AppDatabase extends _$AppDatabase {
     });
   }
 
+  Future<void> upsertTranslationMetadata({
+    required BibleTranslation translation,
+    String? sourceLocation,
+    BibleSourceType? sourceTypeOverride,
+  }) async {
+    await into(translations).insertOnConflictUpdate(
+      TranslationsCompanion.insert(
+        id: translation.id,
+        name: translation.name,
+        language: translation.language,
+        description: translation.description,
+        format: translation.format.name,
+        sourceType: (sourceTypeOverride ?? translation.sourceType).name,
+        sourceLocation: Value(sourceLocation),
+        isLocal: Value(translation.isLocal),
+        importedAt: Value(DateTime.now()),
+      ),
+    );
+  }
+
   // This method now maps the generated classes (e.g., BookEntry)
   // back to your UI models (e.g., BibleBook).
   Future<List<BibleBook>> getBible(String translationId) async {
     final bookRows = await (select(books)
-          ..where((b) => b.id.like('${translationId}_%')))
+          ..where((b) => b.translationId.equals(translationId))
+          ..orderBy([(b) => OrderingTerm(expression: b.bookNumber)]))
         .get();
 
     final List<BibleBook> resultBooks = [];
     
     for (final bookRow in bookRows) {
-      final chapterRows = await (select(chapters)
-            ..where((c) => c.bookId.equals(bookRow.id)))
-          .get();
+      final chapterQuery = select(chapters)
+        ..where((c) => c.bookId.equals(bookRow.id))
+        ..orderBy([(c) => OrderingTerm(expression: c.number)]);
+      final chapterRows = await chapterQuery.get();
 
       final List<BibleChapter> resultChapters = [];
 
       for (final chapterRow in chapterRows) {
-        final verseRows = await (select(verses)
-              ..where((v) => v.chapterId.equals(chapterRow.id)))
-            .get();
+        final verseQuery = select(verses)
+          ..where((v) => v.chapterId.equals(chapterRow.id))
+          ..orderBy([(v) => OrderingTerm(expression: v.number)]);
+        final verseRows = await verseQuery.get();
         
         // Map VerseEntry -> BibleVerse
         final mappedVerses = verseRows.map((v) => BibleVerse(
@@ -227,7 +307,7 @@ class AppDatabase extends _$AppDatabase {
   Future<bool> isBibleCached(String translationId) async {
     // Use a regular select to ensure columns are included in the generated SQL.
     final rows = await (select(books)
-          ..where((b) => b.id.like('${translationId}_%'))
+          ..where((b) => b.translationId.equals(translationId))
           ..limit(1))
         .get();
 
@@ -235,13 +315,35 @@ class AppDatabase extends _$AppDatabase {
   }
 
   Future<void> deleteBible(String translationId) async {
-    await (delete(books)..where((b) => b.id.like('${translationId}_%'))).go();
+    await transaction(() async {
+      await (delete(verses)
+            ..where((v) => v.chapterId.isInQuery(
+                  selectOnly(chapters)
+                    ..addColumns([chapters.id])
+                    ..where(chapters.bookId.isInQuery(
+                      selectOnly(books)
+                        ..addColumns([books.id])
+                        ..where(books.translationId.equals(translationId)),
+                    )),
+                )))
+          .go();
+      await (delete(chapters)
+            ..where((c) => c.bookId.isInQuery(
+                  selectOnly(books)
+                    ..addColumns([books.id])
+                    ..where(books.translationId.equals(translationId)),
+                )))
+          .go();
+      await (delete(books)..where((b) => b.translationId.equals(translationId))).go();
+      await (delete(translations)..where((t) => t.id.equals(translationId))).go();
+    });
   }
   
   Future<void> deleteAllBibles() async {
     await delete(verses).go();
     await delete(chapters).go();
     await delete(books).go();
+    await delete(translations).go();
   }
 }
 
@@ -251,12 +353,19 @@ class AppDatabase extends _$AppDatabase {
 // FIXED: This now *correctly* uses the factories you set up in main.dart
 // for all platforms.
 QueryExecutor _connect() {
-  // For now use an in-memory NativeDatabase wrapped in LazyDatabase. This
-  // keeps the database functional for tests and avoids platform-specific
-  // sqflite ffi wiring here. If you want file-based persistence, wire a
-  // platform-specific QueryExecutor (e.g., using sqflite or sqflite_ffi).
   return LazyDatabase(() async {
-    return NativeDatabase.memory();
+    if (kIsWeb) {
+      return NativeDatabase.memory();
+    }
+
+    final dir = await getApplicationSupportDirectory();
+    final dbDir = Directory(p.join(dir.path, 'database'));
+    if (!await dbDir.exists()) {
+      await dbDir.create(recursive: true);
+    }
+
+    final file = File(p.join(dbDir.path, 'basic_bible.sqlite'));
+    return NativeDatabase.createInBackground(file);
   });
 }
 

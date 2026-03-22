@@ -3,6 +3,579 @@
 part of 'app_database.dart';
 
 // ignore_for_file: type=lint
+class $TranslationsTable extends Translations
+    with TableInfo<$TranslationsTable, TranslationEntry> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $TranslationsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+    'name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _languageMeta = const VerificationMeta(
+    'language',
+  );
+  @override
+  late final GeneratedColumn<String> language = GeneratedColumn<String>(
+    'language',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _descriptionMeta = const VerificationMeta(
+    'description',
+  );
+  @override
+  late final GeneratedColumn<String> description = GeneratedColumn<String>(
+    'description',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _formatMeta = const VerificationMeta('format');
+  @override
+  late final GeneratedColumn<String> format = GeneratedColumn<String>(
+    'format',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _sourceTypeMeta = const VerificationMeta(
+    'sourceType',
+  );
+  @override
+  late final GeneratedColumn<String> sourceType = GeneratedColumn<String>(
+    'source_type',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _sourceLocationMeta = const VerificationMeta(
+    'sourceLocation',
+  );
+  @override
+  late final GeneratedColumn<String> sourceLocation = GeneratedColumn<String>(
+    'source_location',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _isLocalMeta = const VerificationMeta(
+    'isLocal',
+  );
+  @override
+  late final GeneratedColumn<bool> isLocal = GeneratedColumn<bool>(
+    'is_local',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_local" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _importedAtMeta = const VerificationMeta(
+    'importedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> importedAt = GeneratedColumn<DateTime>(
+    'imported_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    name,
+    language,
+    description,
+    format,
+    sourceType,
+    sourceLocation,
+    isLocal,
+    importedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'translations';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<TranslationEntry> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('language')) {
+      context.handle(
+        _languageMeta,
+        language.isAcceptableOrUnknown(data['language']!, _languageMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_languageMeta);
+    }
+    if (data.containsKey('description')) {
+      context.handle(
+        _descriptionMeta,
+        description.isAcceptableOrUnknown(
+          data['description']!,
+          _descriptionMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_descriptionMeta);
+    }
+    if (data.containsKey('format')) {
+      context.handle(
+        _formatMeta,
+        format.isAcceptableOrUnknown(data['format']!, _formatMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_formatMeta);
+    }
+    if (data.containsKey('source_type')) {
+      context.handle(
+        _sourceTypeMeta,
+        sourceType.isAcceptableOrUnknown(data['source_type']!, _sourceTypeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_sourceTypeMeta);
+    }
+    if (data.containsKey('source_location')) {
+      context.handle(
+        _sourceLocationMeta,
+        sourceLocation.isAcceptableOrUnknown(
+          data['source_location']!,
+          _sourceLocationMeta,
+        ),
+      );
+    }
+    if (data.containsKey('is_local')) {
+      context.handle(
+        _isLocalMeta,
+        isLocal.isAcceptableOrUnknown(data['is_local']!, _isLocalMeta),
+      );
+    }
+    if (data.containsKey('imported_at')) {
+      context.handle(
+        _importedAtMeta,
+        importedAt.isAcceptableOrUnknown(data['imported_at']!, _importedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  TranslationEntry map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return TranslationEntry(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      )!,
+      language: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}language'],
+      )!,
+      description: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}description'],
+      )!,
+      format: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}format'],
+      )!,
+      sourceType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source_type'],
+      )!,
+      sourceLocation: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source_location'],
+      ),
+      isLocal: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_local'],
+      )!,
+      importedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}imported_at'],
+      )!,
+    );
+  }
+
+  @override
+  $TranslationsTable createAlias(String alias) {
+    return $TranslationsTable(attachedDatabase, alias);
+  }
+}
+
+class TranslationEntry extends DataClass
+    implements Insertable<TranslationEntry> {
+  final String id;
+  final String name;
+  final String language;
+  final String description;
+  final String format;
+  final String sourceType;
+  final String? sourceLocation;
+  final bool isLocal;
+  final DateTime importedAt;
+  const TranslationEntry({
+    required this.id,
+    required this.name,
+    required this.language,
+    required this.description,
+    required this.format,
+    required this.sourceType,
+    this.sourceLocation,
+    required this.isLocal,
+    required this.importedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['name'] = Variable<String>(name);
+    map['language'] = Variable<String>(language);
+    map['description'] = Variable<String>(description);
+    map['format'] = Variable<String>(format);
+    map['source_type'] = Variable<String>(sourceType);
+    if (!nullToAbsent || sourceLocation != null) {
+      map['source_location'] = Variable<String>(sourceLocation);
+    }
+    map['is_local'] = Variable<bool>(isLocal);
+    map['imported_at'] = Variable<DateTime>(importedAt);
+    return map;
+  }
+
+  TranslationsCompanion toCompanion(bool nullToAbsent) {
+    return TranslationsCompanion(
+      id: Value(id),
+      name: Value(name),
+      language: Value(language),
+      description: Value(description),
+      format: Value(format),
+      sourceType: Value(sourceType),
+      sourceLocation: sourceLocation == null && nullToAbsent
+          ? const Value.absent()
+          : Value(sourceLocation),
+      isLocal: Value(isLocal),
+      importedAt: Value(importedAt),
+    );
+  }
+
+  factory TranslationEntry.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return TranslationEntry(
+      id: serializer.fromJson<String>(json['id']),
+      name: serializer.fromJson<String>(json['name']),
+      language: serializer.fromJson<String>(json['language']),
+      description: serializer.fromJson<String>(json['description']),
+      format: serializer.fromJson<String>(json['format']),
+      sourceType: serializer.fromJson<String>(json['sourceType']),
+      sourceLocation: serializer.fromJson<String?>(json['sourceLocation']),
+      isLocal: serializer.fromJson<bool>(json['isLocal']),
+      importedAt: serializer.fromJson<DateTime>(json['importedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'name': serializer.toJson<String>(name),
+      'language': serializer.toJson<String>(language),
+      'description': serializer.toJson<String>(description),
+      'format': serializer.toJson<String>(format),
+      'sourceType': serializer.toJson<String>(sourceType),
+      'sourceLocation': serializer.toJson<String?>(sourceLocation),
+      'isLocal': serializer.toJson<bool>(isLocal),
+      'importedAt': serializer.toJson<DateTime>(importedAt),
+    };
+  }
+
+  TranslationEntry copyWith({
+    String? id,
+    String? name,
+    String? language,
+    String? description,
+    String? format,
+    String? sourceType,
+    Value<String?> sourceLocation = const Value.absent(),
+    bool? isLocal,
+    DateTime? importedAt,
+  }) => TranslationEntry(
+    id: id ?? this.id,
+    name: name ?? this.name,
+    language: language ?? this.language,
+    description: description ?? this.description,
+    format: format ?? this.format,
+    sourceType: sourceType ?? this.sourceType,
+    sourceLocation: sourceLocation.present
+        ? sourceLocation.value
+        : this.sourceLocation,
+    isLocal: isLocal ?? this.isLocal,
+    importedAt: importedAt ?? this.importedAt,
+  );
+  TranslationEntry copyWithCompanion(TranslationsCompanion data) {
+    return TranslationEntry(
+      id: data.id.present ? data.id.value : this.id,
+      name: data.name.present ? data.name.value : this.name,
+      language: data.language.present ? data.language.value : this.language,
+      description: data.description.present
+          ? data.description.value
+          : this.description,
+      format: data.format.present ? data.format.value : this.format,
+      sourceType: data.sourceType.present
+          ? data.sourceType.value
+          : this.sourceType,
+      sourceLocation: data.sourceLocation.present
+          ? data.sourceLocation.value
+          : this.sourceLocation,
+      isLocal: data.isLocal.present ? data.isLocal.value : this.isLocal,
+      importedAt: data.importedAt.present
+          ? data.importedAt.value
+          : this.importedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TranslationEntry(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('language: $language, ')
+          ..write('description: $description, ')
+          ..write('format: $format, ')
+          ..write('sourceType: $sourceType, ')
+          ..write('sourceLocation: $sourceLocation, ')
+          ..write('isLocal: $isLocal, ')
+          ..write('importedAt: $importedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    name,
+    language,
+    description,
+    format,
+    sourceType,
+    sourceLocation,
+    isLocal,
+    importedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is TranslationEntry &&
+          other.id == this.id &&
+          other.name == this.name &&
+          other.language == this.language &&
+          other.description == this.description &&
+          other.format == this.format &&
+          other.sourceType == this.sourceType &&
+          other.sourceLocation == this.sourceLocation &&
+          other.isLocal == this.isLocal &&
+          other.importedAt == this.importedAt);
+}
+
+class TranslationsCompanion extends UpdateCompanion<TranslationEntry> {
+  final Value<String> id;
+  final Value<String> name;
+  final Value<String> language;
+  final Value<String> description;
+  final Value<String> format;
+  final Value<String> sourceType;
+  final Value<String?> sourceLocation;
+  final Value<bool> isLocal;
+  final Value<DateTime> importedAt;
+  final Value<int> rowid;
+  const TranslationsCompanion({
+    this.id = const Value.absent(),
+    this.name = const Value.absent(),
+    this.language = const Value.absent(),
+    this.description = const Value.absent(),
+    this.format = const Value.absent(),
+    this.sourceType = const Value.absent(),
+    this.sourceLocation = const Value.absent(),
+    this.isLocal = const Value.absent(),
+    this.importedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  TranslationsCompanion.insert({
+    required String id,
+    required String name,
+    required String language,
+    required String description,
+    required String format,
+    required String sourceType,
+    this.sourceLocation = const Value.absent(),
+    this.isLocal = const Value.absent(),
+    this.importedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       name = Value(name),
+       language = Value(language),
+       description = Value(description),
+       format = Value(format),
+       sourceType = Value(sourceType);
+  static Insertable<TranslationEntry> custom({
+    Expression<String>? id,
+    Expression<String>? name,
+    Expression<String>? language,
+    Expression<String>? description,
+    Expression<String>? format,
+    Expression<String>? sourceType,
+    Expression<String>? sourceLocation,
+    Expression<bool>? isLocal,
+    Expression<DateTime>? importedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (name != null) 'name': name,
+      if (language != null) 'language': language,
+      if (description != null) 'description': description,
+      if (format != null) 'format': format,
+      if (sourceType != null) 'source_type': sourceType,
+      if (sourceLocation != null) 'source_location': sourceLocation,
+      if (isLocal != null) 'is_local': isLocal,
+      if (importedAt != null) 'imported_at': importedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  TranslationsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? name,
+    Value<String>? language,
+    Value<String>? description,
+    Value<String>? format,
+    Value<String>? sourceType,
+    Value<String?>? sourceLocation,
+    Value<bool>? isLocal,
+    Value<DateTime>? importedAt,
+    Value<int>? rowid,
+  }) {
+    return TranslationsCompanion(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      language: language ?? this.language,
+      description: description ?? this.description,
+      format: format ?? this.format,
+      sourceType: sourceType ?? this.sourceType,
+      sourceLocation: sourceLocation ?? this.sourceLocation,
+      isLocal: isLocal ?? this.isLocal,
+      importedAt: importedAt ?? this.importedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (language.present) {
+      map['language'] = Variable<String>(language.value);
+    }
+    if (description.present) {
+      map['description'] = Variable<String>(description.value);
+    }
+    if (format.present) {
+      map['format'] = Variable<String>(format.value);
+    }
+    if (sourceType.present) {
+      map['source_type'] = Variable<String>(sourceType.value);
+    }
+    if (sourceLocation.present) {
+      map['source_location'] = Variable<String>(sourceLocation.value);
+    }
+    if (isLocal.present) {
+      map['is_local'] = Variable<bool>(isLocal.value);
+    }
+    if (importedAt.present) {
+      map['imported_at'] = Variable<DateTime>(importedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TranslationsCompanion(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('language: $language, ')
+          ..write('description: $description, ')
+          ..write('format: $format, ')
+          ..write('sourceType: $sourceType, ')
+          ..write('sourceLocation: $sourceLocation, ')
+          ..write('isLocal: $isLocal, ')
+          ..write('importedAt: $importedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $BooksTable extends Books with TableInfo<$BooksTable, BookEntry> {
   @override
   final GeneratedDatabase attachedDatabase;
@@ -16,6 +589,20 @@ class $BooksTable extends Books with TableInfo<$BooksTable, BookEntry> {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+  );
+  static const VerificationMeta _translationIdMeta = const VerificationMeta(
+    'translationId',
+  );
+  @override
+  late final GeneratedColumn<String> translationId = GeneratedColumn<String>(
+    'translation_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES translations (id)',
+    ),
   );
   static const VerificationMeta _nameMeta = const VerificationMeta('name');
   @override
@@ -62,6 +649,7 @@ class $BooksTable extends Books with TableInfo<$BooksTable, BookEntry> {
   @override
   List<GeneratedColumn> get $columns => [
     id,
+    translationId,
     name,
     shortName,
     bookNumber,
@@ -83,6 +671,17 @@ class $BooksTable extends Books with TableInfo<$BooksTable, BookEntry> {
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
     } else if (isInserting) {
       context.missing(_idMeta);
+    }
+    if (data.containsKey('translation_id')) {
+      context.handle(
+        _translationIdMeta,
+        translationId.isAcceptableOrUnknown(
+          data['translation_id']!,
+          _translationIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_translationIdMeta);
     }
     if (data.containsKey('name')) {
       context.handle(
@@ -129,6 +728,10 @@ class $BooksTable extends Books with TableInfo<$BooksTable, BookEntry> {
         DriftSqlType.string,
         data['${effectivePrefix}id'],
       )!,
+      translationId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}translation_id'],
+      )!,
       name: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}name'],
@@ -156,12 +759,14 @@ class $BooksTable extends Books with TableInfo<$BooksTable, BookEntry> {
 
 class BookEntry extends DataClass implements Insertable<BookEntry> {
   final String id;
+  final String translationId;
   final String name;
   final String shortName;
   final int bookNumber;
   final int bookType;
   const BookEntry({
     required this.id,
+    required this.translationId,
     required this.name,
     required this.shortName,
     required this.bookNumber,
@@ -171,6 +776,7 @@ class BookEntry extends DataClass implements Insertable<BookEntry> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<String>(id);
+    map['translation_id'] = Variable<String>(translationId);
     map['name'] = Variable<String>(name);
     map['short_name'] = Variable<String>(shortName);
     map['book_number'] = Variable<int>(bookNumber);
@@ -181,6 +787,7 @@ class BookEntry extends DataClass implements Insertable<BookEntry> {
   BooksCompanion toCompanion(bool nullToAbsent) {
     return BooksCompanion(
       id: Value(id),
+      translationId: Value(translationId),
       name: Value(name),
       shortName: Value(shortName),
       bookNumber: Value(bookNumber),
@@ -195,6 +802,7 @@ class BookEntry extends DataClass implements Insertable<BookEntry> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return BookEntry(
       id: serializer.fromJson<String>(json['id']),
+      translationId: serializer.fromJson<String>(json['translationId']),
       name: serializer.fromJson<String>(json['name']),
       shortName: serializer.fromJson<String>(json['shortName']),
       bookNumber: serializer.fromJson<int>(json['bookNumber']),
@@ -206,6 +814,7 @@ class BookEntry extends DataClass implements Insertable<BookEntry> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
+      'translationId': serializer.toJson<String>(translationId),
       'name': serializer.toJson<String>(name),
       'shortName': serializer.toJson<String>(shortName),
       'bookNumber': serializer.toJson<int>(bookNumber),
@@ -215,12 +824,14 @@ class BookEntry extends DataClass implements Insertable<BookEntry> {
 
   BookEntry copyWith({
     String? id,
+    String? translationId,
     String? name,
     String? shortName,
     int? bookNumber,
     int? bookType,
   }) => BookEntry(
     id: id ?? this.id,
+    translationId: translationId ?? this.translationId,
     name: name ?? this.name,
     shortName: shortName ?? this.shortName,
     bookNumber: bookNumber ?? this.bookNumber,
@@ -229,6 +840,9 @@ class BookEntry extends DataClass implements Insertable<BookEntry> {
   BookEntry copyWithCompanion(BooksCompanion data) {
     return BookEntry(
       id: data.id.present ? data.id.value : this.id,
+      translationId: data.translationId.present
+          ? data.translationId.value
+          : this.translationId,
       name: data.name.present ? data.name.value : this.name,
       shortName: data.shortName.present ? data.shortName.value : this.shortName,
       bookNumber: data.bookNumber.present
@@ -242,6 +856,7 @@ class BookEntry extends DataClass implements Insertable<BookEntry> {
   String toString() {
     return (StringBuffer('BookEntry(')
           ..write('id: $id, ')
+          ..write('translationId: $translationId, ')
           ..write('name: $name, ')
           ..write('shortName: $shortName, ')
           ..write('bookNumber: $bookNumber, ')
@@ -251,12 +866,14 @@ class BookEntry extends DataClass implements Insertable<BookEntry> {
   }
 
   @override
-  int get hashCode => Object.hash(id, name, shortName, bookNumber, bookType);
+  int get hashCode =>
+      Object.hash(id, translationId, name, shortName, bookNumber, bookType);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is BookEntry &&
           other.id == this.id &&
+          other.translationId == this.translationId &&
           other.name == this.name &&
           other.shortName == this.shortName &&
           other.bookNumber == this.bookNumber &&
@@ -265,6 +882,7 @@ class BookEntry extends DataClass implements Insertable<BookEntry> {
 
 class BooksCompanion extends UpdateCompanion<BookEntry> {
   final Value<String> id;
+  final Value<String> translationId;
   final Value<String> name;
   final Value<String> shortName;
   final Value<int> bookNumber;
@@ -272,6 +890,7 @@ class BooksCompanion extends UpdateCompanion<BookEntry> {
   final Value<int> rowid;
   const BooksCompanion({
     this.id = const Value.absent(),
+    this.translationId = const Value.absent(),
     this.name = const Value.absent(),
     this.shortName = const Value.absent(),
     this.bookNumber = const Value.absent(),
@@ -280,18 +899,21 @@ class BooksCompanion extends UpdateCompanion<BookEntry> {
   });
   BooksCompanion.insert({
     required String id,
+    required String translationId,
     required String name,
     required String shortName,
     required int bookNumber,
     required int bookType,
     this.rowid = const Value.absent(),
   }) : id = Value(id),
+       translationId = Value(translationId),
        name = Value(name),
        shortName = Value(shortName),
        bookNumber = Value(bookNumber),
        bookType = Value(bookType);
   static Insertable<BookEntry> custom({
     Expression<String>? id,
+    Expression<String>? translationId,
     Expression<String>? name,
     Expression<String>? shortName,
     Expression<int>? bookNumber,
@@ -300,6 +922,7 @@ class BooksCompanion extends UpdateCompanion<BookEntry> {
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
+      if (translationId != null) 'translation_id': translationId,
       if (name != null) 'name': name,
       if (shortName != null) 'short_name': shortName,
       if (bookNumber != null) 'book_number': bookNumber,
@@ -310,6 +933,7 @@ class BooksCompanion extends UpdateCompanion<BookEntry> {
 
   BooksCompanion copyWith({
     Value<String>? id,
+    Value<String>? translationId,
     Value<String>? name,
     Value<String>? shortName,
     Value<int>? bookNumber,
@@ -318,6 +942,7 @@ class BooksCompanion extends UpdateCompanion<BookEntry> {
   }) {
     return BooksCompanion(
       id: id ?? this.id,
+      translationId: translationId ?? this.translationId,
       name: name ?? this.name,
       shortName: shortName ?? this.shortName,
       bookNumber: bookNumber ?? this.bookNumber,
@@ -331,6 +956,9 @@ class BooksCompanion extends UpdateCompanion<BookEntry> {
     final map = <String, Expression>{};
     if (id.present) {
       map['id'] = Variable<String>(id.value);
+    }
+    if (translationId.present) {
+      map['translation_id'] = Variable<String>(translationId.value);
     }
     if (name.present) {
       map['name'] = Variable<String>(name.value);
@@ -354,6 +982,7 @@ class BooksCompanion extends UpdateCompanion<BookEntry> {
   String toString() {
     return (StringBuffer('BooksCompanion(')
           ..write('id: $id, ')
+          ..write('translationId: $translationId, ')
           ..write('name: $name, ')
           ..write('shortName: $shortName, ')
           ..write('bookNumber: $bookNumber, ')
@@ -442,6 +1071,10 @@ class $ChaptersTable extends Chapters
 
   @override
   Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  List<Set<GeneratedColumn>> get uniqueKeys => [
+    {bookId, number},
+  ];
   @override
   ChapterEntry map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
@@ -737,6 +1370,10 @@ class $VersesTable extends Verses with TableInfo<$VersesTable, VerseEntry> {
   @override
   Set<GeneratedColumn> get $primaryKey => {id};
   @override
+  List<Set<GeneratedColumn>> get uniqueKeys => [
+    {chapterId, number},
+  ];
+  @override
   VerseEntry map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return VerseEntry(
@@ -1025,6 +1662,7 @@ class VersesCompanion extends UpdateCompanion<VerseEntry> {
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
+  late final $TranslationsTable translations = $TranslationsTable(this);
   late final $BooksTable books = $BooksTable(this);
   late final $ChaptersTable chapters = $ChaptersTable(this);
   late final $VersesTable verses = $VersesTable(this);
@@ -1032,12 +1670,407 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
   @override
-  List<DatabaseSchemaEntity> get allSchemaEntities => [books, chapters, verses];
+  List<DatabaseSchemaEntity> get allSchemaEntities => [
+    translations,
+    books,
+    chapters,
+    verses,
+  ];
 }
 
+typedef $$TranslationsTableCreateCompanionBuilder =
+    TranslationsCompanion Function({
+      required String id,
+      required String name,
+      required String language,
+      required String description,
+      required String format,
+      required String sourceType,
+      Value<String?> sourceLocation,
+      Value<bool> isLocal,
+      Value<DateTime> importedAt,
+      Value<int> rowid,
+    });
+typedef $$TranslationsTableUpdateCompanionBuilder =
+    TranslationsCompanion Function({
+      Value<String> id,
+      Value<String> name,
+      Value<String> language,
+      Value<String> description,
+      Value<String> format,
+      Value<String> sourceType,
+      Value<String?> sourceLocation,
+      Value<bool> isLocal,
+      Value<DateTime> importedAt,
+      Value<int> rowid,
+    });
+
+final class $$TranslationsTableReferences
+    extends
+        BaseReferences<_$AppDatabase, $TranslationsTable, TranslationEntry> {
+  $$TranslationsTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static MultiTypedResultKey<$BooksTable, List<BookEntry>> _booksRefsTable(
+    _$AppDatabase db,
+  ) => MultiTypedResultKey.fromTable(
+    db.books,
+    aliasName: $_aliasNameGenerator(db.translations.id, db.books.translationId),
+  );
+
+  $$BooksTableProcessedTableManager get booksRefs {
+    final manager = $$BooksTableTableManager(
+      $_db,
+      $_db.books,
+    ).filter((f) => f.translationId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_booksRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+}
+
+class $$TranslationsTableFilterComposer
+    extends Composer<_$AppDatabase, $TranslationsTable> {
+  $$TranslationsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get language => $composableBuilder(
+    column: $table.language,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get description => $composableBuilder(
+    column: $table.description,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get format => $composableBuilder(
+    column: $table.format,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get sourceType => $composableBuilder(
+    column: $table.sourceType,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get sourceLocation => $composableBuilder(
+    column: $table.sourceLocation,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isLocal => $composableBuilder(
+    column: $table.isLocal,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get importedAt => $composableBuilder(
+    column: $table.importedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  Expression<bool> booksRefs(
+    Expression<bool> Function($$BooksTableFilterComposer f) f,
+  ) {
+    final $$BooksTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.books,
+      getReferencedColumn: (t) => t.translationId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BooksTableFilterComposer(
+            $db: $db,
+            $table: $db.books,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$TranslationsTableOrderingComposer
+    extends Composer<_$AppDatabase, $TranslationsTable> {
+  $$TranslationsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get language => $composableBuilder(
+    column: $table.language,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get description => $composableBuilder(
+    column: $table.description,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get format => $composableBuilder(
+    column: $table.format,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get sourceType => $composableBuilder(
+    column: $table.sourceType,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get sourceLocation => $composableBuilder(
+    column: $table.sourceLocation,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isLocal => $composableBuilder(
+    column: $table.isLocal,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get importedAt => $composableBuilder(
+    column: $table.importedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$TranslationsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $TranslationsTable> {
+  $$TranslationsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<String> get language =>
+      $composableBuilder(column: $table.language, builder: (column) => column);
+
+  GeneratedColumn<String> get description => $composableBuilder(
+    column: $table.description,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get format =>
+      $composableBuilder(column: $table.format, builder: (column) => column);
+
+  GeneratedColumn<String> get sourceType => $composableBuilder(
+    column: $table.sourceType,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get sourceLocation => $composableBuilder(
+    column: $table.sourceLocation,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get isLocal =>
+      $composableBuilder(column: $table.isLocal, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get importedAt => $composableBuilder(
+    column: $table.importedAt,
+    builder: (column) => column,
+  );
+
+  Expression<T> booksRefs<T extends Object>(
+    Expression<T> Function($$BooksTableAnnotationComposer a) f,
+  ) {
+    final $$BooksTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.books,
+      getReferencedColumn: (t) => t.translationId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BooksTableAnnotationComposer(
+            $db: $db,
+            $table: $db.books,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$TranslationsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $TranslationsTable,
+          TranslationEntry,
+          $$TranslationsTableFilterComposer,
+          $$TranslationsTableOrderingComposer,
+          $$TranslationsTableAnnotationComposer,
+          $$TranslationsTableCreateCompanionBuilder,
+          $$TranslationsTableUpdateCompanionBuilder,
+          (TranslationEntry, $$TranslationsTableReferences),
+          TranslationEntry,
+          PrefetchHooks Function({bool booksRefs})
+        > {
+  $$TranslationsTableTableManager(_$AppDatabase db, $TranslationsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$TranslationsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$TranslationsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$TranslationsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> name = const Value.absent(),
+                Value<String> language = const Value.absent(),
+                Value<String> description = const Value.absent(),
+                Value<String> format = const Value.absent(),
+                Value<String> sourceType = const Value.absent(),
+                Value<String?> sourceLocation = const Value.absent(),
+                Value<bool> isLocal = const Value.absent(),
+                Value<DateTime> importedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => TranslationsCompanion(
+                id: id,
+                name: name,
+                language: language,
+                description: description,
+                format: format,
+                sourceType: sourceType,
+                sourceLocation: sourceLocation,
+                isLocal: isLocal,
+                importedAt: importedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String name,
+                required String language,
+                required String description,
+                required String format,
+                required String sourceType,
+                Value<String?> sourceLocation = const Value.absent(),
+                Value<bool> isLocal = const Value.absent(),
+                Value<DateTime> importedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => TranslationsCompanion.insert(
+                id: id,
+                name: name,
+                language: language,
+                description: description,
+                format: format,
+                sourceType: sourceType,
+                sourceLocation: sourceLocation,
+                isLocal: isLocal,
+                importedAt: importedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$TranslationsTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({booksRefs = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [if (booksRefs) db.books],
+              addJoins: null,
+              getPrefetchedDataCallback: (items) async {
+                return [
+                  if (booksRefs)
+                    await $_getPrefetchedData<
+                      TranslationEntry,
+                      $TranslationsTable,
+                      BookEntry
+                    >(
+                      currentTable: table,
+                      referencedTable: $$TranslationsTableReferences
+                          ._booksRefsTable(db),
+                      managerFromTypedResult: (p0) =>
+                          $$TranslationsTableReferences(
+                            db,
+                            table,
+                            p0,
+                          ).booksRefs,
+                      referencedItemsForCurrentItem: (item, referencedItems) =>
+                          referencedItems.where(
+                            (e) => e.translationId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
+                ];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$TranslationsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $TranslationsTable,
+      TranslationEntry,
+      $$TranslationsTableFilterComposer,
+      $$TranslationsTableOrderingComposer,
+      $$TranslationsTableAnnotationComposer,
+      $$TranslationsTableCreateCompanionBuilder,
+      $$TranslationsTableUpdateCompanionBuilder,
+      (TranslationEntry, $$TranslationsTableReferences),
+      TranslationEntry,
+      PrefetchHooks Function({bool booksRefs})
+    >;
 typedef $$BooksTableCreateCompanionBuilder =
     BooksCompanion Function({
       required String id,
+      required String translationId,
       required String name,
       required String shortName,
       required int bookNumber,
@@ -1047,6 +2080,7 @@ typedef $$BooksTableCreateCompanionBuilder =
 typedef $$BooksTableUpdateCompanionBuilder =
     BooksCompanion Function({
       Value<String> id,
+      Value<String> translationId,
       Value<String> name,
       Value<String> shortName,
       Value<int> bookNumber,
@@ -1057,6 +2091,25 @@ typedef $$BooksTableUpdateCompanionBuilder =
 final class $$BooksTableReferences
     extends BaseReferences<_$AppDatabase, $BooksTable, BookEntry> {
   $$BooksTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static $TranslationsTable _translationIdTable(_$AppDatabase db) =>
+      db.translations.createAlias(
+        $_aliasNameGenerator(db.books.translationId, db.translations.id),
+      );
+
+  $$TranslationsTableProcessedTableManager get translationId {
+    final $_column = $_itemColumn<String>('translation_id')!;
+
+    final manager = $$TranslationsTableTableManager(
+      $_db,
+      $_db.translations,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_translationIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
 
   static MultiTypedResultKey<$ChaptersTable, List<ChapterEntry>>
   _chaptersRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
@@ -1109,6 +2162,29 @@ class $$BooksTableFilterComposer extends Composer<_$AppDatabase, $BooksTable> {
     column: $table.bookType,
     builder: (column) => ColumnFilters(column),
   );
+
+  $$TranslationsTableFilterComposer get translationId {
+    final $$TranslationsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.translationId,
+      referencedTable: $db.translations,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TranslationsTableFilterComposer(
+            $db: $db,
+            $table: $db.translations,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 
   Expression<bool> chaptersRefs(
     Expression<bool> Function($$ChaptersTableFilterComposer f) f,
@@ -1169,6 +2245,29 @@ class $$BooksTableOrderingComposer
     column: $table.bookType,
     builder: (column) => ColumnOrderings(column),
   );
+
+  $$TranslationsTableOrderingComposer get translationId {
+    final $$TranslationsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.translationId,
+      referencedTable: $db.translations,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TranslationsTableOrderingComposer(
+            $db: $db,
+            $table: $db.translations,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 }
 
 class $$BooksTableAnnotationComposer
@@ -1196,6 +2295,29 @@ class $$BooksTableAnnotationComposer
 
   GeneratedColumn<int> get bookType =>
       $composableBuilder(column: $table.bookType, builder: (column) => column);
+
+  $$TranslationsTableAnnotationComposer get translationId {
+    final $$TranslationsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.translationId,
+      referencedTable: $db.translations,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TranslationsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.translations,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 
   Expression<T> chaptersRefs<T extends Object>(
     Expression<T> Function($$ChaptersTableAnnotationComposer a) f,
@@ -1236,7 +2358,7 @@ class $$BooksTableTableManager
           $$BooksTableUpdateCompanionBuilder,
           (BookEntry, $$BooksTableReferences),
           BookEntry,
-          PrefetchHooks Function({bool chaptersRefs})
+          PrefetchHooks Function({bool translationId, bool chaptersRefs})
         > {
   $$BooksTableTableManager(_$AppDatabase db, $BooksTable table)
     : super(
@@ -1252,6 +2374,7 @@ class $$BooksTableTableManager
           updateCompanionCallback:
               ({
                 Value<String> id = const Value.absent(),
+                Value<String> translationId = const Value.absent(),
                 Value<String> name = const Value.absent(),
                 Value<String> shortName = const Value.absent(),
                 Value<int> bookNumber = const Value.absent(),
@@ -1259,6 +2382,7 @@ class $$BooksTableTableManager
                 Value<int> rowid = const Value.absent(),
               }) => BooksCompanion(
                 id: id,
+                translationId: translationId,
                 name: name,
                 shortName: shortName,
                 bookNumber: bookNumber,
@@ -1268,6 +2392,7 @@ class $$BooksTableTableManager
           createCompanionCallback:
               ({
                 required String id,
+                required String translationId,
                 required String name,
                 required String shortName,
                 required int bookNumber,
@@ -1275,6 +2400,7 @@ class $$BooksTableTableManager
                 Value<int> rowid = const Value.absent(),
               }) => BooksCompanion.insert(
                 id: id,
+                translationId: translationId,
                 name: name,
                 shortName: shortName,
                 bookNumber: bookNumber,
@@ -1287,32 +2413,70 @@ class $$BooksTableTableManager
                     (e.readTable(table), $$BooksTableReferences(db, table, e)),
               )
               .toList(),
-          prefetchHooksCallback: ({chaptersRefs = false}) {
-            return PrefetchHooks(
-              db: db,
-              explicitlyWatchedTables: [if (chaptersRefs) db.chapters],
-              addJoins: null,
-              getPrefetchedDataCallback: (items) async {
-                return [
-                  if (chaptersRefs)
-                    await $_getPrefetchedData<
-                      BookEntry,
-                      $BooksTable,
-                      ChapterEntry
-                    >(
-                      currentTable: table,
-                      referencedTable: $$BooksTableReferences
-                          ._chaptersRefsTable(db),
-                      managerFromTypedResult: (p0) =>
-                          $$BooksTableReferences(db, table, p0).chaptersRefs,
-                      referencedItemsForCurrentItem: (item, referencedItems) =>
-                          referencedItems.where((e) => e.bookId == item.id),
-                      typedResults: items,
-                    ),
-                ];
+          prefetchHooksCallback:
+              ({translationId = false, chaptersRefs = false}) {
+                return PrefetchHooks(
+                  db: db,
+                  explicitlyWatchedTables: [if (chaptersRefs) db.chapters],
+                  addJoins:
+                      <
+                        T extends TableManagerState<
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic
+                        >
+                      >(state) {
+                        if (translationId) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.translationId,
+                                    referencedTable: $$BooksTableReferences
+                                        ._translationIdTable(db),
+                                    referencedColumn: $$BooksTableReferences
+                                        ._translationIdTable(db)
+                                        .id,
+                                  )
+                                  as T;
+                        }
+
+                        return state;
+                      },
+                  getPrefetchedDataCallback: (items) async {
+                    return [
+                      if (chaptersRefs)
+                        await $_getPrefetchedData<
+                          BookEntry,
+                          $BooksTable,
+                          ChapterEntry
+                        >(
+                          currentTable: table,
+                          referencedTable: $$BooksTableReferences
+                              ._chaptersRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$BooksTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).chaptersRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.bookId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                    ];
+                  },
+                );
               },
-            );
-          },
         ),
       );
 }
@@ -1329,7 +2493,7 @@ typedef $$BooksTableProcessedTableManager =
       $$BooksTableUpdateCompanionBuilder,
       (BookEntry, $$BooksTableReferences),
       BookEntry,
-      PrefetchHooks Function({bool chaptersRefs})
+      PrefetchHooks Function({bool translationId, bool chaptersRefs})
     >;
 typedef $$ChaptersTableCreateCompanionBuilder =
     ChaptersCompanion Function({
@@ -2023,6 +3187,8 @@ typedef $$VersesTableProcessedTableManager =
 class $AppDatabaseManager {
   final _$AppDatabase _db;
   $AppDatabaseManager(this._db);
+  $$TranslationsTableTableManager get translations =>
+      $$TranslationsTableTableManager(_db, _db.translations);
   $$BooksTableTableManager get books =>
       $$BooksTableTableManager(_db, _db.books);
   $$ChaptersTableTableManager get chapters =>

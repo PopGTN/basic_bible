@@ -9,6 +9,7 @@ import 'views/login/login_screen.dart';
 import 'views/home/home_screen.dart';
 import 'views/other_screen.dart';
 import 'views/settings/settings_screen.dart';
+import 'views/placeholder/coming_soon_screen.dart';
 
 // Providers
 import 'providers/auth_provider.dart';
@@ -34,6 +35,12 @@ class MyApp extends ConsumerWidget {
           isLoggedIn ? HomeScreen() : LoginScreen(),
         ),
         GoRoute(path: '/login', builder: (context, state) => LoginScreen()),
+        GoRoute(
+          path: '/coming-soon/:feature',
+          builder: (context, state) => ComingSoonScreen(
+            featureKey: state.pathParameters['feature'] ?? 'feature',
+          ),
+        ),
         GoRoute(
           path: '/home',
           builder: (context, state) => HomeScreen(),

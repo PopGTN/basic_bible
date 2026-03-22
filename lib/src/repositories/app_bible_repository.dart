@@ -22,27 +22,33 @@ class AppBibleRepository {
       name: 'King James Version',
       language: 'en',
       description: 'The classic English Bible translation',
-      isLocal: false,
+      isLocal: true,
+      filePath: 'assets/bible/eng-kjv2006_usfx.xml',
       githubUrl: 'https://raw.githubusercontent.com/PopGTN/bible-data/refs/heads/main/English/eng-kjv2006_usfx.xml',
       format: BibleFormat.usfx,
+      sourceType: BibleSourceType.asset,
     ),
     BibleTranslation(
       id: 'asv',
       name: 'American Standard Version',
       language: 'en',
       description: 'American Standard Version (1901)',
-      isLocal: false,
+      isLocal: true,
+      filePath: 'assets/bible/asv_osis.xml',
       githubUrl: 'https://raw.githubusercontent.com/PopGTN/bible-data/refs/heads/main/English/asv_osis.xml',
       format: BibleFormat.osis,
+      sourceType: BibleSourceType.asset,
     ),
     BibleTranslation(
       id: 'web',
       name: 'World English Bible',
       language: 'en',
       description: 'Modern English public domain Bible',
-      isLocal: false,
+      isLocal: true,
+      filePath: 'assets/bible/eng-web.usfx.xml',
       githubUrl: 'https://raw.githubusercontent.com/PopGTN/bible-data/refs/heads/main/English/eng-web.usfx.xml',
       format: BibleFormat.usfx,
+      sourceType: BibleSourceType.asset,
     ),
   ];
 
@@ -55,23 +61,8 @@ class AppBibleRepository {
     }
 
     try {
-      String content = '';
-      
-      // Try to load from assets first
-      final assetExtensions = ['usfm', 'usfx', 'txt', 'xml'];
-      for (final ext in assetExtensions) {
-        final assetPath = 'assets/bible/$translationId.$ext';
-        try {
-          content = await rootBundle.loadString(assetPath);
-          break;
-        } catch (e) {
-          // Continue to next extension
-        }
-      }
-
-      if (content.isEmpty) {
-        throw Exception('Bible translation $translationId not found locally');
-      }
+      final translation = _getTranslation(translationId);
+      final content = await _loadAssetContent(translation);
 
       // Parsing can be CPU-intensive for large files. Run it in a
       // background isolate so we don't block the UI thread.
@@ -90,10 +81,14 @@ class AppBibleRepository {
             notes: (v['notes'] as List<dynamic>?)?.cast<String>(),
             references: (v['references'] as List<dynamic>?)?.cast<String>(),
           )).toList(),
-        )).toList(),
+          )).toList(),
       )).toList();
 
       await _db.insertBible(translationId, _cachedBooks);
+      await _db.upsertTranslationMetadata(
+        translation: translation,
+        sourceLocation: translation.filePath,
+      );
       _currentTranslationId = translationId;
       return _cachedBooks;
     } catch (e) {
@@ -143,7 +138,12 @@ class AppBibleRepository {
             )).toList(),
           )).toList();
 
-    await _db.insertBible(translationId, _cachedBooks);
+        await _db.insertBible(translationId, _cachedBooks);
+        await _db.upsertTranslationMetadata(
+          translation: translation,
+          sourceLocation: translation.githubUrl,
+          sourceTypeOverride: BibleSourceType.download,
+        );
         _currentTranslationId = translationId;
         return _cachedBooks;
       } else {
@@ -219,6 +219,33 @@ class AppBibleRepository {
   Future<void> clearAllCache() async {
     await _db.deleteAllBibles();
   }
+
+  BibleTranslation _getTranslation(String translationId) {
+    return availableTranslations.firstWhere(
+      (t) => t.id == translationId,
+      orElse: () => throw Exception('Translation $translationId not found'),
+    );
+  }
+
+  Future<String> _loadAssetContent(BibleTranslation translation) async {
+    final candidatePaths = <String>[
+      if (translation.filePath != null) translation.filePath!,
+      'assets/bible/${translation.id}.usfm',
+      'assets/bible/${translation.id}.usfx',
+      'assets/bible/${translation.id}.txt',
+      'assets/bible/${translation.id}.xml',
+    ];
+
+    for (final assetPath in candidatePaths) {
+      try {
+        return await rootBundle.loadString(assetPath);
+      } catch (_) {
+        // Continue to the next candidate path.
+      }
+    }
+
+    throw Exception('Bible translation ${translation.id} not found locally');
+  }
 }
 
 /// Top-level parser function run inside an isolate via `compute`.
@@ -232,8 +259,8 @@ Future<List<Map<String, dynamic>>> _parseBibleToSerializable(String content) asy
       final verses = chapter.verses.map((v) => {
         'number': v.num,
         'text': v.text,
-        'notes': v.notes ?? <String>[],
-        'references': v.references ?? <String>[],
+        'notes': v.notes,
+        'references': v.references,
       }).toList();
 
       chapters.add({'number': chapter.num, 'verses': verses});

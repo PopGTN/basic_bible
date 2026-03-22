@@ -9,8 +9,6 @@ class LoginScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
- final t = AppLocalizations.of(context)!; // <-- translations
-
     return Scaffold(
       appBar: AppBar(title: Text(AppLocalizations.of(context)!.login)),
       body: Center(

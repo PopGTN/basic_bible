@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import '/TodoModal.dart';
+import 'todo.dart';
 
 class TodoRepository {
   final String baseUrl = "https://jsonplaceholder.typicode.com/todos";

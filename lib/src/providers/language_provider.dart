@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -21,7 +20,8 @@ class LanguageNotifier extends StateNotifier<String> {
       state = savedLang;
     } else {
       // Optionally auto-detect system locale on first launch
-      final defaultLang = WidgetsBinding.instance.window.locale.languageCode;
+      final defaultLang =
+          WidgetsBinding.instance.platformDispatcher.locale.languageCode;
       state = defaultLang;
       await prefs.setString('languageCode', defaultLang);
     }

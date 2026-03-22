@@ -87,7 +87,7 @@ Future<void> _openLink(String url) async {
           onTap: () => context.go('/coming-soon/verses'),
         ),
 
-        Divider(),
+        const Divider(),
         
         // About
         ListTile(
@@ -100,7 +100,7 @@ Future<void> _openLink(String url) async {
         ListTile(
           leading: const Icon(Icons.help_outline),
            title: Text("Donate"),
-          onTap: () => context.go('/coming-soon/Donate'),
+          onTap: () => context.go('/coming-soon/donate'),
         ),
         // Help
         ListTile(
