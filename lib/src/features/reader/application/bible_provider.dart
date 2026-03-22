@@ -247,8 +247,17 @@ final bibleBooksProvider =
       ref,
     ) {
       final repository = ref.watch(bibleRepositoryProvider);
-      final translationId = ref.watch(currentTranslationProvider);
-      return BibleBooksNotifier(repository, translationId);
+      final notifier = BibleBooksNotifier(
+        repository,
+        ref.read(currentTranslationProvider),
+      );
+      // Keep the notifier alive across translation changes so cached
+      // translations can swap in quickly without recreating the whole loading
+      // state from scratch on every pill selection.
+      ref.listen<String>(currentTranslationProvider, (previous, next) {
+        notifier.changeTranslation(next);
+      });
+      return notifier;
     });
 
 class BibleBooksNotifier extends StateNotifier<AsyncValue<List<BibleBook>>> {
@@ -256,12 +265,16 @@ class BibleBooksNotifier extends StateNotifier<AsyncValue<List<BibleBook>>> {
   String _currentTranslationId;
 
   BibleBooksNotifier(this.repository, this._currentTranslationId)
-    : super(const AsyncValue.loading()) {
-    loadBible();
+    : super(_initialBibleBooksState(repository, _currentTranslationId)) {
+    if (!state.hasValue) {
+      loadBible();
+    }
   }
 
-  Future<void> loadBible() async {
-    state = const AsyncValue.loading();
+  Future<void> loadBible({bool showLoading = true}) async {
+    if (showLoading || !state.hasValue) {
+      state = const AsyncValue.loading();
+    }
 
     try {
       List<BibleBook> books;
@@ -302,16 +315,18 @@ class BibleBooksNotifier extends StateNotifier<AsyncValue<List<BibleBook>>> {
   Future<void> changeTranslation(String translationId) async {
     if (_currentTranslationId == translationId) return;
 
-    // Immediately mark loading so UI can show a spinner before heavy work starts.
-    if (_currentTranslationId == translationId) return;
     _currentTranslationId = translationId;
-    if (mounted) {
-      state = const AsyncValue.loading();
+    final inMemoryBooks = repository.getLoadedTranslation(translationId);
+    if (inMemoryBooks != null) {
+      if (mounted) {
+        state = AsyncValue.data(inMemoryBooks);
+      }
+      return;
     }
 
-    // Kick off the actual load asynchronously (allow one event loop tick)
-    // so the UI has time to paint the loading state before parsing starts.
-    Future(() => loadBible());
+    // When we already have a rendered translation on screen, keep it visible
+    // until the next translation has finished loading from disk/network.
+    Future(() => loadBible(showLoading: !state.hasValue));
   }
 
   Future<void> downloadTranslation(String translationId) async {
@@ -363,4 +378,15 @@ class BibleBooksNotifier extends StateNotifier<AsyncValue<List<BibleBook>>> {
       rethrow;
     }
   }
+}
+
+AsyncValue<List<BibleBook>> _initialBibleBooksState(
+  AppBibleRepository repository,
+  String translationId,
+) {
+  final books = repository.getLoadedTranslation(translationId);
+  if (books != null && books.isNotEmpty) {
+    return AsyncValue.data(books);
+  }
+  return const AsyncValue.loading();
 }

@@ -51,6 +51,7 @@ Status meanings:
 - `blocked`: cannot move safely without another prerequisite or decision
 
 ## Completed Recently
+- `done` Optimized Bible viewer loading by keeping previously opened translations hot in memory, stopping the reader books provider from recreating itself on every translation change, and switching the continuous whole-Bible reader to a lazy builder with coalesced visible-chapter syncing instead of rebuilding the full section list on every update.
 - `done` Moved the reference picker onto its own full-screen References screen, kept the search/AZ/history controls there, and changed the picker so only one book expands into chapter choices at a time instead of showing every chapter grid at once.
 - `done` Cleaned up the Versions screen so selecting a translation now switches quietly without a success snackbar, and locally available translations render a check-state chip instead of a misleading download icon.
 - `done` Rebuilt the reference picker around a single searchable book/chapter flow with canonical-vs-alphabetical ordering, added a history button for recently visited references, and moved verse-selection control into the main Settings page so the quick reader sheet does not own that option.

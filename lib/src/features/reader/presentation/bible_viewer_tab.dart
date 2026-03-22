@@ -307,12 +307,16 @@ class _BibleTextView extends StatefulWidget {
 class _BibleTextViewState extends State<_BibleTextView> {
   final Map<String, GlobalKey> _verseKeys = <String, GlobalKey>{};
   final Map<String, GlobalKey> _chapterSectionKeys = <String, GlobalKey>{};
+  List<_ContinuousChapterSection> _continuousSections =
+      <_ContinuousChapterSection>[];
   bool _showSelectedVerseFocus = true;
   bool _suppressNextChapterAutoScroll = false;
+  bool _visibleSyncQueued = false;
 
   @override
   void initState() {
     super.initState();
+    _rebuildContinuousSections();
     _scheduleVerseFocus();
     if (widget.continuousScrolling && widget.reference.verse == null) {
       _scheduleChapterFocus();
@@ -322,6 +326,9 @@ class _BibleTextViewState extends State<_BibleTextView> {
   @override
   void didUpdateWidget(covariant _BibleTextView oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (oldWidget.books != widget.books) {
+      _rebuildContinuousSections();
+    }
     if (oldWidget.reference != widget.reference ||
         oldWidget.chapter != widget.chapter) {
       _showSelectedVerseFocus = true;
@@ -338,6 +345,14 @@ class _BibleTextViewState extends State<_BibleTextView> {
         _scheduleChapterFocus();
       }
     }
+  }
+
+  void _rebuildContinuousSections() {
+    _continuousSections = <_ContinuousChapterSection>[
+      for (final book in widget.books)
+        for (final chapter in book.chapters)
+          _ContinuousChapterSection(book: book, chapter: chapter),
+    ];
   }
 
   void _scheduleVerseFocus() {
@@ -447,13 +462,26 @@ class _BibleTextViewState extends State<_BibleTextView> {
       child: widget.continuousScrolling
           ? NotificationListener<ScrollUpdateNotification>(
               onNotification: (notification) {
-                _syncVisibleChapterFromViewport(context);
+                _queueVisibleChapterSync(context);
                 return false;
               },
               child: _buildContinuousReadingView(context),
             )
           : _buildSingleChapterView(context),
     );
+  }
+
+  void _queueVisibleChapterSync(BuildContext context) {
+    if (_visibleSyncQueued) return;
+    _visibleSyncQueued = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Continuous mode can emit many scroll updates per frame. Coalescing the
+      // visible-chapter scan keeps the floating reference bar responsive
+      // without repeatedly traversing the whole set of mounted sections.
+      _visibleSyncQueued = false;
+      if (!mounted) return;
+      _syncVisibleChapterFromViewport(context);
+    });
   }
 
   Widget _buildSingleChapterView(BuildContext context) {
@@ -723,13 +751,7 @@ class _BibleTextViewState extends State<_BibleTextView> {
   }
 
   Widget _buildContinuousReadingView(BuildContext context) {
-    final sections = <_ContinuousChapterSection>[
-      for (final book in widget.books)
-        for (final chapter in book.chapters)
-          _ContinuousChapterSection(book: book, chapter: chapter),
-    ];
-
-    return ListView(
+    return ListView.builder(
       controller: widget.controller,
       padding: EdgeInsets.only(
         left: 16,
@@ -737,47 +759,48 @@ class _BibleTextViewState extends State<_BibleTextView> {
         top: widget.isSmallDevice ? 16 : 80,
         bottom: 72,
       ),
-      children: [
-        for (final section in sections)
-          Padding(
-            key: _chapterSectionKey(section.book.id, section.chapter.number),
-            padding: const EdgeInsets.only(bottom: 28),
-            child: _ChapterSectionView(
-              book: section.book,
-              chapter: section.chapter,
-              reference: widget.reference,
-              fontSize: widget.fontSize,
-              layoutMode: widget.layoutMode,
-              buildChapterBlocks: (chapter) =>
-                  _buildChapterBlocksFor(context, chapter),
-              buildVerse: (verse) => _buildVerseForChapter(
-                context,
-                section.book.id,
-                section.chapter.number,
-                verse,
-              ),
-              buildDocumentView: () => _buildDocumentReadingViewForChapter(
-                context,
-                section.book.id,
-                section.chapter,
-              ),
-              introBuilder: section.chapter.number == 1
-                  ? () => Column(
-                      children: _buildBookIntroductionBlocksForBook(
-                        context,
-                        section.book,
-                        showForCurrentSection: true,
-                      ),
-                    )
-                  : null,
-              headerBuilder: () => _buildChapterHeaderForChapter(
-                context,
-                section.book,
-                section.chapter.number,
-              ),
+      itemCount: _continuousSections.length,
+      itemBuilder: (context, index) {
+        final section = _continuousSections[index];
+        return Padding(
+          key: _chapterSectionKey(section.book.id, section.chapter.number),
+          padding: const EdgeInsets.only(bottom: 28),
+          child: _ChapterSectionView(
+            book: section.book,
+            chapter: section.chapter,
+            reference: widget.reference,
+            fontSize: widget.fontSize,
+            layoutMode: widget.layoutMode,
+            buildChapterBlocks: (chapter) =>
+                _buildChapterBlocksFor(context, chapter),
+            buildVerse: (verse) => _buildVerseForChapter(
+              context,
+              section.book.id,
+              section.chapter.number,
+              verse,
+            ),
+            buildDocumentView: () => _buildDocumentReadingViewForChapter(
+              context,
+              section.book.id,
+              section.chapter,
+            ),
+            introBuilder: section.chapter.number == 1
+                ? () => Column(
+                    children: _buildBookIntroductionBlocksForBook(
+                      context,
+                      section.book,
+                      showForCurrentSection: true,
+                    ),
+                  )
+                : null,
+            headerBuilder: () => _buildChapterHeaderForChapter(
+              context,
+              section.book,
+              section.chapter.number,
             ),
           ),
-      ],
+        );
+      },
     );
   }
 
@@ -837,24 +860,22 @@ class _BibleTextViewState extends State<_BibleTextView> {
     var visibleReference = widget.displayReference;
     var bestTop = -double.infinity;
 
-    for (final book in widget.books) {
-      for (final chapter in book.chapters) {
-        final sectionContext = _chapterSectionKey(
-          book.id,
-          chapter.number,
-        ).currentContext;
-        if (sectionContext == null) continue;
-        final renderBox = sectionContext.findRenderObject() as RenderBox?;
-        if (renderBox == null || !renderBox.attached) continue;
+    for (final section in _continuousSections) {
+      final sectionContext = _chapterSectionKey(
+        section.book.id,
+        section.chapter.number,
+      ).currentContext;
+      if (sectionContext == null) continue;
+      final renderBox = sectionContext.findRenderObject() as RenderBox?;
+      if (renderBox == null || !renderBox.attached) continue;
 
-        final top = renderBox.localToGlobal(Offset.zero).dy;
-        if (top <= threshold && top > bestTop) {
-          bestTop = top;
-          visibleReference = BibleReference(
-            bookId: book.id,
-            chapter: chapter.number,
-          );
-        }
+      final top = renderBox.localToGlobal(Offset.zero).dy;
+      if (top <= threshold && top > bestTop) {
+        bestTop = top;
+        visibleReference = BibleReference(
+          bookId: section.book.id,
+          chapter: section.chapter.number,
+        );
       }
     }
 

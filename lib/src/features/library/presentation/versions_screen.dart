@@ -83,9 +83,6 @@ class VersionsScreen extends ConsumerWidget {
       await ref
           .read(currentTranslationProvider.notifier)
           .setTranslation(translationId);
-      await ref
-          .read(bibleBooksProvider.notifier)
-          .changeTranslation(translationId);
 
       if (!context.mounted) return;
       if (Navigator.of(context).canPop()) {

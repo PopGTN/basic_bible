@@ -14,6 +14,10 @@ class AppBibleRepository {
 
   List<BibleBook> _cachedBooks = [];
   String? _currentTranslationId;
+  // Keep previously opened translations hot so switching back to them feels
+  // instant instead of forcing another DB read and full widget loading state.
+  final Map<String, List<BibleBook>> _memoryCacheByTranslation =
+      <String, List<BibleBook>>{};
 
   AppBibleRepository(this._db);
 
@@ -79,8 +83,9 @@ class AppBibleRepository {
 
   /// Load Bible from local asset or cache
   Future<List<BibleBook>> loadLocalBible(String translationId) async {
-    if (_currentTranslationId == translationId && _cachedBooks.isNotEmpty) {
-      return _cachedBooks;
+    final memoryCached = getLoadedTranslation(translationId);
+    if (memoryCached != null) {
+      return memoryCached;
     }
 
     final translation = await _getTranslation(translationId);
@@ -88,9 +93,7 @@ class AppBibleRepository {
     if (await _db.isBibleCached(translationId)) {
       final cachedBooks = await _db.getBible(translationId);
       if (!_needsInlineAnchorRefresh(cachedBooks)) {
-        _cachedBooks = cachedBooks;
-        _currentTranslationId = translationId;
-        return _cachedBooks;
+        return _rememberLoadedTranslation(translationId, cachedBooks);
       }
 
       // Older cached parses predate inline anchor metadata. Rebuild those
@@ -106,15 +109,14 @@ class AppBibleRepository {
       // background isolate so we don't block the UI thread.
       final parsed = await compute(_parseBibleToSerializable, content);
 
-      _cachedBooks = parsed.map(_mapSerializableBook).toList();
+      final books = parsed.map(_mapSerializableBook).toList();
 
-      await _db.insertBible(translationId, _cachedBooks);
+      await _db.insertBible(translationId, books);
       await _db.upsertTranslationMetadata(
         translation: translation,
         sourceLocation: translation.filePath,
       );
-      _currentTranslationId = translationId;
-      return _cachedBooks;
+      return _rememberLoadedTranslation(translationId, books);
     } catch (e) {
       throw Exception('Failed to load local Bible: $e');
     }
@@ -122,8 +124,9 @@ class AppBibleRepository {
 
   /// Download Bible from GitHub and cache it
   Future<List<BibleBook>> downloadBible(String translationId) async {
-    if (_currentTranslationId == translationId && _cachedBooks.isNotEmpty) {
-      return _cachedBooks;
+    final memoryCached = getLoadedTranslation(translationId);
+    if (memoryCached != null) {
+      return memoryCached;
     }
 
     final translation = await _getTranslation(translationId);
@@ -131,9 +134,7 @@ class AppBibleRepository {
     if (await _db.isBibleCached(translationId)) {
       final cachedBooks = await _db.getBible(translationId);
       if (!_needsInlineAnchorRefresh(cachedBooks)) {
-        _cachedBooks = cachedBooks;
-        _currentTranslationId = translationId;
-        return _cachedBooks;
+        return _rememberLoadedTranslation(translationId, cachedBooks);
       }
 
       // Downloaded translations can also be stale if they were cached before
@@ -154,16 +155,15 @@ class AppBibleRepository {
         // Parse in an isolate
         final parsed = await compute(_parseBibleToSerializable, content);
 
-        _cachedBooks = parsed.map(_mapSerializableBook).toList();
+        final books = parsed.map(_mapSerializableBook).toList();
 
-        await _db.insertBible(translationId, _cachedBooks);
+        await _db.insertBible(translationId, books);
         await _db.upsertTranslationMetadata(
           translation: translation,
           sourceLocation: translation.githubUrl,
           sourceTypeOverride: BibleSourceType.download,
         );
-        _currentTranslationId = translationId;
-        return _cachedBooks;
+        return _rememberLoadedTranslation(translationId, books);
       } else {
         throw Exception(
           'Failed to download Bible: HTTP ${response.statusCode}',
@@ -194,14 +194,13 @@ class AppBibleRepository {
       importedBooks: importedBooks,
     );
 
-    _cachedBooks = importedBooks;
     await _db.insertBible(translation.id, importedBooks);
     await _db.upsertTranslationMetadata(
       translation: translation,
       sourceLocation: filePath,
       sourceTypeOverride: BibleSourceType.import,
     );
-    _currentTranslationId = translation.id;
+    _rememberLoadedTranslation(translation.id, importedBooks);
     return translation;
   }
 
@@ -254,6 +253,14 @@ class AppBibleRepository {
   /// Get all available books
   List<BibleBook> getAllBooks() => List.unmodifiable(_cachedBooks);
 
+  List<BibleBook>? getLoadedTranslation(String translationId) {
+    final books = _memoryCacheByTranslation[translationId];
+    if (books == null || books.isEmpty) return null;
+    _currentTranslationId = translationId;
+    _cachedBooks = books;
+    return books;
+  }
+
   /// Get current translation ID
   String? getCurrentTranslationId() => _currentTranslationId;
 
@@ -265,11 +272,29 @@ class AppBibleRepository {
   /// Clear cache for a specific translation
   Future<void> clearCache(String translationId) async {
     await _db.deleteBible(translationId);
+    _memoryCacheByTranslation.remove(translationId);
+    if (_currentTranslationId == translationId) {
+      _currentTranslationId = null;
+      _cachedBooks = const [];
+    }
   }
 
   /// Clear all cache
   Future<void> clearAllCache() async {
     await _db.deleteAllBibles();
+    _memoryCacheByTranslation.clear();
+    _currentTranslationId = null;
+    _cachedBooks = const [];
+  }
+
+  List<BibleBook> _rememberLoadedTranslation(
+    String translationId,
+    List<BibleBook> books,
+  ) {
+    _memoryCacheByTranslation[translationId] = books;
+    _cachedBooks = books;
+    _currentTranslationId = translationId;
+    return books;
   }
 
   Future<BibleTranslation> _getTranslation(String translationId) async {
