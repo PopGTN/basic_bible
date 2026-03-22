@@ -39,6 +39,7 @@ This README is intentionally status-focused. It should reflect what the repo act
   - dark
   - soft dark
   - pure black
+  - OLED black
   - pure white
   - blue
   - red

@@ -749,6 +749,10 @@ class _ThemePreviewCard extends StatelessWidget {
         background: Color(0xFF000000),
         foreground: Color(0xFFF5F5F5),
       ),
+      AppThemeMode.oledBlack => const _ThemePreview(
+        background: Color(0xFF000000),
+        foreground: Color(0xFFEDEDED),
+      ),
       AppThemeMode.white => const _ThemePreview(
         background: Color(0xFFFFFFFF),
         foreground: Color(0xFF111111),

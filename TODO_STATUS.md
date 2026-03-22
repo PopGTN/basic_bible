@@ -51,6 +51,7 @@ Status meanings:
 - `blocked`: cannot move safely without another prerequisite or decision
 
 ## Completed Recently
+- `done` Added a separate `OLED Black` theme choice for users who want a true all-black monochrome UI with white/grey control states instead of the tinted seeded dark theme or the more layered `Pure Black` theme.
 - `done` Corrected the reader book-label fallback again so the reference bar now prefers real parsed names and TOC labels, falls back to full canonical names for recognizable IDs, and no longer regresses into abbreviated chapter labels while still avoiding placeholder `Unknown` names.
 - `done` Restyled the Bible viewer overflow button into a filled outlined control so the top-right `more` action stays visible on darker reader app-bar backgrounds instead of blending in like a low-contrast icon.
 - `done` Made app startup configurable by adding persisted settings for opening directly on the Bible tab and for disabling the dummy login gate, then wired those settings through startup prefs bootstrap, routing, the home shell, Settings, and the Menu tab so the behavior is no longer hardcoded.
