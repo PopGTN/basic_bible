@@ -14,6 +14,11 @@ final continuousScrollingProvider =
       return ContinuousScrollingNotifier();
     });
 
+final showChapterHeadersProvider =
+    StateNotifierProvider<ShowChapterHeadersNotifier, bool>((ref) {
+      return ShowChapterHeadersNotifier();
+    });
+
 class ContinuousScrollingNotifier extends StateNotifier<bool> {
   ContinuousScrollingNotifier() : super(false) {
     _loadSavedValue();
@@ -27,6 +32,23 @@ class ContinuousScrollingNotifier extends StateNotifier<bool> {
   Future<void> setEnabled(bool enabled) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('reader_continuous_scrolling', enabled);
+    state = enabled;
+  }
+}
+
+class ShowChapterHeadersNotifier extends StateNotifier<bool> {
+  ShowChapterHeadersNotifier() : super(true) {
+    _loadSavedValue();
+  }
+
+  Future<void> _loadSavedValue() async {
+    final prefs = await SharedPreferences.getInstance();
+    state = prefs.getBool('reader_show_chapter_headers') ?? true;
+  }
+
+  Future<void> setEnabled(bool enabled) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('reader_show_chapter_headers', enabled);
     state = enabled;
   }
 }

@@ -51,6 +51,7 @@ Status meanings:
 - `blocked`: cannot move safely without another prerequisite or decision
 
 ## Completed Recently
+- `done` Removed the extra introduction description line that was being repeated from TOC labels, and added a persisted `Show Chapter Headers` reader setting so the large book/chapter header can be disabled from settings or the reader sheet when the source document does not repeat that structure.
 - `done` Fixed continuous-mode reference selection so picked book/chapter/verse jumps now stay targeted to the selected spot instead of being overridden by a follow-up chapter-top scroll, and tightened the chapter-header layout so section headers stay visually centered in the whole-Bible reader.
 - `done` Cleaned up reader book-label fallback and introduction presentation so unknown-book cases can now match against parsed TOC labels, the repeated third-line display label was removed from chapter headers, and that secondary label now appears in the introduction section instead when it is useful.
 - `done` Widened continuous mode into a whole-Bible lazy section list instead of a current-book-only reader, so the reference bar can now follow both book and chapter across the loaded translation while chapter jumps and section headers continue to work in one continuous scroll surface.

@@ -95,6 +95,7 @@ class _BibleViewerTabState extends ConsumerState<BibleViewerTab> {
     final chapterAsync = ref.watch(currentChapterProvider);
     final layoutMode = ref.watch(readerLayoutModeProvider);
     final continuousScrolling = ref.watch(continuousScrollingProvider);
+    final showChapterHeaders = ref.watch(showChapterHeadersProvider);
     final isSmall = widget.isSmallDevice;
 
     final displayReference =
@@ -123,6 +124,7 @@ class _BibleViewerTabState extends ConsumerState<BibleViewerTab> {
                         fontSize: size,
                         layoutMode: layoutMode,
                         continuousScrolling: continuousScrolling,
+                        showChapterHeaders: showChapterHeaders,
                         isSmallDevice: isSmall,
                         onVisibleReferenceChanged: (reference) {
                           if (_continuousVisibleReference == reference) return;
@@ -278,6 +280,7 @@ class _BibleTextView extends StatefulWidget {
     required this.fontSize,
     required this.layoutMode,
     required this.continuousScrolling,
+    required this.showChapterHeaders,
     required this.isSmallDevice,
     required this.onVisibleReferenceChanged,
   });
@@ -291,6 +294,7 @@ class _BibleTextView extends StatefulWidget {
   final double fontSize;
   final ReaderLayoutMode layoutMode;
   final bool continuousScrolling;
+  final bool showChapterHeaders;
   final bool isSmallDevice;
   final ValueChanged<BibleReference> onVisibleReferenceChanged;
 
@@ -477,6 +481,9 @@ class _BibleTextViewState extends State<_BibleTextView> {
   }
 
   Widget _buildChapterHeader(BuildContext context) {
+    if (!widget.showChapterHeaders) {
+      return const SizedBox.shrink();
+    }
     return _buildCenteredChapterHeader(
       context,
       bookName: widget.book.name,
@@ -509,12 +516,6 @@ class _BibleTextViewState extends State<_BibleTextView> {
     return [
       _DocumentBlockSection(
         title: book.name,
-        description:
-            book.tocLabels.isNotEmpty &&
-                book.tocLabels.first.text.toLowerCase() !=
-                    book.name.toLowerCase()
-            ? book.tocLabels.first.text
-            : null,
         eyebrow: 'Introduction',
         blocks: book.introductionBlocks,
         fontSize: widget.fontSize,
@@ -774,6 +775,9 @@ class _BibleTextViewState extends State<_BibleTextView> {
     BibleBook book,
     int chapterNumber,
   ) {
+    if (!widget.showChapterHeaders) {
+      return const SizedBox.shrink();
+    }
     return _buildCenteredChapterHeader(
       context,
       bookName: book.name,
@@ -1990,12 +1994,10 @@ class _DocumentBlockSection extends StatelessWidget {
     required this.blocks,
     required this.fontSize,
     this.eyebrow,
-    this.description,
   });
 
   final String title;
   final String? eyebrow;
-  final String? description;
   final List<BibleDocumentBlock> blocks;
   final double fontSize;
 
@@ -2037,16 +2039,6 @@ class _DocumentBlockSection extends StatelessWidget {
               fontWeight: FontWeight.w700,
             ),
           ),
-          if (description != null) ...[
-            const SizedBox(height: 4),
-            Text(
-              description!,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-                fontStyle: FontStyle.italic,
-              ),
-            ),
-          ],
           const SizedBox(height: 10),
           for (final block in blocks)
             _DocumentBlockView(block: block, fontSize: fontSize),
