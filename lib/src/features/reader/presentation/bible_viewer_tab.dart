@@ -981,10 +981,7 @@ class _VerseDetailsSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
-    final versePreview = _VersePreviewText(
-      verse: verse,
-      annotationEntries: annotationEntries,
-    );
+    final versePreview = _VersePreviewText(verse: verse);
 
     return SafeArea(
       child: Padding(
@@ -1094,40 +1091,159 @@ class _VerseAnnotationEntry {
 }
 
 class _VersePreviewText {
-  const _VersePreviewText({
-    required this.verse,
-    required this.annotationEntries,
-  });
+  const _VersePreviewText({required this.verse});
 
   final BibleVerse verse;
-  final List<_VerseAnnotationEntry> annotationEntries;
 
   List<InlineSpan> inlineSpans(ColorScheme colors) {
-    final spans = <InlineSpan>[TextSpan(text: verse.text)];
+    final spans = _displaySpans();
+    if (spans.isEmpty) return [TextSpan(text: verse.text)];
 
-    if (annotationEntries.isNotEmpty) {
-      spans.add(const TextSpan(text: '  '));
-      for (final entry in annotationEntries) {
-        spans.add(
-          WidgetSpan(
-            alignment: PlaceholderAlignment.top,
-            child: Padding(
-              padding: const EdgeInsets.only(right: 6),
-              child: Text(
-                entry.marker,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                  color: colors.onSurfaceVariant,
-                ),
+    final inlineSpans = <InlineSpan>[];
+
+    // Keep the verse preview aligned with the main reader so annotation letters
+    // appear beside the anchored words here too, not only in the chapter view.
+    for (final span in spans) {
+      inlineSpans.add(
+        TextSpan(
+          text: _spanText(span),
+          style: TextStyle(
+            color: _spanColor(span.kind, colors),
+            fontStyle: _spanFontStyle(span.kind),
+            fontWeight: _spanFontWeight(span.kind),
+            decoration: _spanDecoration(span.kind),
+          ),
+        ),
+      );
+      inlineSpans.addAll(_buildInlineAnnotationMarkers(colors, span));
+    }
+
+    return inlineSpans;
+  }
+
+  List<BibleVerseSpan> _displaySpans() {
+    if (verse.spans.isEmpty) return const [];
+
+    final displaySpans = <BibleVerseSpan>[];
+    var previousText = '';
+
+    for (final span in verse.spans) {
+      var text = span.text.trim();
+      if (text.isEmpty) continue;
+
+      final startsNewLine = span.metadata['lineStart'] == 'true';
+
+      if (startsNewLine) {
+        text = '\n$text';
+      } else if (_shouldInsertSpace(previousText, text)) {
+        text = ' $text';
+      }
+
+      displaySpans.add(
+        BibleVerseSpan(text: text, kind: span.kind, metadata: span.metadata),
+      );
+      previousText = startsNewLine ? text.trimLeft() : text;
+    }
+
+    return displaySpans;
+  }
+
+  bool _shouldInsertSpace(String previousText, String currentText) {
+    if (previousText.isEmpty) return false;
+    if (currentText.startsWith(RegExp(r"[.,;:!?)}\]”’]"))) return false;
+    if (RegExp(r"[(\[{“‘/]$").hasMatch(previousText)) return false;
+    return true;
+  }
+
+  String _spanText(BibleVerseSpan span) {
+    if (span.metadata case {'quoteLevel': final levelText}) {
+      final level = int.tryParse(levelText) ?? 0;
+      if (level > 1) {
+        return '${' ' * ((level - 1) * 2)}${span.text}';
+      }
+    }
+    return span.text;
+  }
+
+  List<InlineSpan> _buildInlineAnnotationMarkers(
+    ColorScheme colors,
+    BibleVerseSpan span,
+  ) {
+    final markers = <String>[
+      ..._splitAnnotationMarkers(span.metadata['footnoteMarkers']),
+      ..._splitAnnotationMarkers(span.metadata['referenceMarkers']),
+    ];
+
+    if (markers.isEmpty) return const [];
+
+    return [
+      for (final marker in markers)
+        WidgetSpan(
+          alignment: PlaceholderAlignment.top,
+          child: Padding(
+            padding: const EdgeInsets.only(left: 1),
+            child: Text(
+              marker,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: colors.onSurfaceVariant,
               ),
             ),
           ),
-        );
-      }
-    }
+        ),
+    ];
+  }
 
-    return spans;
+  List<String> _splitAnnotationMarkers(String? rawValue) {
+    if (rawValue == null || rawValue.isEmpty) return const [];
+    return rawValue
+        .split('|')
+        .map((value) => value.trim())
+        .where((value) => value.isNotEmpty)
+        .toList();
+  }
+
+  Color? _spanColor(BibleVerseSpanKind kind, ColorScheme colors) {
+    switch (kind) {
+      case BibleVerseSpanKind.wordsOfJesus:
+        return Colors.red.shade700;
+      case BibleVerseSpanKind.word:
+        return colors.secondary;
+      default:
+        return colors.onSurface;
+    }
+  }
+
+  FontStyle _spanFontStyle(BibleVerseSpanKind kind) {
+    switch (kind) {
+      case BibleVerseSpanKind.translatorAddition:
+      case BibleVerseSpanKind.quote:
+      case BibleVerseSpanKind.poetry:
+        return FontStyle.italic;
+      default:
+        return FontStyle.normal;
+    }
+  }
+
+  FontWeight _spanFontWeight(BibleVerseSpanKind kind) {
+    switch (kind) {
+      case BibleVerseSpanKind.wordsOfJesus:
+        return FontWeight.w600;
+      case BibleVerseSpanKind.word:
+        return FontWeight.w500;
+      default:
+        return FontWeight.normal;
+    }
+  }
+
+  TextDecoration? _spanDecoration(BibleVerseSpanKind kind) {
+    switch (kind) {
+      case BibleVerseSpanKind.word:
+        return TextDecoration.underline;
+      default:
+        return null;
+    }
   }
 }
 
