@@ -619,6 +619,7 @@ Map<String, dynamic> _serializeCrossReference(CrossReference reference) {
     'label': reference.label,
     'target': reference.target,
     'marker': reference.marker,
+    'originRef': reference.originRef,
   };
 }
 

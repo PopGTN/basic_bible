@@ -1331,12 +1331,17 @@ class _BibleTextViewState extends State<_BibleTextView> {
     }
 
     for (final reference in references) {
+      final refOrigin = reference.originRef?.trim().isNotEmpty == true
+          ? reference.originRef!.trim()
+          : null;
       entries.add(
         _VerseAnnotationEntry(
           marker: reference.marker?.trim().isNotEmpty == true
               ? reference.marker!.trim().toLowerCase()
               : nextMarker(),
           body: reference.label,
+          originRef: refOrigin,
+          bodyText: refOrigin != null ? reference.label : null,
           reference: reference,
         ),
       );

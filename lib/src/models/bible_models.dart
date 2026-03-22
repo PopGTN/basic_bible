@@ -61,23 +61,35 @@ class BibleCrossReference extends Equatable {
   final String label;
   final String? target;
   final String? marker;
+  final String? originRef;
 
-  const BibleCrossReference({required this.label, this.target, this.marker});
+  const BibleCrossReference({
+    required this.label,
+    this.target,
+    this.marker,
+    this.originRef,
+  });
 
   factory BibleCrossReference.fromJson(Map<String, dynamic> json) {
     return BibleCrossReference(
       label: json['label'] as String,
       target: json['target'] as String?,
       marker: json['marker'] as String?,
+      originRef: json['originRef'] as String?,
     );
   }
 
   Map<String, dynamic> toJson() {
-    return {'label': label, 'target': target, 'marker': marker};
+    return {
+      'label': label,
+      'target': target,
+      'marker': marker,
+      'originRef': originRef,
+    };
   }
 
   @override
-  List<Object?> get props => [label, target, marker];
+  List<Object?> get props => [label, target, marker, originRef];
 }
 
 class BibleFootnote extends Equatable {
