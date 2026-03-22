@@ -376,6 +376,7 @@ class _BibleTextViewState extends State<_BibleTextView> {
     final hasReferences =
         verse.crossReferences.isNotEmpty ||
         (verse.references != null && verse.references!.isNotEmpty);
+    final hasAnnotations = hasFootnotes || hasReferences;
 
     return Padding(
       key: verseKey,
@@ -391,51 +392,38 @@ class _BibleTextViewState extends State<_BibleTextView> {
               : Colors.transparent,
           borderRadius: BorderRadius.circular(10),
         ),
-        child: GestureDetector(
-          onTap: () {
-            if (hasFootnotes || hasReferences) {
-              _showVerseDetailsSheet(context, verse);
-            }
-          },
-          child: RichText(
-            text: TextSpan(
-              style: TextStyle(
-                fontSize: widget.fontSize,
-                color: Theme.of(context).textTheme.bodyLarge?.color,
-                height: 1.5,
-              ),
-              children: [
-                TextSpan(
-                  text: '${verse.number} ',
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: RichText(
+                text: TextSpan(
                   style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: Theme.of(context).colorScheme.primary,
-                    fontSize: widget.fontSize - 2,
+                    fontSize: widget.fontSize,
+                    color: Theme.of(context).textTheme.bodyLarge?.color,
+                    height: 1.5,
                   ),
-                ),
-                ..._buildVerseContentSpans(context, verse),
-                if (hasFootnotes)
-                  WidgetSpan(
-                    child: Icon(
-                      Icons.info_outline,
-                      size: widget.fontSize,
-                      color: Theme.of(context).colorScheme.secondary,
-                    ),
-                  ),
-                if (hasReferences)
-                  WidgetSpan(
-                    child: Padding(
-                      padding: const EdgeInsets.only(left: 4.0),
-                      child: Icon(
-                        Icons.link,
-                        size: widget.fontSize,
-                        color: Theme.of(context).colorScheme.tertiary,
+                  children: [
+                    TextSpan(
+                      text: '${verse.number} ',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Theme.of(context).colorScheme.primary,
+                        fontSize: widget.fontSize - 2,
                       ),
                     ),
-                  ),
-              ],
+                    ..._buildVerseContentSpans(context, verse),
+                  ],
+                ),
+              ),
             ),
-          ),
+            if (hasAnnotations) ...[
+              const SizedBox(width: 10),
+              _VerseAnnotationButton(
+                onPressed: () => _showVerseDetailsSheet(context, verse),
+              ),
+            ],
+          ],
         ),
       ),
     );
@@ -640,6 +628,10 @@ class _BibleTextViewState extends State<_BibleTextView> {
   void _showVerseDetailsSheet(BuildContext context, BibleVerse verse) {
     final footnotes = _displayFootnotes(verse);
     final references = _structuredReferences(verse);
+    final annotationEntries = _annotationEntries(
+      footnotes: footnotes,
+      references: references,
+    );
 
     showModalBottomSheet<void>(
       context: context,
@@ -647,9 +639,10 @@ class _BibleTextViewState extends State<_BibleTextView> {
       showDragHandle: true,
       builder: (context) {
         return _VerseDetailsSheet(
+          referenceLabel:
+              '${bookIdToName(widget.reference.bookId)} ${widget.reference.chapter}:${verse.number}',
           verse: verse,
-          footnotes: footnotes,
-          references: references,
+          annotationEntries: annotationEntries,
           onReferenceTap: (referenceEntry) =>
               _openReferenceFromSheet(context, referenceEntry),
         );
@@ -706,6 +699,61 @@ class _BibleTextViewState extends State<_BibleTextView> {
     return (verse.references ?? const [])
         .map((reference) => BibleCrossReference(label: reference))
         .toList();
+  }
+
+  List<_VerseAnnotationEntry> _annotationEntries({
+    required List<BibleFootnote> footnotes,
+    required List<BibleCrossReference> references,
+  }) {
+    final entries = <_VerseAnnotationEntry>[];
+    var markerIndex = 0;
+
+    String nextMarker() {
+      final value = String.fromCharCode('a'.codeUnitAt(0) + markerIndex);
+      markerIndex++;
+      return value;
+    }
+
+    // The current shared model stores notes and references in separate lists,
+    // so this sheet uses a stable generated marker order instead of pretending
+    // we still know the original exact source ordering for every format.
+    for (final footnote in footnotes) {
+      entries.add(
+        _VerseAnnotationEntry(
+          marker: _annotationMarker(footnote, fallback: nextMarker()),
+          body: footnote.text,
+          reference: footnote.references.isNotEmpty
+              ? footnote.references.first
+              : null,
+          relatedReferences: footnote.references,
+        ),
+      );
+    }
+
+    for (final reference in references) {
+      entries.add(
+        _VerseAnnotationEntry(
+          marker: nextMarker(),
+          body: reference.label,
+          reference: reference,
+        ),
+      );
+    }
+
+    return entries;
+  }
+
+  String _annotationMarker(BibleFootnote footnote, {required String fallback}) {
+    final candidates = [footnote.marker?.trim(), footnote.label?.trim()];
+
+    for (final candidate in candidates) {
+      if (candidate == null || candidate.isEmpty) continue;
+      if (candidate.length == 1 && RegExp(r'[A-Za-z0-9]').hasMatch(candidate)) {
+        return candidate.toLowerCase();
+      }
+    }
+
+    return fallback;
   }
 
   List<InlineSpan> _buildVerseContentSpans(
@@ -836,182 +884,246 @@ class _ParagraphSection {
 
 class _VerseDetailsSheet extends StatelessWidget {
   const _VerseDetailsSheet({
+    required this.referenceLabel,
     required this.verse,
-    required this.footnotes,
-    required this.references,
+    required this.annotationEntries,
     required this.onReferenceTap,
   });
 
+  final String referenceLabel;
   final BibleVerse verse;
-  final List<BibleFootnote> footnotes;
-  final List<BibleCrossReference> references;
+  final List<_VerseAnnotationEntry> annotationEntries;
   final ValueChanged<BibleCrossReference> onReferenceTap;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
+    final versePreview = _VersePreviewText(
+      verse: verse,
+      annotationEntries: annotationEntries,
+    );
 
     return SafeArea(
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+        padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
         child: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text('Verse ${verse.number}', style: theme.textTheme.titleLarge),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
+              Row(
                 children: [
-                  if (footnotes.isNotEmpty)
-                    _SummaryChip(
-                      icon: Icons.info_outline,
-                      label: '${footnotes.length} footnotes',
+                  Expanded(
+                    child: Text(
+                      referenceLabel,
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
-                  if (references.isNotEmpty)
-                    _SummaryChip(
-                      icon: Icons.link,
-                      label: '${references.length} cross-references',
+                  ),
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: colors.surfaceContainerHighest.withValues(
+                        alpha: 0.5,
+                      ),
                     ),
+                    child: Icon(
+                      Icons.info_outline,
+                      color: colors.onSurfaceVariant,
+                    ),
+                  ),
                 ],
               ),
-              if (footnotes.isNotEmpty) ...[
-                const SizedBox(height: 20),
-                Text('Footnotes', style: theme.textTheme.titleMedium),
-                const SizedBox(height: 10),
-                for (final footnote in footnotes)
-                  _VerseDetailCard(
-                    leading: Icons.info_outline,
-                    title: _footnoteTitle(footnote),
-                    body: footnote.text,
-                    footer: footnote.references.isEmpty
-                        ? null
-                        : Wrap(
-                            spacing: 8,
-                            runSpacing: 8,
-                            children: [
-                              for (final reference in footnote.references)
-                                ActionChip(
-                                  avatar: const Icon(Icons.link, size: 16),
-                                  label: Text(reference.label),
-                                  onPressed: () => onReferenceTap(reference),
-                                ),
-                            ],
-                          ),
+              const SizedBox(height: 8),
+              RichText(
+                text: TextSpan(
+                  style: theme.textTheme.headlineSmall?.copyWith(
+                    height: 1.55,
+                    fontSize: 18,
+                    color: theme.textTheme.bodyLarge?.color,
                   ),
-              ],
-              if (references.isNotEmpty) ...[
-                const SizedBox(height: 20),
-                Text('Cross-References', style: theme.textTheme.titleMedium),
-                const SizedBox(height: 10),
-                for (final referenceEntry in references)
-                  Card(
-                    margin: const EdgeInsets.only(bottom: 12),
-                    color: colors.surfaceContainerHighest.withValues(
-                      alpha: 0.45,
-                    ),
-                    child: ListTile(
-                      leading: const Icon(Icons.link),
-                      title: Text(referenceEntry.label),
-                      subtitle: referenceEntry.target != null
-                          ? Text(referenceEntry.target!)
-                          : null,
-                      trailing: const Icon(Icons.chevron_right),
-                      onTap: () => onReferenceTap(referenceEntry),
-                    ),
-                  ),
-              ],
+                  children: versePreview.inlineSpans(colors),
+                ),
+              ),
+              const SizedBox(height: 18),
+              Divider(color: colors.outlineVariant.withValues(alpha: 0.35)),
+              for (final entry in annotationEntries)
+                _VerseAnnotationRow(
+                  entry: entry,
+                  onReferenceTap: onReferenceTap,
+                ),
             ],
           ),
         ),
       ),
     );
   }
-
-  String? _footnoteTitle(BibleFootnote footnote) {
-    final parts = [
-      if (footnote.marker != null && footnote.marker!.isNotEmpty)
-        footnote.marker!,
-      if (footnote.label != null && footnote.label!.isNotEmpty) footnote.label!,
-    ];
-
-    if (parts.isEmpty) return null;
-    return parts.join(' ');
-  }
 }
 
-class _VerseDetailCard extends StatelessWidget {
-  const _VerseDetailCard({
-    required this.leading,
-    required this.body,
-    this.title,
-    this.footer,
-  });
+class _VerseAnnotationButton extends StatelessWidget {
+  const _VerseAnnotationButton({required this.onPressed});
 
-  final IconData leading;
-  final String body;
-  final String? title;
-  final Widget? footer;
+  final VoidCallback onPressed;
 
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      color: colors.surfaceContainerHighest.withValues(alpha: 0.45),
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Icon(leading, size: 18),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (title != null) ...[
-                        Text(
-                          title!,
-                          style: Theme.of(context).textTheme.titleSmall,
-                        ),
-                        const SizedBox(height: 4),
-                      ],
-                      Text(
-                        body,
-                        style: Theme.of(
-                          context,
-                        ).textTheme.bodyMedium?.copyWith(height: 1.45),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            if (footer != null) ...[const SizedBox(height: 12), footer!],
-          ],
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(14),
+        child: Ink(
+          width: 30,
+          height: 30,
+          decoration: BoxDecoration(
+            color: colors.surfaceContainerHighest.withValues(alpha: 0.38),
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Icon(
+            Icons.notes_outlined,
+            size: 18,
+            color: colors.onSurfaceVariant,
+          ),
         ),
       ),
     );
   }
 }
 
-class _SummaryChip extends StatelessWidget {
-  const _SummaryChip({required this.icon, required this.label});
+class _VerseAnnotationEntry {
+  const _VerseAnnotationEntry({
+    required this.marker,
+    required this.body,
+    this.reference,
+    this.relatedReferences = const [],
+  });
 
-  final IconData icon;
-  final String label;
+  final String marker;
+  final String body;
+  final BibleCrossReference? reference;
+  final List<BibleCrossReference> relatedReferences;
+}
+
+class _VersePreviewText {
+  const _VersePreviewText({
+    required this.verse,
+    required this.annotationEntries,
+  });
+
+  final BibleVerse verse;
+  final List<_VerseAnnotationEntry> annotationEntries;
+
+  List<InlineSpan> inlineSpans(ColorScheme colors) {
+    final spans = <InlineSpan>[TextSpan(text: verse.text)];
+
+    if (annotationEntries.isNotEmpty) {
+      spans.add(const TextSpan(text: '  '));
+      for (final entry in annotationEntries) {
+        spans.add(
+          WidgetSpan(
+            alignment: PlaceholderAlignment.top,
+            child: Padding(
+              padding: const EdgeInsets.only(right: 6),
+              child: Text(
+                entry.marker,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: colors.onSurfaceVariant,
+                ),
+              ),
+            ),
+          ),
+        );
+      }
+    }
+
+    return spans;
+  }
+}
+
+class _VerseAnnotationRow extends StatelessWidget {
+  const _VerseAnnotationRow({required this.entry, this.onReferenceTap});
+
+  final _VerseAnnotationEntry entry;
+  final ValueChanged<BibleCrossReference>? onReferenceTap;
 
   @override
   Widget build(BuildContext context) {
-    return Chip(avatar: Icon(icon, size: 16), label: Text(label));
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      decoration: BoxDecoration(
+        border: Border(
+          bottom: BorderSide(
+            color: colors.outlineVariant.withValues(alpha: 0.25),
+          ),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 26,
+            child: Text(
+              entry.marker,
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  entry.body,
+                  style: theme.textTheme.headlineSmall?.copyWith(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w400,
+                    height: 1.5,
+                  ),
+                ),
+                if (entry.relatedReferences.isNotEmpty) ...[
+                  const SizedBox(height: 10),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      for (final reference in entry.relatedReferences)
+                        ActionChip(
+                          avatar: const Icon(Icons.link, size: 16),
+                          label: Text(reference.label),
+                          onPressed: onReferenceTap == null
+                              ? null
+                              : () => onReferenceTap!(reference),
+                        ),
+                    ],
+                  ),
+                ],
+              ],
+            ),
+          ),
+          if (entry.reference != null && onReferenceTap != null) ...[
+            const SizedBox(width: 8),
+            IconButton(
+              onPressed: () => onReferenceTap!(entry.reference!),
+              icon: const Icon(Icons.chevron_right),
+              color: colors.onSurfaceVariant,
+            ),
+          ],
+        ],
+      ),
+    );
   }
 }
 

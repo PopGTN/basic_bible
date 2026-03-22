@@ -35,6 +35,7 @@ Status meanings:
 - `blocked`: cannot move safely without another prerequisite or decision
 
 ## Completed Recently
+- `done` Reworked verse annotation interaction so side icons open a more reference-app-like bottom sheet with verse context and lettered annotation rows instead of relying on tapping the whole verse for a generic details panel.
 - `done` Improved front-matter and section-layout rendering so introductions, headings, and other non-verse blocks now read like intentional document sections instead of plain parser output appended between verses.
 - `done` Improved document-mode fidelity so poetry-style paragraph starts and source-driven line breaks from the parser now render more like the source document instead of being merged back into one prose block.
 - `done` Rewrote `README.md` so it now reflects the real app status, shipped reader capabilities, current parser support, and active development gaps instead of acting only as an old wish-list snapshot.
