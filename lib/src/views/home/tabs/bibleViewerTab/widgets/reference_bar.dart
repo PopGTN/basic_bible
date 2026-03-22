@@ -22,8 +22,9 @@ class ChapterBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final currentBook = books.firstWhere(
-          (book) => book.id == reference.bookId,
-      orElse: () => BibleBook(id: '', name: 'Unknown', shortName: '', bookNumber: 0),
+      (book) => book.id == reference.bookId,
+      orElse: () =>
+          BibleBook(id: '', name: 'Unknown', shortName: '', bookNumber: 0),
     );
 
     return Container(
@@ -49,7 +50,10 @@ class ChapterBar extends StatelessWidget {
             child: InkWell(
               onTap: () => _showReferencePicker(context),
               child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                padding: const EdgeInsets.symmetric(
+                  vertical: 8,
+                  horizontal: 16,
+                ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -111,9 +115,11 @@ class ReferencePicker extends StatefulWidget {
   State<ReferencePicker> createState() => _ReferencePickerState();
 }
 
-class _ReferencePickerState extends State<ReferencePicker> with TickerProviderStateMixin {
+class _ReferencePickerState extends State<ReferencePicker>
+    with TickerProviderStateMixin {
   late String selectedBookId;
   late int selectedChapter;
+  int? selectedVerse;
   late TabController _tabController;
   final TextEditingController _searchController = TextEditingController();
   List<BibleBook> filteredBooks = [];
@@ -123,6 +129,7 @@ class _ReferencePickerState extends State<ReferencePicker> with TickerProviderSt
     super.initState();
     selectedBookId = widget.currentReference.bookId;
     selectedChapter = widget.currentReference.chapter;
+    selectedVerse = widget.currentReference.verse;
     filteredBooks = widget.books;
     _tabController = TabController(length: 3, vsync: this);
   }
@@ -140,10 +147,12 @@ class _ReferencePickerState extends State<ReferencePicker> with TickerProviderSt
         filteredBooks = widget.books;
       } else {
         filteredBooks = widget.books
-            .where((book) =>
-        book.name.toLowerCase().contains(query.toLowerCase()) ||
-            book.shortName.toLowerCase().contains(query.toLowerCase()) ||
-            book.id.toLowerCase().contains(query.toLowerCase()))
+            .where(
+              (book) =>
+                  book.name.toLowerCase().contains(query.toLowerCase()) ||
+                  book.shortName.toLowerCase().contains(query.toLowerCase()) ||
+                  book.id.toLowerCase().contains(query.toLowerCase()),
+            )
             .toList();
       }
     });
@@ -159,8 +168,14 @@ class _ReferencePickerState extends State<ReferencePicker> with TickerProviderSt
       return const Center(child: CircularProgressIndicator());
     }
     final selectedBook = widget.books.firstWhere(
-          (book) => book.id == selectedBookId,
+      (book) => book.id == selectedBookId,
       orElse: () => widget.books.first,
+    );
+    final selectedChapterModel = selectedBook.chapters.firstWhere(
+      (chapter) => chapter.number == selectedChapter,
+      orElse: () => selectedBook.chapters.isNotEmpty
+          ? selectedBook.chapters.first
+          : const BibleChapter(number: 1),
     );
 
     return Container(
@@ -204,12 +219,12 @@ class _ReferencePickerState extends State<ReferencePicker> with TickerProviderSt
                     ),
                     suffixIcon: _searchController.text.isNotEmpty
                         ? IconButton(
-                      icon: const Icon(Icons.clear),
-                      onPressed: () {
-                        _searchController.clear();
-                        _filterBooks('');
-                      },
-                    )
+                            icon: const Icon(Icons.clear),
+                            onPressed: () {
+                              _searchController.clear();
+                              _filterBooks('');
+                            },
+                          )
                         : null,
                   ),
                   onChanged: _filterBooks,
@@ -245,6 +260,7 @@ class _ReferencePickerState extends State<ReferencePicker> with TickerProviderSt
                           setState(() {
                             selectedBookId = bookId;
                             selectedChapter = 1;
+                            selectedVerse = null;
                           });
                         },
                       ),
@@ -255,6 +271,7 @@ class _ReferencePickerState extends State<ReferencePicker> with TickerProviderSt
                           setState(() {
                             selectedBookId = bookId;
                             selectedChapter = 1;
+                            selectedVerse = null;
                           });
                         },
                       ),
@@ -265,6 +282,7 @@ class _ReferencePickerState extends State<ReferencePicker> with TickerProviderSt
                           setState(() {
                             selectedBookId = bookId;
                             selectedChapter = 1;
+                            selectedVerse = null;
                           });
                         },
                       ),
@@ -300,52 +318,147 @@ class _ReferencePickerState extends State<ReferencePicker> with TickerProviderSt
                       Expanded(
                         child: Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: GridView.builder(
-                            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 6,
-                              mainAxisSpacing: 8,
-                              crossAxisSpacing: 8,
-                              childAspectRatio: 1.2,
-                            ),
-                            itemCount: selectedBook.chapters.length,
-                            itemBuilder: (context, index) {
-                              final chapter = selectedBook.chapters[index];
-                              final isSelected = chapter.number == selectedChapter;
-
-                              return InkWell(
-                                onTap: () {
-                                  setState(() {
-                                    selectedChapter = chapter.number;
-                                  });
-                                },
-                                borderRadius: BorderRadius.circular(8),
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    color: isSelected
-                                        ? Theme.of(context).colorScheme.primary
-                                        : Theme.of(context).colorScheme.surfaceContainerHighest,
-                                    borderRadius: BorderRadius.circular(8),
-                                    border: isSelected ? Border.all(
-                                      color: Theme.of(context).colorScheme.primary,
-                                      width: 2,
-                                    ) : null,
-                                  ),
-                                  child: Center(
-                                    child: Text(
-                                      '${chapter.number}',
-                                      style: TextStyle(
-                                        color: isSelected
-                                            ? Theme.of(context).colorScheme.onPrimary
-                                            : Theme.of(context).colorScheme.onSurfaceVariant,
-                                        fontWeight: isSelected
-                                            ? FontWeight.bold
-                                            : FontWeight.normal,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Chapters',
+                                style: Theme.of(context).textTheme.labelLarge,
+                              ),
+                              const SizedBox(height: 8),
+                              Expanded(
+                                child: GridView.builder(
+                                  gridDelegate:
+                                      const SliverGridDelegateWithFixedCrossAxisCount(
+                                        crossAxisCount: 6,
+                                        mainAxisSpacing: 8,
+                                        crossAxisSpacing: 8,
+                                        childAspectRatio: 1.2,
                                       ),
-                                    ),
-                                  ),
+                                  itemCount: selectedBook.chapters.length,
+                                  itemBuilder: (context, index) {
+                                    final chapter =
+                                        selectedBook.chapters[index];
+                                    final isSelected =
+                                        chapter.number == selectedChapter;
+
+                                    return InkWell(
+                                      onTap: () {
+                                        setState(() {
+                                          selectedChapter = chapter.number;
+                                          selectedVerse = null;
+                                        });
+                                      },
+                                      borderRadius: BorderRadius.circular(8),
+                                      child: Container(
+                                        decoration: BoxDecoration(
+                                          color: isSelected
+                                              ? Theme.of(
+                                                  context,
+                                                ).colorScheme.primary
+                                              : Theme.of(context)
+                                                    .colorScheme
+                                                    .surfaceContainerHighest,
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
+                                          border: isSelected
+                                              ? Border.all(
+                                                  color: Theme.of(
+                                                    context,
+                                                  ).colorScheme.primary,
+                                                  width: 2,
+                                                )
+                                              : null,
+                                        ),
+                                        child: Center(
+                                          child: Text(
+                                            '${chapter.number}',
+                                            style: TextStyle(
+                                              color: isSelected
+                                                  ? Theme.of(
+                                                      context,
+                                                    ).colorScheme.onPrimary
+                                                  : Theme.of(context)
+                                                        .colorScheme
+                                                        .onSurfaceVariant,
+                                              fontWeight: isSelected
+                                                  ? FontWeight.bold
+                                                  : FontWeight.normal,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    );
+                                  },
                                 ),
-                              );
-                            },
+                              ),
+                              const SizedBox(height: 12),
+                              Text(
+                                'Verses',
+                                style: Theme.of(context).textTheme.labelLarge,
+                              ),
+                              const SizedBox(height: 8),
+                              SizedBox(
+                                height: 160,
+                                child: GridView.builder(
+                                  gridDelegate:
+                                      const SliverGridDelegateWithFixedCrossAxisCount(
+                                        crossAxisCount: 8,
+                                        mainAxisSpacing: 8,
+                                        crossAxisSpacing: 8,
+                                        childAspectRatio: 1.15,
+                                      ),
+                                  itemCount: selectedChapterModel.verses.length,
+                                  itemBuilder: (context, index) {
+                                    final verse =
+                                        selectedChapterModel.verses[index];
+                                    final isSelected =
+                                        verse.number == selectedVerse;
+
+                                    return InkWell(
+                                      onTap: () {
+                                        setState(() {
+                                          selectedVerse = verse.number;
+                                        });
+                                      },
+                                      borderRadius: BorderRadius.circular(8),
+                                      child: Container(
+                                        decoration: BoxDecoration(
+                                          color: isSelected
+                                              ? Theme.of(
+                                                  context,
+                                                ).colorScheme.secondary
+                                              : Theme.of(context)
+                                                    .colorScheme
+                                                    .surfaceContainerHighest,
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
+                                        ),
+                                        child: Center(
+                                          child: Text(
+                                            '${verse.number}',
+                                            style: TextStyle(
+                                              color: isSelected
+                                                  ? Theme.of(
+                                                      context,
+                                                    ).colorScheme.onSecondary
+                                                  : Theme.of(context)
+                                                        .colorScheme
+                                                        .onSurfaceVariant,
+                                              fontWeight: isSelected
+                                                  ? FontWeight.bold
+                                                  : FontWeight.normal,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ),
@@ -375,10 +488,13 @@ class _ReferencePickerState extends State<ReferencePicker> with TickerProviderSt
                         BibleReference(
                           bookId: selectedBookId,
                           chapter: selectedChapter,
+                          verse: selectedVerse,
                         ),
                       );
                     },
-                    child: const Text('Go to Chapter'),
+                    child: Text(
+                      selectedVerse == null ? 'Go to Chapter' : 'Go to Verse',
+                    ),
                   ),
                 ),
               ],
@@ -404,9 +520,7 @@ class _BooksList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (books.isEmpty) {
-      return const Center(
-        child: Text('No books found'),
-      );
+      return const Center(child: Text('No books found'));
     }
 
     return ListView.builder(
@@ -433,9 +547,9 @@ class _BooksList extends StatelessWidget {
             subtitle: Text('${book.chapters.length} chapters'),
             trailing: isSelected
                 ? Icon(
-              Icons.check_circle,
-              color: Theme.of(context).colorScheme.primary,
-            )
+                    Icons.check_circle,
+                    color: Theme.of(context).colorScheme.primary,
+                  )
                 : null,
             onTap: () => onBookSelected(book.id),
           ),

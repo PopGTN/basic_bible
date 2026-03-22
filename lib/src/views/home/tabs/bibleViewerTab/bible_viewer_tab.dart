@@ -186,7 +186,7 @@ class _BibleViewerTabState extends ConsumerState<BibleViewerTab> {
 }
 
 /// Bible text display widget
-class _BibleTextView extends StatelessWidget {
+class _BibleTextView extends StatefulWidget {
   const _BibleTextView({
     required this.controller,
     required this.book,
@@ -204,23 +204,64 @@ class _BibleTextView extends StatelessWidget {
   final bool isSmallDevice;
 
   @override
+  State<_BibleTextView> createState() => _BibleTextViewState();
+}
+
+class _BibleTextViewState extends State<_BibleTextView> {
+  final Map<int, GlobalKey> _verseKeys = <int, GlobalKey>{};
+
+  @override
+  void initState() {
+    super.initState();
+    _scheduleVerseFocus();
+  }
+
+  @override
+  void didUpdateWidget(covariant _BibleTextView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.reference != widget.reference ||
+        oldWidget.chapter != widget.chapter) {
+      _scheduleVerseFocus();
+    }
+  }
+
+  void _scheduleVerseFocus() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final verseNumber = widget.reference.verse;
+      if (verseNumber == null) return;
+      final targetContext = _verseKeys[verseNumber]?.currentContext;
+      if (targetContext != null) {
+        Scrollable.ensureVisible(
+          targetContext,
+          duration: const Duration(milliseconds: 280),
+          curve: Curves.easeInOut,
+          alignment: 0.18,
+        );
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final contentWidgets = <Widget>[
       _buildChapterHeader(context),
       ..._buildBookIntroductionBlocks(context),
       ..._buildChapterBlocks(context),
-      ...chapter.verses.map((verse) => _buildVerse(context, verse)),
+      ...widget.chapter.verses.map((verse) => _buildVerse(context, verse)),
     ];
 
     return Padding(
       padding: EdgeInsets.only(
         left: 16,
         right: 16,
-        top: isSmallDevice ? 16 : 80, // keep larger top space on tablet/desktop
+        top: widget.isSmallDevice
+            ? 16
+            : 80, // keep larger top space on tablet/desktop
         bottom: 72, // Space for chapter bar
       ),
       child: ListView.builder(
-        controller: controller,
+        controller: widget.controller,
         itemCount: contentWidgets.length,
         itemBuilder: (context, index) => contentWidgets[index],
       ),
@@ -233,7 +274,7 @@ class _BibleTextView extends StatelessWidget {
       child: Column(
         children: [
           Text(
-            book.name,
+            widget.book.name,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
               color: Theme.of(context).colorScheme.secondary,
               letterSpacing: 0.6,
@@ -242,9 +283,9 @@ class _BibleTextView extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            '${bookIdToName(reference.bookId)} ${reference.chapter}',
+            '${bookIdToName(widget.reference.bookId)} ${widget.reference.chapter}',
             style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-              fontSize: fontSize + 4,
+              fontSize: widget.fontSize + 4,
               fontWeight: FontWeight.bold,
             ),
             textAlign: TextAlign.center,
@@ -255,32 +296,34 @@ class _BibleTextView extends StatelessWidget {
   }
 
   List<Widget> _buildBookIntroductionBlocks(BuildContext context) {
-    if (reference.chapter != 1 || book.introductionBlocks.isEmpty) {
+    if (widget.reference.chapter != 1 ||
+        widget.book.introductionBlocks.isEmpty) {
       return const [];
     }
 
     // Book introductions are only shown at the start of the book to avoid
     // repeating long front-matter blocks on every chapter view.
     return [
-      for (final block in book.introductionBlocks)
+      for (final block in widget.book.introductionBlocks)
         _DocumentBlockView(
           block: block,
-          fontSize: fontSize,
+          fontSize: widget.fontSize,
           isEmphasized: true,
         ),
     ];
   }
 
   List<Widget> _buildChapterBlocks(BuildContext context) {
-    if (chapter.blocks.isEmpty) return const [];
+    if (widget.chapter.blocks.isEmpty) return const [];
 
     return [
-      for (final block in chapter.blocks)
-        _DocumentBlockView(block: block, fontSize: fontSize),
+      for (final block in widget.chapter.blocks)
+        _DocumentBlockView(block: block, fontSize: widget.fontSize),
     ];
   }
 
   Widget _buildVerse(BuildContext context, BibleVerse verse) {
+    final verseKey = _verseKeys.putIfAbsent(verse.number, GlobalKey.new);
     final hasFootnotes =
         verse.footnotes.isNotEmpty ||
         (verse.notes != null && verse.notes!.isNotEmpty);
@@ -289,50 +332,63 @@ class _BibleTextView extends StatelessWidget {
         (verse.references != null && verse.references!.isNotEmpty);
 
     return Padding(
+      key: verseKey,
       padding: const EdgeInsets.only(bottom: 8.0),
-      child: GestureDetector(
-        onTap: () {
-          if (hasFootnotes || hasReferences) {
-            _showVerseDetailsSheet(context, verse);
-          }
-        },
-        child: RichText(
-          text: TextSpan(
-            style: TextStyle(
-              fontSize: fontSize,
-              color: Theme.of(context).textTheme.bodyLarge?.color,
-              height: 1.5,
-            ),
-            children: [
-              TextSpan(
-                text: '${verse.number} ',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: Theme.of(context).colorScheme.primary,
-                  fontSize: fontSize - 2,
-                ),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 220),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        decoration: BoxDecoration(
+          color: widget.reference.verse == verse.number
+              ? Theme.of(
+                  context,
+                ).colorScheme.primaryContainer.withValues(alpha: 0.35)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: GestureDetector(
+          onTap: () {
+            if (hasFootnotes || hasReferences) {
+              _showVerseDetailsSheet(context, verse);
+            }
+          },
+          child: RichText(
+            text: TextSpan(
+              style: TextStyle(
+                fontSize: widget.fontSize,
+                color: Theme.of(context).textTheme.bodyLarge?.color,
+                height: 1.5,
               ),
-              ..._buildVerseContentSpans(context, verse),
-              if (hasFootnotes)
-                WidgetSpan(
-                  child: Icon(
-                    Icons.info_outline,
-                    size: fontSize,
-                    color: Theme.of(context).colorScheme.secondary,
+              children: [
+                TextSpan(
+                  text: '${verse.number} ',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).colorScheme.primary,
+                    fontSize: widget.fontSize - 2,
                   ),
                 ),
-              if (hasReferences)
-                WidgetSpan(
-                  child: Padding(
-                    padding: const EdgeInsets.only(left: 4.0),
+                ..._buildVerseContentSpans(context, verse),
+                if (hasFootnotes)
+                  WidgetSpan(
                     child: Icon(
-                      Icons.link,
-                      size: fontSize,
-                      color: Theme.of(context).colorScheme.tertiary,
+                      Icons.info_outline,
+                      size: widget.fontSize,
+                      color: Theme.of(context).colorScheme.secondary,
                     ),
                   ),
-                ),
-            ],
+                if (hasReferences)
+                  WidgetSpan(
+                    child: Padding(
+                      padding: const EdgeInsets.only(left: 4.0),
+                      child: Icon(
+                        Icons.link,
+                        size: widget.fontSize,
+                        color: Theme.of(context).colorScheme.tertiary,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
           ),
         ),
       ),
@@ -397,7 +453,7 @@ class _BibleTextView extends StatelessWidget {
                             MaterialPageRoute(
                               builder: (context) => ReferenceScreen(
                                 references: [referenceEntry.label],
-                                currentReference: reference,
+                                currentReference: widget.reference,
                               ),
                             ),
                           );

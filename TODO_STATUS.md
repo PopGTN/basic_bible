@@ -35,6 +35,7 @@ Status meanings:
 - `blocked`: cannot move safely without another prerequisite or decision
 
 ## Completed Recently
+- `done` Restored chapter/verse picking flow by adding verse selection to the reference picker and making the reader scroll to and highlight a selected verse.
 - `done` Rendered structured book/chapter document blocks in the reader and replaced the old verse tap fallback with a richer bottom sheet for footnotes and cross-references.
 - `done` Brought the Zefania parser up to the same shared rich-model direction as the other supported formats, including structured introduction blocks, chapter headings, notes, references, and styled verse spans.
 - `done` Completed the first end-to-end rich-text slice: the reader now renders structured verse spans and the parser/app pipeline preserves those spans through local storage.
@@ -68,9 +69,10 @@ Status meanings:
 - `in_progress` Phase 1 parser/app-model planning is being documented so future implementation work starts from a shared spec instead of ad hoc parser changes.
 - `in_progress` Phase 1 shared-model implementation is now real across USFX, OSIS, and Zefania at a partial-rich level, and the reader now renders intro/heading blocks, but better structured note/reference navigation still needs polish.
 - `in_progress` Reader rendering now uses the structured parser output for intro blocks and richer verse details, but there is still room to improve the presentation and navigation flow around those details.
+- `in_progress` Reference selection is working again for chapters and verses, but structured cross-reference targets should still navigate more directly than the current label-based fallback.
 
 ## Recommended Next Step
-- `next` Polish the reader UX around structured notes and references, especially direct navigation from structured targets and clearer presentation for verse details in longer passages.
+- `next` Use structured cross-reference targets directly in navigation so note/reference taps do not rely mostly on parsing display labels.
 
 Why this is next:
 - The parser and storage path now produce and preserve richer verse data.
@@ -78,7 +80,7 @@ Why this is next:
 - The next biggest user-visible gap is navigation and presentation quality inside the new verse-detail UI.
 
 Definition of done for this step:
-- Structured cross-reference targets can be used more directly instead of relying mostly on label parsing.
+- Structured cross-reference targets can be used directly instead of relying mostly on label parsing.
 - Verse-detail UI remains readable when many notes/references exist.
 - Existing reading and navigation still work.
 
