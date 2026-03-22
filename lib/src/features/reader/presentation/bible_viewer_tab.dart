@@ -370,13 +370,7 @@ class _BibleTextViewState extends State<_BibleTextView> {
 
   Widget _buildVerse(BuildContext context, BibleVerse verse) {
     final verseKey = _verseKeys.putIfAbsent(verse.number, GlobalKey.new);
-    final hasFootnotes =
-        verse.footnotes.isNotEmpty ||
-        (verse.notes != null && verse.notes!.isNotEmpty);
-    final hasReferences =
-        verse.crossReferences.isNotEmpty ||
-        (verse.references != null && verse.references!.isNotEmpty);
-    final hasAnnotations = hasFootnotes || hasReferences;
+    final hasAnnotations = _hasAnnotations(verse);
 
     return Padding(
       key: verseKey,
@@ -536,6 +530,10 @@ class _BibleTextViewState extends State<_BibleTextView> {
           height: 1.7,
         ),
         children: [
+          const WidgetSpan(
+            child: SizedBox(width: 18),
+            alignment: PlaceholderAlignment.middle,
+          ),
           for (final verse in section.verses) ...[
             WidgetSpan(
               child: SizedBox(
@@ -558,6 +556,17 @@ class _BibleTextViewState extends State<_BibleTextView> {
               ),
             ),
             ..._buildVerseContentSpans(context, verse),
+            if (_hasAnnotations(verse))
+              WidgetSpan(
+                alignment: PlaceholderAlignment.middle,
+                child: Padding(
+                  padding: const EdgeInsets.only(left: 6, right: 2),
+                  child: _VerseAnnotationButton(
+                    compact: true,
+                    onPressed: () => _showVerseDetailsSheet(context, verse),
+                  ),
+                ),
+              ),
             const TextSpan(text: ' '),
           ],
         ],
@@ -597,6 +606,18 @@ class _BibleTextViewState extends State<_BibleTextView> {
                     ),
                   ),
                   ..._buildVerseContentSpans(context, verse),
+                  if (_hasAnnotations(verse))
+                    WidgetSpan(
+                      alignment: PlaceholderAlignment.middle,
+                      child: Padding(
+                        padding: const EdgeInsets.only(left: 6),
+                        child: _VerseAnnotationButton(
+                          compact: true,
+                          onPressed: () =>
+                              _showVerseDetailsSheet(context, verse),
+                        ),
+                      ),
+                    ),
                 ],
               ),
             ),
@@ -699,6 +720,16 @@ class _BibleTextViewState extends State<_BibleTextView> {
     return (verse.references ?? const [])
         .map((reference) => BibleCrossReference(label: reference))
         .toList();
+  }
+
+  bool _hasAnnotations(BibleVerse verse) {
+    final hasFootnotes =
+        verse.footnotes.isNotEmpty ||
+        (verse.notes != null && verse.notes!.isNotEmpty);
+    final hasReferences =
+        verse.crossReferences.isNotEmpty ||
+        (verse.references != null && verse.references!.isNotEmpty);
+    return hasFootnotes || hasReferences;
   }
 
   List<_VerseAnnotationEntry> _annotationEntries({
@@ -965,9 +996,10 @@ class _VerseDetailsSheet extends StatelessWidget {
 }
 
 class _VerseAnnotationButton extends StatelessWidget {
-  const _VerseAnnotationButton({required this.onPressed});
+  const _VerseAnnotationButton({required this.onPressed, this.compact = false});
 
   final VoidCallback onPressed;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
@@ -979,15 +1011,15 @@ class _VerseAnnotationButton extends StatelessWidget {
         onTap: onPressed,
         borderRadius: BorderRadius.circular(14),
         child: Ink(
-          width: 30,
-          height: 30,
+          width: compact ? 22 : 30,
+          height: compact ? 22 : 30,
           decoration: BoxDecoration(
             color: colors.surfaceContainerHighest.withValues(alpha: 0.38),
             borderRadius: BorderRadius.circular(14),
           ),
           child: Icon(
             Icons.notes_outlined,
-            size: 18,
+            size: compact ? 14 : 18,
             color: colors.onSurfaceVariant,
           ),
         ),
