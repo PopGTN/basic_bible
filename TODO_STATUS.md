@@ -54,7 +54,7 @@ Separate from feature backlog — these affect correctness, safety, and maintain
 
 ## Recommended Next Step
 
-- `next` Once OSIS `<hi>` inline formatting lands in the parser, add any matching `BibleVerseSpanKind` values and rendering — the current set (`emphasis`, `bold`, `italic`) already covers the expected output.
+- `next` Once parser poetry fidelity work lands (stanza breaks, quote attribution metadata), add matching document-block and span metadata rendering in the verse reader.
 
 **Why this first:**
 
