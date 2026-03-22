@@ -79,8 +79,6 @@ class VersionsScreen extends ConsumerWidget {
     WidgetRef ref,
     String translationId,
   ) async {
-    final messenger = ScaffoldMessenger.of(context);
-
     try {
       await ref
           .read(currentTranslationProvider.notifier)
@@ -90,15 +88,12 @@ class VersionsScreen extends ConsumerWidget {
           .changeTranslation(translationId);
 
       if (!context.mounted) return;
-      messenger.showSnackBar(
-        const SnackBar(content: Text('Translation selected.')),
-      );
       if (Navigator.of(context).canPop()) {
         Navigator.of(context).pop();
       }
     } catch (error) {
       if (!context.mounted) return;
-      messenger.showSnackBar(
+      ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Could not switch translation: $error')),
       );
     }
@@ -237,11 +232,26 @@ class _TranslationListTile extends StatelessWidget {
   ) {
     final colors = Theme.of(context).colorScheme;
     final buttons = <Widget>[];
+    final isAvailableOffline =
+        translation.isLocal ||
+        translation.sourceType == BibleSourceType.asset ||
+        translation.sourceType == BibleSourceType.download ||
+        translation.sourceType == BibleSourceType.import ||
+        (translation.filePath?.isNotEmpty ?? false);
 
     // The first Versions screen pass is intentionally lightweight: these
     // chips show the planned affordances without yet committing the app to
     // full download/audio/library workflows.
-    if (translation.githubUrl != null) {
+    if (isAvailableOffline) {
+      buttons.add(
+        _TranslationActionChip(
+          icon: Icons.check_rounded,
+          tooltip: 'Available offline',
+          color: colors.primaryContainer,
+          iconColor: colors.onPrimaryContainer,
+        ),
+      );
+    } else if (translation.githubUrl != null) {
       buttons.add(
         _TranslationActionChip(
           icon: Icons.download_rounded,
@@ -278,11 +288,13 @@ class _TranslationActionChip extends StatelessWidget {
     required this.icon,
     required this.tooltip,
     required this.color,
+    this.iconColor,
   });
 
   final IconData icon;
   final String tooltip;
   final Color color;
+  final Color? iconColor;
 
   @override
   Widget build(BuildContext context) {
@@ -296,7 +308,10 @@ class _TranslationActionChip extends StatelessWidget {
           onPressed: () {},
           splashRadius: 18,
           iconSize: 18,
-          icon: Icon(icon),
+          icon: Icon(
+            icon,
+            color: iconColor ?? Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
         ),
       ),
     );
