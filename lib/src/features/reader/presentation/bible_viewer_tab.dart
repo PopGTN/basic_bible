@@ -474,10 +474,6 @@ class _BibleTextViewState extends State<_BibleTextView> {
   }
 
   Widget _buildChapterHeader(BuildContext context) {
-    final primaryTocLabel = widget.book.tocLabels.isNotEmpty
-        ? widget.book.tocLabels.first.text
-        : null;
-
     return Padding(
       padding: const EdgeInsets.only(bottom: 16.0),
       child: Column(
@@ -499,19 +495,6 @@ class _BibleTextViewState extends State<_BibleTextView> {
             ),
             textAlign: TextAlign.center,
           ),
-          if (primaryTocLabel != null &&
-              primaryTocLabel.toLowerCase() != widget.book.name.toLowerCase())
-            Padding(
-              padding: const EdgeInsets.only(top: 6),
-              child: Text(
-                primaryTocLabel,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  fontStyle: FontStyle.italic,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ),
         ],
       ),
     );
@@ -541,9 +524,13 @@ class _BibleTextViewState extends State<_BibleTextView> {
     // repeating long front-matter blocks on every chapter view.
     return [
       _DocumentBlockSection(
-        title: book.tocLabels.isNotEmpty
+        title: book.name,
+        description:
+            book.tocLabels.isNotEmpty &&
+                book.tocLabels.first.text.toLowerCase() !=
+                    book.name.toLowerCase()
             ? book.tocLabels.first.text
-            : book.name,
+            : null,
         eyebrow: 'Introduction',
         blocks: book.introductionBlocks,
         fontSize: widget.fontSize,
@@ -805,10 +792,6 @@ class _BibleTextViewState extends State<_BibleTextView> {
     BibleBook book,
     int chapterNumber,
   ) {
-    final primaryTocLabel = book.tocLabels.isNotEmpty
-        ? book.tocLabels.first.text
-        : null;
-
     return Padding(
       padding: const EdgeInsets.only(bottom: 16.0),
       child: Column(
@@ -830,19 +813,6 @@ class _BibleTextViewState extends State<_BibleTextView> {
             ),
             textAlign: TextAlign.center,
           ),
-          if (primaryTocLabel != null &&
-              primaryTocLabel.toLowerCase() != book.name.toLowerCase())
-            Padding(
-              padding: const EdgeInsets.only(top: 6),
-              child: Text(
-                primaryTocLabel,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  fontStyle: FontStyle.italic,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ),
         ],
       ),
     );
@@ -2020,10 +1990,12 @@ class _DocumentBlockSection extends StatelessWidget {
     required this.blocks,
     required this.fontSize,
     this.eyebrow,
+    this.description,
   });
 
   final String title;
   final String? eyebrow;
+  final String? description;
   final List<BibleDocumentBlock> blocks;
   final double fontSize;
 
@@ -2065,6 +2037,16 @@ class _DocumentBlockSection extends StatelessWidget {
               fontWeight: FontWeight.w700,
             ),
           ),
+          if (description != null) ...[
+            const SizedBox(height: 4),
+            Text(
+              description!,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ],
           const SizedBox(height: 10),
           for (final block in blocks)
             _DocumentBlockView(block: block, fontSize: fontSize),

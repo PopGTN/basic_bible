@@ -72,6 +72,7 @@ BibleBook? resolveBookFromReference(
       ..._bookMatchTokens(book.id),
       ..._bookMatchTokens(book.shortName),
       ..._bookMatchTokens(book.name),
+      for (final tocLabel in book.tocLabels) ..._bookMatchTokens(tocLabel.text),
     };
     if (bookTokens.any(referenceTokens.contains)) {
       return book;
