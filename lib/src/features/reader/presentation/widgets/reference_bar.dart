@@ -552,40 +552,16 @@ class _ExpandedBookSection extends StatelessWidget {
           GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 5,
-              mainAxisSpacing: 12,
-              crossAxisSpacing: 12,
-              childAspectRatio: 1,
-            ),
+            gridDelegate: _referencePickerGridDelegate,
             itemCount: book.chapters.length,
             itemBuilder: (context, index) {
               final chapter = book.chapters[index];
               final isSelected = chapter.number == selectedChapter;
-              return InkWell(
+              return _ReferenceNumberTile(
+                label: '${chapter.number}',
+                isSelected: isSelected,
+                colors: colors,
                 onTap: () => onChapterTap(chapter.number),
-                borderRadius: BorderRadius.circular(16),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: isSelected
-                        ? colors.primary
-                        : colors.surfaceContainerHighest,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Center(
-                    child: Text(
-                      '${chapter.number}',
-                      style: TextStyle(
-                        color: isSelected
-                            ? colors.onPrimary
-                            : colors.onSurfaceVariant,
-                        fontWeight: isSelected
-                            ? FontWeight.w700
-                            : FontWeight.w400,
-                      ),
-                    ),
-                  ),
-                ),
               );
             },
           ),
@@ -598,45 +574,66 @@ class _ExpandedBookSection extends StatelessWidget {
             GridView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 6,
-                mainAxisSpacing: 8,
-                crossAxisSpacing: 8,
-                childAspectRatio: 1.1,
-              ),
+              gridDelegate: _referencePickerGridDelegate,
               itemCount: selectedChapterModel.verses.length,
               itemBuilder: (context, index) {
                 final verse = selectedChapterModel.verses[index];
                 final isSelected = verse.number == selectedVerse;
-                return InkWell(
+                return _ReferenceNumberTile(
+                  label: '${verse.number}',
+                  isSelected: isSelected,
+                  colors: colors,
                   onTap: () => onVerseTap(verse.number),
-                  borderRadius: BorderRadius.circular(14),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: isSelected
-                          ? colors.secondary
-                          : colors.surfaceContainerHigh,
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: Center(
-                      child: Text(
-                        '${verse.number}',
-                        style: TextStyle(
-                          color: isSelected
-                              ? colors.onSecondary
-                              : colors.onSurfaceVariant,
-                          fontWeight: isSelected
-                              ? FontWeight.w700
-                              : FontWeight.w400,
-                        ),
-                      ),
-                    ),
-                  ),
                 );
               },
             ),
           ],
         ],
+      ),
+    );
+  }
+}
+
+const SliverGridDelegateWithFixedCrossAxisCount _referencePickerGridDelegate =
+    SliverGridDelegateWithFixedCrossAxisCount(
+      crossAxisCount: 6,
+      mainAxisSpacing: 8,
+      crossAxisSpacing: 8,
+      childAspectRatio: 1.1,
+    );
+
+class _ReferenceNumberTile extends StatelessWidget {
+  const _ReferenceNumberTile({
+    required this.label,
+    required this.isSelected,
+    required this.colors,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool isSelected;
+  final ColorScheme colors;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        decoration: BoxDecoration(
+          color: isSelected ? colors.secondary : colors.surfaceContainerHigh,
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Center(
+          child: Text(
+            label,
+            style: TextStyle(
+              color: isSelected ? colors.onSecondary : colors.onSurfaceVariant,
+              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w400,
+            ),
+          ),
+        ),
       ),
     );
   }
