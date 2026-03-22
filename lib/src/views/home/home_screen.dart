@@ -6,6 +6,7 @@ import 'tabs/home_tab.dart';
 import 'tabs/menu_tab.dart';
 import 'tabs/bibleViewerTab/bible_viewer_tab.dart';
 import 'package:basic_bible/l10n/app_localizations.dart';
+import 'package:basic_bible/src/models/bible_models.dart';
 import 'package:basic_bible/src/services/font_size_service.dart';
 import 'package:basic_bible/src/providers/bible_provider.dart';
 import 'package:basic_bible/src/repositories/app_bible_repository.dart';
@@ -326,7 +327,27 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         for (final translation in translations)
                           PopupMenuItem(
                             value: translation.id,
-                            child: Text(translation.name, style: textStyle),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    translation.name,
+                                    style: textStyle,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Text(
+                                  _translationSourceLabel(translation),
+                                  style: textStyle.copyWith(
+                                    fontSize: 12,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         const PopupMenuDivider(),
                         PopupMenuItem(
@@ -422,5 +443,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         ),
       ),
     );
+  }
+
+  String _translationSourceLabel(BibleTranslation translation) {
+    return switch (translation.sourceType) {
+      BibleSourceType.asset => 'Bundled',
+      BibleSourceType.download => 'Downloaded',
+      BibleSourceType.import => 'Imported',
+    };
   }
 }

@@ -35,6 +35,7 @@ Status meanings:
 - `blocked`: cannot move safely without another prerequisite or decision
 
 ## Completed Recently
+- `done` Cleaned up downloaded-translation lifecycle handling so stored metadata now overrides built-in defaults when a bundled translation has been downloaded, and the picker reflects whether a translation is bundled, downloaded, or imported.
 - `done` Clarified reader-mode behavior so one mode stays fully verse-listed and the other now follows the parsed document structure more literally instead of forcing all source content into paragraph-style prose.
 - `done` Improved the verse-detail note/reference UX by grouping annotation content into clearer cards and action chips so heavily annotated verses no longer fall back to a very plain stacked list.
 - `done` Finished translation asset lookup cleanup by removing filename-guess fallback logic and unifying built-in/imported translation resolution through explicit metadata.
@@ -82,22 +83,21 @@ Status meanings:
 - `in_progress` Paragraph mode now follows structured paragraph-start blocks from all three supported parser formats, but source fidelity is still only as good as the markers each input file actually exposes.
 - `in_progress` Structured cross-reference targets now navigate directly in the reader, but the broader note/reference experience can still be improved when a verse has many annotations.
 - `in_progress` Sequential feature workflow is now the active delivery model: finish one tracked feature, verify it, commit it, then move to the next tracked feature.
-- `in_progress` Built-in and imported translations now resolve through the same explicit metadata path, but downloaded translations and broader translation-library management can still be cleaned up further over time.
-- `in_progress` The verse-detail sheet is now much clearer for dense annotations, but broader translation-library management and downloaded-translation consistency still have room to improve.
+- `in_progress` Bundled, imported, and downloaded translations now resolve through the same stored-metadata path, but broader translation-library management and contributor-facing cleanup still have room to improve.
 - `in_progress` Reader modes now better match the intended behavior, but document-mode fidelity is still limited by how much positional structure the parser currently preserves.
 
 ## Recommended Next Step
-- `next` Clean up downloaded-translation lifecycle handling so bundled, imported, and downloaded translations all participate in one consistent translation-library model.
+- `next` Reorganize toward clearer feature-first modules so reader, library/import, and settings concerns are easier to evolve without cross-folder coupling.
 
 Why this is next:
-- Built-in and imported translations now resolve consistently, but downloaded translations still lag behind the cleaner library model.
-- This is the most direct follow-up to the translation cleanup work that just landed.
-- It remains a single bounded feature that fits the one-feature-at-a-time workflow.
+- The main user-facing reading and translation-library flows are now in much better shape.
+- The biggest remaining maintainability gap is structural: the repo is still spread across generic folders instead of clearer feature boundaries.
+- That is the next lead-level improvement once the active reader/library features are closed.
 
 Definition of done for this step:
-- Downloaded translations persist and resolve through the same metadata-driven path as bundled and imported entries.
-- Translation picker behavior stays consistent regardless of translation source.
-- Existing reading and import flows still work.
+- Reader, library/import, and settings concerns have clearer boundaries in `lib/src/`.
+- Active code paths are easier to find without relying on legacy knowledge.
+- Existing app behavior still works after the reorganization.
 
 ## Prioritized Backlog
 
@@ -113,7 +113,7 @@ README.md reminder:
 - Update the README when offline persistence actually works, not before.
 
 ### 2. Expand translation import and metadata tracking
-Status: `next`
+Status: `done`
 
 Scope:
 - Support explicit import flows for local USFX, OSIS, and Zefania files.
@@ -127,7 +127,7 @@ README.md reminder:
 - Update the README when local Bible import becomes a real user-facing feature.
 
 ### 3. Fix translation asset lookup
-Status: `in_progress`
+Status: `done`
 
 Scope:
 - Align translation IDs with bundled asset names, or add explicit asset-path metadata per translation.

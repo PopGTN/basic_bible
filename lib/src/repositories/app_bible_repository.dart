@@ -61,9 +61,16 @@ class AppBibleRepository {
   Future<List<BibleTranslation>> getAvailableTranslations() async {
     final storedTranslations = await _db.getStoredTranslations();
     final builtInIds = builtInTranslations.map((t) => t.id).toSet();
+    final storedById = {
+      for (final translation in storedTranslations) translation.id: translation,
+    };
 
     return [
-      ...builtInTranslations,
+      for (final translation in builtInTranslations)
+        // If a bundled translation has been downloaded, keep the built-in
+        // identity but prefer the stored lifecycle metadata so the picker and
+        // load path reflect how that translation currently behaves.
+        storedById[translation.id] ?? translation,
       ...storedTranslations.where(
         (translation) => !builtInIds.contains(translation.id),
       ),
@@ -242,15 +249,18 @@ class AppBibleRepository {
   }
 
   Future<BibleTranslation> _getTranslation(String translationId) async {
-    try {
-      return builtInTranslations.firstWhere((t) => t.id == translationId);
-    } catch (_) {
-      final storedTranslations = await _db.getStoredTranslations();
-      return storedTranslations.firstWhere(
-        (t) => t.id == translationId,
-        orElse: () => throw Exception('Translation $translationId not found'),
-      );
+    final storedTranslations = await _db.getStoredTranslations();
+    final storedTranslation = storedTranslations.where(
+      (t) => t.id == translationId,
+    );
+    if (storedTranslation.isNotEmpty) {
+      return storedTranslation.first;
     }
+
+    return builtInTranslations.firstWhere(
+      (t) => t.id == translationId,
+      orElse: () => throw Exception('Translation $translationId not found'),
+    );
   }
 
   Future<String> _loadLocalContent(BibleTranslation translation) async {
