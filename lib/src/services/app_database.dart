@@ -362,63 +362,72 @@ class AppDatabase extends _$AppDatabase {
               ..orderBy([(b) => OrderingTerm(expression: b.bookNumber)]))
             .get();
 
-    final List<BibleBook> resultBooks = [];
+    if (bookRows.isEmpty) return const [];
 
-    for (final bookRow in bookRows) {
-      final chapterQuery = select(chapters)
-        ..where((c) => c.bookId.equals(bookRow.id))
-        ..orderBy([(c) => OrderingTerm(expression: c.number)]);
-      final chapterRows = await chapterQuery.get();
+    final bookIds = bookRows.map((row) => row.id).toList();
+    final chapterRows =
+        await (select(chapters)
+              ..where((c) => c.bookId.isIn(bookIds))
+              ..orderBy([
+                (c) => OrderingTerm(expression: c.bookId),
+                (c) => OrderingTerm(expression: c.number),
+              ]))
+            .get();
 
-      final List<BibleChapter> resultChapters = [];
+    final chapterIds = chapterRows.map((row) => row.id).toList();
+    final verseRows = chapterIds.isEmpty
+        ? const <VerseEntry>[]
+        : await (select(verses)
+                ..where((v) => v.chapterId.isIn(chapterIds))
+                ..orderBy([
+                  (v) => OrderingTerm(expression: v.chapterId),
+                  (v) => OrderingTerm(expression: v.number),
+                ]))
+              .get();
 
-      for (final chapterRow in chapterRows) {
-        final verseQuery = select(verses)
-          ..where((v) => v.chapterId.equals(chapterRow.id))
-          ..orderBy([(v) => OrderingTerm(expression: v.number)]);
-        final verseRows = await verseQuery.get();
+    final versesByChapterId = <int, List<BibleVerse>>{};
+    for (final verseRow in verseRows) {
+      versesByChapterId
+          .putIfAbsent(verseRow.chapterId, () => <BibleVerse>[])
+          .add(
+            BibleVerse(
+              number: verseRow.number,
+              text: verseRow.verseText,
+              notes: verseRow.notes,
+              references: verseRow.references,
+              spans: verseRow.spans ?? const [],
+              footnotes: verseRow.footnotes ?? const [],
+              crossReferences: verseRow.crossReferences ?? const [],
+            ),
+          );
+    }
 
-        // Map VerseEntry -> BibleVerse
-        final mappedVerses = verseRows
-            .map(
-              (v) => BibleVerse(
-                number: v.number,
-                text: v.verseText,
-                notes: v.notes,
-                references: v.references,
-                spans: v.spans ?? const [],
-                footnotes: v.footnotes ?? const [],
-                crossReferences: v.crossReferences ?? const [],
-              ),
-            )
-            .toList();
+    final chaptersByBookId = <String, List<BibleChapter>>{};
+    for (final chapterRow in chapterRows) {
+      chaptersByBookId
+          .putIfAbsent(chapterRow.bookId, () => <BibleChapter>[])
+          .add(
+            BibleChapter(
+              number: chapterRow.number,
+              verses: versesByChapterId[chapterRow.id] ?? const [],
+              blocks: chapterRow.blocks ?? const [],
+            ),
+          );
+    }
 
-        // Map ChapterEntry -> BibleChapter
-        resultChapters.add(
-          BibleChapter(
-            number: chapterRow.number,
-            verses: mappedVerses,
-            blocks: chapterRow.blocks ?? const [],
-          ),
-        );
-      }
-
-      // Map BookEntry -> BibleBook (convert stored index to enum)
-      resultBooks.add(
+    return [
+      for (final bookRow in bookRows)
         BibleBook(
           id: bookRow.id.split('_').last.toUpperCase(),
           name: bookRow.name,
           shortName: bookRow.shortName.toUpperCase(),
           bookNumber: bookRow.bookNumber,
           bookType: _bookTypeFromRow(bookRow.bookType),
-          chapters: resultChapters,
+          chapters: chaptersByBookId[bookRow.id] ?? const [],
           tocLabels: bookRow.tocLabels ?? const [],
           introductionBlocks: bookRow.introductionBlocks ?? const [],
         ),
-      );
-    }
-
-    return resultBooks;
+    ];
   }
 
   /// Retrieve a single chapter (with verses) for a translation/book/chapter.

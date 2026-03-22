@@ -67,10 +67,10 @@ class AppBibleRepository {
 
     return [
       for (final translation in builtInTranslations)
-        // If a bundled translation has been downloaded, keep the built-in
-        // identity but prefer the stored lifecycle metadata so the picker and
-        // load path reflect how that translation currently behaves.
-        storedById[translation.id] ?? translation,
+        _mergeBuiltInTranslation(
+          builtIn: translation,
+          stored: storedById[translation.id],
+        ),
       ...storedTranslations.where(
         (translation) => !builtInIds.contains(translation.id),
       ),
@@ -79,6 +79,10 @@ class AppBibleRepository {
 
   /// Load Bible from local asset or cache
   Future<List<BibleBook>> loadLocalBible(String translationId) async {
+    if (_currentTranslationId == translationId && _cachedBooks.isNotEmpty) {
+      return _cachedBooks;
+    }
+
     final translation = await _getTranslation(translationId);
 
     if (await _db.isBibleCached(translationId)) {
@@ -118,6 +122,10 @@ class AppBibleRepository {
 
   /// Download Bible from GitHub and cache it
   Future<List<BibleBook>> downloadBible(String translationId) async {
+    if (_currentTranslationId == translationId && _cachedBooks.isNotEmpty) {
+      return _cachedBooks;
+    }
+
     final translation = await _getTranslation(translationId);
 
     if (await _db.isBibleCached(translationId)) {
@@ -266,16 +274,53 @@ class AppBibleRepository {
 
   Future<BibleTranslation> _getTranslation(String translationId) async {
     final storedTranslations = await _db.getStoredTranslations();
-    final storedTranslation = storedTranslations.where(
+    final builtInMatches = builtInTranslations.where(
       (t) => t.id == translationId,
     );
-    if (storedTranslation.isNotEmpty) {
-      return storedTranslation.first;
+    final storedMatches = storedTranslations.where(
+      (t) => t.id == translationId,
+    );
+    final builtInTranslation = builtInMatches.isNotEmpty
+        ? builtInMatches.first
+        : null;
+    final storedTranslation = storedMatches.isNotEmpty
+        ? storedMatches.first
+        : null;
+
+    if (builtInTranslation != null) {
+      // Built-in translations should always retain their bundled asset
+      // fallback. Stored metadata can describe lifecycle state such as a prior
+      // download, but it should not make a bundled translation stop working
+      // offline when the asset still ships with the app.
+      return _mergeBuiltInTranslation(
+        builtIn: builtInTranslation,
+        stored: storedTranslation,
+      );
     }
 
-    return builtInTranslations.firstWhere(
-      (t) => t.id == translationId,
-      orElse: () => throw Exception('Translation $translationId not found'),
+    if (storedTranslation != null) {
+      return storedTranslation;
+    }
+
+    throw Exception('Translation $translationId not found');
+  }
+
+  BibleTranslation _mergeBuiltInTranslation({
+    required BibleTranslation builtIn,
+    BibleTranslation? stored,
+  }) {
+    if (stored == null) return builtIn;
+
+    return BibleTranslation(
+      id: builtIn.id,
+      name: stored.name,
+      language: stored.language,
+      description: stored.description,
+      isLocal: true,
+      filePath: builtIn.filePath,
+      githubUrl: builtIn.githubUrl,
+      format: builtIn.format,
+      sourceType: BibleSourceType.asset,
     );
   }
 
