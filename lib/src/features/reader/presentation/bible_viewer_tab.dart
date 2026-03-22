@@ -93,6 +93,7 @@ class _BibleViewerTabState extends ConsumerState<BibleViewerTab> {
     final currentReference = ref.watch(currentReferenceProvider);
     final chapterAsync = ref.watch(currentChapterProvider);
     final layoutMode = ref.watch(readerLayoutModeProvider);
+    final continuousScrolling = ref.watch(continuousScrollingProvider);
     final isSmall = widget.isSmallDevice;
 
     return Stack(
@@ -168,6 +169,7 @@ class _BibleViewerTabState extends ConsumerState<BibleViewerTab> {
                         reference: currentReference,
                         fontSize: size,
                         layoutMode: layoutMode,
+                        continuousScrolling: continuousScrolling,
                         isSmallDevice: isSmall,
                       )
                     : const _ErrorView(message: 'Chapter not found'),
@@ -210,6 +212,7 @@ class _BibleTextView extends StatefulWidget {
     required this.reference,
     required this.fontSize,
     required this.layoutMode,
+    required this.continuousScrolling,
     required this.isSmallDevice,
   });
 
@@ -219,6 +222,7 @@ class _BibleTextView extends StatefulWidget {
   final BibleReference reference;
   final double fontSize;
   final ReaderLayoutMode layoutMode;
+  final bool continuousScrolling;
   final bool isSmallDevice;
 
   @override
@@ -226,7 +230,7 @@ class _BibleTextView extends StatefulWidget {
 }
 
 class _BibleTextViewState extends State<_BibleTextView> {
-  final Map<int, GlobalKey> _verseKeys = <int, GlobalKey>{};
+  final Map<String, GlobalKey> _verseKeys = <String, GlobalKey>{};
   bool _showSelectedVerseFocus = true;
 
   @override
@@ -250,7 +254,10 @@ class _BibleTextViewState extends State<_BibleTextView> {
       if (!mounted) return;
       final verseNumber = widget.reference.verse;
       if (verseNumber == null) return;
-      final targetContext = _verseKeys[verseNumber]?.currentContext;
+      final targetContext = _verseKey(
+        widget.reference.chapter,
+        verseNumber,
+      ).currentContext;
       if (targetContext != null) {
         Scrollable.ensureVisible(
           targetContext,
@@ -265,8 +272,15 @@ class _BibleTextViewState extends State<_BibleTextView> {
   bool get _hasActiveVerseFocus =>
       _showSelectedVerseFocus && widget.reference.verse != null;
 
-  bool _isFocusedVerse(BibleVerse verse) =>
-      _hasActiveVerseFocus && widget.reference.verse == verse.number;
+  GlobalKey _verseKey(int chapterNumber, int verseNumber) {
+    final key = '$chapterNumber:$verseNumber';
+    return _verseKeys.putIfAbsent(key, GlobalKey.new);
+  }
+
+  bool _isFocusedVerse(int chapterNumber, BibleVerse verse) =>
+      _hasActiveVerseFocus &&
+      widget.reference.chapter == chapterNumber &&
+      widget.reference.verse == verse.number;
 
   void _dismissSelectedVerseFocus() {
     if (!_hasActiveVerseFocus || !mounted) return;
@@ -275,17 +289,25 @@ class _BibleTextViewState extends State<_BibleTextView> {
     });
   }
 
-  Color? _verseTextColor(BuildContext context, BibleVerse verse) {
+  Color? _verseTextColor(
+    BuildContext context,
+    int chapterNumber,
+    BibleVerse verse,
+  ) {
     final baseColor = Theme.of(context).textTheme.bodyLarge?.color;
     if (!_hasActiveVerseFocus) return baseColor;
-    return _isFocusedVerse(verse)
+    return _isFocusedVerse(chapterNumber, verse)
         ? baseColor
         : baseColor?.withValues(alpha: 0.5);
   }
 
-  Color _verseNumberColor(BuildContext context, BibleVerse verse) {
+  Color _verseNumberColor(
+    BuildContext context,
+    int chapterNumber,
+    BibleVerse verse,
+  ) {
     final primary = Theme.of(context).colorScheme.primary;
-    if (!_hasActiveVerseFocus || _isFocusedVerse(verse)) {
+    if (!_hasActiveVerseFocus || _isFocusedVerse(chapterNumber, verse)) {
       return primary;
     }
     return primary.withValues(alpha: 0.45);
@@ -293,16 +315,6 @@ class _BibleTextViewState extends State<_BibleTextView> {
 
   @override
   Widget build(BuildContext context) {
-    final contentWidgets = <Widget>[
-      _buildChapterHeader(context),
-      ..._buildBookIntroductionBlocks(context),
-      ..._buildChapterBlocks(context),
-      if (widget.layoutMode == ReaderLayoutMode.verseList)
-        ...widget.chapter.verses.map((verse) => _buildVerse(context, verse))
-      else
-        _buildDocumentReadingView(context),
-    ];
-
     return NotificationListener<ScrollStartNotification>(
       onNotification: (notification) {
         if (notification.dragDetails != null) {
@@ -313,20 +325,34 @@ class _BibleTextViewState extends State<_BibleTextView> {
         }
         return false;
       },
-      child: Padding(
-        padding: EdgeInsets.only(
-          left: 16,
-          right: 16,
-          top: widget.isSmallDevice
-              ? 16
-              : 80, // keep larger top space on tablet/desktop
-          bottom: 72, // Space for chapter bar
-        ),
-        child: ListView.builder(
-          controller: widget.controller,
-          itemCount: contentWidgets.length,
-          itemBuilder: (context, index) => contentWidgets[index],
-        ),
+      child: widget.continuousScrolling
+          ? _buildContinuousReadingView(context)
+          : _buildSingleChapterView(context),
+    );
+  }
+
+  Widget _buildSingleChapterView(BuildContext context) {
+    final contentWidgets = <Widget>[
+      _buildChapterHeader(context),
+      ..._buildBookIntroductionBlocks(context),
+      ..._buildChapterBlocks(context),
+      if (widget.layoutMode == ReaderLayoutMode.verseList)
+        ...widget.chapter.verses.map((verse) => _buildVerse(context, verse))
+      else
+        _buildDocumentReadingView(context),
+    ];
+
+    return Padding(
+      padding: EdgeInsets.only(
+        left: 16,
+        right: 16,
+        top: widget.isSmallDevice ? 16 : 80,
+        bottom: 72,
+      ),
+      child: ListView.builder(
+        controller: widget.controller,
+        itemCount: contentWidgets.length,
+        itemBuilder: (context, index) => contentWidgets[index],
       ),
     );
   }
@@ -350,7 +376,7 @@ class _BibleTextViewState extends State<_BibleTextView> {
           ),
           const SizedBox(height: 4),
           Text(
-            '${bookIdToName(widget.reference.bookId)} ${widget.reference.chapter}',
+            '${widget.reference.chapter}',
             style: Theme.of(context).textTheme.headlineMedium?.copyWith(
               fontSize: widget.fontSize + 4,
               fontWeight: FontWeight.bold,
@@ -426,10 +452,14 @@ class _BibleTextViewState extends State<_BibleTextView> {
   }
 
   Widget _buildVerse(BuildContext context, BibleVerse verse) {
-    final verseKey = _verseKeys.putIfAbsent(verse.number, GlobalKey.new);
+    final verseKey = _verseKey(widget.chapter.number, verse.number);
     final hasAnnotations = _hasAnnotations(verse);
-    final bodyColor = _verseTextColor(context, verse);
-    final numberColor = _verseNumberColor(context, verse);
+    final bodyColor = _verseTextColor(context, widget.chapter.number, verse);
+    final numberColor = _verseNumberColor(
+      context,
+      widget.chapter.number,
+      verse,
+    );
 
     return Padding(
       key: verseKey,
@@ -470,7 +500,11 @@ class _BibleTextViewState extends State<_BibleTextView> {
             if (hasAnnotations) ...[
               const SizedBox(width: 10),
               _VerseAnnotationButton(
-                onPressed: () => _showVerseDetailsSheet(context, verse),
+                onPressed: () => _showVerseDetailsSheet(
+                  context,
+                  widget.chapter.number,
+                  verse,
+                ),
               ),
             ],
           ],
@@ -480,7 +514,7 @@ class _BibleTextViewState extends State<_BibleTextView> {
   }
 
   Widget _buildDocumentReadingView(BuildContext context) {
-    final sections = _buildParagraphSections();
+    final sections = _buildParagraphSectionsForChapter(widget.chapter);
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
@@ -500,8 +534,16 @@ class _BibleTextViewState extends State<_BibleTextView> {
                         fontSize: widget.fontSize,
                       ),
                   _isDocumentPoetrySection(section)
-                      ? _buildDocumentPoetrySection(context, section)
-                      : _buildDocumentParagraphSection(context, section),
+                      ? _buildDocumentPoetrySection(
+                          context,
+                          widget.chapter.number,
+                          section,
+                        )
+                      : _buildDocumentParagraphSection(
+                          context,
+                          widget.chapter.number,
+                          section,
+                        ),
                 ],
               ),
             ),
@@ -510,11 +552,229 @@ class _BibleTextViewState extends State<_BibleTextView> {
     );
   }
 
-  List<_ParagraphSection> _buildParagraphSections() {
-    if (widget.chapter.verses.isEmpty) return const [];
+  Widget _buildDocumentReadingViewForChapter(
+    BuildContext context,
+    BibleChapter chapter,
+  ) {
+    final sections = _buildParagraphSectionsForChapter(chapter);
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          for (final section in sections)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  for (final block in section.leadingBlocks)
+                    if (block.text.trim().isNotEmpty)
+                      _DocumentBlockView(
+                        block: block,
+                        fontSize: widget.fontSize,
+                      ),
+                  _isDocumentPoetrySection(section)
+                      ? _buildDocumentPoetrySection(
+                          context,
+                          chapter.number,
+                          section,
+                        )
+                      : _buildDocumentParagraphSection(
+                          context,
+                          chapter.number,
+                          section,
+                        ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildContinuousReadingView(BuildContext context) {
+    final startIndex = widget.book.chapters.indexWhere(
+      (chapter) => chapter.number == widget.reference.chapter,
+    );
+    final chapterStartIndex = startIndex >= 0 ? startIndex : 0;
+    final visibleChapters = widget.book.chapters
+        .skip(chapterStartIndex)
+        .toList();
+
+    return ListView.builder(
+      controller: widget.controller,
+      padding: EdgeInsets.only(
+        left: 16,
+        right: 16,
+        top: widget.isSmallDevice ? 16 : 80,
+        bottom: 72,
+      ),
+      itemCount: visibleChapters.length + 1,
+      itemBuilder: (context, index) {
+        if (index == 0) {
+          return Column(
+            children: [
+              _buildChapterHeader(context),
+              if (widget.reference.chapter == 1)
+                ..._buildBookIntroductionBlocks(context),
+            ],
+          );
+        }
+
+        final chapter = visibleChapters[index - 1];
+        final showSectionHeader = chapter.number != widget.reference.chapter;
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 28),
+          child: _ChapterSectionView(
+            book: widget.book,
+            chapter: chapter,
+            reference: widget.reference,
+            fontSize: widget.fontSize,
+            layoutMode: widget.layoutMode,
+            buildChapterBlocks: (chapter) =>
+                _buildChapterBlocksFor(context, chapter),
+            buildVerse: (verse) =>
+                _buildVerseForChapter(context, chapter.number, verse),
+            buildDocumentView: () =>
+                _buildDocumentReadingViewForChapter(context, chapter),
+            headerBuilder: showSectionHeader
+                ? () => _buildSectionHeader(context, chapter.number)
+                : null,
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildSectionHeader(BuildContext context, int chapterNumber) {
+    final isPrimary = chapterNumber == widget.reference.chapter;
+    return Padding(
+      padding: EdgeInsets.only(top: isPrimary ? 0 : 12, bottom: 16),
+      child: Column(
+        children: [
+          if (!isPrimary)
+            Text(
+              widget.book.name,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                color: Theme.of(context).colorScheme.secondary,
+                letterSpacing: 0.6,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          Text(
+            '$chapterNumber',
+            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+              fontSize: widget.fontSize + 4,
+              fontWeight: FontWeight.bold,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  List<Widget> _buildChapterBlocksFor(
+    BuildContext context,
+    BibleChapter chapter,
+  ) {
+    final visibleBlocks = chapter.blocks
+        .where((block) => block.kind != BibleDocumentBlockKind.paragraph)
+        .toList();
+    if (visibleBlocks.isEmpty) return const [];
+
+    final headings = visibleBlocks
+        .where((block) => block.kind == BibleDocumentBlockKind.heading)
+        .toList();
+    final supportingBlocks = visibleBlocks
+        .where((block) => block.kind != BibleDocumentBlockKind.heading)
+        .toList();
+
+    return [
+      for (final block in headings)
+        _DocumentBlockView(
+          block: block,
+          fontSize: widget.fontSize,
+          isEmphasized: true,
+        ),
+      if (supportingBlocks.isNotEmpty)
+        _DocumentBlockSection(
+          title: 'Chapter Notes',
+          eyebrow: 'Document',
+          blocks: supportingBlocks,
+          fontSize: widget.fontSize,
+        ),
+    ];
+  }
+
+  Widget _buildVerseForChapter(
+    BuildContext context,
+    int chapterNumber,
+    BibleVerse verse,
+  ) {
+    final verseKey = _verseKey(chapterNumber, verse.number);
+    final hasAnnotations = _hasAnnotations(verse);
+    final bodyColor = _verseTextColor(context, chapterNumber, verse);
+    final numberColor = _verseNumberColor(context, chapterNumber, verse);
+
+    return Padding(
+      key: verseKey,
+      padding: const EdgeInsets.only(bottom: 8.0),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 220),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        decoration: const BoxDecoration(color: Colors.transparent),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: RichText(
+                text: TextSpan(
+                  style: TextStyle(
+                    fontSize: widget.fontSize,
+                    color: bodyColor,
+                    height: 1.5,
+                  ),
+                  children: [
+                    TextSpan(
+                      text: '${verse.number} ',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: numberColor,
+                        fontSize: widget.fontSize - 2,
+                      ),
+                    ),
+                    ..._buildVerseContentSpans(
+                      context,
+                      verse,
+                      bodyColor: bodyColor,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            if (hasAnnotations) ...[
+              const SizedBox(width: 10),
+              _VerseAnnotationButton(
+                onPressed: () =>
+                    _showVerseDetailsSheet(context, chapterNumber, verse),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  List<_ParagraphSection> _buildParagraphSectionsForChapter(
+    BibleChapter chapter,
+  ) {
+    if (chapter.verses.isEmpty) return const [];
 
     final paragraphBlocksByVerse = <int, List<BibleDocumentBlock>>{};
-    for (final block in widget.chapter.blocks) {
+    for (final block in chapter.blocks) {
       if (block.kind != BibleDocumentBlockKind.paragraph &&
           block.kind != BibleDocumentBlockKind.poetry) {
         continue;
@@ -528,21 +788,18 @@ class _BibleTextViewState extends State<_BibleTextView> {
 
     if (paragraphBlocksByVerse.isEmpty) {
       return [
-        _ParagraphSection(
-          leadingBlocks: const [],
-          verses: widget.chapter.verses,
-        ),
+        _ParagraphSection(leadingBlocks: const [], verses: chapter.verses),
       ];
     }
 
     final sections = <_ParagraphSection>[];
-    final firstVerseNumber = widget.chapter.verses.first.number;
+    final firstVerseNumber = chapter.verses.first.number;
     var currentLeadingBlocks = List<BibleDocumentBlock>.from(
       paragraphBlocksByVerse[firstVerseNumber] ?? const [],
     );
     var currentVerses = <BibleVerse>[];
 
-    for (final verse in widget.chapter.verses) {
+    for (final verse in chapter.verses) {
       final paragraphStartBlocks = paragraphBlocksByVerse[verse.number];
       if (paragraphStartBlocks != null && currentVerses.isNotEmpty) {
         // Start a new rendered paragraph only when the source says the next
@@ -576,6 +833,7 @@ class _BibleTextViewState extends State<_BibleTextView> {
 
   Widget _buildDocumentParagraphSection(
     BuildContext context,
+    int chapterNumber,
     _ParagraphSection section,
   ) {
     return RichText(
@@ -591,10 +849,9 @@ class _BibleTextViewState extends State<_BibleTextView> {
             alignment: PlaceholderAlignment.middle,
           ),
           for (final verse in section.verses) ...[
-            ...[],
             WidgetSpan(
               child: SizedBox(
-                key: _verseKeys.putIfAbsent(verse.number, GlobalKey.new),
+                key: _verseKey(chapterNumber, verse.number),
                 width: 0,
                 height: 0,
               ),
@@ -603,14 +860,14 @@ class _BibleTextViewState extends State<_BibleTextView> {
               text: '${verse.number} ',
               style: TextStyle(
                 fontWeight: FontWeight.bold,
-                color: _verseNumberColor(context, verse),
+                color: _verseNumberColor(context, chapterNumber, verse),
                 fontSize: widget.fontSize - 2,
               ),
             ),
             ..._buildVerseContentSpans(
               context,
               verse,
-              bodyColor: _verseTextColor(context, verse),
+              bodyColor: _verseTextColor(context, chapterNumber, verse),
             ),
             if (_hasAnnotations(verse))
               WidgetSpan(
@@ -619,7 +876,8 @@ class _BibleTextViewState extends State<_BibleTextView> {
                   padding: const EdgeInsets.only(left: 6, right: 2),
                   child: _VerseAnnotationButton(
                     compact: true,
-                    onPressed: () => _showVerseDetailsSheet(context, verse),
+                    onPressed: () =>
+                        _showVerseDetailsSheet(context, chapterNumber, verse),
                   ),
                 ),
               ),
@@ -632,6 +890,7 @@ class _BibleTextViewState extends State<_BibleTextView> {
 
   Widget _buildDocumentPoetrySection(
     BuildContext context,
+    int chapterNumber,
     _ParagraphSection section,
   ) {
     return Column(
@@ -639,7 +898,7 @@ class _BibleTextViewState extends State<_BibleTextView> {
       children: [
         for (final verse in section.verses)
           Padding(
-            key: _verseKeys.putIfAbsent(verse.number, GlobalKey.new),
+            key: _verseKey(chapterNumber, verse.number),
             padding: const EdgeInsets.only(bottom: 8),
             child: RichText(
               text: TextSpan(
@@ -653,14 +912,14 @@ class _BibleTextViewState extends State<_BibleTextView> {
                     text: '${verse.number} ',
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      color: _verseNumberColor(context, verse),
+                      color: _verseNumberColor(context, chapterNumber, verse),
                       fontSize: widget.fontSize - 2,
                     ),
                   ),
                   ..._buildVerseContentSpans(
                     context,
                     verse,
-                    bodyColor: _verseTextColor(context, verse),
+                    bodyColor: _verseTextColor(context, chapterNumber, verse),
                   ),
                   if (_hasAnnotations(verse))
                     WidgetSpan(
@@ -669,8 +928,11 @@ class _BibleTextViewState extends State<_BibleTextView> {
                         padding: const EdgeInsets.only(left: 6),
                         child: _VerseAnnotationButton(
                           compact: true,
-                          onPressed: () =>
-                              _showVerseDetailsSheet(context, verse),
+                          onPressed: () => _showVerseDetailsSheet(
+                            context,
+                            chapterNumber,
+                            verse,
+                          ),
                         ),
                       ),
                     ),
@@ -702,7 +964,11 @@ class _BibleTextViewState extends State<_BibleTextView> {
     return false;
   }
 
-  void _showVerseDetailsSheet(BuildContext context, BibleVerse verse) {
+  void _showVerseDetailsSheet(
+    BuildContext context,
+    int chapterNumber,
+    BibleVerse verse,
+  ) {
     final footnotes = _displayFootnotes(verse);
     final references = _structuredReferences(verse);
     final annotationEntries = _annotationEntries(
@@ -717,7 +983,7 @@ class _BibleTextViewState extends State<_BibleTextView> {
       builder: (context) {
         return _VerseDetailsSheet(
           referenceLabel:
-              '${bookIdToName(widget.reference.bookId)} ${widget.reference.chapter}:${verse.number}',
+              '${bookIdToName(widget.reference.bookId)} $chapterNumber:${verse.number}',
           verse: verse,
           annotationEntries: annotationEntries,
           onReferenceTap: (referenceEntry) =>
@@ -1024,6 +1290,45 @@ class _ParagraphSection {
 
   final List<BibleDocumentBlock> leadingBlocks;
   final List<BibleVerse> verses;
+}
+
+class _ChapterSectionView extends StatelessWidget {
+  const _ChapterSectionView({
+    required this.book,
+    required this.chapter,
+    required this.reference,
+    required this.fontSize,
+    required this.layoutMode,
+    required this.buildChapterBlocks,
+    required this.buildVerse,
+    required this.buildDocumentView,
+    this.headerBuilder,
+  });
+
+  final BibleBook book;
+  final BibleChapter chapter;
+  final BibleReference reference;
+  final double fontSize;
+  final ReaderLayoutMode layoutMode;
+  final List<Widget> Function(BibleChapter chapter) buildChapterBlocks;
+  final Widget Function(BibleVerse verse) buildVerse;
+  final Widget Function() buildDocumentView;
+  final Widget Function()? headerBuilder;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (headerBuilder != null) headerBuilder!(),
+        ...buildChapterBlocks(chapter),
+        if (layoutMode == ReaderLayoutMode.verseList)
+          ...chapter.verses.map(buildVerse)
+        else
+          buildDocumentView(),
+      ],
+    );
+  }
 }
 
 class _VerseDetailsSheet extends StatelessWidget {

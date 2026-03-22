@@ -8,6 +8,28 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 enum ReaderLayoutMode { verseList, document }
 
+final continuousScrollingProvider =
+    StateNotifierProvider<ContinuousScrollingNotifier, bool>((ref) {
+      return ContinuousScrollingNotifier();
+    });
+
+class ContinuousScrollingNotifier extends StateNotifier<bool> {
+  ContinuousScrollingNotifier() : super(false) {
+    _loadSavedValue();
+  }
+
+  Future<void> _loadSavedValue() async {
+    final prefs = await SharedPreferences.getInstance();
+    state = prefs.getBool('reader_continuous_scrolling') ?? false;
+  }
+
+  Future<void> setEnabled(bool enabled) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('reader_continuous_scrolling', enabled);
+    state = enabled;
+  }
+}
+
 // Repository provider
 final bibleRepositoryProvider = Provider<AppBibleRepository>((ref) {
   final db = ref.watch(appDatabaseProvider);
@@ -109,7 +131,11 @@ class ReferenceNotifier extends StateNotifier<BibleReference> {
   }
 
   void goToNextChapter(List<BibleBook> books) {
-    final currentBook = books.firstWhere((b) => b.id == state.bookId);
+    if (books.isEmpty) return;
+    final currentBookMatches = books.where((b) => b.id == state.bookId);
+    final currentBook = currentBookMatches.isNotEmpty
+        ? currentBookMatches.first
+        : books.first;
     final currentChapterIndex = currentBook.chapters.indexWhere(
       (c) => c.number == state.chapter,
     );
@@ -138,7 +164,11 @@ class ReferenceNotifier extends StateNotifier<BibleReference> {
   }
 
   void goToPreviousChapter(List<BibleBook> books) {
-    final currentBook = books.firstWhere((b) => b.id == state.bookId);
+    if (books.isEmpty) return;
+    final currentBookMatches = books.where((b) => b.id == state.bookId);
+    final currentBook = currentBookMatches.isNotEmpty
+        ? currentBookMatches.first
+        : books.first;
     final currentChapterIndex = currentBook.chapters.indexWhere(
       (c) => c.number == state.chapter,
     );

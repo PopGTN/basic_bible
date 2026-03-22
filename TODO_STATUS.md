@@ -51,6 +51,8 @@ Status meanings:
 - `blocked`: cannot move safely without another prerequisite or decision
 
 ## Completed Recently
+- `done` Added a persisted `Continuous Scrolling` reader mode and cleaned the chapter header so the viewer now shows only the chapter number on the second line instead of repeating the book name there.
+- `done` Added explicit back navigation to unfinished routed pages so placeholder screens, settings, and other non-tab pages can always return to the previous screen or fall back to `/home` instead of trapping the user in a dead-end route.
 - `done` Consolidated the Bible viewer top-bar controls behind a reader-specific overflow menu and settings sheet, so `Fonts & Settings` now opens a dedicated Bible viewer settings surface with font-size controls, reader mode toggle, theme selection, and an `All Settings` handoff.
 - `done` Replaced the boxed selected-verse highlight with a softer temporary focus state: the chosen verse now stays visually emphasized without a background box until the user touches the screen to scroll.
 - `done` Hardened reader reference fallback so switching to a translation that does not contain the previously saved book/chapter no longer throws `Bad state: No element`; the reader now falls back safely to the first available matching content.

@@ -74,6 +74,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             return _BibleViewerSettingsSheet(
               themeMode: themeMode,
               layoutMode: layoutMode,
+              continuousScrolling: ref.watch(continuousScrollingProvider),
               onDecreaseFont: () {
                 final nextSize = (FontSizeService.instance.size - 2).clamp(
                   12.0,
@@ -93,6 +94,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               },
               onLayoutSelected: (mode) {
                 ref.read(readerLayoutModeProvider.notifier).setLayoutMode(mode);
+              },
+              onContinuousScrollingChanged: (value) {
+                ref
+                    .read(continuousScrollingProvider.notifier)
+                    .setEnabled(value);
               },
               onOpenAllSettings: () {
                 Navigator.of(sheetContext).pop();
@@ -469,19 +475,23 @@ class _BibleViewerSettingsSheet extends StatelessWidget {
   const _BibleViewerSettingsSheet({
     required this.themeMode,
     required this.layoutMode,
+    required this.continuousScrolling,
     required this.onDecreaseFont,
     required this.onIncreaseFont,
     required this.onThemeSelected,
     required this.onLayoutSelected,
+    required this.onContinuousScrollingChanged,
     required this.onOpenAllSettings,
   });
 
   final AppThemeMode themeMode;
   final ReaderLayoutMode layoutMode;
+  final bool continuousScrolling;
   final VoidCallback onDecreaseFont;
   final VoidCallback onIncreaseFont;
   final ValueChanged<AppThemeMode> onThemeSelected;
   final ValueChanged<ReaderLayoutMode> onLayoutSelected;
+  final ValueChanged<bool> onContinuousScrollingChanged;
   final VoidCallback onOpenAllSettings;
 
   @override
@@ -543,6 +553,15 @@ class _BibleViewerSettingsSheet extends StatelessWidget {
                     value: 'System Default',
                     icon: Icons.chevron_right,
                     onTap: onOpenAllSettings,
+                  ),
+                  Divider(
+                    height: 1,
+                    color: colors.outlineVariant.withValues(alpha: 0.7),
+                  ),
+                  _ToggleSettingsRow(
+                    title: 'Continuous Scrolling',
+                    value: continuousScrolling,
+                    onChanged: onContinuousScrollingChanged,
                   ),
                   Divider(
                     height: 1,
