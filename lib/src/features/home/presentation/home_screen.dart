@@ -267,6 +267,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                 return PopupMenuButton<_BibleViewerMenuAction>(
                   color: colors.surfaceContainerHigh,
                   tooltip: 'Reader options',
+                  style: IconButton.styleFrom(
+                    backgroundColor: colors.surfaceContainerHighest,
+                    foregroundColor: colors.onSurface,
+                    minimumSize: const Size(40, 40),
+                    padding: const EdgeInsets.all(8),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      side: BorderSide(color: colors.outlineVariant),
+                    ),
+                  ),
                   onSelected: (action) =>
                       _handleBibleViewerMenuAction(context, ref, action),
                   itemBuilder: (context) => [
@@ -300,7 +310,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                       ),
                     ),
                   ],
-                  icon: const Icon(Icons.more_horiz),
+                  // The overflow trigger needs its own surface so it remains
+                  // legible on darker reader app bars instead of reading like
+                  // a low-contrast floating glyph.
+                  icon: Icon(Icons.more_horiz, color: colors.onSurface),
                 );
               },
             ),
