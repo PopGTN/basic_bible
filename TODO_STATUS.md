@@ -17,6 +17,18 @@ This file complements:
 - Update this file whenever a meaningful engineering task starts or finishes.
 - Before making code changes, add the task to this file with the intended status and the expected next step.
 - After finishing the code changes, update this file again in the same work session to record what was completed, what changed, and what should happen next.
+- Keep `Current Status` disciplined:
+  - only list genuinely active or unresolved work
+  - do not leave finished work there after verification
+  - do not use it for broad product vision, backlog ideas, or repo history
+- Keep `Completed Recently` disciplined:
+  - move finished work there as soon as it is verified
+  - write outcomes, not plans
+  - trim or collapse older entries when the section stops being useful to scan
+- Keep `Recommended Next Step` disciplined:
+  - name one immediate next slice only
+  - do not list multiple parallel priorities there
+  - replace it when the active priority changes
 - Add short comments to new or changed code when the intent, tradeoff, or reason for the approach would not be obvious to another developer or future agent.
 - Do not add comment noise to self-explanatory code. Prefer a few high-value comments over many low-value ones.
 - After a meaningful unit of work is complete and verified, create a commit with a clear message that describes the actual change.
@@ -26,6 +38,10 @@ This file complements:
 - When a task is fully done, move it to `Completed Recently` and pick the next highest-value item for `Recommended Next Step`.
 - If a task is blocked, say exactly what is blocking it.
 - If the recommendation changes, update this file first so the next engineer or agent can continue cleanly.
+- If a line in `Current Status` survives more than a few work sessions, either:
+  - rewrite it as a precise unresolved problem
+  - move it to backlog/roadmap sections
+  - or remove it if it is already covered elsewhere
 
 Status meanings:
 - `done`: implemented and verified in the current repo
@@ -79,19 +95,11 @@ Status meanings:
 - `done` Cleaned up remaining analyzer issues after the structural cleanup. `flutter analyze` now passes with no issues.
 
 ## Current Status
-- `in_progress` The project now persists cached Bible data on disk for non-web platforms, but the web path still falls back to in-memory storage.
-- `in_progress` The app now renders rich verse spans end to end for the parser output it receives, including red-letter text, translator additions, some poetry/word metadata styling, structured intro/heading blocks, and both verse-list and paragraph reading modes, but the note/reference UX can still be polished further.
-- `in_progress` The active app flows are now much more feature-sliced under `lib/src/features/`, but shared theme/language providers, generic models/services, and placeholder routes still live in shared roots.
-- `in_progress` The parser/app model now supports richer intro, heading, and annotation structures, but parser coverage is still incomplete for many non-verse layout cases and source-specific tags.
-- `in_progress` The long-term product goal is full-fidelity support for the Bible source formats in use, which means preserving as much meaningful USFX, OSIS, and Zefania structure as is practical instead of only rendering simplified verse text.
-- `in_progress` Phase 1 shared-model implementation is now real across USFX, OSIS, and Zefania at a partial-rich level, and the reader now renders intro/heading blocks, but better structured note/reference navigation still needs polish.
-- `in_progress` Reader rendering now uses the structured parser output for intro blocks and richer verse details, but there is still room to improve the presentation and navigation flow around those details.
-- `in_progress` Reader text-quality work has fixed rich-span spacing in KJV-style sources and added a second paragraph-style reading mode alongside the verse-list layout, but paragraph boundaries can still become richer if the parser preserves more of them over time.
-- `in_progress` Paragraph mode now follows structured paragraph-start blocks from all three supported parser formats, but source fidelity is still only as good as the markers each input file actually exposes.
-- `in_progress` Structured cross-reference targets now navigate directly in the reader, but the broader note/reference experience can still be improved when a verse has many annotations.
-- `in_progress` Sequential feature workflow is now the active delivery model: finish one tracked feature, verify it, commit it, then move to the next tracked feature.
-- `in_progress` Bundled, imported, and downloaded translations now resolve through the same stored-metadata path, but broader translation-library management and contributor-facing cleanup still have room to improve.
-- `in_progress` Reader modes now better match the intended behavior, but document-mode fidelity is still limited by how much positional structure the parser currently preserves.
+- `in_progress` The reader now has working verse-list and document modes, structured note popups, inline annotation markers, and source-driven paragraph support, but document-mode fidelity is still limited by the parser structure that survives import.
+- `in_progress` The parser/app pipeline now preserves partial rich content across USFX, OSIS, and Zefania, but many non-verse layout cases and source-specific tags are still normalized too aggressively before the reader sees them.
+- `in_progress` Non-web Bible caching is persistent, but the web path still falls back to in-memory storage.
+- `in_progress` Built-in, downloaded, and imported translations now share one metadata-driven resolution path, but broader translation-library management is still unfinished.
+- `in_progress` The active app code is mostly organized under `lib/src/features/`, but some shared providers/services and placeholder routes still sit outside that feature-first structure.
 
 ## Recommended Next Step
 - `next` Expand parser-side layout coverage for more front-matter and section tags so the reader has richer source structure to work with instead of only a few normalized block types.
