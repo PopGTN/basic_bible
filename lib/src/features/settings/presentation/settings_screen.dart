@@ -1,8 +1,8 @@
 import 'package:basic_bible/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../providers/theme_provider.dart';
-import '../../providers/language_provider.dart';
+import 'package:basic_bible/src/providers/language_provider.dart';
+import 'package:basic_bible/src/providers/theme_provider.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});

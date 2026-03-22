@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:basic_bible/src/features/reader/application/bible_provider.dart';
 import 'package:basic_bible/src/models/bible_models.dart';
-import 'package:basic_bible/src/providers/bible_provider.dart';
 
 final currentChapterProvider = Provider<AsyncValue<BibleChapter?>>((ref) {
   final booksAsync = ref.watch(bibleBooksProvider);

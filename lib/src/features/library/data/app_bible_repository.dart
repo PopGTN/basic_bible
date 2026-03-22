@@ -5,9 +5,9 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:bible_parser_flutter/bible_parser_flutter.dart';
+import 'package:basic_bible/src/models/bible_models.dart';
+import 'package:basic_bible/src/services/app_database.dart';
 import 'package:path/path.dart' as p;
-import '../models/bible_models.dart';
-import '../services/app_database.dart';
 
 class AppBibleRepository {
   final AppDatabase _db;

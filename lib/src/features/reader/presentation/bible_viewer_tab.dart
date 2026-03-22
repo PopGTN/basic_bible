@@ -1,13 +1,12 @@
 import 'reference_screen.dart';
+import 'package:basic_bible/src/features/reader/application/bible_provider.dart';
+import 'package:basic_bible/src/features/reader/application/current_chapter_provider.dart';
+import 'package:basic_bible/src/features/reader/presentation/widgets/reference_bar.dart';
+import 'package:basic_bible/src/models/bible_models.dart';
+import 'package:basic_bible/src/services/font_size_service.dart';
 import 'package:basic_bible/src/utils/reference_utils.dart';
-import 'package:basic_bible/src/views/home/tabs/bibleViewerTab/widgets/reference_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:basic_bible/src/services/font_size_service.dart';
-
-import '../../../../models/bible_models.dart';
-import '../../../../providers/bible_provider.dart';
-import '../../../../providers/current_chapter_provider.dart';
 
 class BibleViewerTab extends ConsumerStatefulWidget {
   final VoidCallback showBottomNav;

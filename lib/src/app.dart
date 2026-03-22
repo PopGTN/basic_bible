@@ -5,14 +5,14 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:basic_bible/l10n/app_localizations.dart';
 
 // Screens
-import 'views/login/login_screen.dart';
-import 'views/home/home_screen.dart';
+import 'features/auth/presentation/login_screen.dart';
+import 'features/home/presentation/home_screen.dart';
 import 'views/other_screen.dart';
-import 'views/settings/settings_screen.dart';
+import 'features/settings/presentation/settings_screen.dart';
 import 'views/placeholder/coming_soon_screen.dart';
 
 // Providers
-import 'providers/auth_provider.dart';
+import 'features/auth/application/auth_provider.dart';
 import 'providers/theme_provider.dart' hide themeDataMap;
 import 'providers/language_provider.dart';
 

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../../../models/bible_models.dart';
+import 'package:basic_bible/src/models/bible_models.dart';
 
 class ChapterBar extends StatelessWidget {
   const ChapterBar({

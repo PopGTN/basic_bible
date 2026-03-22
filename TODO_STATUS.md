@@ -35,6 +35,7 @@ Status meanings:
 - `blocked`: cannot move safely without another prerequisite or decision
 
 ## Completed Recently
+- `done` Reorganized the active app paths around feature folders so auth, home shell, reader, library data, menu, and settings code now live under `lib/src/features/` instead of being split across generic provider/view/repository roots.
 - `done` Cleaned up downloaded-translation lifecycle handling so stored metadata now overrides built-in defaults when a bundled translation has been downloaded, and the picker reflects whether a translation is bundled, downloaded, or imported.
 - `done` Clarified reader-mode behavior so one mode stays fully verse-listed and the other now follows the parsed document structure more literally instead of forcing all source content into paragraph-style prose.
 - `done` Improved the verse-detail note/reference UX by grouping annotation content into clearer cards and action chips so heavily annotated verses no longer fall back to a very plain stacked list.
@@ -72,7 +73,7 @@ Status meanings:
 - `in_progress` The project now persists cached Bible data on disk for non-web platforms, but the web path still falls back to in-memory storage.
 - `in_progress` The app now renders rich verse spans end to end for the parser output it receives, including red-letter text, translator additions, some poetry/word metadata styling, structured intro/heading blocks, and both verse-list and paragraph reading modes, but the note/reference UX can still be polished further.
 - `in_progress` The README is currently more of a feature wish list than a maintained reflection of actual repo status.
-- `in_progress` The app structure is cleaner, but the codebase is still not fully feature-sliced. Bible import, library management, reader UI, and settings are still spread across shared folders rather than organized as strict feature modules.
+- `in_progress` The active app flows are now much more feature-sliced under `lib/src/features/`, but shared theme/language providers, generic models/services, and placeholder routes still live in shared roots.
 - `in_progress` The project now has a plain-language documentation note explaining that Bible formatting support must preserve structure, not only flattened verse text.
 - `in_progress` The current parser model is still limited to books, chapters, and verses. It does not yet preserve introductions, prefaces, TOC labels, or book-level front matter that already exists in some USFX and OSIS files.
 - `in_progress` The long-term product goal is full-fidelity support for the Bible source formats in use, which means preserving as much meaningful USFX, OSIS, and Zefania structure as is practical instead of only rendering simplified verse text.
@@ -87,17 +88,17 @@ Status meanings:
 - `in_progress` Reader modes now better match the intended behavior, but document-mode fidelity is still limited by how much positional structure the parser currently preserves.
 
 ## Recommended Next Step
-- `next` Reorganize toward clearer feature-first modules so reader, library/import, and settings concerns are easier to evolve without cross-folder coupling.
+- `next` Update `README.md` so it reflects the real app state instead of an old wish-list snapshot.
 
 Why this is next:
-- The main user-facing reading and translation-library flows are now in much better shape.
-- The biggest remaining maintainability gap is structural: the repo is still spread across generic folders instead of clearer feature boundaries.
-- That is the next lead-level improvement once the active reader/library features are closed.
+- The code and internal tracker have moved much further than the public project summary.
+- README drift is now the clearest contributor-facing mismatch in the repo.
+- This is a bounded feature that can be completed without mixing it into the structural refactor commit.
 
 Definition of done for this step:
-- Reader, library/import, and settings concerns have clearer boundaries in `lib/src/`.
-- Active code paths are easier to find without relying on legacy knowledge.
-- Existing app behavior still works after the reorganization.
+- The README lists the major capabilities that actually work today.
+- It distinguishes shipped behavior from planned work.
+- It keeps the project-learning tone without misleading contributors about repo truth.
 
 ## Prioritized Backlog
 
@@ -201,7 +202,7 @@ README.md reminder:
 - No README update required for this internal cleanup unless you decide to document the new project structure.
 
 ### 8. Reorganize toward feature-first modules
-Status: `todo`
+Status: `done`
 
 Scope:
 - Group Bible import, Bible library/storage, reader UI, auth, and settings into clearer feature boundaries.

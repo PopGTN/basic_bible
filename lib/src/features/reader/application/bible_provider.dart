@@ -1,11 +1,10 @@
 import 'package:bible_parser_flutter/bible_parser_flutter.dart';
+import 'package:basic_bible/src/features/library/data/app_bible_repository.dart';
+import 'package:basic_bible/src/models/bible_models.dart';
+import 'package:basic_bible/src/services/app_database.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
-import '../models/bible_models.dart';
-import '../repositories/app_bible_repository.dart';
-import '../services/app_database.dart';
 
 enum ReaderLayoutMode { verseList, document }
 

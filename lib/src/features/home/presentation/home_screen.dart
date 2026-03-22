@@ -2,14 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'tabs/home_tab.dart';
-import 'tabs/menu_tab.dart';
-import 'tabs/bibleViewerTab/bible_viewer_tab.dart';
 import 'package:basic_bible/l10n/app_localizations.dart';
+import 'package:basic_bible/src/features/library/data/app_bible_repository.dart';
+import 'package:basic_bible/src/features/menu/presentation/menu_tab.dart';
+import 'package:basic_bible/src/features/reader/application/bible_provider.dart';
+import 'package:basic_bible/src/features/reader/presentation/bible_viewer_tab.dart';
 import 'package:basic_bible/src/models/bible_models.dart';
 import 'package:basic_bible/src/services/font_size_service.dart';
-import 'package:basic_bible/src/providers/bible_provider.dart';
-import 'package:basic_bible/src/repositories/app_bible_repository.dart';
+
+import 'home_tab.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
