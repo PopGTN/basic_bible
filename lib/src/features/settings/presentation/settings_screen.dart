@@ -120,6 +120,10 @@ class SettingsScreen extends ConsumerWidget {
         return "Light";
       case AppThemeMode.dark:
         return "Dark";
+      case AppThemeMode.black:
+        return "Pure Black";
+      case AppThemeMode.white:
+        return "Pure White";
       case AppThemeMode.blue:
         return "Blue Theme";
       case AppThemeMode.red:

@@ -83,9 +83,7 @@ class MyApp extends ConsumerWidget {
       supportedLocales: AppLocalizations.supportedLocales,
 
       theme: getThemeData(appTheme),
-      darkTheme: appTheme == AppThemeMode.dark
-          ? getThemeData(AppThemeMode.dark)
-          : ThemeData.dark(),
+      darkTheme: getDarkThemeData(appTheme),
       themeMode: mapThemeMode(appTheme),
     );
   }

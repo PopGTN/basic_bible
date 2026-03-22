@@ -51,6 +51,7 @@ Status meanings:
 - `blocked`: cannot move safely without another prerequisite or decision
 
 ## Completed Recently
+- `done` Expanded the theme system so system dark mode now uses a true black theme, and added explicit `Pure Black` and `Pure White` theme choices to both Settings and the quick reader theme picker.
 - `done` Moved the reader chapter/reference bar to the bottom on every screen size, switched the wider layouts off the old top-mounted placement, and rebalanced the reader padding so content clears the bottom floating bar instead of leaving a fake top gap.
 - `done` Improved the Bible viewer overflow menu contrast by forcing the dropdown item icons to use the popup's high-contrast `onSurface` color instead of inheriting a dimmer default tint.
 - `done` Unified the References screen picker tiles so chapter picks now use the same square size, spacing, radius, and selected styling as the verse picks instead of rendering as a larger older-looking grid.
