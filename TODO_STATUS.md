@@ -54,7 +54,7 @@ Separate from feature backlog — these affect correctness, safety, and maintain
 
 ## Recommended Next Step
 
-- `next` Wire USFX intro paragraph blocks (`introduction` kind) to the document-mode reader so book introductions render as distinct front-matter instead of being silently absent.
+- `next` Once OSIS `<hi>` inline formatting lands in the parser, add any matching `BibleVerseSpanKind` values and rendering — the current set (`emphasis`, `bold`, `italic`) already covers the expected output.
 
 **Why this first:**
 
@@ -81,6 +81,7 @@ Separate from feature backlog — these affect correctness, safety, and maintain
 
 ## Completed Recently
 
+- `done` Added `emphasis`, `bold`, `italic`, `properName`, `selah`, `acrosticHeading` to `BibleVerseSpanKind` with matching render styles (italic, bold w700, underline).
 - `done` Added `divineNameTag` to `BibleVerseSpanKind` and wired bold rendering for it in both verse-list and document mode span helpers.
 - `done` Added `BibleCrossReference.originRef`, updated serializer, and wired it to the note sheet as a muted origin prefix on cross-reference rows.
 - `done` OSIS and Zefania footnotes now use the structured note sheet rendering path after the parser started populating `bodyText` for all three formats.
