@@ -272,7 +272,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       value: _BibleViewerMenuAction.relatedContent,
                       child: Row(
                         children: [
-                          const Icon(Icons.library_books_outlined),
+                          Icon(
+                            Icons.library_books_outlined,
+                            color: colors.onSurface,
+                          ),
                           const SizedBox(width: 12),
                           Text(
                             'Related Content',
@@ -285,7 +288,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       value: _BibleViewerMenuAction.fontsAndSettings,
                       child: Row(
                         children: [
-                          const Icon(Icons.text_fields),
+                          Icon(Icons.text_fields, color: colors.onSurface),
                           const SizedBox(width: 12),
                           Text(
                             'Fonts & Settings',
