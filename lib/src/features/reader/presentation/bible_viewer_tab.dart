@@ -95,7 +95,7 @@ class _BibleViewerTabState extends ConsumerState<BibleViewerTab> {
     final chapterAsync = ref.watch(currentChapterProvider);
     final layoutMode = ref.watch(readerLayoutModeProvider);
     final continuousScrolling = ref.watch(continuousScrollingProvider);
-    final showChapterHeaders = ref.watch(showChapterHeadersProvider);
+    final showBookIntroductions = ref.watch(showBookIntroductionsProvider);
     final isSmall = widget.isSmallDevice;
 
     final displayReference =
@@ -124,7 +124,7 @@ class _BibleViewerTabState extends ConsumerState<BibleViewerTab> {
                         fontSize: size,
                         layoutMode: layoutMode,
                         continuousScrolling: continuousScrolling,
-                        showChapterHeaders: showChapterHeaders,
+                        showBookIntroductions: showBookIntroductions,
                         isSmallDevice: isSmall,
                         onVisibleReferenceChanged: (reference) {
                           if (_continuousVisibleReference == reference) return;
@@ -280,7 +280,7 @@ class _BibleTextView extends StatefulWidget {
     required this.fontSize,
     required this.layoutMode,
     required this.continuousScrolling,
-    required this.showChapterHeaders,
+    required this.showBookIntroductions,
     required this.isSmallDevice,
     required this.onVisibleReferenceChanged,
   });
@@ -294,7 +294,7 @@ class _BibleTextView extends StatefulWidget {
   final double fontSize;
   final ReaderLayoutMode layoutMode;
   final bool continuousScrolling;
-  final bool showChapterHeaders;
+  final bool showBookIntroductions;
   final bool isSmallDevice;
   final ValueChanged<BibleReference> onVisibleReferenceChanged;
 
@@ -457,7 +457,10 @@ class _BibleTextViewState extends State<_BibleTextView> {
   Widget _buildSingleChapterView(BuildContext context) {
     final contentWidgets = <Widget>[
       _buildChapterHeader(context),
-      ..._buildBookIntroductionBlocks(context, showForCurrentSection: true),
+      ..._buildBookIntroductionBlocks(
+        context,
+        showForCurrentSection: widget.chapter.number == 1,
+      ),
       ..._buildChapterBlocks(context),
       if (widget.layoutMode == ReaderLayoutMode.verseList)
         ...widget.chapter.verses.map((verse) => _buildVerse(context, verse))
@@ -481,9 +484,6 @@ class _BibleTextViewState extends State<_BibleTextView> {
   }
 
   Widget _buildChapterHeader(BuildContext context) {
-    if (!widget.showChapterHeaders) {
-      return const SizedBox.shrink();
-    }
     return _buildCenteredChapterHeader(
       context,
       bookName: widget.book.name,
@@ -507,7 +507,9 @@ class _BibleTextViewState extends State<_BibleTextView> {
     BibleBook book, {
     required bool showForCurrentSection,
   }) {
-    if (!showForCurrentSection || book.introductionBlocks.isEmpty) {
+    if (!widget.showBookIntroductions ||
+        !showForCurrentSection ||
+        book.introductionBlocks.isEmpty) {
       return const [];
     }
 
@@ -775,9 +777,6 @@ class _BibleTextViewState extends State<_BibleTextView> {
     BibleBook book,
     int chapterNumber,
   ) {
-    if (!widget.showChapterHeaders) {
-      return const SizedBox.shrink();
-    }
     return _buildCenteredChapterHeader(
       context,
       bookName: book.name,

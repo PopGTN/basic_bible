@@ -13,7 +13,7 @@ class SettingsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final currentTheme = ref.watch(themeProvider);
     final selectedLanguage = ref.watch(languageProvider);
-    final showChapterHeaders = ref.watch(showChapterHeadersProvider);
+    final showBookIntroductions = ref.watch(showBookIntroductionsProvider);
 
     final languages = {
       'en': 'English',
@@ -83,13 +83,15 @@ class SettingsScreen extends ConsumerWidget {
             const SizedBox(height: 10),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
-              title: const Text('Show Chapter Headers'),
+              title: const Text('Show Introductions'),
               subtitle: const Text(
-                'Show the large book and chapter header at the start of each chapter section.',
+                'Show book introductions and front-matter blocks when they exist.',
               ),
-              value: showChapterHeaders,
+              value: showBookIntroductions,
               onChanged: (value) {
-                ref.read(showChapterHeadersProvider.notifier).setEnabled(value);
+                ref
+                    .read(showBookIntroductionsProvider.notifier)
+                    .setEnabled(value);
               },
             ),
           ],

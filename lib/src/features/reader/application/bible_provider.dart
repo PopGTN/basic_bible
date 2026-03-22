@@ -14,9 +14,9 @@ final continuousScrollingProvider =
       return ContinuousScrollingNotifier();
     });
 
-final showChapterHeadersProvider =
-    StateNotifierProvider<ShowChapterHeadersNotifier, bool>((ref) {
-      return ShowChapterHeadersNotifier();
+final showBookIntroductionsProvider =
+    StateNotifierProvider<ShowBookIntroductionsNotifier, bool>((ref) {
+      return ShowBookIntroductionsNotifier();
     });
 
 class ContinuousScrollingNotifier extends StateNotifier<bool> {
@@ -36,19 +36,22 @@ class ContinuousScrollingNotifier extends StateNotifier<bool> {
   }
 }
 
-class ShowChapterHeadersNotifier extends StateNotifier<bool> {
-  ShowChapterHeadersNotifier() : super(true) {
+class ShowBookIntroductionsNotifier extends StateNotifier<bool> {
+  ShowBookIntroductionsNotifier() : super(true) {
     _loadSavedValue();
   }
 
   Future<void> _loadSavedValue() async {
     final prefs = await SharedPreferences.getInstance();
-    state = prefs.getBool('reader_show_chapter_headers') ?? true;
+    state =
+        prefs.getBool('reader_show_book_introductions') ??
+        prefs.getBool('reader_show_chapter_headers') ??
+        true;
   }
 
   Future<void> setEnabled(bool enabled) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('reader_show_chapter_headers', enabled);
+    await prefs.setBool('reader_show_book_introductions', enabled);
     state = enabled;
   }
 }
