@@ -516,7 +516,7 @@ class _BibleViewerSettingsSheet extends StatelessWidget {
             Text('Theme', style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 14),
             SizedBox(
-              height: 120,
+              height: 146,
               child: ListView(
                 scrollDirection: Axis.horizontal,
                 children: [
@@ -665,61 +665,82 @@ class _ThemePreviewCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final preview = _themePreview(mode);
     final colors = Theme.of(context).colorScheme;
+    final labelStyle = Theme.of(context).textTheme.labelMedium?.copyWith(
+      color: colors.onSurfaceVariant,
+      fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+    );
 
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(22),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        width: 78,
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: preview.background,
-          borderRadius: BorderRadius.circular(22),
-          border: Border.all(
-            color: selected ? Colors.white : Colors.transparent,
-            width: 2,
-          ),
-          boxShadow: selected
-              ? [
-                  BoxShadow(
-                    color: colors.shadow.withValues(alpha: 0.18),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ]
-              : const [],
-        ),
+      child: SizedBox(
+        width: 84,
         child: Column(
           children: [
-            for (var i = 0; i < 4; i++)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 5),
-                child: Container(
-                  height: 3,
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    color: preview.foreground.withValues(
-                      alpha: i == 0 ? 0.95 : 0.6,
-                    ),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-            const Spacer(),
-            Container(
-              width: 28,
-              height: 28,
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              width: 78,
+              height: 112,
+              padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                shape: BoxShape.circle,
+                color: preview.background,
+                borderRadius: BorderRadius.circular(22),
                 border: Border.all(
-                  color: preview.foreground.withValues(alpha: 0.7),
-                  width: 2,
+                  color: selected
+                      ? colors.onSurface
+                      : preview.outline ?? Colors.transparent,
+                  width: selected ? 2.2 : 1.4,
                 ),
+                boxShadow: selected
+                    ? [
+                        BoxShadow(
+                          color: colors.shadow.withValues(alpha: 0.18),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ]
+                    : const [],
               ),
-              child: selected
-                  ? Icon(Icons.check, size: 18, color: preview.foreground)
-                  : null,
+              child: Column(
+                children: [
+                  for (var i = 0; i < 4; i++)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 5),
+                      child: Container(
+                        height: 3,
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          color: preview.foreground.withValues(
+                            alpha: i == 0 ? 0.95 : 0.6,
+                          ),
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                  const Spacer(),
+                  Container(
+                    width: 28,
+                    height: 28,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: preview.foreground.withValues(alpha: 0.7),
+                        width: 2,
+                      ),
+                    ),
+                    child: selected
+                        ? Icon(Icons.check, size: 18, color: preview.foreground)
+                        : null,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              preview.label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: labelStyle,
             ),
           ],
         ),
@@ -730,38 +751,50 @@ class _ThemePreviewCard extends StatelessWidget {
   _ThemePreview _themePreview(AppThemeMode mode) {
     return switch (mode) {
       AppThemeMode.system => const _ThemePreview(
+        label: 'System',
         background: Color(0xFFF8F6F1),
         foreground: Color(0xFF1C1A17),
+        outline: Color(0x22000000),
       ),
       AppThemeMode.light => const _ThemePreview(
+        label: 'Light',
         background: Color(0xFFF4EEE6),
         foreground: Color(0xFF3A3028),
+        outline: Color(0x22000000),
       ),
       AppThemeMode.dark => const _ThemePreview(
+        label: 'Dark',
         background: Color(0xFF181614),
         foreground: Color(0xFFF3EEE8),
       ),
       AppThemeMode.softDark => const _ThemePreview(
+        label: 'Soft',
         background: Color(0xFF1B1D22),
         foreground: Color(0xFFF2F4F7),
       ),
       AppThemeMode.black => const _ThemePreview(
+        label: 'Black',
         background: Color(0xFF000000),
         foreground: Color(0xFFF5F5F5),
       ),
       AppThemeMode.oledBlack => const _ThemePreview(
+        label: 'OLED',
         background: Color(0xFF000000),
         foreground: Color(0xFFEDEDED),
       ),
       AppThemeMode.white => const _ThemePreview(
+        label: 'White',
         background: Color(0xFFFFFFFF),
         foreground: Color(0xFF111111),
+        outline: Color(0x33000000),
       ),
       AppThemeMode.blue => const _ThemePreview(
+        label: 'Blue',
         background: Color(0xFF1E2D42),
         foreground: Color(0xFFF2F6FB),
       ),
       AppThemeMode.red => const _ThemePreview(
+        label: 'Red',
         background: Color(0xFF35211D),
         foreground: Color(0xFFFAF1EC),
       ),
@@ -770,8 +803,15 @@ class _ThemePreviewCard extends StatelessWidget {
 }
 
 class _ThemePreview {
-  const _ThemePreview({required this.background, required this.foreground});
+  const _ThemePreview({
+    required this.label,
+    required this.background,
+    required this.foreground,
+    this.outline,
+  });
 
+  final String label;
   final Color background;
   final Color foreground;
+  final Color? outline;
 }
