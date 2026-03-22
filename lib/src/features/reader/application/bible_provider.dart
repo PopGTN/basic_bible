@@ -19,6 +19,11 @@ final showBookIntroductionsProvider =
       return ShowBookIntroductionsNotifier();
     });
 
+final showVerseSelectorProvider =
+    StateNotifierProvider<ShowVerseSelectorNotifier, bool>((ref) {
+      return ShowVerseSelectorNotifier();
+    });
+
 class ContinuousScrollingNotifier extends StateNotifier<bool> {
   ContinuousScrollingNotifier() : super(false) {
     _loadSavedValue();
@@ -52,6 +57,23 @@ class ShowBookIntroductionsNotifier extends StateNotifier<bool> {
   Future<void> setEnabled(bool enabled) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('reader_show_book_introductions', enabled);
+    state = enabled;
+  }
+}
+
+class ShowVerseSelectorNotifier extends StateNotifier<bool> {
+  ShowVerseSelectorNotifier() : super(true) {
+    _loadSavedValue();
+  }
+
+  Future<void> _loadSavedValue() async {
+    final prefs = await SharedPreferences.getInstance();
+    state = prefs.getBool('reader_show_verse_selector') ?? true;
+  }
+
+  Future<void> setEnabled(bool enabled) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('reader_show_verse_selector', enabled);
     state = enabled;
   }
 }

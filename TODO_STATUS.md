@@ -51,6 +51,7 @@ Status meanings:
 - `blocked`: cannot move safely without another prerequisite or decision
 
 ## Completed Recently
+- `done` Rebuilt the reference picker around a single searchable book/chapter flow with canonical-vs-alphabetical ordering, added a history button for recently visited references, and moved verse-selection control into the main Settings page so the quick reader sheet does not own that option.
 - `done` Hardened reader book-name fallback so unresolved source IDs now resolve to real display labels or readable normalized names instead of bad `Unknown`-style output, and filtered empty book/document labels out of the picker and reader sections so blank entries no longer render.
 - `done` Removed the ripple/ink effect from the small-screen bottom navigation so tab switches now feel immediate without the default Material splash animation.
 - `done` Corrected the reader intro toggle so it now controls book introduction/front-matter blocks instead of chapter headers, removed the extra TOC-label description line from the introduction card, and limited those introduction blocks to chapter 1 instead of repeating them across later chapters.

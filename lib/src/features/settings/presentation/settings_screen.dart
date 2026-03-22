@@ -14,6 +14,7 @@ class SettingsScreen extends ConsumerWidget {
     final currentTheme = ref.watch(themeProvider);
     final selectedLanguage = ref.watch(languageProvider);
     final showBookIntroductions = ref.watch(showBookIntroductionsProvider);
+    final showVerseSelector = ref.watch(showVerseSelectorProvider);
 
     final languages = {
       'en': 'English',
@@ -92,6 +93,17 @@ class SettingsScreen extends ConsumerWidget {
                 ref
                     .read(showBookIntroductionsProvider.notifier)
                     .setEnabled(value);
+              },
+            ),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Enable Verse Selector'),
+              subtitle: const Text(
+                'Allow the reference picker to drill into verse selection instead of only picking chapters.',
+              ),
+              value: showVerseSelector,
+              onChanged: (value) {
+                ref.read(showVerseSelectorProvider.notifier).setEnabled(value);
               },
             ),
           ],

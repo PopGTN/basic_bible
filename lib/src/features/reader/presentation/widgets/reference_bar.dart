@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:basic_bible/src/models/bible_models.dart';
 import 'package:basic_bible/src/utils/reference_utils.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ChapterBar extends StatelessWidget {
   const ChapterBar({
@@ -9,6 +10,7 @@ class ChapterBar extends StatelessWidget {
     required this.isFloating,
     required this.reference,
     required this.books,
+    required this.showVerseSelector,
     required this.onReferenceChanged,
     required this.onPreviousChapter,
     required this.onNextChapter,
@@ -18,6 +20,7 @@ class ChapterBar extends StatelessWidget {
   final bool isFloating;
   final BibleReference reference;
   final List<BibleBook> books;
+  final bool showVerseSelector;
   final Function(BibleReference) onReferenceChanged;
   final VoidCallback onPreviousChapter;
   final VoidCallback onNextChapter;
@@ -150,6 +153,7 @@ class ChapterBar extends StatelessWidget {
       builder: (context) => ReferencePicker(
         books: books,
         currentReference: reference,
+        showVerseSelector: showVerseSelector,
         onReferenceSelected: (newReference) {
           onReferenceChanged(newReference);
           Navigator.of(context).pop();
@@ -188,25 +192,27 @@ class ReferencePicker extends StatefulWidget {
     super.key,
     required this.books,
     required this.currentReference,
+    required this.showVerseSelector,
     required this.onReferenceSelected,
   });
 
   final List<BibleBook> books;
   final BibleReference currentReference;
+  final bool showVerseSelector;
   final Function(BibleReference) onReferenceSelected;
 
   @override
   State<ReferencePicker> createState() => _ReferencePickerState();
 }
 
-class _ReferencePickerState extends State<ReferencePicker>
-    with TickerProviderStateMixin {
+class _ReferencePickerState extends State<ReferencePicker> {
   late String selectedBookId;
   late int selectedChapter;
   int? selectedVerse;
-  late TabController _tabController;
   final TextEditingController _searchController = TextEditingController();
   List<BibleBook> filteredBooks = [];
+  bool _alphabeticalOrder = false;
+  List<BibleReference> _history = const [];
 
   @override
   void initState() {
@@ -215,14 +221,47 @@ class _ReferencePickerState extends State<ReferencePicker>
     selectedChapter = widget.currentReference.chapter;
     selectedVerse = widget.currentReference.verse;
     filteredBooks = widget.books;
-    _tabController = TabController(length: 3, vsync: this);
+    _loadReferenceHistory();
   }
 
   @override
   void dispose() {
     _searchController.dispose();
-    _tabController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadReferenceHistory() async {
+    final prefs = await SharedPreferences.getInstance();
+    final items = prefs.getStringList('reference_history') ?? const [];
+    final history = <BibleReference>[];
+    for (final item in items) {
+      final parsed = _decodeReference(item);
+      if (parsed != null) {
+        history.add(parsed);
+      }
+    }
+    if (!mounted) return;
+    setState(() {
+      _history = history;
+    });
+  }
+
+  Future<void> _storeReferenceInHistory(BibleReference reference) async {
+    final prefs = await SharedPreferences.getInstance();
+    final encoded = _encodeReference(reference);
+    final existing = prefs.getStringList('reference_history') ?? const [];
+    final next = [
+      encoded,
+      ...existing.where((entry) => entry != encoded),
+    ].take(20).toList();
+    await prefs.setStringList('reference_history', next);
+    if (!mounted) return;
+    setState(() {
+      _history = next
+          .map(_decodeReference)
+          .whereType<BibleReference>()
+          .toList();
+    });
   }
 
   void _filterBooks(String query) {
@@ -233,7 +272,9 @@ class _ReferencePickerState extends State<ReferencePicker>
         filteredBooks = widget.books
             .where(
               (book) =>
-                  book.name.toLowerCase().contains(query.toLowerCase()) ||
+                  preferredBookName(
+                    book,
+                  ).toLowerCase().contains(query.toLowerCase()) ||
                   book.shortName.toLowerCase().contains(query.toLowerCase()) ||
                   book.id.toLowerCase().contains(query.toLowerCase()),
             )
@@ -242,8 +283,78 @@ class _ReferencePickerState extends State<ReferencePicker>
     });
   }
 
-  List<BibleBook> _getBooksByTestament(BibleBookType testament) {
-    return filteredBooks.where((book) => book.bookType == testament).toList();
+  List<BibleBook> get _visibleBooks {
+    final books = filteredBooks
+        .where((book) => preferredBookName(book).trim().isNotEmpty)
+        .toList();
+    if (_alphabeticalOrder) {
+      books.sort(
+        (a, b) => preferredBookName(
+          a,
+        ).toLowerCase().compareTo(preferredBookName(b).toLowerCase()),
+      );
+    }
+    return books;
+  }
+
+  Future<void> _selectReference(BibleReference reference) async {
+    await _storeReferenceInHistory(reference);
+    widget.onReferenceSelected(reference);
+  }
+
+  Future<void> _openHistorySheet() async {
+    if (_history.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No reference history yet.')),
+      );
+      return;
+    }
+
+    await showModalBottomSheet<void>(
+      context: context,
+      builder: (context) {
+        return SafeArea(
+          child: ListView(
+            shrinkWrap: true,
+            children: [
+              const ListTile(title: Text('Recent References')),
+              for (final reference in _history)
+                ListTile(
+                  title: Text(_referenceLabel(reference)),
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    widget.onReferenceSelected(reference);
+                  },
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  String _referenceLabel(BibleReference reference) {
+    final book = resolveBookFromReference(widget.books, reference.bookId);
+    final bookName = book != null
+        ? preferredBookName(book)
+        : bookIdToName(reference.bookId);
+    final verseSuffix = reference.verse != null ? ':${reference.verse}' : '';
+    return '$bookName ${reference.chapter}$verseSuffix';
+  }
+
+  String _encodeReference(BibleReference reference) {
+    return '${reference.bookId}|${reference.chapter}|${reference.verse ?? ''}';
+  }
+
+  BibleReference? _decodeReference(String rawValue) {
+    final parts = rawValue.split('|');
+    if (parts.length < 2) return null;
+    final chapter = int.tryParse(parts[1]);
+    if (chapter == null) return null;
+    final verse = parts.length > 2 && parts[2].isNotEmpty
+        ? int.tryParse(parts[2])
+        : null;
+    return BibleReference(bookId: parts[0], chapter: chapter, verse: verse);
   }
 
   @override
@@ -261,6 +372,8 @@ class _ReferencePickerState extends State<ReferencePicker>
           ? selectedBook.chapters.first
           : const BibleChapter(number: 1),
     );
+    final visibleBooks = _visibleBooks;
+    final colors = Theme.of(context).colorScheme;
 
     return Container(
       height: MediaQuery.of(context).size.height * 0.85,
@@ -286,20 +399,51 @@ class _ReferencePickerState extends State<ReferencePicker>
             padding: const EdgeInsets.all(16),
             child: Column(
               children: [
-                Text(
-                  'Select Bible Reference',
-                  style: Theme.of(context).textTheme.headlineSmall,
+                Row(
+                  children: [
+                    IconButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      icon: const Icon(Icons.arrow_back),
+                    ),
+                    Expanded(
+                      child: Text(
+                        'References',
+                        style: Theme.of(context).textTheme.headlineSmall,
+                      ),
+                    ),
+                    IconButton(
+                      tooltip: _alphabeticalOrder
+                          ? 'Show canonical order'
+                          : 'Sort alphabetically',
+                      onPressed: () {
+                        setState(() {
+                          _alphabeticalOrder = !_alphabeticalOrder;
+                        });
+                      },
+                      icon: Text(
+                        'AZ',
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.w700),
+                      ),
+                    ),
+                    IconButton(
+                      tooltip: 'History',
+                      onPressed: _openHistorySheet,
+                      icon: const Icon(Icons.history),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 16),
-
-                // Search bar
+                const SizedBox(height: 12),
                 TextField(
                   controller: _searchController,
                   decoration: InputDecoration(
-                    hintText: 'Search books...',
+                    hintText: 'Search',
                     prefixIcon: const Icon(Icons.search),
+                    filled: true,
+                    fillColor: colors.surfaceContainerHighest,
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(18),
+                      borderSide: BorderSide.none,
                     ),
                     suffixIcon: _searchController.text.isNotEmpty
                         ? IconButton(
@@ -316,334 +460,155 @@ class _ReferencePickerState extends State<ReferencePicker>
               ],
             ),
           ),
-
-          // Tab bar for Old/New Testament
-          TabBar(
-            controller: _tabController,
-            tabs: const [
-              Tab(text: 'Old Testament'),
-              Tab(text: 'New Testament'),
-              Tab(text: 'All Books'),
-            ],
-          ),
-
-          // Content area
           Expanded(
-            child: Row(
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
               children: [
-                // Books list
-                Expanded(
-                  flex: 2,
-                  child: TabBarView(
-                    controller: _tabController,
-                    children: [
-                      _BooksList(
-                        books: _getBooksByTestament(BibleBookType.oldTestament),
-                        selectedBookId: selectedBookId,
-                        onBookSelected: (bookId) {
-                          setState(() {
-                            selectedBookId = bookId;
-                            selectedChapter = 1;
-                            selectedVerse = null;
-                          });
-                        },
-                      ),
-                      _BooksList(
-                        books: _getBooksByTestament(BibleBookType.newTestament),
-                        selectedBookId: selectedBookId,
-                        onBookSelected: (bookId) {
-                          setState(() {
-                            selectedBookId = bookId;
-                            selectedChapter = 1;
-                            selectedVerse = null;
-                          });
-                        },
-                      ),
-                      _BooksList(
-                        books: filteredBooks,
-                        selectedBookId: selectedBookId,
-                        onBookSelected: (bookId) {
-                          setState(() {
-                            selectedBookId = bookId;
-                            selectedChapter = 1;
-                            selectedVerse = null;
-                          });
-                        },
-                      ),
-                    ],
+                for (final book in visibleBooks) ...[
+                  Padding(
+                    padding: const EdgeInsets.only(top: 20, bottom: 12),
+                    child: Text(
+                      preferredBookName(book),
+                      style: Theme.of(context).textTheme.headlineSmall,
+                    ),
                   ),
-                ),
-
-                const VerticalDivider(width: 1),
-
-                // Chapters grid
-                Expanded(
-                  flex: 3,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              selectedBook.name,
-                              style: Theme.of(context).textTheme.titleMedium,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            Text(
-                              '${selectedBook.chapters.length} chapters',
-                              style: Theme.of(context).textTheme.bodySmall,
-                            ),
-                          ],
+                  GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 5,
+                          mainAxisSpacing: 12,
+                          crossAxisSpacing: 12,
+                          childAspectRatio: 1,
                         ),
-                      ),
-                      Expanded(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Chapters',
-                                style: Theme.of(context).textTheme.labelLarge,
-                              ),
-                              const SizedBox(height: 8),
-                              Expanded(
-                                child: GridView.builder(
-                                  gridDelegate:
-                                      const SliverGridDelegateWithFixedCrossAxisCount(
-                                        crossAxisCount: 6,
-                                        mainAxisSpacing: 8,
-                                        crossAxisSpacing: 8,
-                                        childAspectRatio: 1.2,
-                                      ),
-                                  itemCount: selectedBook.chapters.length,
-                                  itemBuilder: (context, index) {
-                                    final chapter =
-                                        selectedBook.chapters[index];
-                                    final isSelected =
-                                        chapter.number == selectedChapter;
+                    itemCount: book.chapters.length,
+                    itemBuilder: (context, index) {
+                      final chapter = book.chapters[index];
+                      final isSelected =
+                          book.id == selectedBookId &&
+                          chapter.number == selectedChapter;
 
-                                    return InkWell(
-                                      onTap: () {
-                                        setState(() {
-                                          selectedChapter = chapter.number;
-                                          selectedVerse = null;
-                                        });
-                                      },
-                                      borderRadius: BorderRadius.circular(8),
-                                      child: Container(
-                                        decoration: BoxDecoration(
-                                          color: isSelected
-                                              ? Theme.of(
-                                                  context,
-                                                ).colorScheme.primary
-                                              : Theme.of(context)
-                                                    .colorScheme
-                                                    .surfaceContainerHighest,
-                                          borderRadius: BorderRadius.circular(
-                                            8,
-                                          ),
-                                          border: isSelected
-                                              ? Border.all(
-                                                  color: Theme.of(
-                                                    context,
-                                                  ).colorScheme.primary,
-                                                  width: 2,
-                                                )
-                                              : null,
-                                        ),
-                                        child: Center(
-                                          child: Text(
-                                            '${chapter.number}',
-                                            style: TextStyle(
-                                              color: isSelected
-                                                  ? Theme.of(
-                                                      context,
-                                                    ).colorScheme.onPrimary
-                                                  : Theme.of(context)
-                                                        .colorScheme
-                                                        .onSurfaceVariant,
-                                              fontWeight: isSelected
-                                                  ? FontWeight.bold
-                                                  : FontWeight.normal,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                ),
+                      return InkWell(
+                        onTap: () {
+                          if (!widget.showVerseSelector) {
+                            _selectReference(
+                              BibleReference(
+                                bookId: book.id,
+                                chapter: chapter.number,
                               ),
-                              const SizedBox(height: 12),
-                              Text(
-                                'Verses',
-                                style: Theme.of(context).textTheme.labelLarge,
-                              ),
-                              const SizedBox(height: 8),
-                              SizedBox(
-                                height: 160,
-                                child: GridView.builder(
-                                  gridDelegate:
-                                      const SliverGridDelegateWithFixedCrossAxisCount(
-                                        crossAxisCount: 8,
-                                        mainAxisSpacing: 8,
-                                        crossAxisSpacing: 8,
-                                        childAspectRatio: 1.15,
-                                      ),
-                                  itemCount: selectedChapterModel.verses.length,
-                                  itemBuilder: (context, index) {
-                                    final verse =
-                                        selectedChapterModel.verses[index];
-                                    final isSelected =
-                                        verse.number == selectedVerse;
-
-                                    return InkWell(
-                                      onTap: () {
-                                        setState(() {
-                                          selectedVerse = verse.number;
-                                        });
-                                      },
-                                      borderRadius: BorderRadius.circular(8),
-                                      child: Container(
-                                        decoration: BoxDecoration(
-                                          color: isSelected
-                                              ? Theme.of(
-                                                  context,
-                                                ).colorScheme.secondary
-                                              : Theme.of(context)
-                                                    .colorScheme
-                                                    .surfaceContainerHighest,
-                                          borderRadius: BorderRadius.circular(
-                                            8,
-                                          ),
-                                        ),
-                                        child: Center(
-                                          child: Text(
-                                            '${verse.number}',
-                                            style: TextStyle(
-                                              color: isSelected
-                                                  ? Theme.of(
-                                                      context,
-                                                    ).colorScheme.onSecondary
-                                                  : Theme.of(context)
-                                                        .colorScheme
-                                                        .onSurfaceVariant,
-                                              fontWeight: isSelected
-                                                  ? FontWeight.bold
-                                                  : FontWeight.normal,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                ),
-                              ),
-                            ],
+                            );
+                            return;
+                          }
+                          setState(() {
+                            selectedBookId = book.id;
+                            selectedChapter = chapter.number;
+                            selectedVerse = null;
+                          });
+                        },
+                        borderRadius: BorderRadius.circular(16),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? colors.primary
+                                : colors.surfaceContainerHighest,
+                            borderRadius: BorderRadius.circular(16),
                           ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // Action buttons
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    child: const Text('Cancel'),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () {
-                      widget.onReferenceSelected(
-                        BibleReference(
-                          bookId: selectedBookId,
-                          chapter: selectedChapter,
-                          verse: selectedVerse,
+                          child: Center(
+                            child: Text(
+                              '${chapter.number}',
+                              style: TextStyle(
+                                color: isSelected
+                                    ? colors.onPrimary
+                                    : colors.onSurfaceVariant,
+                                fontWeight: isSelected
+                                    ? FontWeight.w700
+                                    : FontWeight.w400,
+                              ),
+                            ),
+                          ),
                         ),
                       );
                     },
-                    child: Text(
-                      selectedVerse == null ? 'Go to Chapter' : 'Go to Verse',
-                    ),
                   ),
-                ),
+                  if (widget.showVerseSelector &&
+                      book.id == selectedBookId &&
+                      selectedChapterModel.verses.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        TextButton(
+                          onPressed: () => _selectReference(
+                            BibleReference(
+                              bookId: book.id,
+                              chapter: selectedChapter,
+                            ),
+                          ),
+                          child: Text(
+                            'Go to ${preferredBookName(book)} $selectedChapter',
+                          ),
+                        ),
+                      ],
+                    ),
+                    GridView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 6,
+                            mainAxisSpacing: 8,
+                            crossAxisSpacing: 8,
+                            childAspectRatio: 1.1,
+                          ),
+                      itemCount: selectedChapterModel.verses.length,
+                      itemBuilder: (context, index) {
+                        final verse = selectedChapterModel.verses[index];
+                        final isSelected = verse.number == selectedVerse;
+                        return InkWell(
+                          onTap: () {
+                            setState(() {
+                              selectedVerse = verse.number;
+                            });
+                            _selectReference(
+                              BibleReference(
+                                bookId: book.id,
+                                chapter: selectedChapter,
+                                verse: verse.number,
+                              ),
+                            );
+                          },
+                          borderRadius: BorderRadius.circular(14),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: isSelected
+                                  ? colors.secondary
+                                  : colors.surfaceContainerHigh,
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            child: Center(
+                              child: Text(
+                                '${verse.number}',
+                                style: TextStyle(
+                                  color: isSelected
+                                      ? colors.onSecondary
+                                      : colors.onSurfaceVariant,
+                                  fontWeight: isSelected
+                                      ? FontWeight.w700
+                                      : FontWeight.w400,
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ],
               ],
             ),
           ),
         ],
       ),
-    );
-  }
-}
-
-class _BooksList extends StatelessWidget {
-  const _BooksList({
-    required this.books,
-    required this.selectedBookId,
-    required this.onBookSelected,
-  });
-
-  final List<BibleBook> books;
-  final String selectedBookId;
-  final Function(String) onBookSelected;
-
-  @override
-  Widget build(BuildContext context) {
-    final visibleBooks = books
-        .where((book) => preferredBookName(book).trim().isNotEmpty)
-        .toList();
-
-    if (visibleBooks.isEmpty) {
-      return const Center(child: Text('No books found'));
-    }
-
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      itemCount: visibleBooks.length,
-      itemBuilder: (context, index) {
-        final book = visibleBooks[index];
-        final isSelected = book.id == selectedBookId;
-        final displayName = preferredBookName(book).trim();
-
-        return Card(
-          margin: const EdgeInsets.only(bottom: 4),
-          color: isSelected
-              ? Theme.of(context).colorScheme.primaryContainer
-              : null,
-          child: ListTile(
-            dense: true,
-            selected: isSelected,
-            title: Text(
-              displayName,
-              style: TextStyle(
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-              ),
-            ),
-            subtitle: Text('${book.chapters.length} chapters'),
-            trailing: isSelected
-                ? Icon(
-                    Icons.check_circle,
-                    color: Theme.of(context).colorScheme.primary,
-                  )
-                : null,
-            onTap: () => onBookSelected(book.id),
-          ),
-        );
-      },
     );
   }
 }

@@ -96,6 +96,7 @@ class _BibleViewerTabState extends ConsumerState<BibleViewerTab> {
     final layoutMode = ref.watch(readerLayoutModeProvider);
     final continuousScrolling = ref.watch(continuousScrollingProvider);
     final showBookIntroductions = ref.watch(showBookIntroductionsProvider);
+    final showVerseSelector = ref.watch(showVerseSelectorProvider);
     final isSmall = widget.isSmallDevice;
 
     final displayReference =
@@ -173,6 +174,7 @@ class _BibleViewerTabState extends ConsumerState<BibleViewerTab> {
               isFloating: isSmall,
               reference: displayReference,
               books: booksAsync.value ?? const [],
+              showVerseSelector: showVerseSelector,
               onReferenceChanged: (reference) {
                 if (continuousScrolling) {
                   setState(() {
