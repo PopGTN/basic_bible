@@ -6,6 +6,8 @@ class HomeTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -19,12 +21,12 @@ class HomeTab extends StatelessWidget {
           SizedBox(height: 20),
           ElevatedButton.icon(
             style: ElevatedButton.styleFrom(
-              backgroundColor: Theme.of(context).colorScheme.secondary,
-              foregroundColor: Colors.white,
+              backgroundColor: colors.secondaryContainer,
+              foregroundColor: colors.onSecondaryContainer,
             ),
             onPressed: () => context.go('/home/settings'),
             icon: const Icon(Icons.settings),
-            label: const Text('ElevatedButton'),
+            label: const Text('Open Settings'),
             iconAlignment: IconAlignment.start,
           ),
         ],

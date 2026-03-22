@@ -3,17 +3,7 @@ import 'package:flutter_riverpod/legacy.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Supported app themes.
-enum AppThemeMode {
-  system,
-  light,
-  dark,
-  softDark,
-  black,
-  oledBlack,
-  white,
-  blue,
-  red,
-}
+enum AppThemeMode { system, light, dark, softDark, black, white, blue, red }
 
 class ThemeNotifier extends StateNotifier<AppThemeMode> {
   ThemeNotifier() : super(AppThemeMode.system) {
@@ -24,6 +14,10 @@ class ThemeNotifier extends StateNotifier<AppThemeMode> {
     final prefs = await SharedPreferences.getInstance();
     final saved = prefs.getString('themeMode');
     if (saved != null) {
+      if (saved == 'AppThemeMode.oledBlack') {
+        state = AppThemeMode.black;
+        return;
+      }
       state = AppThemeMode.values.firstWhere(
         (e) => e.toString() == saved,
         orElse: () => AppThemeMode.system,
@@ -53,7 +47,6 @@ final themeDataMap = {
   ),
   AppThemeMode.softDark: _buildSoftDarkTheme(),
   AppThemeMode.black: _buildMonochromeTheme(brightness: Brightness.dark),
-  AppThemeMode.oledBlack: _buildOledBlackTheme(),
   AppThemeMode.white: _buildMonochromeTheme(brightness: Brightness.light),
   AppThemeMode.blue: _buildSeedTheme(
     seedColor: Colors.blue,
@@ -72,7 +65,6 @@ ThemeMode mapThemeMode(AppThemeMode mode) {
     case AppThemeMode.dark:
     case AppThemeMode.softDark:
     case AppThemeMode.black:
-    case AppThemeMode.oledBlack:
       return ThemeMode.dark;
     case AppThemeMode.light:
     case AppThemeMode.white:
@@ -94,8 +86,6 @@ ThemeData getThemeData(AppThemeMode mode) {
       return themeDataMap[AppThemeMode.softDark]!;
     case AppThemeMode.black:
       return themeDataMap[AppThemeMode.black]!;
-    case AppThemeMode.oledBlack:
-      return themeDataMap[AppThemeMode.oledBlack]!;
     case AppThemeMode.white:
       return themeDataMap[AppThemeMode.white]!;
     case AppThemeMode.blue:
@@ -117,129 +107,12 @@ ThemeData getDarkThemeData(AppThemeMode mode) {
       return themeDataMap[AppThemeMode.softDark]!;
     case AppThemeMode.black:
       return themeDataMap[AppThemeMode.black]!;
-    case AppThemeMode.oledBlack:
-      return themeDataMap[AppThemeMode.oledBlack]!;
     case AppThemeMode.light:
     case AppThemeMode.white:
     case AppThemeMode.blue:
     case AppThemeMode.red:
       return themeDataMap[AppThemeMode.dark]!;
   }
-}
-
-ThemeData _buildOledBlackTheme() {
-  const background = Colors.black;
-  const foreground = Color(0xFFF5F5F5);
-  const onSurfaceVariant = Color(0xFFBDBDBD);
-  const outline = Color(0xFF5C5C5C);
-  const outlineVariant = Color(0xFF2A2A2A);
-  const controlFill = Color(0xFF101010);
-
-  final scheme = const ColorScheme.dark().copyWith(
-    brightness: Brightness.dark,
-    primary: foreground,
-    onPrimary: background,
-    secondary: foreground,
-    onSecondary: background,
-    primaryContainer: controlFill,
-    onPrimaryContainer: foreground,
-    secondaryContainer: controlFill,
-    onSecondaryContainer: foreground,
-    tertiary: foreground,
-    onTertiary: background,
-    surface: background,
-    onSurface: foreground,
-    onSurfaceVariant: onSurfaceVariant,
-    surfaceContainerLowest: background,
-    surfaceContainerLow: background,
-    surfaceContainer: background,
-    surfaceContainerHigh: background,
-    surfaceContainerHighest: controlFill,
-    outline: outline,
-    outlineVariant: outlineVariant,
-    shadow: Colors.black,
-    surfaceTint: Colors.transparent,
-  );
-
-  return ThemeData(
-    useMaterial3: true,
-    brightness: Brightness.dark,
-    colorScheme: scheme,
-    scaffoldBackgroundColor: background,
-    canvasColor: background,
-    splashColor: Colors.transparent,
-    highlightColor: Colors.transparent,
-    appBarTheme: const AppBarTheme(
-      backgroundColor: background,
-      foregroundColor: foreground,
-      surfaceTintColor: Colors.transparent,
-      elevation: 0,
-    ),
-    iconTheme: const IconThemeData(color: foreground),
-    switchTheme: SwitchThemeData(
-      thumbColor: WidgetStateProperty.resolveWith((states) {
-        if (states.contains(WidgetState.selected)) return foreground;
-        return onSurfaceVariant;
-      }),
-      trackColor: WidgetStateProperty.resolveWith((states) {
-        if (states.contains(WidgetState.selected)) {
-          return foreground.withValues(alpha: 0.28);
-        }
-        return controlFill;
-      }),
-      trackOutlineColor: WidgetStateProperty.resolveWith((states) {
-        if (states.contains(WidgetState.selected)) return foreground;
-        return outline;
-      }),
-      // OLED mode needs an explicit track outline width so the switch border
-      // stays visible against true-black settings surfaces in both states.
-      trackOutlineWidth: WidgetStateProperty.resolveWith((states) {
-        if (states.contains(WidgetState.selected)) return 1.8;
-        return 1.4;
-      }),
-    ),
-    chipTheme: ChipThemeData(
-      backgroundColor: background,
-      selectedColor: controlFill,
-      disabledColor: background,
-      side: const BorderSide(color: outline),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-      labelStyle: const TextStyle(color: foreground),
-      secondaryLabelStyle: const TextStyle(color: foreground),
-      brightness: Brightness.dark,
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-    ),
-    textButtonTheme: TextButtonThemeData(
-      style: TextButton.styleFrom(
-        foregroundColor: foreground,
-        textStyle: const TextStyle(fontWeight: FontWeight.w600),
-      ),
-    ),
-    outlinedButtonTheme: OutlinedButtonThemeData(
-      style: OutlinedButton.styleFrom(
-        foregroundColor: foreground,
-        side: const BorderSide(color: outline),
-      ),
-    ),
-    inputDecorationTheme: InputDecorationTheme(
-      filled: true,
-      fillColor: background,
-      hintStyle: const TextStyle(color: onSurfaceVariant),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(18),
-        borderSide: const BorderSide(color: outlineVariant),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(18),
-        borderSide: const BorderSide(color: outlineVariant),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(18),
-        borderSide: const BorderSide(color: foreground),
-      ),
-    ),
-    dividerColor: outline,
-  );
 }
 
 ThemeData _buildSoftDarkTheme() {
@@ -415,6 +288,14 @@ ThemeData _buildMonochromeTheme({required Brightness brightness}) {
       style: TextButton.styleFrom(
         foregroundColor: foreground,
         textStyle: const TextStyle(fontWeight: FontWeight.w600),
+      ),
+    ),
+    elevatedButtonTheme: ElevatedButtonThemeData(
+      style: ElevatedButton.styleFrom(
+        backgroundColor: highSurface,
+        foregroundColor: foreground,
+        disabledBackgroundColor: lowSurface,
+        disabledForegroundColor: onSurfaceVariant,
       ),
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
