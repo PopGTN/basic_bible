@@ -308,7 +308,7 @@ class _BibleTextViewState extends State<_BibleTextView> {
   void initState() {
     super.initState();
     _scheduleVerseFocus();
-    if (widget.continuousScrolling) {
+    if (widget.continuousScrolling && widget.reference.verse == null) {
       _scheduleChapterFocus();
     }
   }
@@ -322,10 +322,13 @@ class _BibleTextViewState extends State<_BibleTextView> {
       _scheduleVerseFocus();
     }
     if (widget.continuousScrolling &&
-        oldWidget.reference.chapter != widget.reference.chapter) {
+        (oldWidget.reference.bookId != widget.reference.bookId ||
+            oldWidget.reference.chapter != widget.reference.chapter)) {
       if (_suppressNextChapterAutoScroll) {
         _suppressNextChapterAutoScroll = false;
-      } else {
+      } else if (widget.reference.verse == null) {
+        // In continuous mode a verse jump should land on the verse itself.
+        // Only fall back to the chapter header when no verse was requested.
         _scheduleChapterFocus();
       }
     }
@@ -474,29 +477,10 @@ class _BibleTextViewState extends State<_BibleTextView> {
   }
 
   Widget _buildChapterHeader(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16.0),
-      child: Column(
-        children: [
-          Text(
-            widget.book.name,
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              color: Theme.of(context).colorScheme.secondary,
-              letterSpacing: 0.6,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 4),
-          Text(
-            '${widget.reference.chapter}',
-            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-              fontSize: widget.fontSize + 4,
-              fontWeight: FontWeight.bold,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
+    return _buildCenteredChapterHeader(
+      context,
+      bookName: widget.book.name,
+      chapterNumber: widget.reference.chapter,
     );
   }
 
@@ -733,7 +717,7 @@ class _BibleTextViewState extends State<_BibleTextView> {
           _ContinuousChapterSection(book: book, chapter: chapter),
     ];
 
-    return ListView.builder(
+    return ListView(
       controller: widget.controller,
       padding: EdgeInsets.only(
         left: 16,
@@ -741,49 +725,47 @@ class _BibleTextViewState extends State<_BibleTextView> {
         top: widget.isSmallDevice ? 16 : 80,
         bottom: 72,
       ),
-      itemCount: sections.length,
-      itemBuilder: (context, index) {
-        final section = sections[index];
-        final chapter = section.chapter;
-        return Padding(
-          key: _chapterSectionKey(section.book.id, chapter.number),
-          padding: const EdgeInsets.only(bottom: 28),
-          child: _ChapterSectionView(
-            book: section.book,
-            chapter: chapter,
-            reference: widget.reference,
-            fontSize: widget.fontSize,
-            layoutMode: widget.layoutMode,
-            buildChapterBlocks: (chapter) =>
-                _buildChapterBlocksFor(context, chapter),
-            buildVerse: (verse) => _buildVerseForChapter(
-              context,
-              section.book.id,
-              chapter.number,
-              verse,
-            ),
-            buildDocumentView: () => _buildDocumentReadingViewForChapter(
-              context,
-              section.book.id,
-              chapter,
-            ),
-            introBuilder: chapter.number == 1
-                ? () => Column(
-                    children: _buildBookIntroductionBlocksForBook(
-                      context,
-                      section.book,
-                      showForCurrentSection: true,
-                    ),
-                  )
-                : null,
-            headerBuilder: () => _buildChapterHeaderForChapter(
-              context,
-              section.book,
-              chapter.number,
+      children: [
+        for (final section in sections)
+          Padding(
+            key: _chapterSectionKey(section.book.id, section.chapter.number),
+            padding: const EdgeInsets.only(bottom: 28),
+            child: _ChapterSectionView(
+              book: section.book,
+              chapter: section.chapter,
+              reference: widget.reference,
+              fontSize: widget.fontSize,
+              layoutMode: widget.layoutMode,
+              buildChapterBlocks: (chapter) =>
+                  _buildChapterBlocksFor(context, chapter),
+              buildVerse: (verse) => _buildVerseForChapter(
+                context,
+                section.book.id,
+                section.chapter.number,
+                verse,
+              ),
+              buildDocumentView: () => _buildDocumentReadingViewForChapter(
+                context,
+                section.book.id,
+                section.chapter,
+              ),
+              introBuilder: section.chapter.number == 1
+                  ? () => Column(
+                      children: _buildBookIntroductionBlocksForBook(
+                        context,
+                        section.book,
+                        showForCurrentSection: true,
+                      ),
+                    )
+                  : null,
+              headerBuilder: () => _buildChapterHeaderForChapter(
+                context,
+                section.book,
+                section.chapter.number,
+              ),
             ),
           ),
-        );
-      },
+      ],
     );
   }
 
@@ -792,28 +774,46 @@ class _BibleTextViewState extends State<_BibleTextView> {
     BibleBook book,
     int chapterNumber,
   ) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16.0),
-      child: Column(
-        children: [
-          Text(
-            book.name,
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              color: Theme.of(context).colorScheme.secondary,
-              letterSpacing: 0.6,
-            ),
-            textAlign: TextAlign.center,
+    return _buildCenteredChapterHeader(
+      context,
+      bookName: book.name,
+      chapterNumber: chapterNumber,
+    );
+  }
+
+  Widget _buildCenteredChapterHeader(
+    BuildContext context, {
+    required String bookName,
+    required int chapterNumber,
+  }) {
+    return SizedBox(
+      width: double.infinity,
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 16.0),
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                bookName,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.secondary,
+                  letterSpacing: 0.6,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 4),
+              Text(
+                '$chapterNumber',
+                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                  fontSize: widget.fontSize + 4,
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
           ),
-          const SizedBox(height: 4),
-          Text(
-            '$chapterNumber',
-            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-              fontSize: widget.fontSize + 4,
-              fontWeight: FontWeight.bold,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
+        ),
       ),
     );
   }
