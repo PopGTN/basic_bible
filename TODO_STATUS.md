@@ -51,6 +51,7 @@ Status meanings:
 - `blocked`: cannot move safely without another prerequisite or decision
 
 ## Completed Recently
+- `done` Changed the reader translation pill to show the translation abbreviation instead of the full translation name, which keeps the top-bar control compact and readable on mobile.
 - `done` Fixed the reader reference-bar regression after translation switches by resolving book references more flexibly, falling back to readable book names instead of `Unknown`, and moving the floating chapter bar above the reader content so its background renders as a real visible surface again.
 - `done` Added a first dedicated `Versions` screen for translation selection, wired the reader translation pill to open it, added simple row action buttons for future library features, and added an `Import Bible XML` entry to the top-right menu there.
 - `done` Strengthened the small-screen floating reference bar background so it now reads as a real pill control with visible fill, border, and shadow instead of blending into the reading surface.

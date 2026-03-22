@@ -292,10 +292,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 final translations =
                     translationsAsync.value ??
                     AppBibleRepository.builtInTranslations;
-                String? currentTranslationName;
+                String? currentTranslationLabel;
                 for (final translation in translations) {
                   if (translation.id == currentTranslation) {
-                    currentTranslationName = translation.name;
+                    currentTranslationLabel = translation.id.toUpperCase();
                     break;
                   }
                 }
@@ -319,7 +319,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           Icon(Icons.language, color: colors.onSecondary),
                           const SizedBox(width: 6),
                           Text(
-                            currentTranslationName ?? currentTranslation,
+                            currentTranslationLabel ??
+                                currentTranslation.toUpperCase(),
                             style: TextStyle(color: colors.onSecondary),
                           ),
                         ],
