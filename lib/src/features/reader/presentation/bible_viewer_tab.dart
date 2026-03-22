@@ -1313,10 +1313,15 @@ class _BibleTextViewState extends State<_BibleTextView> {
     // so this sheet uses a stable generated marker order instead of pretending
     // we still know the original exact source ordering for every format.
     for (final footnote in footnotes) {
+      final labelIsRef =
+          footnote.label != null && footnote.label!.trim().length > 1;
       entries.add(
         _VerseAnnotationEntry(
           marker: _annotationMarker(footnote, fallback: nextMarker()),
-          body: footnote.text,
+          body: _footnoteBody(footnote),
+          originRef: labelIsRef ? footnote.label!.trim() : null,
+          bodyText: footnote.bodyText,
+          quotedText: footnote.quotedText,
           reference: footnote.references.isNotEmpty
               ? footnote.references.first
               : null,
@@ -1345,12 +1350,27 @@ class _BibleTextViewState extends State<_BibleTextView> {
 
     for (final candidate in candidates) {
       if (candidate == null || candidate.isEmpty) continue;
-      if (candidate.length == 1 && RegExp(r'[A-Za-z0-9]').hasMatch(candidate)) {
-        return candidate.toLowerCase();
+      // Accept any single printable character — covers letters, digits, and
+      // common footnote symbols such as * + † ‡ § that USFX uses as callers.
+      if (candidate.length == 1) {
+        return candidate;
       }
     }
 
     return fallback;
+  }
+
+  // Build the display body for a footnote annotation row.
+  // The label field holds the origin-verse reference from <fr> (e.g. "Gen 1:1 — ").
+  // Show it as a readable prefix when it is a real reference string rather than
+  // a single-character marker, which would already be shown as the marker itself.
+  String _footnoteBody(BibleFootnote footnote) {
+    final label = footnote.label?.trim();
+    final text = footnote.text.trim();
+    if (label != null && label.isNotEmpty && label.length > 1) {
+      return '$label $text'.trim();
+    }
+    return text;
   }
 
   List<InlineSpan> _buildVerseContentSpans(
@@ -1702,12 +1722,18 @@ class _VerseAnnotationEntry {
   const _VerseAnnotationEntry({
     required this.marker,
     required this.body,
+    this.originRef,
+    this.bodyText,
+    this.quotedText,
     this.reference,
     this.relatedReferences = const [],
   });
 
   final String marker;
-  final String body;
+  final String body; // plain fallback — used for cross-refs and OSIS/Zefania
+  final String? originRef; // structured origin ref from <fr> (e.g. "Gen 1:1")
+  final String? bodyText; // structured body from <ft>
+  final String? quotedText; // structured quote from <fq>/<fqa>
   final BibleCrossReference? reference;
   final List<BibleCrossReference> relatedReferences;
 }
@@ -1945,14 +1971,44 @@ class _VerseAnnotationRow extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  entry.body,
-                  style: theme.textTheme.headlineSmall?.copyWith(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w400,
-                    height: 1.5,
-                  ),
-                ),
+                entry.bodyText != null
+                    ? RichText(
+                        text: TextSpan(
+                          style: theme.textTheme.headlineSmall?.copyWith(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w400,
+                            height: 1.5,
+                            color: colors.onSurface,
+                          ),
+                          children: [
+                            if (entry.originRef != null)
+                              TextSpan(
+                                text: '${entry.originRef} ',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w500,
+                                  color: colors.onSurfaceVariant,
+                                ),
+                              ),
+                            TextSpan(text: entry.bodyText),
+                            if (entry.quotedText != null)
+                              TextSpan(
+                                text: ' \u201c${entry.quotedText}\u201d',
+                                style: const TextStyle(
+                                  fontStyle: FontStyle.italic,
+                                ),
+                              ),
+                          ],
+                        ),
+                      )
+                    : Text(
+                        entry.body,
+                        style: theme.textTheme.headlineSmall?.copyWith(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w400,
+                          height: 1.5,
+                        ),
+                      ),
                 if (entry.relatedReferences.isNotEmpty) ...[
                   const SizedBox(height: 10),
                   Wrap(
