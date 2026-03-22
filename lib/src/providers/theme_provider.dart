@@ -191,6 +191,12 @@ ThemeData _buildOledBlackTheme() {
         if (states.contains(WidgetState.selected)) return foreground;
         return outline;
       }),
+      // OLED mode needs an explicit track outline width so the switch border
+      // stays visible against true-black settings surfaces in both states.
+      trackOutlineWidth: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.selected)) return 1.8;
+        return 1.4;
+      }),
     ),
     chipTheme: ChipThemeData(
       backgroundColor: background,
@@ -374,6 +380,30 @@ ThemeData _buildMonochromeTheme({required Brightness brightness}) {
       elevation: 0,
     ),
     iconTheme: IconThemeData(color: foreground),
+    switchTheme: !isDark
+        ? null
+        : SwitchThemeData(
+            thumbColor: WidgetStateProperty.resolveWith((states) {
+              if (states.contains(WidgetState.selected)) return foreground;
+              return onSurfaceVariant;
+            }),
+            trackColor: WidgetStateProperty.resolveWith((states) {
+              if (states.contains(WidgetState.selected)) {
+                return foreground.withValues(alpha: 0.22);
+              }
+              return highSurface;
+            }),
+            trackOutlineColor: WidgetStateProperty.resolveWith((states) {
+              if (states.contains(WidgetState.selected)) return foreground;
+              return outline;
+            }),
+            // Pure black mode needs an explicit border width or the switch can
+            // disappear into the all-black settings background.
+            trackOutlineWidth: WidgetStateProperty.resolveWith((states) {
+              if (states.contains(WidgetState.selected)) return 1.8;
+              return 1.4;
+            }),
+          ),
     textButtonTheme: TextButtonThemeData(
       style: TextButton.styleFrom(
         foregroundColor: foreground,

@@ -51,6 +51,7 @@ Status meanings:
 - `blocked`: cannot move safely without another prerequisite or decision
 
 ## Completed Recently
+- `done` Strengthened the monochrome dark switch styling by giving the all-black themes an explicit switch track outline width, so switch borders stay visible in Settings against black backgrounds instead of disappearing.
 - `done` Changed the app identifier from `com.example.basic_bible` to `ca.joshuamc.basic_bible` across the Android namespace/application ID, the Kotlin package path, and the Linux desktop application ID so new installs no longer ship under the default example identity.
 - `done` Clarified the quick theme picker by adding visible labels under each preview card and a stronger border for light/white previews, so options like `Pure White` no longer disappear into unlabeled cards.
 - `done` Added a separate `OLED Black` theme choice for users who want a true all-black monochrome UI with white/grey control states instead of the tinted seeded dark theme or the more layered `Pure Black` theme.
