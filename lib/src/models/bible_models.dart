@@ -24,6 +24,9 @@ enum BibleDocumentBlockKind {
   poetry,
 }
 
+// These richer model types are Phase 1 groundwork. They let the app keep
+// plain verse text for compatibility/search while gaining a place to store
+// formatting, notes, references, and front-matter as parser support grows.
 class BibleVerseSpan extends Equatable {
   final String text;
   final BibleVerseSpanKind kind;
@@ -40,16 +43,14 @@ class BibleVerseSpan extends Equatable {
     return BibleVerseSpan(
       text: json['text'] as String,
       kind: BibleVerseSpanKind.values[json['kind'] as int? ?? 0],
-      metadata: rawMetadata.map((key, value) => MapEntry(key, value.toString())),
+      metadata: rawMetadata.map(
+        (key, value) => MapEntry(key, value.toString()),
+      ),
     );
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      'text': text,
-      'kind': kind.index,
-      'metadata': metadata,
-    };
+    return {'text': text, 'kind': kind.index, 'metadata': metadata};
   }
 
   @override
@@ -60,10 +61,7 @@ class BibleCrossReference extends Equatable {
   final String label;
   final String? target;
 
-  const BibleCrossReference({
-    required this.label,
-    this.target,
-  });
+  const BibleCrossReference({required this.label, this.target});
 
   factory BibleCrossReference.fromJson(Map<String, dynamic> json) {
     return BibleCrossReference(
@@ -73,10 +71,7 @@ class BibleCrossReference extends Equatable {
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      'label': label,
-      'target': target,
-    };
+    return {'label': label, 'target': target};
   }
 
   @override
@@ -139,7 +134,9 @@ class BibleDocumentBlock extends Equatable {
       kind: BibleDocumentBlockKind.values[json['kind'] as int? ?? 0],
       text: json['text'] as String,
       level: json['level'] as int?,
-      metadata: rawMetadata.map((key, value) => MapEntry(key, value.toString())),
+      metadata: rawMetadata.map(
+        (key, value) => MapEntry(key, value.toString()),
+      ),
     );
   }
 
@@ -160,10 +157,7 @@ class BibleTocLabel extends Equatable {
   final String text;
   final int level;
 
-  const BibleTocLabel({
-    required this.text,
-    required this.level,
-  });
+  const BibleTocLabel({required this.text, required this.level});
 
   factory BibleTocLabel.fromJson(Map<String, dynamic> json) {
     return BibleTocLabel(
@@ -173,10 +167,7 @@ class BibleTocLabel extends Equatable {
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      'text': text,
-      'level': level,
-    };
+    return {'text': text, 'level': level};
   }
 
   @override
@@ -254,9 +245,12 @@ class BibleBook extends Equatable {
       tocLabels: (json['tocLabels'] as List<dynamic>? ?? const [])
           .map((e) => BibleTocLabel.fromJson(e as Map<String, dynamic>))
           .toList(),
-      introductionBlocks: (json['introductionBlocks'] as List<dynamic>? ?? const [])
-          .map((e) => BibleDocumentBlock.fromJson(e as Map<String, dynamic>))
-          .toList(),
+      introductionBlocks:
+          (json['introductionBlocks'] as List<dynamic>? ?? const [])
+              .map(
+                (e) => BibleDocumentBlock.fromJson(e as Map<String, dynamic>),
+              )
+              .toList(),
     );
   }
 
@@ -275,15 +269,15 @@ class BibleBook extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
-        name,
-        shortName,
-        bookNumber,
-        chapters,
-        bookType,
-        tocLabels,
-        introductionBlocks,
-      ];
+    id,
+    name,
+    shortName,
+    bookNumber,
+    chapters,
+    bookType,
+    tocLabels,
+    introductionBlocks,
+  ];
 }
 
 class BibleChapter extends Equatable {
@@ -312,8 +306,9 @@ class BibleChapter extends Equatable {
   factory BibleChapter.fromJson(Map<String, dynamic> json) {
     return BibleChapter(
       number: json['number'],
-      verses:
-          (json['verses'] as List).map((e) => BibleVerse.fromJson(e)).toList(),
+      verses: (json['verses'] as List)
+          .map((e) => BibleVerse.fromJson(e))
+          .toList(),
       blocks: (json['blocks'] as List<dynamic>? ?? const [])
           .map((e) => BibleDocumentBlock.fromJson(e as Map<String, dynamic>))
           .toList(),
@@ -403,14 +398,14 @@ class BibleVerse extends Equatable {
 
   @override
   List<Object?> get props => [
-        number,
-        text,
-        notes,
-        references,
-        spans,
-        footnotes,
-        crossReferences,
-      ];
+    number,
+    text,
+    notes,
+    references,
+    spans,
+    footnotes,
+    crossReferences,
+  ];
 }
 
 class BibleReference extends Equatable {
@@ -461,14 +456,14 @@ class BibleTranslation extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
-        name,
-        language,
-        description,
-        isLocal,
-        filePath,
-        githubUrl,
-        format,
-        sourceType,
-      ];
+    id,
+    name,
+    language,
+    description,
+    isLocal,
+    filePath,
+    githubUrl,
+    format,
+    sourceType,
+  ];
 }

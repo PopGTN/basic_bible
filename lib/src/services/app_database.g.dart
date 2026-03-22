@@ -647,6 +647,27 @@ class $BooksTable extends Books with TableInfo<$BooksTable, BookEntry> {
     requiredDuringInsert: true,
   );
   @override
+  late final GeneratedColumnWithTypeConverter<List<BibleTocLabel>?, String>
+  tocLabels = GeneratedColumn<String>(
+    'toc_labels',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  ).withConverter<List<BibleTocLabel>?>($BooksTable.$convertertocLabelsn);
+  @override
+  late final GeneratedColumnWithTypeConverter<List<BibleDocumentBlock>?, String>
+  introductionBlocks =
+      GeneratedColumn<String>(
+        'introduction_blocks',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      ).withConverter<List<BibleDocumentBlock>?>(
+        $BooksTable.$converterintroductionBlocksn,
+      );
+  @override
   List<GeneratedColumn> get $columns => [
     id,
     translationId,
@@ -654,6 +675,8 @@ class $BooksTable extends Books with TableInfo<$BooksTable, BookEntry> {
     shortName,
     bookNumber,
     bookType,
+    tocLabels,
+    introductionBlocks,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -748,6 +771,18 @@ class $BooksTable extends Books with TableInfo<$BooksTable, BookEntry> {
         DriftSqlType.int,
         data['${effectivePrefix}book_type'],
       )!,
+      tocLabels: $BooksTable.$convertertocLabelsn.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}toc_labels'],
+        ),
+      ),
+      introductionBlocks: $BooksTable.$converterintroductionBlocksn.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}introduction_blocks'],
+        ),
+      ),
     );
   }
 
@@ -755,6 +790,17 @@ class $BooksTable extends Books with TableInfo<$BooksTable, BookEntry> {
   $BooksTable createAlias(String alias) {
     return $BooksTable(attachedDatabase, alias);
   }
+
+  static TypeConverter<List<BibleTocLabel>, String> $convertertocLabels =
+      const BibleTocLabelListConverter();
+  static TypeConverter<List<BibleTocLabel>?, String?> $convertertocLabelsn =
+      NullAwareTypeConverter.wrap($convertertocLabels);
+  static TypeConverter<List<BibleDocumentBlock>, String>
+  $converterintroductionBlocks = const BibleDocumentBlockListConverter();
+  static TypeConverter<List<BibleDocumentBlock>?, String?>
+  $converterintroductionBlocksn = NullAwareTypeConverter.wrap(
+    $converterintroductionBlocks,
+  );
 }
 
 class BookEntry extends DataClass implements Insertable<BookEntry> {
@@ -764,6 +810,8 @@ class BookEntry extends DataClass implements Insertable<BookEntry> {
   final String shortName;
   final int bookNumber;
   final int bookType;
+  final List<BibleTocLabel>? tocLabels;
+  final List<BibleDocumentBlock>? introductionBlocks;
   const BookEntry({
     required this.id,
     required this.translationId,
@@ -771,6 +819,8 @@ class BookEntry extends DataClass implements Insertable<BookEntry> {
     required this.shortName,
     required this.bookNumber,
     required this.bookType,
+    this.tocLabels,
+    this.introductionBlocks,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -781,6 +831,16 @@ class BookEntry extends DataClass implements Insertable<BookEntry> {
     map['short_name'] = Variable<String>(shortName);
     map['book_number'] = Variable<int>(bookNumber);
     map['book_type'] = Variable<int>(bookType);
+    if (!nullToAbsent || tocLabels != null) {
+      map['toc_labels'] = Variable<String>(
+        $BooksTable.$convertertocLabelsn.toSql(tocLabels),
+      );
+    }
+    if (!nullToAbsent || introductionBlocks != null) {
+      map['introduction_blocks'] = Variable<String>(
+        $BooksTable.$converterintroductionBlocksn.toSql(introductionBlocks),
+      );
+    }
     return map;
   }
 
@@ -792,6 +852,12 @@ class BookEntry extends DataClass implements Insertable<BookEntry> {
       shortName: Value(shortName),
       bookNumber: Value(bookNumber),
       bookType: Value(bookType),
+      tocLabels: tocLabels == null && nullToAbsent
+          ? const Value.absent()
+          : Value(tocLabels),
+      introductionBlocks: introductionBlocks == null && nullToAbsent
+          ? const Value.absent()
+          : Value(introductionBlocks),
     );
   }
 
@@ -807,6 +873,10 @@ class BookEntry extends DataClass implements Insertable<BookEntry> {
       shortName: serializer.fromJson<String>(json['shortName']),
       bookNumber: serializer.fromJson<int>(json['bookNumber']),
       bookType: serializer.fromJson<int>(json['bookType']),
+      tocLabels: serializer.fromJson<List<BibleTocLabel>?>(json['tocLabels']),
+      introductionBlocks: serializer.fromJson<List<BibleDocumentBlock>?>(
+        json['introductionBlocks'],
+      ),
     );
   }
   @override
@@ -819,6 +889,10 @@ class BookEntry extends DataClass implements Insertable<BookEntry> {
       'shortName': serializer.toJson<String>(shortName),
       'bookNumber': serializer.toJson<int>(bookNumber),
       'bookType': serializer.toJson<int>(bookType),
+      'tocLabels': serializer.toJson<List<BibleTocLabel>?>(tocLabels),
+      'introductionBlocks': serializer.toJson<List<BibleDocumentBlock>?>(
+        introductionBlocks,
+      ),
     };
   }
 
@@ -829,6 +903,8 @@ class BookEntry extends DataClass implements Insertable<BookEntry> {
     String? shortName,
     int? bookNumber,
     int? bookType,
+    Value<List<BibleTocLabel>?> tocLabels = const Value.absent(),
+    Value<List<BibleDocumentBlock>?> introductionBlocks = const Value.absent(),
   }) => BookEntry(
     id: id ?? this.id,
     translationId: translationId ?? this.translationId,
@@ -836,6 +912,10 @@ class BookEntry extends DataClass implements Insertable<BookEntry> {
     shortName: shortName ?? this.shortName,
     bookNumber: bookNumber ?? this.bookNumber,
     bookType: bookType ?? this.bookType,
+    tocLabels: tocLabels.present ? tocLabels.value : this.tocLabels,
+    introductionBlocks: introductionBlocks.present
+        ? introductionBlocks.value
+        : this.introductionBlocks,
   );
   BookEntry copyWithCompanion(BooksCompanion data) {
     return BookEntry(
@@ -849,6 +929,10 @@ class BookEntry extends DataClass implements Insertable<BookEntry> {
           ? data.bookNumber.value
           : this.bookNumber,
       bookType: data.bookType.present ? data.bookType.value : this.bookType,
+      tocLabels: data.tocLabels.present ? data.tocLabels.value : this.tocLabels,
+      introductionBlocks: data.introductionBlocks.present
+          ? data.introductionBlocks.value
+          : this.introductionBlocks,
     );
   }
 
@@ -860,14 +944,24 @@ class BookEntry extends DataClass implements Insertable<BookEntry> {
           ..write('name: $name, ')
           ..write('shortName: $shortName, ')
           ..write('bookNumber: $bookNumber, ')
-          ..write('bookType: $bookType')
+          ..write('bookType: $bookType, ')
+          ..write('tocLabels: $tocLabels, ')
+          ..write('introductionBlocks: $introductionBlocks')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, translationId, name, shortName, bookNumber, bookType);
+  int get hashCode => Object.hash(
+    id,
+    translationId,
+    name,
+    shortName,
+    bookNumber,
+    bookType,
+    tocLabels,
+    introductionBlocks,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -877,7 +971,9 @@ class BookEntry extends DataClass implements Insertable<BookEntry> {
           other.name == this.name &&
           other.shortName == this.shortName &&
           other.bookNumber == this.bookNumber &&
-          other.bookType == this.bookType);
+          other.bookType == this.bookType &&
+          other.tocLabels == this.tocLabels &&
+          other.introductionBlocks == this.introductionBlocks);
 }
 
 class BooksCompanion extends UpdateCompanion<BookEntry> {
@@ -887,6 +983,8 @@ class BooksCompanion extends UpdateCompanion<BookEntry> {
   final Value<String> shortName;
   final Value<int> bookNumber;
   final Value<int> bookType;
+  final Value<List<BibleTocLabel>?> tocLabels;
+  final Value<List<BibleDocumentBlock>?> introductionBlocks;
   final Value<int> rowid;
   const BooksCompanion({
     this.id = const Value.absent(),
@@ -895,6 +993,8 @@ class BooksCompanion extends UpdateCompanion<BookEntry> {
     this.shortName = const Value.absent(),
     this.bookNumber = const Value.absent(),
     this.bookType = const Value.absent(),
+    this.tocLabels = const Value.absent(),
+    this.introductionBlocks = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   BooksCompanion.insert({
@@ -904,6 +1004,8 @@ class BooksCompanion extends UpdateCompanion<BookEntry> {
     required String shortName,
     required int bookNumber,
     required int bookType,
+    this.tocLabels = const Value.absent(),
+    this.introductionBlocks = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        translationId = Value(translationId),
@@ -918,6 +1020,8 @@ class BooksCompanion extends UpdateCompanion<BookEntry> {
     Expression<String>? shortName,
     Expression<int>? bookNumber,
     Expression<int>? bookType,
+    Expression<String>? tocLabels,
+    Expression<String>? introductionBlocks,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -927,6 +1031,8 @@ class BooksCompanion extends UpdateCompanion<BookEntry> {
       if (shortName != null) 'short_name': shortName,
       if (bookNumber != null) 'book_number': bookNumber,
       if (bookType != null) 'book_type': bookType,
+      if (tocLabels != null) 'toc_labels': tocLabels,
+      if (introductionBlocks != null) 'introduction_blocks': introductionBlocks,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -938,6 +1044,8 @@ class BooksCompanion extends UpdateCompanion<BookEntry> {
     Value<String>? shortName,
     Value<int>? bookNumber,
     Value<int>? bookType,
+    Value<List<BibleTocLabel>?>? tocLabels,
+    Value<List<BibleDocumentBlock>?>? introductionBlocks,
     Value<int>? rowid,
   }) {
     return BooksCompanion(
@@ -947,6 +1055,8 @@ class BooksCompanion extends UpdateCompanion<BookEntry> {
       shortName: shortName ?? this.shortName,
       bookNumber: bookNumber ?? this.bookNumber,
       bookType: bookType ?? this.bookType,
+      tocLabels: tocLabels ?? this.tocLabels,
+      introductionBlocks: introductionBlocks ?? this.introductionBlocks,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -972,6 +1082,18 @@ class BooksCompanion extends UpdateCompanion<BookEntry> {
     if (bookType.present) {
       map['book_type'] = Variable<int>(bookType.value);
     }
+    if (tocLabels.present) {
+      map['toc_labels'] = Variable<String>(
+        $BooksTable.$convertertocLabelsn.toSql(tocLabels.value),
+      );
+    }
+    if (introductionBlocks.present) {
+      map['introduction_blocks'] = Variable<String>(
+        $BooksTable.$converterintroductionBlocksn.toSql(
+          introductionBlocks.value,
+        ),
+      );
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -987,6 +1109,8 @@ class BooksCompanion extends UpdateCompanion<BookEntry> {
           ..write('shortName: $shortName, ')
           ..write('bookNumber: $bookNumber, ')
           ..write('bookType: $bookType, ')
+          ..write('tocLabels: $tocLabels, ')
+          ..write('introductionBlocks: $introductionBlocks, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -1034,7 +1158,16 @@ class $ChaptersTable extends Chapters
     requiredDuringInsert: true,
   );
   @override
-  List<GeneratedColumn> get $columns => [id, bookId, number];
+  late final GeneratedColumnWithTypeConverter<List<BibleDocumentBlock>?, String>
+  blocks = GeneratedColumn<String>(
+    'blocks',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  ).withConverter<List<BibleDocumentBlock>?>($ChaptersTable.$converterblocksn);
+  @override
+  List<GeneratedColumn> get $columns => [id, bookId, number, blocks];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -1091,6 +1224,12 @@ class $ChaptersTable extends Chapters
         DriftSqlType.int,
         data['${effectivePrefix}number'],
       )!,
+      blocks: $ChaptersTable.$converterblocksn.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}blocks'],
+        ),
+      ),
     );
   }
 
@@ -1098,16 +1237,23 @@ class $ChaptersTable extends Chapters
   $ChaptersTable createAlias(String alias) {
     return $ChaptersTable(attachedDatabase, alias);
   }
+
+  static TypeConverter<List<BibleDocumentBlock>, String> $converterblocks =
+      const BibleDocumentBlockListConverter();
+  static TypeConverter<List<BibleDocumentBlock>?, String?> $converterblocksn =
+      NullAwareTypeConverter.wrap($converterblocks);
 }
 
 class ChapterEntry extends DataClass implements Insertable<ChapterEntry> {
   final int id;
   final String bookId;
   final int number;
+  final List<BibleDocumentBlock>? blocks;
   const ChapterEntry({
     required this.id,
     required this.bookId,
     required this.number,
+    this.blocks,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1115,6 +1261,11 @@ class ChapterEntry extends DataClass implements Insertable<ChapterEntry> {
     map['id'] = Variable<int>(id);
     map['book_id'] = Variable<String>(bookId);
     map['number'] = Variable<int>(number);
+    if (!nullToAbsent || blocks != null) {
+      map['blocks'] = Variable<String>(
+        $ChaptersTable.$converterblocksn.toSql(blocks),
+      );
+    }
     return map;
   }
 
@@ -1123,6 +1274,9 @@ class ChapterEntry extends DataClass implements Insertable<ChapterEntry> {
       id: Value(id),
       bookId: Value(bookId),
       number: Value(number),
+      blocks: blocks == null && nullToAbsent
+          ? const Value.absent()
+          : Value(blocks),
     );
   }
 
@@ -1135,6 +1289,7 @@ class ChapterEntry extends DataClass implements Insertable<ChapterEntry> {
       id: serializer.fromJson<int>(json['id']),
       bookId: serializer.fromJson<String>(json['bookId']),
       number: serializer.fromJson<int>(json['number']),
+      blocks: serializer.fromJson<List<BibleDocumentBlock>?>(json['blocks']),
     );
   }
   @override
@@ -1144,19 +1299,27 @@ class ChapterEntry extends DataClass implements Insertable<ChapterEntry> {
       'id': serializer.toJson<int>(id),
       'bookId': serializer.toJson<String>(bookId),
       'number': serializer.toJson<int>(number),
+      'blocks': serializer.toJson<List<BibleDocumentBlock>?>(blocks),
     };
   }
 
-  ChapterEntry copyWith({int? id, String? bookId, int? number}) => ChapterEntry(
+  ChapterEntry copyWith({
+    int? id,
+    String? bookId,
+    int? number,
+    Value<List<BibleDocumentBlock>?> blocks = const Value.absent(),
+  }) => ChapterEntry(
     id: id ?? this.id,
     bookId: bookId ?? this.bookId,
     number: number ?? this.number,
+    blocks: blocks.present ? blocks.value : this.blocks,
   );
   ChapterEntry copyWithCompanion(ChaptersCompanion data) {
     return ChapterEntry(
       id: data.id.present ? data.id.value : this.id,
       bookId: data.bookId.present ? data.bookId.value : this.bookId,
       number: data.number.present ? data.number.value : this.number,
+      blocks: data.blocks.present ? data.blocks.value : this.blocks,
     );
   }
 
@@ -1165,46 +1328,53 @@ class ChapterEntry extends DataClass implements Insertable<ChapterEntry> {
     return (StringBuffer('ChapterEntry(')
           ..write('id: $id, ')
           ..write('bookId: $bookId, ')
-          ..write('number: $number')
+          ..write('number: $number, ')
+          ..write('blocks: $blocks')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, bookId, number);
+  int get hashCode => Object.hash(id, bookId, number, blocks);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is ChapterEntry &&
           other.id == this.id &&
           other.bookId == this.bookId &&
-          other.number == this.number);
+          other.number == this.number &&
+          other.blocks == this.blocks);
 }
 
 class ChaptersCompanion extends UpdateCompanion<ChapterEntry> {
   final Value<int> id;
   final Value<String> bookId;
   final Value<int> number;
+  final Value<List<BibleDocumentBlock>?> blocks;
   const ChaptersCompanion({
     this.id = const Value.absent(),
     this.bookId = const Value.absent(),
     this.number = const Value.absent(),
+    this.blocks = const Value.absent(),
   });
   ChaptersCompanion.insert({
     this.id = const Value.absent(),
     required String bookId,
     required int number,
+    this.blocks = const Value.absent(),
   }) : bookId = Value(bookId),
        number = Value(number);
   static Insertable<ChapterEntry> custom({
     Expression<int>? id,
     Expression<String>? bookId,
     Expression<int>? number,
+    Expression<String>? blocks,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (bookId != null) 'book_id': bookId,
       if (number != null) 'number': number,
+      if (blocks != null) 'blocks': blocks,
     });
   }
 
@@ -1212,11 +1382,13 @@ class ChaptersCompanion extends UpdateCompanion<ChapterEntry> {
     Value<int>? id,
     Value<String>? bookId,
     Value<int>? number,
+    Value<List<BibleDocumentBlock>?>? blocks,
   }) {
     return ChaptersCompanion(
       id: id ?? this.id,
       bookId: bookId ?? this.bookId,
       number: number ?? this.number,
+      blocks: blocks ?? this.blocks,
     );
   }
 
@@ -1232,6 +1404,11 @@ class ChaptersCompanion extends UpdateCompanion<ChapterEntry> {
     if (number.present) {
       map['number'] = Variable<int>(number.value);
     }
+    if (blocks.present) {
+      map['blocks'] = Variable<String>(
+        $ChaptersTable.$converterblocksn.toSql(blocks.value),
+      );
+    }
     return map;
   }
 
@@ -1240,7 +1417,8 @@ class ChaptersCompanion extends UpdateCompanion<ChapterEntry> {
     return (StringBuffer('ChaptersCompanion(')
           ..write('id: $id, ')
           ..write('bookId: $bookId, ')
-          ..write('number: $number')
+          ..write('number: $number, ')
+          ..write('blocks: $blocks')
           ..write(')'))
         .toString();
   }
@@ -1317,6 +1495,39 @@ class $VersesTable extends Verses with TableInfo<$VersesTable, VerseEntry> {
     requiredDuringInsert: false,
   ).withConverter<List<String>?>($VersesTable.$converterreferencesn);
   @override
+  late final GeneratedColumnWithTypeConverter<List<BibleVerseSpan>?, String>
+  spans = GeneratedColumn<String>(
+    'spans',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  ).withConverter<List<BibleVerseSpan>?>($VersesTable.$converterspansn);
+  @override
+  late final GeneratedColumnWithTypeConverter<List<BibleFootnote>?, String>
+  footnotes = GeneratedColumn<String>(
+    'footnotes',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  ).withConverter<List<BibleFootnote>?>($VersesTable.$converterfootnotesn);
+  @override
+  late final GeneratedColumnWithTypeConverter<
+    List<BibleCrossReference>?,
+    String
+  >
+  crossReferences =
+      GeneratedColumn<String>(
+        'cross_references',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      ).withConverter<List<BibleCrossReference>?>(
+        $VersesTable.$convertercrossReferencesn,
+      );
+  @override
   List<GeneratedColumn> get $columns => [
     id,
     chapterId,
@@ -1324,6 +1535,9 @@ class $VersesTable extends Verses with TableInfo<$VersesTable, VerseEntry> {
     verseText,
     notes,
     references,
+    spans,
+    footnotes,
+    crossReferences,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1405,6 +1619,24 @@ class $VersesTable extends Verses with TableInfo<$VersesTable, VerseEntry> {
           data['${effectivePrefix}references'],
         ),
       ),
+      spans: $VersesTable.$converterspansn.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}spans'],
+        ),
+      ),
+      footnotes: $VersesTable.$converterfootnotesn.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}footnotes'],
+        ),
+      ),
+      crossReferences: $VersesTable.$convertercrossReferencesn.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}cross_references'],
+        ),
+      ),
     );
   }
 
@@ -1421,6 +1653,20 @@ class $VersesTable extends Verses with TableInfo<$VersesTable, VerseEntry> {
       const StringListConverter();
   static TypeConverter<List<String>?, String?> $converterreferencesn =
       NullAwareTypeConverter.wrap($converterreferences);
+  static TypeConverter<List<BibleVerseSpan>, String> $converterspans =
+      const BibleVerseSpanListConverter();
+  static TypeConverter<List<BibleVerseSpan>?, String?> $converterspansn =
+      NullAwareTypeConverter.wrap($converterspans);
+  static TypeConverter<List<BibleFootnote>, String> $converterfootnotes =
+      const BibleFootnoteListConverter();
+  static TypeConverter<List<BibleFootnote>?, String?> $converterfootnotesn =
+      NullAwareTypeConverter.wrap($converterfootnotes);
+  static TypeConverter<List<BibleCrossReference>, String>
+  $convertercrossReferences = const BibleCrossReferenceListConverter();
+  static TypeConverter<List<BibleCrossReference>?, String?>
+  $convertercrossReferencesn = NullAwareTypeConverter.wrap(
+    $convertercrossReferences,
+  );
 }
 
 class VerseEntry extends DataClass implements Insertable<VerseEntry> {
@@ -1430,6 +1676,9 @@ class VerseEntry extends DataClass implements Insertable<VerseEntry> {
   final String verseText;
   final List<String>? notes;
   final List<String>? references;
+  final List<BibleVerseSpan>? spans;
+  final List<BibleFootnote>? footnotes;
+  final List<BibleCrossReference>? crossReferences;
   const VerseEntry({
     required this.id,
     required this.chapterId,
@@ -1437,6 +1686,9 @@ class VerseEntry extends DataClass implements Insertable<VerseEntry> {
     required this.verseText,
     this.notes,
     this.references,
+    this.spans,
+    this.footnotes,
+    this.crossReferences,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1455,6 +1707,21 @@ class VerseEntry extends DataClass implements Insertable<VerseEntry> {
         $VersesTable.$converterreferencesn.toSql(references),
       );
     }
+    if (!nullToAbsent || spans != null) {
+      map['spans'] = Variable<String>(
+        $VersesTable.$converterspansn.toSql(spans),
+      );
+    }
+    if (!nullToAbsent || footnotes != null) {
+      map['footnotes'] = Variable<String>(
+        $VersesTable.$converterfootnotesn.toSql(footnotes),
+      );
+    }
+    if (!nullToAbsent || crossReferences != null) {
+      map['cross_references'] = Variable<String>(
+        $VersesTable.$convertercrossReferencesn.toSql(crossReferences),
+      );
+    }
     return map;
   }
 
@@ -1470,6 +1737,15 @@ class VerseEntry extends DataClass implements Insertable<VerseEntry> {
       references: references == null && nullToAbsent
           ? const Value.absent()
           : Value(references),
+      spans: spans == null && nullToAbsent
+          ? const Value.absent()
+          : Value(spans),
+      footnotes: footnotes == null && nullToAbsent
+          ? const Value.absent()
+          : Value(footnotes),
+      crossReferences: crossReferences == null && nullToAbsent
+          ? const Value.absent()
+          : Value(crossReferences),
     );
   }
 
@@ -1485,6 +1761,11 @@ class VerseEntry extends DataClass implements Insertable<VerseEntry> {
       verseText: serializer.fromJson<String>(json['verseText']),
       notes: serializer.fromJson<List<String>?>(json['notes']),
       references: serializer.fromJson<List<String>?>(json['references']),
+      spans: serializer.fromJson<List<BibleVerseSpan>?>(json['spans']),
+      footnotes: serializer.fromJson<List<BibleFootnote>?>(json['footnotes']),
+      crossReferences: serializer.fromJson<List<BibleCrossReference>?>(
+        json['crossReferences'],
+      ),
     );
   }
   @override
@@ -1497,6 +1778,11 @@ class VerseEntry extends DataClass implements Insertable<VerseEntry> {
       'verseText': serializer.toJson<String>(verseText),
       'notes': serializer.toJson<List<String>?>(notes),
       'references': serializer.toJson<List<String>?>(references),
+      'spans': serializer.toJson<List<BibleVerseSpan>?>(spans),
+      'footnotes': serializer.toJson<List<BibleFootnote>?>(footnotes),
+      'crossReferences': serializer.toJson<List<BibleCrossReference>?>(
+        crossReferences,
+      ),
     };
   }
 
@@ -1507,6 +1793,9 @@ class VerseEntry extends DataClass implements Insertable<VerseEntry> {
     String? verseText,
     Value<List<String>?> notes = const Value.absent(),
     Value<List<String>?> references = const Value.absent(),
+    Value<List<BibleVerseSpan>?> spans = const Value.absent(),
+    Value<List<BibleFootnote>?> footnotes = const Value.absent(),
+    Value<List<BibleCrossReference>?> crossReferences = const Value.absent(),
   }) => VerseEntry(
     id: id ?? this.id,
     chapterId: chapterId ?? this.chapterId,
@@ -1514,6 +1803,11 @@ class VerseEntry extends DataClass implements Insertable<VerseEntry> {
     verseText: verseText ?? this.verseText,
     notes: notes.present ? notes.value : this.notes,
     references: references.present ? references.value : this.references,
+    spans: spans.present ? spans.value : this.spans,
+    footnotes: footnotes.present ? footnotes.value : this.footnotes,
+    crossReferences: crossReferences.present
+        ? crossReferences.value
+        : this.crossReferences,
   );
   VerseEntry copyWithCompanion(VersesCompanion data) {
     return VerseEntry(
@@ -1525,6 +1819,11 @@ class VerseEntry extends DataClass implements Insertable<VerseEntry> {
       references: data.references.present
           ? data.references.value
           : this.references,
+      spans: data.spans.present ? data.spans.value : this.spans,
+      footnotes: data.footnotes.present ? data.footnotes.value : this.footnotes,
+      crossReferences: data.crossReferences.present
+          ? data.crossReferences.value
+          : this.crossReferences,
     );
   }
 
@@ -1536,14 +1835,26 @@ class VerseEntry extends DataClass implements Insertable<VerseEntry> {
           ..write('number: $number, ')
           ..write('verseText: $verseText, ')
           ..write('notes: $notes, ')
-          ..write('references: $references')
+          ..write('references: $references, ')
+          ..write('spans: $spans, ')
+          ..write('footnotes: $footnotes, ')
+          ..write('crossReferences: $crossReferences')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, chapterId, number, verseText, notes, references);
+  int get hashCode => Object.hash(
+    id,
+    chapterId,
+    number,
+    verseText,
+    notes,
+    references,
+    spans,
+    footnotes,
+    crossReferences,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -1553,7 +1864,10 @@ class VerseEntry extends DataClass implements Insertable<VerseEntry> {
           other.number == this.number &&
           other.verseText == this.verseText &&
           other.notes == this.notes &&
-          other.references == this.references);
+          other.references == this.references &&
+          other.spans == this.spans &&
+          other.footnotes == this.footnotes &&
+          other.crossReferences == this.crossReferences);
 }
 
 class VersesCompanion extends UpdateCompanion<VerseEntry> {
@@ -1563,6 +1877,9 @@ class VersesCompanion extends UpdateCompanion<VerseEntry> {
   final Value<String> verseText;
   final Value<List<String>?> notes;
   final Value<List<String>?> references;
+  final Value<List<BibleVerseSpan>?> spans;
+  final Value<List<BibleFootnote>?> footnotes;
+  final Value<List<BibleCrossReference>?> crossReferences;
   const VersesCompanion({
     this.id = const Value.absent(),
     this.chapterId = const Value.absent(),
@@ -1570,6 +1887,9 @@ class VersesCompanion extends UpdateCompanion<VerseEntry> {
     this.verseText = const Value.absent(),
     this.notes = const Value.absent(),
     this.references = const Value.absent(),
+    this.spans = const Value.absent(),
+    this.footnotes = const Value.absent(),
+    this.crossReferences = const Value.absent(),
   });
   VersesCompanion.insert({
     this.id = const Value.absent(),
@@ -1578,6 +1898,9 @@ class VersesCompanion extends UpdateCompanion<VerseEntry> {
     required String verseText,
     this.notes = const Value.absent(),
     this.references = const Value.absent(),
+    this.spans = const Value.absent(),
+    this.footnotes = const Value.absent(),
+    this.crossReferences = const Value.absent(),
   }) : chapterId = Value(chapterId),
        number = Value(number),
        verseText = Value(verseText);
@@ -1588,6 +1911,9 @@ class VersesCompanion extends UpdateCompanion<VerseEntry> {
     Expression<String>? verseText,
     Expression<String>? notes,
     Expression<String>? references,
+    Expression<String>? spans,
+    Expression<String>? footnotes,
+    Expression<String>? crossReferences,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -1596,6 +1922,9 @@ class VersesCompanion extends UpdateCompanion<VerseEntry> {
       if (verseText != null) 'verse_text': verseText,
       if (notes != null) 'notes': notes,
       if (references != null) 'references': references,
+      if (spans != null) 'spans': spans,
+      if (footnotes != null) 'footnotes': footnotes,
+      if (crossReferences != null) 'cross_references': crossReferences,
     });
   }
 
@@ -1606,6 +1935,9 @@ class VersesCompanion extends UpdateCompanion<VerseEntry> {
     Value<String>? verseText,
     Value<List<String>?>? notes,
     Value<List<String>?>? references,
+    Value<List<BibleVerseSpan>?>? spans,
+    Value<List<BibleFootnote>?>? footnotes,
+    Value<List<BibleCrossReference>?>? crossReferences,
   }) {
     return VersesCompanion(
       id: id ?? this.id,
@@ -1614,6 +1946,9 @@ class VersesCompanion extends UpdateCompanion<VerseEntry> {
       verseText: verseText ?? this.verseText,
       notes: notes ?? this.notes,
       references: references ?? this.references,
+      spans: spans ?? this.spans,
+      footnotes: footnotes ?? this.footnotes,
+      crossReferences: crossReferences ?? this.crossReferences,
     );
   }
 
@@ -1642,6 +1977,21 @@ class VersesCompanion extends UpdateCompanion<VerseEntry> {
         $VersesTable.$converterreferencesn.toSql(references.value),
       );
     }
+    if (spans.present) {
+      map['spans'] = Variable<String>(
+        $VersesTable.$converterspansn.toSql(spans.value),
+      );
+    }
+    if (footnotes.present) {
+      map['footnotes'] = Variable<String>(
+        $VersesTable.$converterfootnotesn.toSql(footnotes.value),
+      );
+    }
+    if (crossReferences.present) {
+      map['cross_references'] = Variable<String>(
+        $VersesTable.$convertercrossReferencesn.toSql(crossReferences.value),
+      );
+    }
     return map;
   }
 
@@ -1653,7 +2003,10 @@ class VersesCompanion extends UpdateCompanion<VerseEntry> {
           ..write('number: $number, ')
           ..write('verseText: $verseText, ')
           ..write('notes: $notes, ')
-          ..write('references: $references')
+          ..write('references: $references, ')
+          ..write('spans: $spans, ')
+          ..write('footnotes: $footnotes, ')
+          ..write('crossReferences: $crossReferences')
           ..write(')'))
         .toString();
   }
@@ -2075,6 +2428,8 @@ typedef $$BooksTableCreateCompanionBuilder =
       required String shortName,
       required int bookNumber,
       required int bookType,
+      Value<List<BibleTocLabel>?> tocLabels,
+      Value<List<BibleDocumentBlock>?> introductionBlocks,
       Value<int> rowid,
     });
 typedef $$BooksTableUpdateCompanionBuilder =
@@ -2085,6 +2440,8 @@ typedef $$BooksTableUpdateCompanionBuilder =
       Value<String> shortName,
       Value<int> bookNumber,
       Value<int> bookType,
+      Value<List<BibleTocLabel>?> tocLabels,
+      Value<List<BibleDocumentBlock>?> introductionBlocks,
       Value<int> rowid,
     });
 
@@ -2161,6 +2518,26 @@ class $$BooksTableFilterComposer extends Composer<_$AppDatabase, $BooksTable> {
   ColumnFilters<int> get bookType => $composableBuilder(
     column: $table.bookType,
     builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnWithTypeConverterFilters<
+    List<BibleTocLabel>?,
+    List<BibleTocLabel>,
+    String
+  >
+  get tocLabels => $composableBuilder(
+    column: $table.tocLabels,
+    builder: (column) => ColumnWithTypeConverterFilters(column),
+  );
+
+  ColumnWithTypeConverterFilters<
+    List<BibleDocumentBlock>?,
+    List<BibleDocumentBlock>,
+    String
+  >
+  get introductionBlocks => $composableBuilder(
+    column: $table.introductionBlocks,
+    builder: (column) => ColumnWithTypeConverterFilters(column),
   );
 
   $$TranslationsTableFilterComposer get translationId {
@@ -2246,6 +2623,16 @@ class $$BooksTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get tocLabels => $composableBuilder(
+    column: $table.tocLabels,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get introductionBlocks => $composableBuilder(
+    column: $table.introductionBlocks,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   $$TranslationsTableOrderingComposer get translationId {
     final $$TranslationsTableOrderingComposer composer = $composerBuilder(
       composer: this,
@@ -2295,6 +2682,16 @@ class $$BooksTableAnnotationComposer
 
   GeneratedColumn<int> get bookType =>
       $composableBuilder(column: $table.bookType, builder: (column) => column);
+
+  GeneratedColumnWithTypeConverter<List<BibleTocLabel>?, String>
+  get tocLabels =>
+      $composableBuilder(column: $table.tocLabels, builder: (column) => column);
+
+  GeneratedColumnWithTypeConverter<List<BibleDocumentBlock>?, String>
+  get introductionBlocks => $composableBuilder(
+    column: $table.introductionBlocks,
+    builder: (column) => column,
+  );
 
   $$TranslationsTableAnnotationComposer get translationId {
     final $$TranslationsTableAnnotationComposer composer = $composerBuilder(
@@ -2379,6 +2776,9 @@ class $$BooksTableTableManager
                 Value<String> shortName = const Value.absent(),
                 Value<int> bookNumber = const Value.absent(),
                 Value<int> bookType = const Value.absent(),
+                Value<List<BibleTocLabel>?> tocLabels = const Value.absent(),
+                Value<List<BibleDocumentBlock>?> introductionBlocks =
+                    const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => BooksCompanion(
                 id: id,
@@ -2387,6 +2787,8 @@ class $$BooksTableTableManager
                 shortName: shortName,
                 bookNumber: bookNumber,
                 bookType: bookType,
+                tocLabels: tocLabels,
+                introductionBlocks: introductionBlocks,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -2397,6 +2799,9 @@ class $$BooksTableTableManager
                 required String shortName,
                 required int bookNumber,
                 required int bookType,
+                Value<List<BibleTocLabel>?> tocLabels = const Value.absent(),
+                Value<List<BibleDocumentBlock>?> introductionBlocks =
+                    const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => BooksCompanion.insert(
                 id: id,
@@ -2405,6 +2810,8 @@ class $$BooksTableTableManager
                 shortName: shortName,
                 bookNumber: bookNumber,
                 bookType: bookType,
+                tocLabels: tocLabels,
+                introductionBlocks: introductionBlocks,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -2500,12 +2907,14 @@ typedef $$ChaptersTableCreateCompanionBuilder =
       Value<int> id,
       required String bookId,
       required int number,
+      Value<List<BibleDocumentBlock>?> blocks,
     });
 typedef $$ChaptersTableUpdateCompanionBuilder =
     ChaptersCompanion Function({
       Value<int> id,
       Value<String> bookId,
       Value<int> number,
+      Value<List<BibleDocumentBlock>?> blocks,
     });
 
 final class $$ChaptersTableReferences
@@ -2567,6 +2976,16 @@ class $$ChaptersTableFilterComposer
   ColumnFilters<int> get number => $composableBuilder(
     column: $table.number,
     builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnWithTypeConverterFilters<
+    List<BibleDocumentBlock>?,
+    List<BibleDocumentBlock>,
+    String
+  >
+  get blocks => $composableBuilder(
+    column: $table.blocks,
+    builder: (column) => ColumnWithTypeConverterFilters(column),
   );
 
   $$BooksTableFilterComposer get bookId {
@@ -2637,6 +3056,11 @@ class $$ChaptersTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get blocks => $composableBuilder(
+    column: $table.blocks,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   $$BooksTableOrderingComposer get bookId {
     final $$BooksTableOrderingComposer composer = $composerBuilder(
       composer: this,
@@ -2675,6 +3099,10 @@ class $$ChaptersTableAnnotationComposer
 
   GeneratedColumn<int> get number =>
       $composableBuilder(column: $table.number, builder: (column) => column);
+
+  GeneratedColumnWithTypeConverter<List<BibleDocumentBlock>?, String>
+  get blocks =>
+      $composableBuilder(column: $table.blocks, builder: (column) => column);
 
   $$BooksTableAnnotationComposer get bookId {
     final $$BooksTableAnnotationComposer composer = $composerBuilder(
@@ -2756,16 +3184,24 @@ class $$ChaptersTableTableManager
                 Value<int> id = const Value.absent(),
                 Value<String> bookId = const Value.absent(),
                 Value<int> number = const Value.absent(),
-              }) => ChaptersCompanion(id: id, bookId: bookId, number: number),
+                Value<List<BibleDocumentBlock>?> blocks = const Value.absent(),
+              }) => ChaptersCompanion(
+                id: id,
+                bookId: bookId,
+                number: number,
+                blocks: blocks,
+              ),
           createCompanionCallback:
               ({
                 Value<int> id = const Value.absent(),
                 required String bookId,
                 required int number,
+                Value<List<BibleDocumentBlock>?> blocks = const Value.absent(),
               }) => ChaptersCompanion.insert(
                 id: id,
                 bookId: bookId,
                 number: number,
+                blocks: blocks,
               ),
           withReferenceMapper: (p0) => p0
               .map(
@@ -2858,6 +3294,9 @@ typedef $$VersesTableCreateCompanionBuilder =
       required String verseText,
       Value<List<String>?> notes,
       Value<List<String>?> references,
+      Value<List<BibleVerseSpan>?> spans,
+      Value<List<BibleFootnote>?> footnotes,
+      Value<List<BibleCrossReference>?> crossReferences,
     });
 typedef $$VersesTableUpdateCompanionBuilder =
     VersesCompanion Function({
@@ -2867,6 +3306,9 @@ typedef $$VersesTableUpdateCompanionBuilder =
       Value<String> verseText,
       Value<List<String>?> notes,
       Value<List<String>?> references,
+      Value<List<BibleVerseSpan>?> spans,
+      Value<List<BibleFootnote>?> footnotes,
+      Value<List<BibleCrossReference>?> crossReferences,
     });
 
 final class $$VersesTableReferences
@@ -2924,6 +3366,36 @@ class $$VersesTableFilterComposer
   ColumnWithTypeConverterFilters<List<String>?, List<String>, String>
   get references => $composableBuilder(
     column: $table.references,
+    builder: (column) => ColumnWithTypeConverterFilters(column),
+  );
+
+  ColumnWithTypeConverterFilters<
+    List<BibleVerseSpan>?,
+    List<BibleVerseSpan>,
+    String
+  >
+  get spans => $composableBuilder(
+    column: $table.spans,
+    builder: (column) => ColumnWithTypeConverterFilters(column),
+  );
+
+  ColumnWithTypeConverterFilters<
+    List<BibleFootnote>?,
+    List<BibleFootnote>,
+    String
+  >
+  get footnotes => $composableBuilder(
+    column: $table.footnotes,
+    builder: (column) => ColumnWithTypeConverterFilters(column),
+  );
+
+  ColumnWithTypeConverterFilters<
+    List<BibleCrossReference>?,
+    List<BibleCrossReference>,
+    String
+  >
+  get crossReferences => $composableBuilder(
+    column: $table.crossReferences,
     builder: (column) => ColumnWithTypeConverterFilters(column),
   );
 
@@ -2985,6 +3457,21 @@ class $$VersesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get spans => $composableBuilder(
+    column: $table.spans,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get footnotes => $composableBuilder(
+    column: $table.footnotes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get crossReferences => $composableBuilder(
+    column: $table.crossReferences,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   $$ChaptersTableOrderingComposer get chapterId {
     final $$ChaptersTableOrderingComposer composer = $composerBuilder(
       composer: this,
@@ -3035,6 +3522,19 @@ class $$VersesTableAnnotationComposer
         column: $table.references,
         builder: (column) => column,
       );
+
+  GeneratedColumnWithTypeConverter<List<BibleVerseSpan>?, String> get spans =>
+      $composableBuilder(column: $table.spans, builder: (column) => column);
+
+  GeneratedColumnWithTypeConverter<List<BibleFootnote>?, String>
+  get footnotes =>
+      $composableBuilder(column: $table.footnotes, builder: (column) => column);
+
+  GeneratedColumnWithTypeConverter<List<BibleCrossReference>?, String>
+  get crossReferences => $composableBuilder(
+    column: $table.crossReferences,
+    builder: (column) => column,
+  );
 
   $$ChaptersTableAnnotationComposer get chapterId {
     final $$ChaptersTableAnnotationComposer composer = $composerBuilder(
@@ -3094,6 +3594,10 @@ class $$VersesTableTableManager
                 Value<String> verseText = const Value.absent(),
                 Value<List<String>?> notes = const Value.absent(),
                 Value<List<String>?> references = const Value.absent(),
+                Value<List<BibleVerseSpan>?> spans = const Value.absent(),
+                Value<List<BibleFootnote>?> footnotes = const Value.absent(),
+                Value<List<BibleCrossReference>?> crossReferences =
+                    const Value.absent(),
               }) => VersesCompanion(
                 id: id,
                 chapterId: chapterId,
@@ -3101,6 +3605,9 @@ class $$VersesTableTableManager
                 verseText: verseText,
                 notes: notes,
                 references: references,
+                spans: spans,
+                footnotes: footnotes,
+                crossReferences: crossReferences,
               ),
           createCompanionCallback:
               ({
@@ -3110,6 +3617,10 @@ class $$VersesTableTableManager
                 required String verseText,
                 Value<List<String>?> notes = const Value.absent(),
                 Value<List<String>?> references = const Value.absent(),
+                Value<List<BibleVerseSpan>?> spans = const Value.absent(),
+                Value<List<BibleFootnote>?> footnotes = const Value.absent(),
+                Value<List<BibleCrossReference>?> crossReferences =
+                    const Value.absent(),
               }) => VersesCompanion.insert(
                 id: id,
                 chapterId: chapterId,
@@ -3117,6 +3628,9 @@ class $$VersesTableTableManager
                 verseText: verseText,
                 notes: notes,
                 references: references,
+                spans: spans,
+                footnotes: footnotes,
+                crossReferences: crossReferences,
               ),
           withReferenceMapper: (p0) => p0
               .map(

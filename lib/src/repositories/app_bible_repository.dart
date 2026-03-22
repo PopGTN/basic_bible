@@ -24,7 +24,8 @@ class AppBibleRepository {
       description: 'The classic English Bible translation',
       isLocal: true,
       filePath: 'assets/bible/eng-kjv2006_usfx.xml',
-      githubUrl: 'https://raw.githubusercontent.com/PopGTN/bible-data/refs/heads/main/English/eng-kjv2006_usfx.xml',
+      githubUrl:
+          'https://raw.githubusercontent.com/PopGTN/bible-data/refs/heads/main/English/eng-kjv2006_usfx.xml',
       format: BibleFormat.usfx,
       sourceType: BibleSourceType.asset,
     ),
@@ -35,7 +36,8 @@ class AppBibleRepository {
       description: 'American Standard Version (1901)',
       isLocal: true,
       filePath: 'assets/bible/asv_osis.xml',
-      githubUrl: 'https://raw.githubusercontent.com/PopGTN/bible-data/refs/heads/main/English/asv_osis.xml',
+      githubUrl:
+          'https://raw.githubusercontent.com/PopGTN/bible-data/refs/heads/main/English/asv_osis.xml',
       format: BibleFormat.osis,
       sourceType: BibleSourceType.asset,
     ),
@@ -46,7 +48,8 @@ class AppBibleRepository {
       description: 'Modern English public domain Bible',
       isLocal: true,
       filePath: 'assets/bible/eng-web.usfx.xml',
-      githubUrl: 'https://raw.githubusercontent.com/PopGTN/bible-data/refs/heads/main/English/eng-web.usfx.xml',
+      githubUrl:
+          'https://raw.githubusercontent.com/PopGTN/bible-data/refs/heads/main/English/eng-web.usfx.xml',
       format: BibleFormat.usfx,
       sourceType: BibleSourceType.asset,
     ),
@@ -68,21 +71,7 @@ class AppBibleRepository {
       // background isolate so we don't block the UI thread.
       final parsed = await compute(_parseBibleToSerializable, content);
 
-      _cachedBooks = parsed.map((book) => BibleBook(
-        id: book['id'] as String,
-        name: book['title'] as String,
-        shortName: book['id'] as String,
-        bookNumber: book['num'] as int,
-        chapters: (book['chapters'] as List<dynamic>).map((ch) => BibleChapter(
-          number: ch['number'] as int,
-          verses: (ch['verses'] as List<dynamic>).map((v) => BibleVerse(
-            number: v['number'] as int,
-            text: v['text'] as String,
-            notes: (v['notes'] as List<dynamic>?)?.cast<String>(),
-            references: (v['references'] as List<dynamic>?)?.cast<String>(),
-          )).toList(),
-          )).toList(),
-      )).toList();
+      _cachedBooks = parsed.map(_mapSerializableBook).toList();
 
       await _db.insertBible(translationId, _cachedBooks);
       await _db.upsertTranslationMetadata(
@@ -105,7 +94,7 @@ class AppBibleRepository {
     }
 
     final translation = availableTranslations.firstWhere(
-          (t) => t.id == translationId,
+      (t) => t.id == translationId,
       orElse: () => throw Exception('Translation $translationId not found'),
     );
 
@@ -117,26 +106,12 @@ class AppBibleRepository {
       final response = await http.get(Uri.parse(translation.githubUrl!));
 
       if (response.statusCode == 200) {
-          final content = utf8.decode(response.bodyBytes);
+        final content = utf8.decode(response.bodyBytes);
 
-          // Parse in an isolate
-          final parsed = await compute(_parseBibleToSerializable, content);
+        // Parse in an isolate
+        final parsed = await compute(_parseBibleToSerializable, content);
 
-          _cachedBooks = parsed.map((book) => BibleBook(
-            id: book['id'] as String,
-            name: book['title'] as String,
-            shortName: book['id'] as String,
-            bookNumber: book['num'] as int,
-            chapters: (book['chapters'] as List<dynamic>).map((ch) => BibleChapter(
-              number: ch['number'] as int,
-              verses: (ch['verses'] as List<dynamic>).map((v) => BibleVerse(
-                number: v['number'] as int,
-                text: v['text'] as String,
-                notes: (v['notes'] as List<dynamic>?)?.cast<String>(),
-                references: (v['references'] as List<dynamic>?)?.cast<String>(),
-              )).toList(),
-            )).toList(),
-          )).toList();
+        _cachedBooks = parsed.map(_mapSerializableBook).toList();
 
         await _db.insertBible(translationId, _cachedBooks);
         await _db.upsertTranslationMetadata(
@@ -147,7 +122,9 @@ class AppBibleRepository {
         _currentTranslationId = translationId;
         return _cachedBooks;
       } else {
-        throw Exception('Failed to download Bible: HTTP ${response.statusCode}');
+        throw Exception(
+          'Failed to download Bible: HTTP ${response.statusCode}',
+        );
       }
     } catch (e) {
       throw Exception('Failed to download Bible: $e');
@@ -157,7 +134,7 @@ class AppBibleRepository {
   /// Get a specific book
   BibleBook? getBook(String bookId) {
     return _cachedBooks.firstWhere(
-          (book) => book.id == bookId,
+      (book) => book.id == bookId,
       orElse: () => throw Exception('Book $bookId not found'),
     );
   }
@@ -166,8 +143,9 @@ class AppBibleRepository {
   BibleChapter? getChapter(String bookId, int chapterNumber) {
     final book = getBook(bookId);
     return book?.chapters.firstWhere(
-          (chapter) => chapter.number == chapterNumber,
-      orElse: () => throw Exception('Chapter $chapterNumber not found in $bookId'),
+      (chapter) => chapter.number == chapterNumber,
+      orElse: () =>
+          throw Exception('Chapter $chapterNumber not found in $bookId'),
     );
   }
 
@@ -236,6 +214,8 @@ class AppBibleRepository {
       'assets/bible/${translation.id}.xml',
     ];
 
+    // Prefer the explicit configured asset path first. The fallback guesses
+    // are here to keep older translation-id-based behavior working where possible.
     for (final assetPath in candidatePaths) {
       try {
         return await rootBundle.loadString(assetPath);
@@ -250,23 +230,143 @@ class AppBibleRepository {
 
 /// Top-level parser function run inside an isolate via `compute`.
 /// It returns a JSON-serializable representation of the books.
-Future<List<Map<String, dynamic>>> _parseBibleToSerializable(String content) async {
+Future<List<Map<String, dynamic>>> _parseBibleToSerializable(
+  String content,
+) async {
   final parser = BibleParser.fromString(content);
   final List<Map<String, dynamic>> books = [];
   await for (final book in parser.books) {
+    // Keep the isolate payload JSON-friendly so parsing stays off the UI
+    // thread without leaking parser package types across isolate boundaries.
     final List<Map<String, dynamic>> chapters = [];
     for (final chapter in book.chapters) {
-      final verses = chapter.verses.map((v) => {
-        'number': v.num,
-        'text': v.text,
-        'notes': v.notes,
-        'references': v.references,
-      }).toList();
+      final verses = chapter.verses
+          .map(
+            (v) => {
+              'number': v.num,
+              'text': v.text,
+              'notes': v.notes,
+              'references': v.references,
+              'spans': v.spans.map(_serializeVerseSpan).toList(),
+              'footnotes': v.footnotes.map(_serializeFootnote).toList(),
+              'crossReferences': v.crossReferences
+                  .map(_serializeCrossReference)
+                  .toList(),
+            },
+          )
+          .toList();
 
-      chapters.add({'number': chapter.num, 'verses': verses});
+      chapters.add({
+        'number': chapter.num,
+        'verses': verses,
+        'blocks': chapter.blocks.map(_serializeDocumentBlock).toList(),
+      });
     }
 
-    books.add({'id': book.id, 'title': book.title, 'num': book.num, 'chapters': chapters});
+    books.add({
+      'id': book.id,
+      'title': book.title,
+      'num': book.num,
+      'tocLabels': book.tocLabels.map(_serializeTocLabel).toList(),
+      'introductionBlocks': book.introductionBlocks
+          .map(_serializeDocumentBlock)
+          .toList(),
+      'chapters': chapters,
+    });
   }
   return books;
+}
+
+BibleBook _mapSerializableBook(Map<String, dynamic> book) {
+  return BibleBook(
+    id: (book['id'] as String).toUpperCase(),
+    name: book['title'] as String,
+    shortName: (book['id'] as String).toUpperCase(),
+    bookNumber: book['num'] as int,
+    tocLabels: (book['tocLabels'] as List<dynamic>? ?? const [])
+        .map((item) => BibleTocLabel.fromJson(item as Map<String, dynamic>))
+        .toList(),
+    introductionBlocks:
+        (book['introductionBlocks'] as List<dynamic>? ?? const [])
+            .map(
+              (item) =>
+                  BibleDocumentBlock.fromJson(item as Map<String, dynamic>),
+            )
+            .toList(),
+    chapters: (book['chapters'] as List<dynamic>)
+        .map(
+          (chapter) => _mapSerializableChapter(chapter as Map<String, dynamic>),
+        )
+        .toList(),
+  );
+}
+
+BibleChapter _mapSerializableChapter(Map<String, dynamic> chapter) {
+  return BibleChapter(
+    number: chapter['number'] as int,
+    blocks: (chapter['blocks'] as List<dynamic>? ?? const [])
+        .map(
+          (item) => BibleDocumentBlock.fromJson(item as Map<String, dynamic>),
+        )
+        .toList(),
+    verses: (chapter['verses'] as List<dynamic>)
+        .map((verse) => _mapSerializableVerse(verse as Map<String, dynamic>))
+        .toList(),
+  );
+}
+
+BibleVerse _mapSerializableVerse(Map<String, dynamic> verse) {
+  return BibleVerse(
+    number: verse['number'] as int,
+    text: verse['text'] as String,
+    notes: (verse['notes'] as List<dynamic>?)?.cast<String>(),
+    references: (verse['references'] as List<dynamic>?)?.cast<String>(),
+    // The app model mirrors the parser's structured fields so we can persist
+    // richer import data now even before every screen knows how to render it.
+    spans: (verse['spans'] as List<dynamic>? ?? const [])
+        .map((item) => BibleVerseSpan.fromJson(item as Map<String, dynamic>))
+        .toList(),
+    footnotes: (verse['footnotes'] as List<dynamic>? ?? const [])
+        .map((item) => BibleFootnote.fromJson(item as Map<String, dynamic>))
+        .toList(),
+    crossReferences: (verse['crossReferences'] as List<dynamic>? ?? const [])
+        .map(
+          (item) => BibleCrossReference.fromJson(item as Map<String, dynamic>),
+        )
+        .toList(),
+  );
+}
+
+Map<String, dynamic> _serializeVerseSpan(VerseSpan span) {
+  return {
+    'text': span.text,
+    'kind': span.kind.index,
+    'metadata': span.metadata,
+  };
+}
+
+Map<String, dynamic> _serializeCrossReference(CrossReference reference) {
+  return {'label': reference.label, 'target': reference.target};
+}
+
+Map<String, dynamic> _serializeFootnote(Footnote footnote) {
+  return {
+    'text': footnote.text,
+    'marker': footnote.marker,
+    'label': footnote.label,
+    'references': footnote.references.map(_serializeCrossReference).toList(),
+  };
+}
+
+Map<String, dynamic> _serializeDocumentBlock(DocumentBlock block) {
+  return {
+    'kind': block.kind.index,
+    'text': block.text,
+    'level': block.level,
+    'metadata': block.metadata,
+  };
+}
+
+Map<String, dynamic> _serializeTocLabel(TocLabel label) {
+  return {'text': label.text, 'level': label.level};
 }

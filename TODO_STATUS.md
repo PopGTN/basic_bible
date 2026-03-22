@@ -17,6 +17,10 @@ This file complements:
 - Update this file whenever a meaningful engineering task starts or finishes.
 - Before making code changes, add the task to this file with the intended status and the expected next step.
 - After finishing the code changes, update this file again in the same work session to record what was completed, what changed, and what should happen next.
+- Add short comments to new or changed code when the intent, tradeoff, or reason for the approach would not be obvious to another developer or future agent.
+- Do not add comment noise to self-explanatory code. Prefer a few high-value comments over many low-value ones.
+- After a meaningful unit of work is complete and verified, create a commit with a clear message that describes the actual change.
+- Do not bundle unrelated changes into the same commit if they can reasonably be separated.
 - Keep statuses honest. Prefer repo truth over plans or assumptions.
 - When a task changes user-visible behavior, add or update a `README.md reminder`.
 - When a task is fully done, move it to `Completed Recently` and pick the next highest-value item for `Recommended Next Step`.
@@ -31,6 +35,10 @@ Status meanings:
 - `blocked`: cannot move safely without another prerequisite or decision
 
 ## Completed Recently
+- `done` Completed the first end-to-end rich-text slice: the reader now renders structured verse spans and the parser/app pipeline preserves those spans through local storage.
+- `done` Normalized app-side book IDs to the uppercase form the reader/navigation code already expects, which keeps parsed content aligned with the app's existing reference model.
+- `done` Carried the richer parser output through `basic_bible` so book/chapter/verse metadata now survives repository mapping and local Drift storage instead of being flattened away.
+- `done` Began Phase 1 parser behavior work by updating the USFX parser to populate structured footnotes, cross-references, TOC labels, and introduction/front-matter blocks.
 - `done` Started Phase 1 implementation by adding shared rich-content model types in both `bible_parser_flutter` and `basic_bible`.
 - `done` Added app-side model support for structured verse spans, footnotes, cross-references, TOC labels, and document blocks while keeping plain-text verse support intact.
 - `done` Added `CONTEXT.md` to document the current app architecture, product state, and implementation caveats.
@@ -49,27 +57,27 @@ Status meanings:
 
 ## Current Status
 - `in_progress` The project now persists cached Bible data on disk for non-web platforms, but the web path still falls back to in-memory storage.
-- `in_progress` Rich Bible metadata such as structured footnotes, red-letter text, poetry blocks, and word-level metadata is not yet supported end-to-end in the app.
+- `in_progress` The app now renders rich verse spans end to end for the parser output it receives, including red-letter text, translator additions, and some poetry/word metadata styling, but introductions/front matter and richer note/reference UI still need better presentation.
 - `in_progress` The README is currently more of a feature wish list than a maintained reflection of actual repo status.
 - `in_progress` The app structure is cleaner, but the codebase is still not fully feature-sliced. Bible import, library management, reader UI, and settings are still spread across shared folders rather than organized as strict feature modules.
 - `in_progress` The project now has a plain-language documentation note explaining that Bible formatting support must preserve structure, not only flattened verse text.
 - `in_progress` The current parser model is still limited to books, chapters, and verses. It does not yet preserve introductions, prefaces, TOC labels, or book-level front matter that already exists in some USFX and OSIS files.
 - `in_progress` The long-term product goal is full-fidelity support for the Bible source formats in use, which means preserving as much meaningful USFX, OSIS, and Zefania structure as is practical instead of only rendering simplified verse text.
 - `in_progress` Phase 1 parser/app-model planning is being documented so future implementation work starts from a shared spec instead of ad hoc parser changes.
-- `in_progress` Phase 1 shared-model implementation has started. The types now exist, but the parsers and storage layer do not populate or persist most of the new structured fields yet.
+- `in_progress` Phase 1 shared-model implementation is now real in the app for USFX and OSIS rich spans, but Zefania and richer front-matter rendering still need the same treatment.
 
 ## Recommended Next Step
-- `next` Start populating the Phase 1 shared model in `bible_parser_flutter`, beginning with USFX footnotes, cross-references, TOC labels, and introduction/front-matter blocks.
+- `next` Improve the reader UX around the richer parsed data by rendering book/chapter introduction blocks and giving structured footnotes/cross-references a better UI than the current fallback dialogs.
 
 Why this is next:
-- The shared model now exists in code.
-- The next real value is teaching the parsers to fill that model with data.
-- USFX is the best first target because local project assets already use it heavily and it has partial note/reference handling.
+- The parser and storage path now produce and preserve richer verse data.
+- The reader now uses structured spans instead of flattening everything back to `verse.text`.
+- The biggest remaining user-visible gap is that front matter and notes are still presented with temporary UI rather than integrated reader UX.
 
 Definition of done for this step:
-- USFX parser populates at least some of the new structured fields instead of leaving them empty.
-- Existing plain-text reading still works.
-- The app repository can safely carry the richer parsed output forward for later storage work.
+- Book/chapter introduction blocks can be shown in the reader when present.
+- Structured footnotes and cross-references use their richer metadata in the UI instead of only legacy string fallbacks.
+- Existing plain-text reading and navigation still work.
 
 ## Prioritized Backlog
 
@@ -112,7 +120,7 @@ README.md reminder:
 - Update the README if local bundled translations become a stable supported feature.
 
 ### 4. Add structured Bible metadata support
-Status: `todo`
+Status: `in_progress`
 
 Scope:
 - Start with structured footnotes and red-letter text.
@@ -132,7 +140,7 @@ README.md reminder:
 - Update the README when the app can actually display footnotes or red-letter text in the UI.
 
 ### 5. Support introductions and front matter
-Status: `todo`
+Status: `in_progress`
 
 Scope:
 - Preserve Bible-level and book-level introductions from USFX, OSIS, and Zefania where available.
@@ -225,6 +233,9 @@ Use this pattern when editing the tracker:
 2. Do the implementation work.
 3. Move finished work into `Completed Recently`.
 4. Update `Current Status` to reflect repo reality.
-5. Replace `Recommended Next Step` if priorities changed.
-6. Add or revise the matching `README.md reminder`.
-7. Keep backlog ordered by actual engineering value, not by wish list order.
+5. Add targeted comments to the changed code if future readers would otherwise have to reverse-engineer intent.
+6. Run verification that matches the scope of the change.
+7. Create a commit with a focused message if the work is in a good state.
+8. Replace `Recommended Next Step` if priorities changed.
+9. Add or revise the matching `README.md reminder`.
+10. Keep backlog ordered by actual engineering value, not by wish list order.

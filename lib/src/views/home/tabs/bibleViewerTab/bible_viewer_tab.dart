@@ -92,13 +92,11 @@ class _BibleViewerTabState extends ConsumerState<BibleViewerTab> {
     final booksAsync = ref.watch(bibleBooksProvider);
     final currentReference = ref.watch(currentReferenceProvider);
     final chapterAsync = ref.watch(currentChapterProvider);
-  final isSmall = widget.isSmallDevice;
+    final isSmall = widget.isSmallDevice;
 
     return Stack(
       children: [
-
-
-/*        ListView.builder(
+        /*        ListView.builder(
           controller: _scrollController,
           padding: EdgeInsets.fromLTRB(
             16,
@@ -128,17 +126,21 @@ class _BibleViewerTabState extends ConsumerState<BibleViewerTab> {
               reference: currentReference,
               books: booksAsync.value ?? const [],
               onReferenceChanged: (reference) {
-                ref.read(currentReferenceProvider.notifier).setReference(reference);
+                ref
+                    .read(currentReferenceProvider.notifier)
+                    .setReference(reference);
               },
               onPreviousChapter: () {
                 if (booksAsync.value != null) {
-                  ref.read(currentReferenceProvider.notifier)
+                  ref
+                      .read(currentReferenceProvider.notifier)
                       .goToPreviousChapter(booksAsync.value!);
                 }
               },
               onNextChapter: () {
                 if (booksAsync.value != null) {
-                  ref.read(currentReferenceProvider.notifier)
+                  ref
+                      .read(currentReferenceProvider.notifier)
                       .goToNextChapter(booksAsync.value!);
                 }
               },
@@ -167,20 +169,17 @@ class _BibleViewerTabState extends ConsumerState<BibleViewerTab> {
                 error: (error, stack) => _ErrorView(message: 'Error: $error'),
               ),
               loading: () => const _LoadingView(),
-              error: (error, stack) => _ErrorView(message: 'Failed to load Bible: $error'),
+              error: (error, stack) =>
+                  _ErrorView(message: 'Failed to load Bible: $error'),
             );
           },
         ),
 
         // Translation selector removed — translations are selected from HomeScreen
-
-
       ],
     );
   }
 }
-
-
 
 /// Bible text display widget
 class _BibleTextView extends StatelessWidget {
@@ -228,20 +227,24 @@ class _BibleTextView extends StatelessWidget {
           }
 
           final verse = chapter.verses[index - 1];
+          final hasFootnotes =
+              verse.footnotes.isNotEmpty ||
+              (verse.notes != null && verse.notes!.isNotEmpty);
+          final hasReferences =
+              verse.crossReferences.isNotEmpty ||
+              (verse.references != null && verse.references!.isNotEmpty);
           return Padding(
             padding: const EdgeInsets.only(bottom: 8.0),
             child: GestureDetector(
               onTap: () {
-                if (verse.notes != null && verse.notes!.isNotEmpty) {
+                if (hasFootnotes) {
                   showDialog(
                     context: context,
                     builder: (context) => AlertDialog(
                       title: Text('Footnotes for Verse ${verse.number}'),
                       content: SingleChildScrollView(
                         child: ListBody(
-                          children: verse.notes!
-                              .map((note) => Text(note))
-                              .toList(),
+                          children: _buildFootnoteWidgets(context, verse),
                         ),
                       ),
                       actions: [
@@ -252,11 +255,11 @@ class _BibleTextView extends StatelessWidget {
                       ],
                     ),
                   );
-                } else if (verse.references != null && verse.references!.isNotEmpty) {
+                } else if (hasReferences) {
                   Navigator.of(context).push(
                     MaterialPageRoute(
                       builder: (context) => ReferenceScreen(
-                        references: verse.references!,
+                        references: _referenceLabels(verse),
                         currentReference: reference,
                       ),
                     ),
@@ -279,8 +282,8 @@ class _BibleTextView extends StatelessWidget {
                         fontSize: fontSize - 2,
                       ),
                     ),
-                    TextSpan(text: verse.text),
-                    if (verse.notes != null && verse.notes!.isNotEmpty)
+                    ..._buildVerseContentSpans(context, verse),
+                    if (hasFootnotes)
                       WidgetSpan(
                         child: Icon(
                           Icons.info_outline,
@@ -288,12 +291,13 @@ class _BibleTextView extends StatelessWidget {
                           color: Theme.of(context).colorScheme.secondary,
                         ),
                       ),
-                    if (verse.references != null && verse.references!.isNotEmpty)
+                    if (hasReferences)
                       WidgetSpan(
                         child: Padding(
                           padding: const EdgeInsets.only(left: 4.0),
                           child: Icon(
-                            Icons.link, // Or another appropriate icon for references
+                            Icons
+                                .link, // Or another appropriate icon for references
                             size: fontSize,
                             color: Theme.of(context).colorScheme.tertiary,
                           ),
@@ -307,6 +311,124 @@ class _BibleTextView extends StatelessWidget {
         },
       ),
     );
+  }
+
+  List<Widget> _buildFootnoteWidgets(BuildContext context, BibleVerse verse) {
+    if (verse.footnotes.isNotEmpty) {
+      return verse.footnotes.map((footnote) {
+        final label = [
+          if (footnote.marker != null && footnote.marker!.isNotEmpty)
+            footnote.marker,
+          if (footnote.label != null && footnote.label!.isNotEmpty)
+            footnote.label,
+        ].join(' ');
+
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: Text(
+            label.isEmpty ? footnote.text : '$label ${footnote.text}',
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+        );
+      }).toList();
+    }
+
+    return (verse.notes ?? const [])
+        .map(
+          (note) => Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Text(note),
+          ),
+        )
+        .toList();
+  }
+
+  List<String> _referenceLabels(BibleVerse verse) {
+    if (verse.crossReferences.isNotEmpty) {
+      return verse.crossReferences.map((ref) => ref.label).toList();
+    }
+    return verse.references ?? const [];
+  }
+
+  List<InlineSpan> _buildVerseContentSpans(
+    BuildContext context,
+    BibleVerse verse,
+  ) {
+    final spans = verse.spans;
+    if (spans.isEmpty) {
+      return [TextSpan(text: verse.text)];
+    }
+
+    final baseColor = Theme.of(context).textTheme.bodyLarge?.color;
+    final secondaryColor = Theme.of(context).colorScheme.secondary;
+
+    return spans.map((span) {
+      return TextSpan(
+        text: _spanText(span),
+        style: TextStyle(
+          color: _spanColor(span.kind, baseColor, secondaryColor),
+          fontStyle: _spanFontStyle(span.kind),
+          fontWeight: _spanFontWeight(span.kind),
+          decoration: _spanDecoration(span.kind),
+        ),
+      );
+    }).toList();
+  }
+
+  String _spanText(BibleVerseSpan span) {
+    if (span.metadata case {'quoteLevel': final levelText}) {
+      final level = int.tryParse(levelText) ?? 0;
+      if (level > 1) {
+        return '${' ' * ((level - 1) * 2)}${span.text}';
+      }
+    }
+    return span.text;
+  }
+
+  Color? _spanColor(
+    BibleVerseSpanKind kind,
+    Color? baseColor,
+    Color secondaryColor,
+  ) {
+    switch (kind) {
+      case BibleVerseSpanKind.wordsOfJesus:
+        return Colors.red.shade700;
+      case BibleVerseSpanKind.word:
+        return secondaryColor;
+      default:
+        return baseColor;
+    }
+  }
+
+  FontStyle _spanFontStyle(BibleVerseSpanKind kind) {
+    switch (kind) {
+      case BibleVerseSpanKind.translatorAddition:
+      case BibleVerseSpanKind.quote:
+      case BibleVerseSpanKind.poetry:
+        return FontStyle.italic;
+      default:
+        return FontStyle.normal;
+    }
+  }
+
+  FontWeight _spanFontWeight(BibleVerseSpanKind kind) {
+    switch (kind) {
+      case BibleVerseSpanKind.wordsOfJesus:
+        return FontWeight.w600;
+      case BibleVerseSpanKind.word:
+        return FontWeight.w500;
+      default:
+        return FontWeight.normal;
+    }
+  }
+
+  TextDecoration? _spanDecoration(BibleVerseSpanKind kind) {
+    switch (kind) {
+      case BibleVerseSpanKind.word:
+        return TextDecoration.underline;
+      default:
+        return null;
+    }
   }
 
   String _getBookName(String bookId) {
