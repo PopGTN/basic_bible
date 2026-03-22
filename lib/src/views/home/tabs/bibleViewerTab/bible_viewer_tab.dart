@@ -255,7 +255,7 @@ class _BibleTextViewState extends State<_BibleTextView> {
       if (widget.layoutMode == ReaderLayoutMode.verseList)
         ...widget.chapter.verses.map((verse) => _buildVerse(context, verse))
       else
-        _buildParagraphReadingView(context),
+        _buildDocumentReadingView(context),
     ];
 
     return Padding(
@@ -405,7 +405,7 @@ class _BibleTextViewState extends State<_BibleTextView> {
     );
   }
 
-  Widget _buildParagraphReadingView(BuildContext context) {
+  Widget _buildDocumentReadingView(BuildContext context) {
     final sections = _buildParagraphSections();
 
     return Padding(
@@ -425,46 +425,9 @@ class _BibleTextViewState extends State<_BibleTextView> {
                         block: block,
                         fontSize: widget.fontSize,
                       ),
-                  RichText(
-                    text: TextSpan(
-                      style: TextStyle(
-                        fontSize: widget.fontSize,
-                        color: Theme.of(context).textTheme.bodyLarge?.color,
-                        height: 1.7,
-                      ),
-                      children: [
-                        for (final verse in section.verses) ...[
-                          WidgetSpan(
-                            child: SizedBox(
-                              key: _verseKeys.putIfAbsent(
-                                verse.number,
-                                GlobalKey.new,
-                              ),
-                              width: 0,
-                              height: 0,
-                            ),
-                          ),
-                          TextSpan(
-                            text: '${verse.number} ',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: Theme.of(context).colorScheme.primary,
-                              fontSize: widget.fontSize - 2,
-                              backgroundColor:
-                                  widget.reference.verse == verse.number
-                                  ? Theme.of(context)
-                                        .colorScheme
-                                        .primaryContainer
-                                        .withValues(alpha: 0.45)
-                                  : null,
-                            ),
-                          ),
-                          ..._buildVerseContentSpans(context, verse),
-                          const TextSpan(text: ' '),
-                        ],
-                      ],
-                    ),
-                  ),
+                  _isDocumentPoetrySection(section)
+                      ? _buildDocumentPoetrySection(context, section)
+                      : _buildDocumentParagraphSection(context, section),
                 ],
               ),
             ),
@@ -532,6 +495,107 @@ class _BibleTextViewState extends State<_BibleTextView> {
     }
 
     return sections;
+  }
+
+  Widget _buildDocumentParagraphSection(
+    BuildContext context,
+    _ParagraphSection section,
+  ) {
+    return RichText(
+      text: TextSpan(
+        style: TextStyle(
+          fontSize: widget.fontSize,
+          color: Theme.of(context).textTheme.bodyLarge?.color,
+          height: 1.7,
+        ),
+        children: [
+          for (final verse in section.verses) ...[
+            WidgetSpan(
+              child: SizedBox(
+                key: _verseKeys.putIfAbsent(verse.number, GlobalKey.new),
+                width: 0,
+                height: 0,
+              ),
+            ),
+            TextSpan(
+              text: '${verse.number} ',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).colorScheme.primary,
+                fontSize: widget.fontSize - 2,
+                backgroundColor: widget.reference.verse == verse.number
+                    ? Theme.of(
+                        context,
+                      ).colorScheme.primaryContainer.withValues(alpha: 0.45)
+                    : null,
+              ),
+            ),
+            ..._buildVerseContentSpans(context, verse),
+            const TextSpan(text: ' '),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDocumentPoetrySection(
+    BuildContext context,
+    _ParagraphSection section,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (final verse in section.verses)
+          Padding(
+            key: _verseKeys.putIfAbsent(verse.number, GlobalKey.new),
+            padding: const EdgeInsets.only(bottom: 8),
+            child: RichText(
+              text: TextSpan(
+                style: TextStyle(
+                  fontSize: widget.fontSize,
+                  color: Theme.of(context).textTheme.bodyLarge?.color,
+                  height: 1.7,
+                ),
+                children: [
+                  TextSpan(
+                    text: '${verse.number} ',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.primary,
+                      fontSize: widget.fontSize - 2,
+                      backgroundColor: widget.reference.verse == verse.number
+                          ? Theme.of(context).colorScheme.primaryContainer
+                                .withValues(alpha: 0.45)
+                          : null,
+                    ),
+                  ),
+                  ..._buildVerseContentSpans(context, verse),
+                ],
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  bool _isDocumentPoetrySection(_ParagraphSection section) {
+    if (section.leadingBlocks.any(
+      (block) => block.kind == BibleDocumentBlockKind.poetry,
+    )) {
+      return true;
+    }
+
+    for (final verse in section.verses) {
+      for (final span in verse.spans) {
+        if (span.kind == BibleVerseSpanKind.poetry ||
+            span.kind == BibleVerseSpanKind.quote ||
+            span.metadata.containsKey('quoteLevel')) {
+          return true;
+        }
+      }
+    }
+
+    return false;
   }
 
   void _showVerseDetailsSheet(BuildContext context, BibleVerse verse) {

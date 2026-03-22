@@ -7,7 +7,7 @@ import '../models/bible_models.dart';
 import '../repositories/app_bible_repository.dart';
 import '../services/app_database.dart';
 
-enum ReaderLayoutMode { verseList, paragraph }
+enum ReaderLayoutMode { verseList, document }
 
 // Repository provider
 final bibleRepositoryProvider = Provider<AppBibleRepository>((ref) {
@@ -52,6 +52,11 @@ class ReaderLayoutModeNotifier extends StateNotifier<ReaderLayoutMode> {
   Future<void> _loadSavedLayoutMode() async {
     final prefs = await SharedPreferences.getInstance();
     final rawMode = prefs.getString('reader_layout_mode');
+    if (rawMode == 'paragraph') {
+      // Migrate the older name to the clearer "document" mode label.
+      state = ReaderLayoutMode.document;
+      return;
+    }
     state = ReaderLayoutMode.values.firstWhere(
       (mode) => mode.name == rawMode,
       orElse: () => ReaderLayoutMode.verseList,

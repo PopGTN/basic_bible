@@ -226,8 +226,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         child: Text('Verse List'),
                       ),
                       PopupMenuItem(
-                        value: ReaderLayoutMode.paragraph,
-                        child: Text('Paragraph'),
+                        value: ReaderLayoutMode.document,
+                        child: Text('Document'),
                       ),
                     ],
                     child: Padding(
@@ -240,7 +240,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           Text(
                             layoutMode == ReaderLayoutMode.verseList
                                 ? 'List'
-                                : 'Paragraph',
+                                : 'Document',
                             style: TextStyle(color: colors.onSecondary),
                           ),
                         ],

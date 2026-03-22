@@ -35,6 +35,7 @@ Status meanings:
 - `blocked`: cannot move safely without another prerequisite or decision
 
 ## Completed Recently
+- `done` Clarified reader-mode behavior so one mode stays fully verse-listed and the other now follows the parsed document structure more literally instead of forcing all source content into paragraph-style prose.
 - `done` Improved the verse-detail note/reference UX by grouping annotation content into clearer cards and action chips so heavily annotated verses no longer fall back to a very plain stacked list.
 - `done` Finished translation asset lookup cleanup by removing filename-guess fallback logic and unifying built-in/imported translation resolution through explicit metadata.
 - `done` Added explicit local Bible import flows so users can pick USFX, OSIS, or Zefania XML files, store them as managed local translations, and reopen them from the translation picker on later launches.
@@ -83,6 +84,7 @@ Status meanings:
 - `in_progress` Sequential feature workflow is now the active delivery model: finish one tracked feature, verify it, commit it, then move to the next tracked feature.
 - `in_progress` Built-in and imported translations now resolve through the same explicit metadata path, but downloaded translations and broader translation-library management can still be cleaned up further over time.
 - `in_progress` The verse-detail sheet is now much clearer for dense annotations, but broader translation-library management and downloaded-translation consistency still have room to improve.
+- `in_progress` Reader modes now better match the intended behavior, but document-mode fidelity is still limited by how much positional structure the parser currently preserves.
 
 ## Recommended Next Step
 - `next` Clean up downloaded-translation lifecycle handling so bundled, imported, and downloaded translations all participate in one consistent translation-library model.
