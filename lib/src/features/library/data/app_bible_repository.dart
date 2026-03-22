@@ -9,6 +9,48 @@ import 'package:basic_bible/src/models/bible_models.dart';
 import 'package:basic_bible/src/services/app_database.dart';
 import 'package:path/path.dart' as p;
 
+class BibleImportDraft {
+  const BibleImportDraft({
+    required this.filePath,
+    required this.fileName,
+    required this.format,
+    required this.importedBooks,
+    required this.suggestedId,
+    required this.suggestedName,
+    required this.suggestedLanguage,
+    required this.suggestedDescription,
+  });
+
+  final String filePath;
+  final String fileName;
+  final BibleFormat format;
+  final List<BibleBook> importedBooks;
+  final String suggestedId;
+  final String suggestedName;
+  final String suggestedLanguage;
+  final String suggestedDescription;
+}
+
+class BibleImportRequest {
+  const BibleImportRequest({
+    required this.filePath,
+    required this.format,
+    required this.importedBooks,
+    required this.id,
+    required this.name,
+    required this.language,
+    required this.description,
+  });
+
+  final String filePath;
+  final BibleFormat format;
+  final List<BibleBook> importedBooks;
+  final String id;
+  final String name;
+  final String language;
+  final String description;
+}
+
 class AppBibleRepository {
   final AppDatabase _db;
 
@@ -174,6 +216,23 @@ class AppBibleRepository {
   }
 
   Future<BibleTranslation> importBibleFromFile(String filePath) async {
+    final draft = await prepareBibleImport(filePath);
+    return importPreparedBible(
+      BibleImportRequest(
+        filePath: draft.filePath,
+        format: draft.format,
+        importedBooks: draft.importedBooks,
+        id: draft.suggestedId,
+        name: draft.suggestedName,
+        language: draft.suggestedLanguage.isEmpty
+            ? 'unknown'
+            : draft.suggestedLanguage,
+        description: draft.suggestedDescription,
+      ),
+    );
+  }
+
+  Future<BibleImportDraft> prepareBibleImport(String filePath) async {
     final file = File(filePath);
     if (!await file.exists()) {
       throw Exception('Selected Bible file does not exist.');
@@ -193,14 +252,75 @@ class AppBibleRepository {
       importedBooks: importedBooks,
     );
 
-    await _db.insertBible(translation.id, importedBooks);
+    return BibleImportDraft(
+      filePath: filePath,
+      fileName: p.basename(filePath),
+      format: detectedFormat,
+      importedBooks: importedBooks,
+      suggestedId: translation.id,
+      suggestedName: translation.name,
+      suggestedLanguage: _suggestLanguageCode(filePath),
+      suggestedDescription: translation.description,
+    );
+  }
+
+  Future<BibleTranslation> importPreparedBible(
+    BibleImportRequest request,
+  ) async {
+    if (request.importedBooks.isEmpty) {
+      throw Exception('The selected file did not contain any Bible books.');
+    }
+
+    final normalizedId = _sanitizeTranslationId(request.id);
+    if (normalizedId.isEmpty) {
+      throw Exception('Please enter a valid abbreviation.');
+    }
+    await _ensureTranslationIdAvailable(normalizedId);
+
+    final translation = BibleTranslation(
+      id: normalizedId,
+      name: request.name.trim(),
+      language: request.language.trim(),
+      description: request.description.trim(),
+      isLocal: true,
+      filePath: request.filePath,
+      format: request.format,
+      sourceType: BibleSourceType.import,
+    );
+
+    await _db.insertBible(translation.id, request.importedBooks);
     await _db.upsertTranslationMetadata(
       translation: translation,
-      sourceLocation: filePath,
+      sourceLocation: request.filePath,
       sourceTypeOverride: BibleSourceType.import,
     );
-    _rememberLoadedTranslation(translation.id, importedBooks);
+    _rememberLoadedTranslation(translation.id, request.importedBooks);
     return translation;
+  }
+
+  Future<void> deleteImportedTranslation(String translationId) async {
+    final storedTranslations = await _db.getStoredTranslations();
+    BibleTranslation? translation;
+    for (final candidate in storedTranslations) {
+      if (candidate.id == translationId) {
+        translation = candidate;
+        break;
+      }
+    }
+
+    if (translation == null) {
+      throw Exception('Translation $translationId was not found.');
+    }
+    if (translation.sourceType != BibleSourceType.import) {
+      throw Exception('Only imported translations can be deleted.');
+    }
+
+    await _db.deleteBible(translationId);
+    _memoryCacheByTranslation.remove(translationId);
+    if (_currentTranslationId == translationId) {
+      _currentTranslationId = null;
+      _cachedBooks = [];
+    }
   }
 
   /// Get a specific book
@@ -431,6 +551,17 @@ class AppBibleRepository {
     );
   }
 
+  Future<void> _ensureTranslationIdAvailable(String candidateId) async {
+    final storedIds =
+        (await _db.getStoredTranslations()).map((t) => t.id).toSet()
+          ..addAll(builtInTranslations.map((t) => t.id));
+    if (storedIds.contains(candidateId)) {
+      throw Exception(
+        'A translation with the abbreviation ${candidateId.toUpperCase()} already exists.',
+      );
+    }
+  }
+
   BibleFormat _detectFormatFromContent(String content) {
     final lowerContent = content.toLowerCase();
     if (lowerContent.contains('<usfx')) return BibleFormat.usfx;
@@ -471,6 +602,20 @@ class AppBibleRepository {
       return '${importedBooks.first.name} Import';
     }
     return 'Imported Bible';
+  }
+
+  String _suggestLanguageCode(String filePath) {
+    final baseName = p.basenameWithoutExtension(filePath).toLowerCase();
+    final prefix = baseName.split(RegExp(r'[_\-.]')).first;
+    return switch (prefix) {
+      'eng' || 'en' => 'en',
+      'spa' || 'es' => 'es',
+      'fra' || 'fre' || 'fr' => 'fr',
+      'deu' || 'ger' || 'de' => 'de',
+      'por' || 'pt' => 'pt',
+      'ita' || 'it' => 'it',
+      _ => '',
+    };
   }
 
   bool _needsInlineAnchorRefresh(List<BibleBook> books) {

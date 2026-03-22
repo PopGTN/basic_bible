@@ -390,6 +390,46 @@ class BibleBooksNotifier extends StateNotifier<AsyncValue<List<BibleBook>>> {
       rethrow;
     }
   }
+
+  Future<BibleImportDraft> prepareImportTranslation(String filePath) {
+    return repository.prepareBibleImport(filePath);
+  }
+
+  Future<BibleTranslation> importPreparedTranslation(
+    BibleImportRequest request,
+  ) async {
+    state = const AsyncValue.loading();
+
+    try {
+      final translation = await repository.importPreparedBible(request);
+      _currentTranslationId = translation.id;
+      final books = repository.getAllBooks();
+      if (mounted) {
+        state = AsyncValue.data(books);
+      }
+      return translation;
+    } on BibleParserException catch (e, st) {
+      if (mounted) {
+        state = AsyncValue.error(
+          'There was an error parsing the Bible file. Please make sure the selected file is valid USFX, OSIS, or Zefania XML.',
+          st,
+        );
+      }
+      rethrow;
+    } catch (e, st) {
+      if (mounted) {
+        state = AsyncValue.error(e, st);
+      }
+      rethrow;
+    }
+  }
+
+  Future<void> deleteImportedTranslation(String translationId) async {
+    await repository.deleteImportedTranslation(translationId);
+    if (_currentTranslationId == translationId && mounted) {
+      state = const AsyncValue.loading();
+    }
+  }
 }
 
 AsyncValue<List<BibleBook>> _initialBibleBooksState(

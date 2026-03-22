@@ -1,6 +1,8 @@
+import 'package:basic_bible/src/features/library/data/app_bible_repository.dart';
 import 'package:basic_bible/src/features/reader/application/bible_provider.dart';
 import 'package:basic_bible/src/models/bible_models.dart';
 import 'package:basic_bible/src/widgets/app_back_button.dart';
+import 'package:basic_bible/src/features/library/presentation/import_translation_screen.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -59,6 +61,15 @@ class VersionsScreen extends ConsumerWidget {
               translation: translation,
               isSelected: isSelected,
               onTap: () => _selectTranslation(context, ref, translation.id),
+              onDeleteImported: translation.sourceType == BibleSourceType.import
+                  ? () => _deleteImportedTranslation(
+                      context,
+                      ref,
+                      translation: translation,
+                      currentTranslationId: currentTranslationId,
+                      allTranslations: translations,
+                    )
+                  : null,
             );
           },
         ),
@@ -107,9 +118,23 @@ class VersionsScreen extends ConsumerWidget {
     final messenger = ScaffoldMessenger.of(context);
 
     try {
-      final importedTranslation = await ref
-          .read(bibleBooksProvider.notifier)
-          .importTranslation(file.path);
+      final importedTranslation = await Navigator.of(context)
+          .push<BibleTranslation>(
+            MaterialPageRoute(
+              builder: (context) => ImportTranslationScreen(
+                filePath: file.path,
+                existingIds:
+                    ref
+                        .read(availableTranslationsProvider)
+                        .asData
+                        ?.value
+                        .map((translation) => translation.id)
+                        .toSet() ??
+                    const <String>{},
+              ),
+            ),
+          );
+      if (importedTranslation == null || !context.mounted) return;
       await ref
           .read(currentTranslationProvider.notifier)
           .setTranslation(importedTranslation.id);
@@ -124,6 +149,63 @@ class VersionsScreen extends ConsumerWidget {
       messenger.showSnackBar(SnackBar(content: Text('Import failed: $error')));
     }
   }
+
+  Future<void> _deleteImportedTranslation(
+    BuildContext context,
+    WidgetRef ref, {
+    required BibleTranslation translation,
+    required String currentTranslationId,
+    required List<BibleTranslation> allTranslations,
+  }) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Delete ${translation.name}?'),
+        content: Text(
+          'This removes the imported Bible from the app library and cache. The original XML file on disk will not be deleted.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !context.mounted) return;
+
+    try {
+      if (currentTranslationId == translation.id) {
+        final fallback = allTranslations.firstWhere(
+          (candidate) => candidate.id != translation.id,
+          orElse: () => AppBibleRepository.builtInTranslations.first,
+        );
+        await ref
+            .read(currentTranslationProvider.notifier)
+            .setTranslation(fallback.id);
+      }
+
+      await ref
+          .read(bibleBooksProvider.notifier)
+          .deleteImportedTranslation(translation.id);
+      ref.invalidate(availableTranslationsProvider);
+
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Deleted ${translation.name}.')));
+    } catch (error) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not delete translation: $error')),
+      );
+    }
+  }
 }
 
 enum _VersionsMenuAction { importBibleXml }
@@ -133,11 +215,13 @@ class _TranslationListTile extends StatelessWidget {
     required this.translation,
     required this.isSelected,
     required this.onTap,
+    this.onDeleteImported,
   });
 
   final BibleTranslation translation;
   final bool isSelected;
   final VoidCallback onTap;
+  final VoidCallback? onDeleteImported;
 
   @override
   Widget build(BuildContext context) {
@@ -211,11 +295,28 @@ class _TranslationListTile extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 12),
-              IconButton(
-                onPressed: () {},
-                tooltip: 'More actions',
-                icon: const Icon(Icons.more_vert),
-              ),
+              if (onDeleteImported != null)
+                PopupMenuButton<_TranslationAction>(
+                  onSelected: (action) {
+                    if (action == _TranslationAction.deleteImported) {
+                      onDeleteImported!();
+                    }
+                  },
+                  itemBuilder: (context) => const [
+                    PopupMenuItem(
+                      value: _TranslationAction.deleteImported,
+                      child: Row(
+                        children: [
+                          Icon(Icons.delete_outline),
+                          SizedBox(width: 8),
+                          Text('Delete import'),
+                        ],
+                      ),
+                    ),
+                  ],
+                  icon: const Icon(Icons.more_vert),
+                  tooltip: 'More actions',
+                ),
             ],
           ),
         ),
@@ -279,6 +380,8 @@ class _TranslationListTile extends StatelessWidget {
     return widgets;
   }
 }
+
+enum _TranslationAction { deleteImported }
 
 class _TranslationActionChip extends StatelessWidget {
   const _TranslationActionChip({
