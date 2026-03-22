@@ -51,6 +51,7 @@ Status meanings:
 - `blocked`: cannot move safely without another prerequisite or decision
 
 ## Completed Recently
+- `done` Fixed the reader reference-bar regression after translation switches by resolving book references more flexibly, falling back to readable book names instead of `Unknown`, and moving the floating chapter bar above the reader content so its background renders as a real visible surface again.
 - `done` Added a first dedicated `Versions` screen for translation selection, wired the reader translation pill to open it, added simple row action buttons for future library features, and added an `Import Bible XML` entry to the top-right menu there.
 - `done` Strengthened the small-screen floating reference bar background so it now reads as a real pill control with visible fill, border, and shadow instead of blending into the reading surface.
 - `done` Restyled the small-screen chapter/reference bar so the scrolled reader now uses a flatter floating pill reference control with centered book-chapter text, matching the current prototype direction more closely.
@@ -115,7 +116,7 @@ Status meanings:
 - `next` Return to parser-side layout fidelity work so more front-matter and section tags survive into the reader instead of being normalized away too early.
 
 Why this is next:
-- The translation selection flow now has a real screen, but the biggest remaining prototype gap is still formatting fidelity.
+- The visible translation-switch regression is fixed, and the biggest remaining prototype gap is still formatting fidelity.
 - The reader can only render what the parser preserves, so upstream structure is still the highest-value source of visible improvement.
 
 Definition of done for this step:
@@ -329,6 +330,7 @@ What still needs to happen:
 - Improve lifecycle handling for bundled, downloaded, and imported translations.
 - Add clearer user-facing status for what is installed locally and what came from import/download.
 - Make stale-cache refresh and translation replacement behavior more intentional and visible.
+- Preserve the same logical book/chapter more explicitly across translation switches even when different source files expose different book ID styles.
 - Add a real `Versions` screen instead of relying only on the current picker flow.
 - Support grouped library sections such as:
   - downloaded
@@ -345,6 +347,7 @@ What still needs to happen:
 What "done" should mean:
 - The translation picker behaves like a real library manager instead of a thin list of IDs.
 - Users can browse, search, filter, download, retry, and manage translations from a dedicated screen that matches the intended library UX more closely.
+- Translation switches preserve the same logical reading location intentionally, not only through tolerant fallback matching.
 
 #### H. Add online-only translation access
 What still needs to happen:

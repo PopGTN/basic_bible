@@ -52,6 +52,35 @@ BibleReference? parseAnyReference({String? target, required String label}) {
   return parseStructuredReferenceTarget(target) ?? parseReferenceString(label);
 }
 
+/// Resolve a reference book ID against the books currently available in the
+/// loaded translation. This keeps the reader usable when translations expose
+/// the same book with a slightly different source-specific ID or casing.
+BibleBook? resolveBookFromReference(
+  List<BibleBook> books,
+  String referenceBookId,
+) {
+  if (books.isEmpty) return null;
+
+  final exactMatch = books.where((book) => book.id == referenceBookId);
+  if (exactMatch.isNotEmpty) {
+    return exactMatch.first;
+  }
+
+  final referenceTokens = _bookMatchTokens(referenceBookId);
+  for (final book in books) {
+    final bookTokens = {
+      ..._bookMatchTokens(book.id),
+      ..._bookMatchTokens(book.shortName),
+      ..._bookMatchTokens(book.name),
+    };
+    if (bookTokens.any(referenceTokens.contains)) {
+      return book;
+    }
+  }
+
+  return null;
+}
+
 String? _mapBookNameToId(String bookName) {
   const bookNameToIdMap = {
     'Genesis': 'GEN',
@@ -122,6 +151,25 @@ String? _mapBookNameToId(String bookName) {
     'Revelation': 'REV',
   };
   return bookNameToIdMap[bookName];
+}
+
+Set<String> _bookMatchTokens(String rawValue) {
+  final trimmed = rawValue.trim();
+  if (trimmed.isEmpty) return const {};
+
+  final collapsed = trimmed.replaceAll(RegExp(r'[^A-Za-z0-9]'), '');
+  final uppercase = collapsed.toUpperCase();
+  final normalizedStructured = _normalizeStructuredBookId(uppercase);
+  final mappedName = _mapBookNameToId(trimmed);
+
+  return {
+    trimmed,
+    trimmed.toUpperCase(),
+    collapsed,
+    uppercase,
+    if (normalizedStructured != null) normalizedStructured,
+    if (mappedName != null) mappedName,
+  };
 }
 
 String? _normalizeStructuredBookId(String rawBookId) {

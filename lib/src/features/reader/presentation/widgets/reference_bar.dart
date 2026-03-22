@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:basic_bible/src/models/bible_models.dart';
+import 'package:basic_bible/src/utils/reference_utils.dart';
 
 class ChapterBar extends StatelessWidget {
   const ChapterBar({
     super.key,
     required double barHeight,
+    required this.isFloating,
     required this.reference,
     required this.books,
     required this.onReferenceChanged,
@@ -13,6 +15,7 @@ class ChapterBar extends StatelessWidget {
   }) : _barHeight = barHeight;
 
   final double _barHeight;
+  final bool isFloating;
   final BibleReference reference;
   final List<BibleBook> books;
   final Function(BibleReference) onReferenceChanged;
@@ -21,34 +24,90 @@ class ChapterBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final currentBook = books.firstWhere(
-      (book) => book.id == reference.bookId,
-      orElse: () =>
-          BibleBook(id: '', name: 'Unknown', shortName: '', bookNumber: 0),
-    );
+    final currentBook = resolveBookFromReference(books, reference.bookId);
+    final colors = Theme.of(context).colorScheme;
+    final referenceBookName =
+        currentBook?.name ?? bookIdToName(reference.bookId);
+    final referenceLabel = '$referenceBookName ${reference.chapter}';
+
+    if (isFloating) {
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+        child: Material(
+          color: colors.surfaceContainerHighest,
+          elevation: 6,
+          shadowColor: Colors.black.withValues(alpha: 0.28),
+          borderRadius: BorderRadius.circular(28),
+          clipBehavior: Clip.antiAlias,
+          child: Container(
+            height: _barHeight,
+            decoration: BoxDecoration(
+              color: colors.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(28),
+              border: Border.all(
+                color: colors.outlineVariant.withValues(alpha: 0.7),
+              ),
+            ),
+            child: Row(
+              children: [
+                _BarActionButton(
+                  icon: Icons.arrow_back_ios_new,
+                  onPressed: onPreviousChapter,
+                  tooltip: 'Previous chapter',
+                ),
+                Expanded(
+                  child: InkWell(
+                    onTap: () => _showReferencePicker(context),
+                    borderRadius: BorderRadius.circular(28),
+                    child: Center(
+                      child: Text(
+                        referenceLabel,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                _BarActionButton(
+                  icon: Icons.arrow_forward_ios,
+                  onPressed: onNextChapter,
+                  tooltip: 'Next chapter',
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
 
     return Container(
       height: _barHeight,
+      margin: const EdgeInsets.fromLTRB(12, 10, 12, 0),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        color: colors.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
-            blurRadius: 4,
-            offset: const Offset(0, -2),
+            color: Colors.black.withValues(alpha: 0.08),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
       child: Row(
         children: [
-          IconButton(
-            icon: const Icon(Icons.arrow_back),
+          _BarActionButton(
+            icon: Icons.arrow_back_ios_new,
             onPressed: onPreviousChapter,
             tooltip: 'Previous chapter',
           ),
           Expanded(
             child: InkWell(
               onTap: () => _showReferencePicker(context),
+              borderRadius: BorderRadius.circular(20),
               child: Container(
                 padding: const EdgeInsets.symmetric(
                   vertical: 8,
@@ -58,14 +117,14 @@ class ChapterBar extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      currentBook.name,
+                      referenceBookName,
                       style: Theme.of(context).textTheme.titleSmall,
                       overflow: TextOverflow.ellipsis,
                     ),
                     Text(
-                      'Chapter ${reference.chapter}',
+                      '${reference.chapter}',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        color: colors.onSurfaceVariant,
                       ),
                     ),
                   ],
@@ -73,8 +132,8 @@ class ChapterBar extends StatelessWidget {
               ),
             ),
           ),
-          IconButton(
-            icon: const Icon(Icons.arrow_forward),
+          _BarActionButton(
+            icon: Icons.arrow_forward_ios,
             onPressed: onNextChapter,
             tooltip: 'Next chapter',
           ),
@@ -95,6 +154,30 @@ class ChapterBar extends StatelessWidget {
           Navigator.of(context).pop();
         },
       ),
+    );
+  }
+}
+
+class _BarActionButton extends StatelessWidget {
+  const _BarActionButton({
+    required this.icon,
+    required this.onPressed,
+    required this.tooltip,
+  });
+
+  final IconData icon;
+  final VoidCallback onPressed;
+  final String tooltip;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return IconButton(
+      icon: Icon(icon, size: 18),
+      onPressed: onPressed,
+      tooltip: tooltip,
+      color: colors.onSurface,
+      splashRadius: 22,
     );
   }
 }

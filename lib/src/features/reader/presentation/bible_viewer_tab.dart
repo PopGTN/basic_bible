@@ -98,61 +98,6 @@ class _BibleViewerTabState extends ConsumerState<BibleViewerTab> {
 
     return Stack(
       children: [
-        /*        ListView.builder(
-          controller: _scrollController,
-          padding: EdgeInsets.fromLTRB(
-            16,
-            isSmall ? 16 : _chapterBarHeight + 16,
-            16,
-            bottomPadding,
-          ),
-          itemCount: 100,
-          itemBuilder: (_, i) => Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            child: Text(
-              "Verse line ${i + 1} — sample Bible text.",
-              style: Theme.of(context).textTheme.bodyLarge,
-            ),
-          ),
-        ),*/
-        // Bible content is provided below and listens to global font-size
-
-        // Chapter navigation bar
-        Align(
-          alignment: isSmall ? Alignment.bottomCenter : Alignment.topCenter,
-          child: SafeArea(
-            top: !isSmall,
-            bottom: isSmall,
-            child: ChapterBar(
-              barHeight: 56,
-              reference: currentReference,
-              books: booksAsync.value ?? const [],
-              onReferenceChanged: (reference) {
-                ref
-                    .read(currentReferenceProvider.notifier)
-                    .setReference(reference);
-              },
-              onPreviousChapter: () {
-                if (booksAsync.value != null) {
-                  ref
-                      .read(currentReferenceProvider.notifier)
-                      .goToPreviousChapter(booksAsync.value!);
-                }
-              },
-              onNextChapter: () {
-                if (booksAsync.value != null) {
-                  ref
-                      .read(currentReferenceProvider.notifier)
-                      .goToNextChapter(booksAsync.value!);
-                }
-              },
-            ),
-          ),
-        ),
-
-        // Bible content and font-size are driven by the shared FontSizeService.
-        // Wrap the content in a ValueListenableBuilder so updates to the
-        // global font size (from HomeScreen AppBar) rebuild the viewer.
         ValueListenableBuilder<double>(
           valueListenable: FontSizeService.instance.notifier,
           builder: (context, size, child) {
@@ -182,6 +127,58 @@ class _BibleViewerTabState extends ConsumerState<BibleViewerTab> {
             );
           },
         ),
+        /*        ListView.builder(
+          controller: _scrollController,
+          padding: EdgeInsets.fromLTRB(
+            16,
+            isSmall ? 16 : _chapterBarHeight + 16,
+            16,
+            bottomPadding,
+          ),
+          itemCount: 100,
+          itemBuilder: (_, i) => Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Text(
+              "Verse line ${i + 1} — sample Bible text.",
+              style: Theme.of(context).textTheme.bodyLarge,
+            ),
+          ),
+        ),*/
+        // Bible content is provided below and listens to global font-size
+
+        // Chapter navigation bar
+        Align(
+          alignment: isSmall ? Alignment.bottomCenter : Alignment.topCenter,
+          child: SafeArea(
+            top: !isSmall,
+            bottom: isSmall,
+            child: ChapterBar(
+              barHeight: 56,
+              isFloating: isSmall,
+              reference: currentReference,
+              books: booksAsync.value ?? const [],
+              onReferenceChanged: (reference) {
+                ref
+                    .read(currentReferenceProvider.notifier)
+                    .setReference(reference);
+              },
+              onPreviousChapter: () {
+                if (booksAsync.value != null) {
+                  ref
+                      .read(currentReferenceProvider.notifier)
+                      .goToPreviousChapter(booksAsync.value!);
+                }
+              },
+              onNextChapter: () {
+                if (booksAsync.value != null) {
+                  ref
+                      .read(currentReferenceProvider.notifier)
+                      .goToNextChapter(booksAsync.value!);
+                }
+              },
+            ),
+          ),
+        ),
 
         // Translation selector removed — translations are selected from HomeScreen
       ],
@@ -191,16 +188,15 @@ class _BibleViewerTabState extends ConsumerState<BibleViewerTab> {
 
 BibleBook _resolveCurrentBook(List<BibleBook> books, String bookId) {
   if (books.isEmpty) {
-    return const BibleBook(
-      id: '',
-      name: 'Unknown',
-      shortName: '',
+    return BibleBook(
+      id: bookId,
+      name: bookIdToName(bookId),
+      shortName: bookId,
       bookNumber: 0,
     );
   }
 
-  final matchingBooks = books.where((book) => book.id == bookId);
-  return matchingBooks.isNotEmpty ? matchingBooks.first : books.first;
+  return resolveBookFromReference(books, bookId) ?? books.first;
 }
 
 /// Bible text display widget

@@ -2,6 +2,7 @@ import 'package:bible_parser_flutter/bible_parser_flutter.dart';
 import 'package:basic_bible/src/features/library/data/app_bible_repository.dart';
 import 'package:basic_bible/src/models/bible_models.dart';
 import 'package:basic_bible/src/services/app_database.dart';
+import 'package:basic_bible/src/utils/reference_utils.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -132,10 +133,8 @@ class ReferenceNotifier extends StateNotifier<BibleReference> {
 
   void goToNextChapter(List<BibleBook> books) {
     if (books.isEmpty) return;
-    final currentBookMatches = books.where((b) => b.id == state.bookId);
-    final currentBook = currentBookMatches.isNotEmpty
-        ? currentBookMatches.first
-        : books.first;
+    final currentBook =
+        resolveBookFromReference(books, state.bookId) ?? books.first;
     final currentChapterIndex = currentBook.chapters.indexWhere(
       (c) => c.number == state.chapter,
     );
@@ -144,11 +143,11 @@ class ReferenceNotifier extends StateNotifier<BibleReference> {
       // Next chapter in same book
       final nextChapter = currentBook.chapters[currentChapterIndex + 1];
       setReference(
-        BibleReference(bookId: state.bookId, chapter: nextChapter.number),
+        BibleReference(bookId: currentBook.id, chapter: nextChapter.number),
       );
     } else {
       // First chapter of next book
-      final currentBookIndex = books.indexWhere((b) => b.id == state.bookId);
+      final currentBookIndex = books.indexWhere((b) => b.id == currentBook.id);
       if (currentBookIndex < books.length - 1) {
         final nextBook = books[currentBookIndex + 1];
         if (nextBook.chapters.isNotEmpty) {
@@ -165,10 +164,8 @@ class ReferenceNotifier extends StateNotifier<BibleReference> {
 
   void goToPreviousChapter(List<BibleBook> books) {
     if (books.isEmpty) return;
-    final currentBookMatches = books.where((b) => b.id == state.bookId);
-    final currentBook = currentBookMatches.isNotEmpty
-        ? currentBookMatches.first
-        : books.first;
+    final currentBook =
+        resolveBookFromReference(books, state.bookId) ?? books.first;
     final currentChapterIndex = currentBook.chapters.indexWhere(
       (c) => c.number == state.chapter,
     );
@@ -177,11 +174,11 @@ class ReferenceNotifier extends StateNotifier<BibleReference> {
       // Previous chapter in same book
       final prevChapter = currentBook.chapters[currentChapterIndex - 1];
       setReference(
-        BibleReference(bookId: state.bookId, chapter: prevChapter.number),
+        BibleReference(bookId: currentBook.id, chapter: prevChapter.number),
       );
     } else {
       // Last chapter of previous book
-      final currentBookIndex = books.indexWhere((b) => b.id == state.bookId);
+      final currentBookIndex = books.indexWhere((b) => b.id == currentBook.id);
       if (currentBookIndex > 0) {
         final prevBook = books[currentBookIndex - 1];
         if (prevBook.chapters.isNotEmpty) {
