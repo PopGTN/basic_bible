@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:go_router/go_router.dart';
 import 'package:basic_bible/l10n/app_localizations.dart';
 import 'package:basic_bible/src/features/library/data/app_bible_repository.dart';
 import 'package:basic_bible/src/features/menu/presentation/menu_tab.dart';
 import 'package:basic_bible/src/features/reader/application/bible_provider.dart';
 import 'package:basic_bible/src/features/reader/presentation/bible_viewer_tab.dart';
 import 'package:basic_bible/src/models/bible_models.dart';
+import 'package:basic_bible/src/providers/theme_provider.dart';
 import 'package:basic_bible/src/services/font_size_service.dart';
 
 import 'home_tab.dart';
@@ -56,6 +58,65 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   void showAppBar() => _appBarController.forward();
 
   void hideAppBar() => _appBarController.reverse();
+
+  void _showBibleViewerSettings(BuildContext context, WidgetRef ref) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      builder: (sheetContext) {
+        return Consumer(
+          builder: (context, ref, child) {
+            final themeMode = ref.watch(themeProvider);
+            final layoutMode = ref.watch(readerLayoutModeProvider);
+
+            return _BibleViewerSettingsSheet(
+              themeMode: themeMode,
+              layoutMode: layoutMode,
+              onDecreaseFont: () {
+                final nextSize = (FontSizeService.instance.size - 2).clamp(
+                  12.0,
+                  28.0,
+                );
+                FontSizeService.instance.setSize(nextSize);
+              },
+              onIncreaseFont: () {
+                final nextSize = (FontSizeService.instance.size + 2).clamp(
+                  12.0,
+                  28.0,
+                );
+                FontSizeService.instance.setSize(nextSize);
+              },
+              onThemeSelected: (mode) {
+                ref.read(themeProvider.notifier).setTheme(mode);
+              },
+              onLayoutSelected: (mode) {
+                ref.read(readerLayoutModeProvider.notifier).setLayoutMode(mode);
+              },
+              onOpenAllSettings: () {
+                Navigator.of(sheetContext).pop();
+                context.go('/home/settings');
+              },
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _handleBibleViewerMenuAction(
+    BuildContext context,
+    WidgetRef ref,
+    _BibleViewerMenuAction action,
+  ) {
+    switch (action) {
+      case _BibleViewerMenuAction.relatedContent:
+        context.go('/coming-soon/related-content');
+      case _BibleViewerMenuAction.fontsAndSettings:
+        _showBibleViewerSettings(context, ref);
+    }
+  }
 
   Future<void> _importBibleFile(WidgetRef ref) async {
     const xmlTypeGroup = XTypeGroup(
@@ -195,60 +256,52 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     final actions = isBible
         ? [
             IconButton(
-              icon: const Icon(Icons.search),
-              onPressed: () {},
-              tooltip: 'Search',
-            ),
-            IconButton(
               icon: const Icon(Icons.volume_up),
               onPressed: () {},
               tooltip: 'Play Audio',
             ),
+            IconButton(
+              icon: const Icon(Icons.search),
+              onPressed: () {},
+              tooltip: 'Search',
+            ),
             Consumer(
               builder: (context, ref, child) {
-                final layoutMode = ref.watch(readerLayoutModeProvider);
                 final colors = Theme.of(context).colorScheme;
-                return Card(
-                  color: colors.secondary,
-                  elevation: 2,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: PopupMenuButton<ReaderLayoutMode>(
-                    color: colors.surface,
-                    tooltip: 'Reader layout',
-                    onSelected: (mode) {
-                      ref
-                          .read(readerLayoutModeProvider.notifier)
-                          .setLayoutMode(mode);
-                    },
-                    itemBuilder: (context) => const [
-                      PopupMenuItem(
-                        value: ReaderLayoutMode.verseList,
-                        child: Text('Verse List'),
-                      ),
-                      PopupMenuItem(
-                        value: ReaderLayoutMode.document,
-                        child: Text('Document'),
-                      ),
-                    ],
-                    child: Padding(
-                      padding: const EdgeInsets.all(8.0),
+                return PopupMenuButton<_BibleViewerMenuAction>(
+                  color: colors.surfaceContainerHigh,
+                  tooltip: 'Reader options',
+                  onSelected: (action) =>
+                      _handleBibleViewerMenuAction(context, ref, action),
+                  itemBuilder: (context) => [
+                    PopupMenuItem(
+                      value: _BibleViewerMenuAction.relatedContent,
                       child: Row(
-                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.view_stream, color: colors.onSecondary),
-                          const SizedBox(width: 6),
+                          const Icon(Icons.library_books_outlined),
+                          const SizedBox(width: 12),
                           Text(
-                            layoutMode == ReaderLayoutMode.verseList
-                                ? 'List'
-                                : 'Document',
-                            style: TextStyle(color: colors.onSecondary),
+                            'Related Content',
+                            style: TextStyle(color: colors.onSurface),
                           ),
                         ],
                       ),
                     ),
-                  ),
+                    PopupMenuItem(
+                      value: _BibleViewerMenuAction.fontsAndSettings,
+                      child: Row(
+                        children: [
+                          const Icon(Icons.text_fields),
+                          const SizedBox(width: 12),
+                          Text(
+                            'Fonts & Settings',
+                            style: TextStyle(color: colors.onSurface),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                  icon: const Icon(Icons.more_horiz),
                 );
               },
             ),
@@ -276,18 +329,21 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   color: colors.secondary,
                   elevation: 2,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(20),
                   ),
                   child: PopupMenuButton<String>(
                     color: colors.surface, // menu background
                     padding: EdgeInsets.zero,
                     child: Padding(
-                      padding: const EdgeInsets.all(8.0),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.translate, color: colors.onSecondary),
-                          const SizedBox(width: 4),
+                          Icon(Icons.language, color: colors.onSecondary),
+                          const SizedBox(width: 6),
                           Text(
                             currentTranslationName ?? currentTranslation,
                             style: TextStyle(color: colors.onSecondary),
@@ -367,54 +423,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 );
               },
             ),
-            // Font size selector for Bible text (uses shared service)
-            ValueListenableBuilder<double>(
-              valueListenable: FontSizeService.instance.notifier,
-              builder: (context, size, child) {
-                final choices = <double>[12, 14, 16, 18, 20, 22, 24];
-                final colors = Theme.of(context).colorScheme;
-                return Card(
-                  color: colors.secondary,
-                  elevation: 2,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: PopupMenuButton<double>(
-                    color: colors.surface,
-                    tooltip: 'Bible text size',
-                    initialValue: size,
-                    onSelected: (v) => FontSizeService.instance.setSize(v),
-                    child: Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.text_fields, color: colors.onSecondary),
-                          const SizedBox(width: 6),
-                          Text(
-                            '${size.toInt()}',
-                            style: TextStyle(color: colors.onSecondary),
-                          ),
-                        ],
-                      ),
-                    ),
-                    itemBuilder: (context) => choices
-                        .map(
-                          (s) => PopupMenuItem(
-                            value: s,
-                            child: Text(
-                              '${s.toInt()}',
-                              style: TextStyle(
-                                color: Theme.of(context).colorScheme.onSurface,
-                              ),
-                            ),
-                          ),
-                        )
-                        .toList(),
-                  ),
-                );
-              },
-            ),
           ]
         : null;
 
@@ -453,4 +461,351 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       BibleSourceType.import => 'Imported',
     };
   }
+}
+
+enum _BibleViewerMenuAction { relatedContent, fontsAndSettings }
+
+class _BibleViewerSettingsSheet extends StatelessWidget {
+  const _BibleViewerSettingsSheet({
+    required this.themeMode,
+    required this.layoutMode,
+    required this.onDecreaseFont,
+    required this.onIncreaseFont,
+    required this.onThemeSelected,
+    required this.onLayoutSelected,
+    required this.onOpenAllSettings,
+  });
+
+  final AppThemeMode themeMode;
+  final ReaderLayoutMode layoutMode;
+  final VoidCallback onDecreaseFont;
+  final VoidCallback onIncreaseFont;
+  final ValueChanged<AppThemeMode> onThemeSelected;
+  final ValueChanged<ReaderLayoutMode> onLayoutSelected;
+  final VoidCallback onOpenAllSettings;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ValueListenableBuilder<double>(
+              valueListenable: FontSizeService.instance.notifier,
+              builder: (context, size, child) {
+                return Container(
+                  decoration: BoxDecoration(
+                    color: colors.surfaceContainerHigh,
+                    borderRadius: BorderRadius.circular(28),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: _FontAdjustButton(
+                          label: 'A',
+                          fontSize: 18,
+                          onPressed: onDecreaseFont,
+                        ),
+                      ),
+                      Container(
+                        width: 1,
+                        height: 54,
+                        color: colors.outlineVariant.withValues(alpha: 0.5),
+                      ),
+                      Expanded(
+                        child: _FontAdjustButton(
+                          label: 'A',
+                          fontSize: 32,
+                          onPressed: onIncreaseFont,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 18),
+            Container(
+              decoration: BoxDecoration(
+                color: colors.surfaceContainerLowest,
+                border: Border.all(color: colors.outlineVariant),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Column(
+                children: [
+                  _SettingsRow(
+                    title: 'Font',
+                    value: 'System Default',
+                    icon: Icons.chevron_right,
+                    onTap: onOpenAllSettings,
+                  ),
+                  Divider(
+                    height: 1,
+                    color: colors.outlineVariant.withValues(alpha: 0.7),
+                  ),
+                  _ToggleSettingsRow(
+                    title: 'Document Mode',
+                    value: layoutMode == ReaderLayoutMode.document,
+                    onChanged: (value) {
+                      onLayoutSelected(
+                        value
+                            ? ReaderLayoutMode.document
+                            : ReaderLayoutMode.verseList,
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 22),
+            Text('Theme', style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 14),
+            SizedBox(
+              height: 120,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                children: [
+                  for (final mode in AppThemeMode.values)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 12),
+                      child: _ThemePreviewCard(
+                        mode: mode,
+                        selected: mode == themeMode,
+                        onTap: () => onThemeSelected(mode),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            Center(
+              child: TextButton.icon(
+                onPressed: onOpenAllSettings,
+                icon: const Icon(Icons.settings),
+                label: const Text('All Settings'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _FontAdjustButton extends StatelessWidget {
+  const _FontAdjustButton({
+    required this.label,
+    required this.fontSize,
+    required this.onPressed,
+  });
+
+  final String label;
+  final double fontSize;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return InkWell(
+      onTap: onPressed,
+      borderRadius: BorderRadius.circular(28),
+      child: SizedBox(
+        height: 56,
+        child: Center(
+          child: Text(
+            label,
+            style: TextStyle(fontSize: fontSize, color: colors.onSurface),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SettingsRow extends StatelessWidget {
+  const _SettingsRow({
+    required this.title,
+    required this.value,
+    required this.icon,
+    required this.onTap,
+  });
+
+  final String title;
+  final String value;
+  final IconData icon;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: colors.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(value, style: Theme.of(context).textTheme.titleLarge),
+                ],
+              ),
+            ),
+            Icon(icon, color: colors.onSurfaceVariant),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ToggleSettingsRow extends StatelessWidget {
+  const _ToggleSettingsRow({
+    required this.title,
+    required this.value,
+    required this.onChanged,
+  });
+
+  final String title;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(title, style: Theme.of(context).textTheme.titleLarge),
+          ),
+          Switch(value: value, onChanged: onChanged),
+        ],
+      ),
+    );
+  }
+}
+
+class _ThemePreviewCard extends StatelessWidget {
+  const _ThemePreviewCard({
+    required this.mode,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final AppThemeMode mode;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final preview = _themePreview(mode);
+    final colors = Theme.of(context).colorScheme;
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(22),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        width: 78,
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: preview.background,
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(
+            color: selected ? Colors.white : Colors.transparent,
+            width: 2,
+          ),
+          boxShadow: selected
+              ? [
+                  BoxShadow(
+                    color: colors.shadow.withValues(alpha: 0.18),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ]
+              : const [],
+        ),
+        child: Column(
+          children: [
+            for (var i = 0; i < 4; i++)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 5),
+                child: Container(
+                  height: 3,
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: preview.foreground.withValues(
+                      alpha: i == 0 ? 0.95 : 0.6,
+                    ),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+            const Spacer(),
+            Container(
+              width: 28,
+              height: 28,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: preview.foreground.withValues(alpha: 0.7),
+                  width: 2,
+                ),
+              ),
+              child: selected
+                  ? Icon(Icons.check, size: 18, color: preview.foreground)
+                  : null,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  _ThemePreview _themePreview(AppThemeMode mode) {
+    return switch (mode) {
+      AppThemeMode.system => const _ThemePreview(
+        background: Color(0xFFF8F6F1),
+        foreground: Color(0xFF1C1A17),
+      ),
+      AppThemeMode.light => const _ThemePreview(
+        background: Color(0xFFF4EEE6),
+        foreground: Color(0xFF3A3028),
+      ),
+      AppThemeMode.dark => const _ThemePreview(
+        background: Color(0xFF181614),
+        foreground: Color(0xFFF3EEE8),
+      ),
+      AppThemeMode.blue => const _ThemePreview(
+        background: Color(0xFF1E2D42),
+        foreground: Color(0xFFF2F6FB),
+      ),
+      AppThemeMode.red => const _ThemePreview(
+        background: Color(0xFF35211D),
+        foreground: Color(0xFFFAF1EC),
+      ),
+    };
+  }
+}
+
+class _ThemePreview {
+  const _ThemePreview({required this.background, required this.foreground});
+
+  final Color background;
+  final Color foreground;
 }

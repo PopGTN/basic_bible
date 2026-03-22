@@ -51,6 +51,7 @@ Status meanings:
 - `blocked`: cannot move safely without another prerequisite or decision
 
 ## Completed Recently
+- `done` Consolidated the Bible viewer top-bar controls behind a reader-specific overflow menu and settings sheet, so `Fonts & Settings` now opens a dedicated Bible viewer settings surface with font-size controls, reader mode toggle, theme selection, and an `All Settings` handoff.
 - `done` Replaced the boxed selected-verse highlight with a softer temporary focus state: the chosen verse now stays visually emphasized without a background box until the user touches the screen to scroll.
 - `done` Hardened reader reference fallback so switching to a translation that does not contain the previously saved book/chapter no longer throws `Bad state: No element`; the reader now falls back safely to the first available matching content.
 - `done` Fixed bundled translation resolution so built-in entries like ASV always keep their shipped asset fallback even when stored lifecycle metadata exists, instead of accidentally behaving like remote-only translations.
