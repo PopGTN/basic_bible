@@ -51,6 +51,7 @@ Status meanings:
 - `blocked`: cannot move safely without another prerequisite or decision
 
 ## Completed Recently
+- `done` Moved the reference picker onto its own full-screen References screen, kept the search/AZ/history controls there, and changed the picker so only one book expands into chapter choices at a time instead of showing every chapter grid at once.
 - `done` Cleaned up the Versions screen so selecting a translation now switches quietly without a success snackbar, and locally available translations render a check-state chip instead of a misleading download icon.
 - `done` Rebuilt the reference picker around a single searchable book/chapter flow with canonical-vs-alphabetical ordering, added a history button for recently visited references, and moved verse-selection control into the main Settings page so the quick reader sheet does not own that option.
 - `done` Hardened reader book-name fallback so unresolved source IDs now resolve to real display labels or readable normalized names instead of bad `Unknown`-style output, and filtered empty book/document labels out of the picker and reader sections so blank entries no longer render.
@@ -116,6 +117,7 @@ Status meanings:
 - `done` Cleaned up remaining analyzer issues after the structural cleanup. `flutter analyze` now passes with no issues.
 
 ## Current Status
+- `in_progress` Continuous scrolling still needs a focused regression check because interacting with the reference bar or reference selector does not always keep the whole-Bible scroller and visible position in sync.
 - `in_progress` The reader now has working verse-list and document modes, structured note popups, inline annotation markers, and source-driven paragraph support, but document-mode fidelity is still limited by the parser structure that survives import.
 - `in_progress` The parser/app pipeline now preserves partial rich content across USFX, OSIS, and Zefania, but many non-verse layout cases and source-specific tags are still normalized too aggressively before the reader sees them.
 - `in_progress` Non-web Bible caching is persistent, but the web path still falls back to in-memory storage.
