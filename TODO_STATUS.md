@@ -51,6 +51,7 @@ Status meanings:
 - `blocked`: cannot move safely without another prerequisite or decision
 
 ## Completed Recently
+- `done` Refreshed the public app README so it now reflects the shipped reader modes, versions screen, reference picker, theme options, translation handling, and the current partial-vs-finished feature boundaries more accurately.
 - `done` Tightened Bible load performance again by removing extra translation-metadata and cache-existence lookups from the cached local load path, and by starting translation switches immediately instead of deferring the next Bible load through an extra event-loop turn.
 - `done` Removed `Show Introductions` from the quick Bible viewer settings sheet so that toggle now lives only in the full Settings page instead of being duplicated across both settings surfaces.
 - `done` Added a softer built-in-style `Soft Dark` theme option alongside `Pure Black`, and wired it into both Settings and the quick reader theme picker so users can keep a dark UI without losing selected switches, chips, and other controls against fully black surfaces.
@@ -127,6 +128,7 @@ Status meanings:
 - `done` Cleaned up remaining analyzer issues after the structural cleanup. `flutter analyze` now passes with no issues.
 
 ## Current Status
+- `in_progress` The References screen chapter tiles are being tightened again because they still take up too much room compared with the smaller verse-picker tiles the reader is already using elsewhere.
 - `in_progress` Continuous scrolling still needs a focused regression check because interacting with the reference bar or reference selector does not always keep the whole-Bible scroller and visible position in sync.
 - `in_progress` The reader now has working verse-list and document modes, structured note popups, inline annotation markers, and source-driven paragraph support, but document-mode fidelity is still limited by the parser structure that survives import.
 - `in_progress` The parser/app pipeline now preserves partial rich content across USFX, OSIS, and Zefania, but many non-verse layout cases and source-specific tags are still normalized too aggressively before the reader sees them.
