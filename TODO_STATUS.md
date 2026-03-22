@@ -35,6 +35,7 @@ Status meanings:
 - `blocked`: cannot move safely without another prerequisite or decision
 
 ## Completed Recently
+- `done` Brought OSIS and Zefania onto the same structured paragraph-block path as USFX so all supported formats can drive paragraph mode from parsed document markers instead of app-side guessing.
 - `done` Switched paragraph mode from a UI-only "join the whole chapter" fallback to document-driven grouping by preserving chapter paragraph markers from the source content and rendering multiple paragraph sections in the reader.
 - `done` Confirmed that the first paragraph-mode implementation was app-driven instead of source-driven, and identified the missing piece: in-chapter paragraph markers were not being preserved from the source documents.
 - `done` Fixed rich-span display spacing for tag-heavy sources like KJV and added a persisted reader layout mode so users can switch between verse-list and paragraph reading.
@@ -74,7 +75,7 @@ Status meanings:
 - `in_progress` Reader rendering now uses the structured parser output for intro blocks and richer verse details, but there is still room to improve the presentation and navigation flow around those details.
 - `in_progress` Reference selection is working again for chapters and verses, but structured cross-reference targets should still navigate more directly than the current label-based fallback.
 - `in_progress` Reader text-quality work has fixed rich-span spacing in KJV-style sources and added a second paragraph-style reading mode alongside the verse-list layout, but paragraph boundaries can still become richer if the parser preserves more of them over time.
-- `in_progress` Paragraph mode now follows preserved source paragraph markers for USFX chapter content, but the same level of paragraph-boundary fidelity is not yet implemented across every supported format.
+- `in_progress` Paragraph mode now follows structured paragraph-start blocks from all three supported parser formats, but source fidelity is still only as good as the markers each input file actually exposes.
 
 ## Recommended Next Step
 - `next` Use structured cross-reference targets directly in navigation so note/reference taps do not rely mostly on parsing display labels.
