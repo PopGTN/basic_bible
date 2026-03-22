@@ -51,6 +51,7 @@ Status meanings:
 - `blocked`: cannot move safely without another prerequisite or decision
 
 ## Completed Recently
+- `done` Removed the ripple/ink effect from the small-screen bottom navigation so tab switches now feel immediate without the default Material splash animation.
 - `done` Corrected the reader intro toggle so it now controls book introduction/front-matter blocks instead of chapter headers, removed the extra TOC-label description line from the introduction card, and limited those introduction blocks to chapter 1 instead of repeating them across later chapters.
 - `done` Fixed continuous-mode reference selection so picked book/chapter/verse jumps now stay targeted to the selected spot instead of being overridden by a follow-up chapter-top scroll, and tightened the chapter-header layout so section headers stay visually centered in the whole-Bible reader.
 - `done` Cleaned up reader book-label fallback and introduction presentation so unknown-book cases can now match against parsed TOC labels, the repeated third-line display label was removed from chapter headers, and that secondary label now appears in the introduction section instead when it is useful.

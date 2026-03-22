@@ -211,17 +211,28 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 CurveTween(curve: Curves.easeInOut),
               ),
               axisAlignment: -1,
-              child: BottomNavigationBar(
-                currentIndex: _currentIndex,
-                onTap: (i) => setState(() => _currentIndex = i),
-                items: tabs
-                    .map(
-                      (tab) => BottomNavigationBarItem(
-                        icon: Icon(tab['icon'] as IconData),
-                        label: tab['title'] as String,
-                      ),
-                    )
-                    .toList(),
+              child: Theme(
+                // The bottom tabs should switch immediately without the
+                // default Material ripple since this shell is being styled
+                // more like a static app dock than a tappable card row.
+                data: Theme.of(context).copyWith(
+                  splashFactory: NoSplash.splashFactory,
+                  splashColor: Colors.transparent,
+                  highlightColor: Colors.transparent,
+                  hoverColor: Colors.transparent,
+                ),
+                child: BottomNavigationBar(
+                  currentIndex: _currentIndex,
+                  onTap: (i) => setState(() => _currentIndex = i),
+                  items: tabs
+                      .map(
+                        (tab) => BottomNavigationBarItem(
+                          icon: Icon(tab['icon'] as IconData),
+                          label: tab['title'] as String,
+                        ),
+                      )
+                      .toList(),
+                ),
               ),
             ),
     );
