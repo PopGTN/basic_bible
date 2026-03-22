@@ -981,7 +981,10 @@ class _VerseDetailsSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
-    final versePreview = _VersePreviewText(verse: verse);
+    final versePreview = _VersePreviewText(
+      verse: verse,
+      annotationEntries: annotationEntries,
+    );
 
     return SafeArea(
       child: Padding(
@@ -1091,15 +1094,22 @@ class _VerseAnnotationEntry {
 }
 
 class _VersePreviewText {
-  const _VersePreviewText({required this.verse});
+  const _VersePreviewText({
+    required this.verse,
+    required this.annotationEntries,
+  });
 
   final BibleVerse verse;
+  final List<_VerseAnnotationEntry> annotationEntries;
 
   List<InlineSpan> inlineSpans(ColorScheme colors) {
     final spans = _displaySpans();
-    if (spans.isEmpty) return [TextSpan(text: verse.text)];
+    if (spans.isEmpty) {
+      return _fallbackInlineSpans(colors);
+    }
 
     final inlineSpans = <InlineSpan>[];
+    var renderedInlineMarkers = false;
 
     // Keep the verse preview aligned with the main reader so annotation letters
     // appear beside the anchored words here too, not only in the chapter view.
@@ -1115,10 +1125,39 @@ class _VersePreviewText {
           ),
         ),
       );
-      inlineSpans.addAll(_buildInlineAnnotationMarkers(colors, span));
+      final markers = _buildInlineAnnotationMarkers(colors, span);
+      if (markers.isNotEmpty) {
+        renderedInlineMarkers = true;
+        inlineSpans.addAll(markers);
+      }
+    }
+
+    // Some older or less expressive source content still has sheet entries but
+    // no anchored span metadata. Keep those marker letters visible in the
+    // preview instead of silently dropping them from the verse line entirely.
+    if (!renderedInlineMarkers && annotationEntries.isNotEmpty) {
+      inlineSpans.addAll(_fallbackMarkerSpans(colors));
     }
 
     return inlineSpans;
+  }
+
+  List<InlineSpan> _fallbackInlineSpans(ColorScheme colors) {
+    final spans = <InlineSpan>[TextSpan(text: verse.text)];
+    if (annotationEntries.isNotEmpty) {
+      spans.addAll(_fallbackMarkerSpans(colors));
+    }
+    return spans;
+  }
+
+  List<InlineSpan> _fallbackMarkerSpans(ColorScheme colors) {
+    return [
+      const TextSpan(text: ' '),
+      for (final entry in annotationEntries) ...[
+        _markerSpan(colors, entry.marker),
+        const TextSpan(text: ' '),
+      ],
+    ];
   }
 
   List<BibleVerseSpan> _displaySpans() {
@@ -1176,23 +1215,26 @@ class _VersePreviewText {
 
     if (markers.isEmpty) return const [];
 
-    return [
-      for (final marker in markers)
-        WidgetSpan(
-          alignment: PlaceholderAlignment.top,
-          child: Padding(
-            padding: const EdgeInsets.only(left: 1),
-            child: Text(
-              marker,
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
-                color: colors.onSurfaceVariant,
-              ),
-            ),
+    return [for (final marker in markers) _markerSpan(colors, marker)];
+  }
+
+  InlineSpan _markerSpan(ColorScheme colors, String marker) {
+    return WidgetSpan(
+      alignment: PlaceholderAlignment.aboveBaseline,
+      baseline: TextBaseline.alphabetic,
+      child: Padding(
+        padding: const EdgeInsets.only(left: 1),
+        child: Text(
+          marker,
+          style: TextStyle(
+            fontSize: 13,
+            height: 1,
+            fontWeight: FontWeight.w700,
+            color: colors.onSurfaceVariant,
           ),
         ),
-    ];
+      ),
+    );
   }
 
   List<String> _splitAnnotationMarkers(String? rawValue) {

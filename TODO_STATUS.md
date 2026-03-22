@@ -35,6 +35,7 @@ Status meanings:
 - `blocked`: cannot move safely without another prerequisite or decision
 
 ## Completed Recently
+- `done` Hardened the verse-detail popup preview so note letters stay visible there: anchored markers now render with stronger superscript styling, and the sheet falls back to its annotation-entry letters when a verse does not carry anchor metadata.
 - `done` Fixed stale cached translations that were hiding inline annotation letters by rebuilding older local Bible copies when they predate the newer per-span anchor metadata.
 - `done` Fixed the verse-detail popup preview so inline note/reference letters now render beside their anchored words there too, instead of being appended at the end of the verse text.
 - `done` Added inline annotation anchors so note/reference markers can now render beside the words they attach to when the parser preserves those anchors, instead of only appearing in a verse-level sheet.
