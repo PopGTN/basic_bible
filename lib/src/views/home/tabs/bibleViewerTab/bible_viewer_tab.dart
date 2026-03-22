@@ -93,6 +93,7 @@ class _BibleViewerTabState extends ConsumerState<BibleViewerTab> {
     final booksAsync = ref.watch(bibleBooksProvider);
     final currentReference = ref.watch(currentReferenceProvider);
     final chapterAsync = ref.watch(currentChapterProvider);
+    final layoutMode = ref.watch(readerLayoutModeProvider);
     final isSmall = widget.isSmallDevice;
 
     return Stack(
@@ -166,6 +167,7 @@ class _BibleViewerTabState extends ConsumerState<BibleViewerTab> {
                         chapter: chapter,
                         reference: currentReference,
                         fontSize: size,
+                        layoutMode: layoutMode,
                         isSmallDevice: isSmall,
                       )
                     : const _ErrorView(message: 'Chapter not found'),
@@ -193,6 +195,7 @@ class _BibleTextView extends StatefulWidget {
     required this.chapter,
     required this.reference,
     required this.fontSize,
+    required this.layoutMode,
     required this.isSmallDevice,
   });
 
@@ -201,6 +204,7 @@ class _BibleTextView extends StatefulWidget {
   final BibleChapter chapter;
   final BibleReference reference;
   final double fontSize;
+  final ReaderLayoutMode layoutMode;
   final bool isSmallDevice;
 
   @override
@@ -248,7 +252,10 @@ class _BibleTextViewState extends State<_BibleTextView> {
       _buildChapterHeader(context),
       ..._buildBookIntroductionBlocks(context),
       ..._buildChapterBlocks(context),
-      ...widget.chapter.verses.map((verse) => _buildVerse(context, verse)),
+      if (widget.layoutMode == ReaderLayoutMode.verseList)
+        ...widget.chapter.verses.map((verse) => _buildVerse(context, verse))
+      else
+        _buildParagraphReadingView(context),
     ];
 
     return Padding(
@@ -395,6 +402,40 @@ class _BibleTextViewState extends State<_BibleTextView> {
     );
   }
 
+  Widget _buildParagraphReadingView(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: RichText(
+        text: TextSpan(
+          style: TextStyle(
+            fontSize: widget.fontSize,
+            color: Theme.of(context).textTheme.bodyLarge?.color,
+            height: 1.7,
+          ),
+          children: [
+            for (final verse in widget.chapter.verses) ...[
+              TextSpan(
+                text: '${verse.number} ',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.primary,
+                  fontSize: widget.fontSize - 2,
+                  backgroundColor: widget.reference.verse == verse.number
+                      ? Theme.of(
+                          context,
+                        ).colorScheme.primaryContainer.withValues(alpha: 0.45)
+                      : null,
+                ),
+              ),
+              ..._buildVerseContentSpans(context, verse),
+              const TextSpan(text: ' '),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
   void _showVerseDetailsSheet(BuildContext context, BibleVerse verse) {
     final footnotes = _footnoteLines(verse);
     final references = _structuredReferences(verse);
@@ -505,7 +546,7 @@ class _BibleTextViewState extends State<_BibleTextView> {
     BuildContext context,
     BibleVerse verse,
   ) {
-    final spans = verse.spans;
+    final spans = _displaySpans(verse);
     if (spans.isEmpty) {
       return [TextSpan(text: verse.text)];
     }
@@ -524,6 +565,39 @@ class _BibleTextViewState extends State<_BibleTextView> {
         ),
       );
     }).toList();
+  }
+
+  List<BibleVerseSpan> _displaySpans(BibleVerse verse) {
+    if (verse.spans.isEmpty) return const [];
+
+    final displaySpans = <BibleVerseSpan>[];
+    var previousText = '';
+
+    for (final span in verse.spans) {
+      var text = span.text.trim();
+      if (text.isEmpty) continue;
+
+      // Some source formats split every word into separate rich spans.
+      // Reinsert display spacing here so tag-heavy sources like KJV do not
+      // collapse into "wordstucktogether" when rendered span-by-span.
+      if (_shouldInsertSpace(previousText, text)) {
+        text = ' $text';
+      }
+
+      displaySpans.add(
+        BibleVerseSpan(text: text, kind: span.kind, metadata: span.metadata),
+      );
+      previousText = text;
+    }
+
+    return displaySpans;
+  }
+
+  bool _shouldInsertSpace(String previousText, String currentText) {
+    if (previousText.isEmpty) return false;
+    if (currentText.startsWith(RegExp(r"[.,;:!?)}\]”’]"))) return false;
+    if (RegExp(r"[(\[{“‘/]$").hasMatch(previousText)) return false;
+    return true;
   }
 
   String _spanText(BibleVerseSpan span) {

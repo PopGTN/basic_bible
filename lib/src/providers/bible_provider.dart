@@ -6,6 +6,8 @@ import '../models/bible_models.dart';
 import '../repositories/app_bible_repository.dart';
 import '../services/app_database.dart';
 
+enum ReaderLayoutMode { verseList, paragraph }
+
 // Repository provider
 final bibleRepositoryProvider = Provider<AppBibleRepository>((ref) {
   final db = ref.watch(appDatabaseProvider);
@@ -13,9 +15,10 @@ final bibleRepositoryProvider = Provider<AppBibleRepository>((ref) {
 });
 
 // Current translation provider
-final currentTranslationProvider = StateNotifierProvider<TranslationNotifier, String>((ref) {
-  return TranslationNotifier();
-});
+final currentTranslationProvider =
+    StateNotifierProvider<TranslationNotifier, String>((ref) {
+      return TranslationNotifier();
+    });
 
 class TranslationNotifier extends StateNotifier<String> {
   TranslationNotifier() : super('kjv') {
@@ -35,10 +38,37 @@ class TranslationNotifier extends StateNotifier<String> {
   }
 }
 
+final readerLayoutModeProvider =
+    StateNotifierProvider<ReaderLayoutModeNotifier, ReaderLayoutMode>((ref) {
+      return ReaderLayoutModeNotifier();
+    });
+
+class ReaderLayoutModeNotifier extends StateNotifier<ReaderLayoutMode> {
+  ReaderLayoutModeNotifier() : super(ReaderLayoutMode.verseList) {
+    _loadSavedLayoutMode();
+  }
+
+  Future<void> _loadSavedLayoutMode() async {
+    final prefs = await SharedPreferences.getInstance();
+    final rawMode = prefs.getString('reader_layout_mode');
+    state = ReaderLayoutMode.values.firstWhere(
+      (mode) => mode.name == rawMode,
+      orElse: () => ReaderLayoutMode.verseList,
+    );
+  }
+
+  Future<void> setLayoutMode(ReaderLayoutMode mode) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('reader_layout_mode', mode.name);
+    state = mode;
+  }
+}
+
 // Current reference provider
-final currentReferenceProvider = StateNotifierProvider<ReferenceNotifier, BibleReference>((ref) {
-  return ReferenceNotifier();
-});
+final currentReferenceProvider =
+    StateNotifierProvider<ReferenceNotifier, BibleReference>((ref) {
+      return ReferenceNotifier();
+    });
 
 class ReferenceNotifier extends StateNotifier<BibleReference> {
   ReferenceNotifier() : super(BibleReference(bookId: 'GEN', chapter: 1)) {
@@ -51,11 +81,7 @@ class ReferenceNotifier extends StateNotifier<BibleReference> {
     final chapter = prefs.getInt('bible_chapter') ?? 1;
     final verse = prefs.getInt('bible_verse');
 
-    state = BibleReference(
-      bookId: bookId,
-      chapter: chapter,
-      verse: verse,
-    );
+    state = BibleReference(bookId: bookId, chapter: chapter, verse: verse);
   }
 
   Future<void> setReference(BibleReference reference) async {
@@ -72,19 +98,28 @@ class ReferenceNotifier extends StateNotifier<BibleReference> {
 
   void goToNextChapter(List<BibleBook> books) {
     final currentBook = books.firstWhere((b) => b.id == state.bookId);
-    final currentChapterIndex = currentBook.chapters.indexWhere((c) => c.number == state.chapter);
+    final currentChapterIndex = currentBook.chapters.indexWhere(
+      (c) => c.number == state.chapter,
+    );
 
     if (currentChapterIndex < currentBook.chapters.length - 1) {
       // Next chapter in same book
       final nextChapter = currentBook.chapters[currentChapterIndex + 1];
-      setReference(BibleReference(bookId: state.bookId, chapter: nextChapter.number));
+      setReference(
+        BibleReference(bookId: state.bookId, chapter: nextChapter.number),
+      );
     } else {
       // First chapter of next book
       final currentBookIndex = books.indexWhere((b) => b.id == state.bookId);
       if (currentBookIndex < books.length - 1) {
         final nextBook = books[currentBookIndex + 1];
         if (nextBook.chapters.isNotEmpty) {
-          setReference(BibleReference(bookId: nextBook.id, chapter: nextBook.chapters.first.number));
+          setReference(
+            BibleReference(
+              bookId: nextBook.id,
+              chapter: nextBook.chapters.first.number,
+            ),
+          );
         }
       }
     }
@@ -92,19 +127,28 @@ class ReferenceNotifier extends StateNotifier<BibleReference> {
 
   void goToPreviousChapter(List<BibleBook> books) {
     final currentBook = books.firstWhere((b) => b.id == state.bookId);
-    final currentChapterIndex = currentBook.chapters.indexWhere((c) => c.number == state.chapter);
+    final currentChapterIndex = currentBook.chapters.indexWhere(
+      (c) => c.number == state.chapter,
+    );
 
     if (currentChapterIndex > 0) {
       // Previous chapter in same book
       final prevChapter = currentBook.chapters[currentChapterIndex - 1];
-      setReference(BibleReference(bookId: state.bookId, chapter: prevChapter.number));
+      setReference(
+        BibleReference(bookId: state.bookId, chapter: prevChapter.number),
+      );
     } else {
       // Last chapter of previous book
       final currentBookIndex = books.indexWhere((b) => b.id == state.bookId);
       if (currentBookIndex > 0) {
         final prevBook = books[currentBookIndex - 1];
         if (prevBook.chapters.isNotEmpty) {
-          setReference(BibleReference(bookId: prevBook.id, chapter: prevBook.chapters.last.number));
+          setReference(
+            BibleReference(
+              bookId: prevBook.id,
+              chapter: prevBook.chapters.last.number,
+            ),
+          );
         }
       }
     }
@@ -112,17 +156,21 @@ class ReferenceNotifier extends StateNotifier<BibleReference> {
 }
 
 // Bible books provider
-final bibleBooksProvider = StateNotifierProvider<BibleBooksNotifier, AsyncValue<List<BibleBook>>>((ref) {
-  final repository = ref.watch(bibleRepositoryProvider);
-  final translationId = ref.watch(currentTranslationProvider);
-  return BibleBooksNotifier(repository, translationId);
-});
+final bibleBooksProvider =
+    StateNotifierProvider<BibleBooksNotifier, AsyncValue<List<BibleBook>>>((
+      ref,
+    ) {
+      final repository = ref.watch(bibleRepositoryProvider);
+      final translationId = ref.watch(currentTranslationProvider);
+      return BibleBooksNotifier(repository, translationId);
+    });
 
 class BibleBooksNotifier extends StateNotifier<AsyncValue<List<BibleBook>>> {
   final AppBibleRepository repository;
   String _currentTranslationId;
 
-  BibleBooksNotifier(this.repository, this._currentTranslationId) : super(const AsyncValue.loading()) {
+  BibleBooksNotifier(this.repository, this._currentTranslationId)
+    : super(const AsyncValue.loading()) {
     loadBible();
   }
 
@@ -137,11 +185,13 @@ class BibleBooksNotifier extends StateNotifier<AsyncValue<List<BibleBook>>> {
         books = await repository.loadLocalBible(_currentTranslationId);
       } on BibleParserException catch (e, st) {
         if (mounted) {
-          state = AsyncValue.error('There was an error parsing the Bible file. Please try a different translation or contact support.', st);
+          state = AsyncValue.error(
+            'There was an error parsing the Bible file. Please try a different translation or contact support.',
+            st,
+          );
         }
         return;
-      }
-      catch (e) {
+      } catch (e) {
         // Local load failed, try to download
         books = await repository.downloadBible(_currentTranslationId);
       }
@@ -151,10 +201,12 @@ class BibleBooksNotifier extends StateNotifier<AsyncValue<List<BibleBook>>> {
       }
     } on BibleParserException catch (e, st) {
       if (mounted) {
-        state = AsyncValue.error('There was an error parsing the Bible file. Please try a different translation or contact support.', st);
+        state = AsyncValue.error(
+          'There was an error parsing the Bible file. Please try a different translation or contact support.',
+          st,
+        );
       }
-    }
-    catch (e, st) {
+    } catch (e, st) {
       if (mounted) {
         state = AsyncValue.error(e, st);
       }
@@ -187,10 +239,12 @@ class BibleBooksNotifier extends StateNotifier<AsyncValue<List<BibleBook>>> {
       }
     } on BibleParserException catch (e, st) {
       if (mounted) {
-        state = AsyncValue.error('There was an error parsing the Bible file. Please try a different translation or contact support.', st);
+        state = AsyncValue.error(
+          'There was an error parsing the Bible file. Please try a different translation or contact support.',
+          st,
+        );
       }
-    }
-    catch (e, st) {
+    } catch (e, st) {
       if (mounted) {
         state = AsyncValue.error(e, st);
       }

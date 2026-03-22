@@ -55,7 +55,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
     final t = AppLocalizations.of(context)!;
-   
 
     // Responsive checks
     final width = MediaQuery.of(context).size.width;
@@ -71,7 +70,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
     // Tab configuration (widgets, titles, icons)
     final tabs = [
-      {'widget': const HomeTab(), 'title': t.home, 'icon': FontAwesomeIcons.house},
+      {
+        'widget': const HomeTab(),
+        'title': t.home,
+        'icon': FontAwesomeIcons.house,
+      },
       {
         'widget': BibleViewerTab(
           showBottomNav: showBottomNav,
@@ -83,7 +86,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         'title': t.bible,
         'icon': FontAwesomeIcons.book,
       },
-      {'widget': const MenuTab(), 'title': t.menu, 'icon': FontAwesomeIcons.bars},
+      {
+        'widget': const MenuTab(),
+        'title': t.menu,
+        'icon': FontAwesomeIcons.bars,
+      },
     ];
 
     final current = tabs[_currentIndex]; // currently selected tab
@@ -150,7 +157,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   ) {
     final title = Text(tab['title'] as String);
 
-
     // Extra buttons only appear on Bible tab
     final actions = isBible
         ? [
@@ -163,17 +169,68 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               icon: const Icon(Icons.volume_up),
               onPressed: () {},
               tooltip: 'Play Audio',
-          
             ),
-            // Translation selector (moves the popup from the viewer into the top AppBar)
             Consumer(
               builder: (context, ref, child) {
-                final currentTranslation = ref.watch(currentTranslationProvider);
+                final layoutMode = ref.watch(readerLayoutModeProvider);
                 final colors = Theme.of(context).colorScheme;
                 return Card(
                   color: colors.secondary,
                   elevation: 2,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: PopupMenuButton<ReaderLayoutMode>(
+                    color: colors.surface,
+                    tooltip: 'Reader layout',
+                    onSelected: (mode) {
+                      ref
+                          .read(readerLayoutModeProvider.notifier)
+                          .setLayoutMode(mode);
+                    },
+                    itemBuilder: (context) => const [
+                      PopupMenuItem(
+                        value: ReaderLayoutMode.verseList,
+                        child: Text('Verse List'),
+                      ),
+                      PopupMenuItem(
+                        value: ReaderLayoutMode.paragraph,
+                        child: Text('Paragraph'),
+                      ),
+                    ],
+                    child: Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.view_stream, color: colors.onSecondary),
+                          const SizedBox(width: 6),
+                          Text(
+                            layoutMode == ReaderLayoutMode.verseList
+                                ? 'List'
+                                : 'Paragraph',
+                            style: TextStyle(color: colors.onSecondary),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+            // Translation selector (moves the popup from the viewer into the top AppBar)
+            Consumer(
+              builder: (context, ref, child) {
+                final currentTranslation = ref.watch(
+                  currentTranslationProvider,
+                );
+                final colors = Theme.of(context).colorScheme;
+                return Card(
+                  color: colors.secondary,
+                  elevation: 2,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
                   child: PopupMenuButton<String>(
                     color: colors.surface, // menu background
                     padding: EdgeInsets.zero,
@@ -184,7 +241,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         children: [
                           Icon(Icons.translate, color: colors.onSecondary),
                           const SizedBox(width: 4),
-                          Text(currentTranslation, style: TextStyle(color: colors.onSecondary)),
+                          Text(
+                            currentTranslation,
+                            style: TextStyle(color: colors.onSecondary),
+                          ),
                         ],
                       ),
                     ),
@@ -200,24 +260,41 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       // schedules the work after the current frame so the
                       // PopupMenuRoute can finish closing safely.
                       Future.microtask(() async {
-                        await ref.read(currentTranslationProvider.notifier)
+                        await ref
+                            .read(currentTranslationProvider.notifier)
                             .setTranslation(translationId);
-                        await ref.read(bibleBooksProvider.notifier)
+                        await ref
+                            .read(bibleBooksProvider.notifier)
                             .changeTranslation(translationId);
                       });
                     },
                     itemBuilder: (context) => [
                       PopupMenuItem(
                         value: 'kjv',
-                        child: Text('King James Version (KJV)', style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
+                        child: Text(
+                          'King James Version (KJV)',
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.onSurface,
+                          ),
+                        ),
                       ),
                       PopupMenuItem(
                         value: 'asv',
-                        child: Text('American Standard Version (ASV)', style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
+                        child: Text(
+                          'American Standard Version (ASV)',
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.onSurface,
+                          ),
+                        ),
                       ),
                       PopupMenuItem(
                         value: 'web',
-                        child: Text('World English Bible (WEB)', style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
+                        child: Text(
+                          'World English Bible (WEB)',
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.onSurface,
+                          ),
+                        ),
                       ),
                     ],
                   ),
@@ -233,7 +310,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 return Card(
                   color: colors.secondary,
                   elevation: 2,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
                   child: PopupMenuButton<double>(
                     color: colors.surface,
                     tooltip: 'Bible text size',
@@ -246,12 +325,25 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         children: [
                           Icon(Icons.text_fields, color: colors.onSecondary),
                           const SizedBox(width: 6),
-                          Text('${size.toInt()}', style: TextStyle(color: colors.onSecondary)),
+                          Text(
+                            '${size.toInt()}',
+                            style: TextStyle(color: colors.onSecondary),
+                          ),
                         ],
                       ),
                     ),
                     itemBuilder: (context) => choices
-                        .map((s) => PopupMenuItem(value: s, child: Text('${s.toInt()}', style: TextStyle(color: Theme.of(context).colorScheme.onSurface))))
+                        .map(
+                          (s) => PopupMenuItem(
+                            value: s,
+                            child: Text(
+                              '${s.toInt()}',
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.onSurface,
+                              ),
+                            ),
+                          ),
+                        )
                         .toList(),
                   ),
                 );

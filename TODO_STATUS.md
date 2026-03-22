@@ -35,6 +35,7 @@ Status meanings:
 - `blocked`: cannot move safely without another prerequisite or decision
 
 ## Completed Recently
+- `done` Fixed rich-span display spacing for tag-heavy sources like KJV and added a persisted reader layout mode so users can switch between verse-list and paragraph reading.
 - `done` Restored chapter/verse picking flow by adding verse selection to the reference picker and making the reader scroll to and highlight a selected verse.
 - `done` Rendered structured book/chapter document blocks in the reader and replaced the old verse tap fallback with a richer bottom sheet for footnotes and cross-references.
 - `done` Brought the Zefania parser up to the same shared rich-model direction as the other supported formats, including structured introduction blocks, chapter headings, notes, references, and styled verse spans.
@@ -60,7 +61,7 @@ Status meanings:
 
 ## Current Status
 - `in_progress` The project now persists cached Bible data on disk for non-web platforms, but the web path still falls back to in-memory storage.
-- `in_progress` The app now renders rich verse spans end to end for the parser output it receives, including red-letter text, translator additions, some poetry/word metadata styling, and structured intro/heading blocks, but the note/reference UX can still be polished further.
+- `in_progress` The app now renders rich verse spans end to end for the parser output it receives, including red-letter text, translator additions, some poetry/word metadata styling, structured intro/heading blocks, and both verse-list and paragraph reading modes, but the note/reference UX can still be polished further.
 - `in_progress` The README is currently more of a feature wish list than a maintained reflection of actual repo status.
 - `in_progress` The app structure is cleaner, but the codebase is still not fully feature-sliced. Bible import, library management, reader UI, and settings are still spread across shared folders rather than organized as strict feature modules.
 - `in_progress` The project now has a plain-language documentation note explaining that Bible formatting support must preserve structure, not only flattened verse text.
@@ -70,6 +71,7 @@ Status meanings:
 - `in_progress` Phase 1 shared-model implementation is now real across USFX, OSIS, and Zefania at a partial-rich level, and the reader now renders intro/heading blocks, but better structured note/reference navigation still needs polish.
 - `in_progress` Reader rendering now uses the structured parser output for intro blocks and richer verse details, but there is still room to improve the presentation and navigation flow around those details.
 - `in_progress` Reference selection is working again for chapters and verses, but structured cross-reference targets should still navigate more directly than the current label-based fallback.
+- `in_progress` Reader text-quality work has fixed rich-span spacing in KJV-style sources and added a second paragraph-style reading mode alongside the verse-list layout, but paragraph boundaries can still become richer if the parser preserves more of them over time.
 
 ## Recommended Next Step
 - `next` Use structured cross-reference targets directly in navigation so note/reference taps do not rely mostly on parsing display labels.
