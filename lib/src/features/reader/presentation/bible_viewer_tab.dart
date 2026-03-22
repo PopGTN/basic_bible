@@ -30,6 +30,7 @@ class BibleViewerTab extends ConsumerStatefulWidget {
 
 class _BibleViewerTabState extends ConsumerState<BibleViewerTab> {
   final ScrollController _scrollController = ScrollController();
+  BibleReference? _continuousVisibleReference;
   // Removed local constants; layout spacing is handled by widgets directly.
   //TODO: Make The Text Size Changeable through Settings
   // Font size is now provided by FontSizeService; listen to changes in build
@@ -96,6 +97,11 @@ class _BibleViewerTabState extends ConsumerState<BibleViewerTab> {
     final continuousScrolling = ref.watch(continuousScrollingProvider);
     final isSmall = widget.isSmallDevice;
 
+    final displayReference =
+        continuousScrolling && _continuousVisibleReference != null
+        ? _continuousVisibleReference!
+        : currentReference;
+
     return Stack(
       children: [
         ValueListenableBuilder<double>(
@@ -112,10 +118,17 @@ class _BibleViewerTabState extends ConsumerState<BibleViewerTab> {
                         ),
                         chapter: chapter,
                         reference: currentReference,
+                        displayReference: displayReference,
                         fontSize: size,
                         layoutMode: layoutMode,
                         continuousScrolling: continuousScrolling,
                         isSmallDevice: isSmall,
+                        onVisibleReferenceChanged: (reference) {
+                          if (_continuousVisibleReference == reference) return;
+                          setState(() {
+                            _continuousVisibleReference = reference;
+                          });
+                        },
                       )
                     : const _ErrorView(message: 'Chapter not found'),
                 loading: () => const _LoadingView(),
@@ -155,25 +168,48 @@ class _BibleViewerTabState extends ConsumerState<BibleViewerTab> {
             child: ChapterBar(
               barHeight: 56,
               isFloating: isSmall,
-              reference: currentReference,
+              reference: displayReference,
               books: booksAsync.value ?? const [],
               onReferenceChanged: (reference) {
+                if (continuousScrolling) {
+                  setState(() {
+                    _continuousVisibleReference = reference;
+                  });
+                }
                 ref
                     .read(currentReferenceProvider.notifier)
                     .setReference(reference);
               },
               onPreviousChapter: () {
                 if (booksAsync.value != null) {
-                  ref
-                      .read(currentReferenceProvider.notifier)
-                      .goToPreviousChapter(booksAsync.value!);
+                  if (continuousScrolling) {
+                    _jumpToAdjacentContinuousChapter(
+                      ref,
+                      booksAsync.value!,
+                      displayReference,
+                      direction: -1,
+                    );
+                  } else {
+                    ref
+                        .read(currentReferenceProvider.notifier)
+                        .goToPreviousChapter(booksAsync.value!);
+                  }
                 }
               },
               onNextChapter: () {
                 if (booksAsync.value != null) {
-                  ref
-                      .read(currentReferenceProvider.notifier)
-                      .goToNextChapter(booksAsync.value!);
+                  if (continuousScrolling) {
+                    _jumpToAdjacentContinuousChapter(
+                      ref,
+                      booksAsync.value!,
+                      displayReference,
+                      direction: 1,
+                    );
+                  } else {
+                    ref
+                        .read(currentReferenceProvider.notifier)
+                        .goToNextChapter(booksAsync.value!);
+                  }
                 }
               },
             ),
@@ -183,6 +219,35 @@ class _BibleViewerTabState extends ConsumerState<BibleViewerTab> {
         // Translation selector removed — translations are selected from HomeScreen
       ],
     );
+  }
+
+  void _jumpToAdjacentContinuousChapter(
+    WidgetRef ref,
+    List<BibleBook> books,
+    BibleReference baseReference, {
+    required int direction,
+  }) {
+    final book =
+        resolveBookFromReference(books, baseReference.bookId) ?? books.first;
+    final chapterIndex = book.chapters.indexWhere(
+      (chapter) => chapter.number == baseReference.chapter,
+    );
+    final safeIndex = chapterIndex >= 0 ? chapterIndex : 0;
+    final targetIndex = safeIndex + direction;
+    if (targetIndex < 0 || targetIndex >= book.chapters.length) {
+      return;
+    }
+
+    final targetChapter = book.chapters[targetIndex];
+    final targetReference = BibleReference(
+      bookId: book.id,
+      chapter: targetChapter.number,
+    );
+
+    setState(() {
+      _continuousVisibleReference = targetReference;
+    });
+    ref.read(currentReferenceProvider.notifier).setReference(targetReference);
   }
 }
 
@@ -206,20 +271,24 @@ class _BibleTextView extends StatefulWidget {
     required this.book,
     required this.chapter,
     required this.reference,
+    required this.displayReference,
     required this.fontSize,
     required this.layoutMode,
     required this.continuousScrolling,
     required this.isSmallDevice,
+    required this.onVisibleReferenceChanged,
   });
 
   final ScrollController controller;
   final BibleBook book;
   final BibleChapter chapter;
   final BibleReference reference;
+  final BibleReference displayReference;
   final double fontSize;
   final ReaderLayoutMode layoutMode;
   final bool continuousScrolling;
   final bool isSmallDevice;
+  final ValueChanged<BibleReference> onVisibleReferenceChanged;
 
   @override
   State<_BibleTextView> createState() => _BibleTextViewState();
@@ -227,12 +296,17 @@ class _BibleTextView extends StatefulWidget {
 
 class _BibleTextViewState extends State<_BibleTextView> {
   final Map<String, GlobalKey> _verseKeys = <String, GlobalKey>{};
+  final Map<int, GlobalKey> _chapterSectionKeys = <int, GlobalKey>{};
   bool _showSelectedVerseFocus = true;
+  bool _suppressNextChapterAutoScroll = false;
 
   @override
   void initState() {
     super.initState();
     _scheduleVerseFocus();
+    if (widget.continuousScrolling) {
+      _scheduleChapterFocus();
+    }
   }
 
   @override
@@ -242,6 +316,14 @@ class _BibleTextViewState extends State<_BibleTextView> {
         oldWidget.chapter != widget.chapter) {
       _showSelectedVerseFocus = true;
       _scheduleVerseFocus();
+    }
+    if (widget.continuousScrolling &&
+        oldWidget.reference.chapter != widget.reference.chapter) {
+      if (_suppressNextChapterAutoScroll) {
+        _suppressNextChapterAutoScroll = false;
+      } else {
+        _scheduleChapterFocus();
+      }
     }
   }
 
@@ -265,12 +347,33 @@ class _BibleTextViewState extends State<_BibleTextView> {
     });
   }
 
+  void _scheduleChapterFocus() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !widget.continuousScrolling) return;
+      final targetContext = _chapterSectionKey(
+        widget.reference.chapter,
+      ).currentContext;
+      if (targetContext != null) {
+        Scrollable.ensureVisible(
+          targetContext,
+          duration: const Duration(milliseconds: 280),
+          curve: Curves.easeInOut,
+          alignment: 0.02,
+        );
+      }
+    });
+  }
+
   bool get _hasActiveVerseFocus =>
       _showSelectedVerseFocus && widget.reference.verse != null;
 
   GlobalKey _verseKey(int chapterNumber, int verseNumber) {
     final key = '$chapterNumber:$verseNumber';
     return _verseKeys.putIfAbsent(key, GlobalKey.new);
+  }
+
+  GlobalKey _chapterSectionKey(int chapterNumber) {
+    return _chapterSectionKeys.putIfAbsent(chapterNumber, GlobalKey.new);
   }
 
   bool _isFocusedVerse(int chapterNumber, BibleVerse verse) =>
@@ -322,7 +425,13 @@ class _BibleTextViewState extends State<_BibleTextView> {
         return false;
       },
       child: widget.continuousScrolling
-          ? _buildContinuousReadingView(context)
+          ? NotificationListener<ScrollUpdateNotification>(
+              onNotification: (notification) {
+                _syncVisibleChapterFromViewport(context);
+                return false;
+              },
+              child: _buildContinuousReadingView(context),
+            )
           : _buildSingleChapterView(context),
     );
   }
@@ -330,7 +439,7 @@ class _BibleTextViewState extends State<_BibleTextView> {
   Widget _buildSingleChapterView(BuildContext context) {
     final contentWidgets = <Widget>[
       _buildChapterHeader(context),
-      ..._buildBookIntroductionBlocks(context),
+      ..._buildBookIntroductionBlocks(context, showForCurrentSection: true),
       ..._buildChapterBlocks(context),
       if (widget.layoutMode == ReaderLayoutMode.verseList)
         ...widget.chapter.verses.map((verse) => _buildVerse(context, verse))
@@ -397,9 +506,11 @@ class _BibleTextViewState extends State<_BibleTextView> {
     );
   }
 
-  List<Widget> _buildBookIntroductionBlocks(BuildContext context) {
-    if (widget.reference.chapter != 1 ||
-        widget.book.introductionBlocks.isEmpty) {
+  List<Widget> _buildBookIntroductionBlocks(
+    BuildContext context, {
+    required bool showForCurrentSection,
+  }) {
+    if (!showForCurrentSection || widget.book.introductionBlocks.isEmpty) {
       return const [];
     }
 
@@ -591,14 +702,6 @@ class _BibleTextViewState extends State<_BibleTextView> {
   }
 
   Widget _buildContinuousReadingView(BuildContext context) {
-    final startIndex = widget.book.chapters.indexWhere(
-      (chapter) => chapter.number == widget.reference.chapter,
-    );
-    final chapterStartIndex = startIndex >= 0 ? startIndex : 0;
-    final visibleChapters = widget.book.chapters
-        .skip(chapterStartIndex)
-        .toList();
-
     return ListView.builder(
       controller: widget.controller,
       padding: EdgeInsets.only(
@@ -607,21 +710,11 @@ class _BibleTextViewState extends State<_BibleTextView> {
         top: widget.isSmallDevice ? 16 : 80,
         bottom: 72,
       ),
-      itemCount: visibleChapters.length + 1,
+      itemCount: widget.book.chapters.length,
       itemBuilder: (context, index) {
-        if (index == 0) {
-          return Column(
-            children: [
-              _buildChapterHeader(context),
-              if (widget.reference.chapter == 1)
-                ..._buildBookIntroductionBlocks(context),
-            ],
-          );
-        }
-
-        final chapter = visibleChapters[index - 1];
-        final showSectionHeader = chapter.number != widget.reference.chapter;
+        final chapter = widget.book.chapters[index];
         return Padding(
+          key: _chapterSectionKey(chapter.number),
           padding: const EdgeInsets.only(bottom: 28),
           child: _ChapterSectionView(
             book: widget.book,
@@ -635,30 +728,39 @@ class _BibleTextViewState extends State<_BibleTextView> {
                 _buildVerseForChapter(context, chapter.number, verse),
             buildDocumentView: () =>
                 _buildDocumentReadingViewForChapter(context, chapter),
-            headerBuilder: showSectionHeader
-                ? () => _buildSectionHeader(context, chapter.number)
+            introBuilder: chapter.number == 1
+                ? () => Column(
+                    children: _buildBookIntroductionBlocks(
+                      context,
+                      showForCurrentSection: true,
+                    ),
+                  )
                 : null,
+            headerBuilder: () =>
+                _buildChapterHeaderForChapter(context, chapter.number),
           ),
         );
       },
     );
   }
 
-  Widget _buildSectionHeader(BuildContext context, int chapterNumber) {
-    final isPrimary = chapterNumber == widget.reference.chapter;
+  Widget _buildChapterHeaderForChapter(
+    BuildContext context,
+    int chapterNumber,
+  ) {
     return Padding(
-      padding: EdgeInsets.only(top: isPrimary ? 0 : 12, bottom: 16),
+      padding: const EdgeInsets.only(bottom: 16.0),
       child: Column(
         children: [
-          if (!isPrimary)
-            Text(
-              widget.book.name,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: Theme.of(context).colorScheme.secondary,
-                letterSpacing: 0.6,
-              ),
-              textAlign: TextAlign.center,
+          Text(
+            widget.book.name,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              color: Theme.of(context).colorScheme.secondary,
+              letterSpacing: 0.6,
             ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 4),
           Text(
             '$chapterNumber',
             style: Theme.of(context).textTheme.headlineMedium?.copyWith(
@@ -669,6 +771,34 @@ class _BibleTextViewState extends State<_BibleTextView> {
           ),
         ],
       ),
+    );
+  }
+
+  void _syncVisibleChapterFromViewport(BuildContext context) {
+    if (!widget.continuousScrolling || !mounted) return;
+
+    final threshold = widget.isSmallDevice ? 140.0 : 96.0;
+    var visibleChapter = widget.displayReference.chapter;
+    var bestTop = -double.infinity;
+
+    for (final chapter in widget.book.chapters) {
+      final sectionContext = _chapterSectionKey(chapter.number).currentContext;
+      if (sectionContext == null) continue;
+      final renderBox = sectionContext.findRenderObject() as RenderBox?;
+      if (renderBox == null || !renderBox.attached) continue;
+
+      final top = renderBox.localToGlobal(Offset.zero).dy;
+      if (top <= threshold && top > bestTop) {
+        bestTop = top;
+        visibleChapter = chapter.number;
+      }
+    }
+
+    if (visibleChapter == widget.displayReference.chapter) return;
+
+    _suppressNextChapterAutoScroll = true;
+    widget.onVisibleReferenceChanged(
+      BibleReference(bookId: widget.book.id, chapter: visibleChapter),
     );
   }
 
@@ -1298,6 +1428,7 @@ class _ChapterSectionView extends StatelessWidget {
     required this.buildChapterBlocks,
     required this.buildVerse,
     required this.buildDocumentView,
+    this.introBuilder,
     this.headerBuilder,
   });
 
@@ -1309,6 +1440,7 @@ class _ChapterSectionView extends StatelessWidget {
   final List<Widget> Function(BibleChapter chapter) buildChapterBlocks;
   final Widget Function(BibleVerse verse) buildVerse;
   final Widget Function() buildDocumentView;
+  final Widget Function()? introBuilder;
   final Widget Function()? headerBuilder;
 
   @override
@@ -1317,6 +1449,7 @@ class _ChapterSectionView extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (headerBuilder != null) headerBuilder!(),
+        if (introBuilder != null) introBuilder!(),
         ...buildChapterBlocks(chapter),
         if (layoutMode == ReaderLayoutMode.verseList)
           ...chapter.verses.map(buildVerse)

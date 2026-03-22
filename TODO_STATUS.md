@@ -51,6 +51,7 @@ Status meanings:
 - `blocked`: cannot move safely without another prerequisite or decision
 
 ## Completed Recently
+- `done` Reworked continuous scrolling so the reader now renders the full current book, keeps chapter headers formatted consistently across sections, keeps chapter 1 introductions visible in the continuous view, updates the reference bar from the visible chapter while scrolling, and makes the chapter arrows jump between chapter sections instead of acting like disconnected pagination controls.
 - `done` Changed the reader translation pill to show the translation abbreviation instead of the full translation name, which keeps the top-bar control compact and readable on mobile.
 - `done` Fixed the reader reference-bar regression after translation switches by resolving book references more flexibly, falling back to readable book names instead of `Unknown`, and moving the floating chapter bar above the reader content so its background renders as a real visible surface again.
 - `done` Added a first dedicated `Versions` screen for translation selection, wired the reader translation pill to open it, added simple row action buttons for future library features, and added an `Import Bible XML` entry to the top-right menu there.
@@ -200,6 +201,7 @@ Why it matters:
 Implementation note:
 - The parser already exposes the list of books through `BibleParser.books`.
 - The missing part is preserving introduction/front-matter content alongside those books.
+- Book-level introduction blocks do now render in the reader, but Bible-level front matter is still only partial because the current app import path is centered on books/chapters/verses rather than a first-class top-level document object.
 
 README.md reminder:
 - Update the README when introductions or front matter become visible in the app UI.
