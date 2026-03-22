@@ -51,6 +51,7 @@ Status meanings:
 - `blocked`: cannot move safely without another prerequisite or decision
 
 ## Completed Recently
+- `done` Corrected the reader book-label fallback again so the reference bar now prefers real parsed names and TOC labels, falls back to full canonical names for recognizable IDs, and no longer regresses into abbreviated chapter labels while still avoiding placeholder `Unknown` names.
 - `done` Restyled the Bible viewer overflow button into a filled outlined control so the top-right `more` action stays visible on darker reader app-bar backgrounds instead of blending in like a low-contrast icon.
 - `done` Made app startup configurable by adding persisted settings for opening directly on the Bible tab and for disabling the dummy login gate, then wired those settings through startup prefs bootstrap, routing, the home shell, Settings, and the Menu tab so the behavior is no longer hardcoded.
 - `done` Added shell-level Bible warm-up so the current translation now starts loading in the background from the main app shell before the reader tab is opened, which is the preferred path before introducing a dedicated startup loading screen.

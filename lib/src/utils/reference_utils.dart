@@ -90,11 +90,20 @@ String preferredBookName(BibleBook book) {
 
   for (final tocLabel in book.tocLabels) {
     final text = tocLabel.text.trim();
-    if (text.isNotEmpty) return text;
+    if (text.isNotEmpty && !_isPlaceholderBookName(text, book.id)) {
+      return text;
+    }
   }
 
+  // If parser-side names are weak, prefer a full canonical name when the ID is
+  // recognizable instead of collapsing the reader UI to short codes like MAT.
+  final canonicalName = _canonicalBookNameOrNull(book.id);
+  if (canonicalName != null) return canonicalName;
+
   final shortName = book.shortName.trim();
-  if (shortName.isNotEmpty) return shortName;
+  if (shortName.isNotEmpty && !_isPlaceholderBookName(shortName, book.id)) {
+    return shortName;
+  }
 
   return humanizeBookId(book.id);
 }
@@ -119,7 +128,8 @@ String displayBookNameForReference(
     return preferredBookName(currentBook);
   }
 
-  return humanizeBookId(referenceBookId);
+  return _canonicalBookNameOrNull(referenceBookId) ??
+      humanizeBookId(referenceBookId);
 }
 
 /// When a translation exposes a source-specific book ID we don't recognize,
@@ -130,6 +140,85 @@ String humanizeBookId(String bookId) {
       _normalizeStructuredBookId(bookId) ?? bookId.trim().toUpperCase();
   final prettified = _prettifyFallbackBookId(normalizedId);
   return prettified.isEmpty ? normalizedId : prettified;
+}
+
+String? _canonicalBookNameOrNull(String bookId) {
+  final normalizedId = bookId.trim().toUpperCase();
+  const canonicalNames = {
+    'GEN': 'Genesis',
+    'EXO': 'Exodus',
+    'LEV': 'Leviticus',
+    'NUM': 'Numbers',
+    'DEU': 'Deuteronomy',
+    'JOS': 'Joshua',
+    'JDG': 'Judges',
+    'RUT': 'Ruth',
+    '1SA': '1 Samuel',
+    '2SA': '2 Samuel',
+    '1KI': '1 Kings',
+    '2KI': '2 Kings',
+    '1CH': '1 Chronicles',
+    '2CH': '2 Chronicles',
+    'EZR': 'Ezra',
+    'NEH': 'Nehemiah',
+    'EST': 'Esther',
+    'JOB': 'Job',
+    'PSA': 'Psalms',
+    'PRO': 'Proverbs',
+    'ECC': 'Ecclesiastes',
+    'SNG': 'Song of Songs',
+    'ISA': 'Isaiah',
+    'JER': 'Jeremiah',
+    'LAM': 'Lamentations',
+    'EZK': 'Ezekiel',
+    'DAN': 'Daniel',
+    'HOS': 'Hosea',
+    'JOL': 'Joel',
+    'AMO': 'Amos',
+    'OBA': 'Obadiah',
+    'JON': 'Jonah',
+    'MIC': 'Micah',
+    'NAM': 'Nahum',
+    'HAB': 'Habakkuk',
+    'ZEP': 'Zephaniah',
+    'HAG': 'Haggai',
+    'ZEC': 'Zechariah',
+    'MAL': 'Malachi',
+    'MAT': 'Matthew',
+    'MRK': 'Mark',
+    'LUK': 'Luke',
+    'JHN': 'John',
+    'ACT': 'Acts',
+    'ROM': 'Romans',
+    '1CO': '1 Corinthians',
+    '2CO': '2 Corinthians',
+    'GAL': 'Galatians',
+    'EPH': 'Ephesians',
+    'PHP': 'Philippians',
+    'COL': 'Colossians',
+    '1TH': '1 Thessalonians',
+    '2TH': '2 Thessalonians',
+    '1TI': '1 Timothy',
+    '2TI': '2 Timothy',
+    'TIT': 'Titus',
+    'PHM': 'Philemon',
+    'HEB': 'Hebrews',
+    'JAS': 'James',
+    '1PE': '1 Peter',
+    '2PE': '2 Peter',
+    '1JN': '1 John',
+    '2JN': '2 John',
+    '3JN': '3 John',
+    'JUD': 'Jude',
+    'REV': 'Revelation',
+  };
+
+  final directMatch = canonicalNames[normalizedId];
+  if (directMatch != null) return directMatch;
+
+  final normalizedStructured = _normalizeStructuredBookId(normalizedId);
+  if (normalizedStructured == null) return null;
+  return canonicalNames[normalizedStructured];
 }
 
 String? _mapBookNameToId(String bookName) {
@@ -331,81 +420,13 @@ String? _normalizeStructuredBookId(String rawBookId) {
 
 /// Public helper to map book id to human name (used by the viewer title).
 String bookIdToName(String bookId) {
-  const map = {
-    'GEN': 'Genesis',
-    'EXO': 'Exodus',
-    'LEV': 'Leviticus',
-    'NUM': 'Numbers',
-    'DEU': 'Deuteronomy',
-    'JOS': 'Joshua',
-    'JDG': 'Judges',
-    'RUT': 'Ruth',
-    '1SA': '1 Samuel',
-    '2SA': '2 Samuel',
-    '1KI': '1 Kings',
-    '2KI': '2 Kings',
-    '1CH': '1 Chronicles',
-    '2CH': '2 Chronicles',
-    'EZR': 'Ezra',
-    'NEH': 'Nehemiah',
-    'EST': 'Esther',
-    'JOB': 'Job',
-    'PSA': 'Psalms',
-    'PRO': 'Proverbs',
-    'ECC': 'Ecclesiastes',
-    'SNG': 'Song of Songs',
-    'ISA': 'Isaiah',
-    'JER': 'Jeremiah',
-    'LAM': 'Lamentations',
-    'EZK': 'Ezekiel',
-    'DAN': 'Daniel',
-    'HOS': 'Hosea',
-    'JOL': 'Joel',
-    'AMO': 'Amos',
-    'OBA': 'Obadiah',
-    'JON': 'Jonah',
-    'MIC': 'Micah',
-    'NAM': 'Nahum',
-    'HAB': 'Habakkuk',
-    'ZEP': 'Zephaniah',
-    'HAG': 'Haggai',
-    'ZEC': 'Zechariah',
-    'MAL': 'Malachi',
-    'MAT': 'Matthew',
-    'MRK': 'Mark',
-    'LUK': 'Luke',
-    'JHN': 'John',
-    'ACT': 'Acts',
-    'ROM': 'Romans',
-    '1CO': '1 Corinthians',
-    '2CO': '2 Corinthians',
-    'GAL': 'Galatians',
-    'EPH': 'Ephesians',
-    'PHP': 'Philippians',
-    'COL': 'Colossians',
-    '1TH': '1 Thessalonians',
-    '2TH': '2 Thessalonians',
-    '1TI': '1 Timothy',
-    '2TI': '2 Timothy',
-    'TIT': 'Titus',
-    'PHM': 'Philemon',
-    'HEB': 'Hebrews',
-    'JAS': 'James',
-    '1PE': '1 Peter',
-    '2PE': '2 Peter',
-    '1JN': '1 John',
-    '2JN': '2 John',
-    '3JN': '3 John',
-    'JUD': 'Jude',
-    'REV': 'Revelation',
-  };
   final normalizedId = bookId.trim().toUpperCase();
-  final mapped = map[normalizedId];
+  final mapped = _canonicalBookNameOrNull(normalizedId);
   if (mapped != null) return mapped;
 
   final normalizedStructured =
       _normalizeStructuredBookId(normalizedId) ?? normalizedId;
-  final normalizedMapped = map[normalizedStructured];
+  final normalizedMapped = _canonicalBookNameOrNull(normalizedStructured);
   if (normalizedMapped != null) return normalizedMapped;
 
   final prettified = _prettifyFallbackBookId(normalizedStructured);
