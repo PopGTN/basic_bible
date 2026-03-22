@@ -94,7 +94,7 @@ String preferredBookName(BibleBook book) {
   final shortName = book.shortName.trim();
   if (shortName.isNotEmpty) return shortName;
 
-  return bookIdToName(book.id);
+  return humanizeBookId(book.id);
 }
 
 String displayBookNameForReference(
@@ -106,9 +106,17 @@ String displayBookNameForReference(
     return preferredBookName(currentBook);
   }
 
+  return humanizeBookId(referenceBookId);
+}
+
+/// When a translation exposes a source-specific book ID we don't recognize,
+/// display a readable version of that raw ID instead of forcing it through a
+/// hardcoded canonical-name list.
+String humanizeBookId(String bookId) {
   final normalizedId =
-      _normalizeStructuredBookId(referenceBookId) ?? referenceBookId;
-  return bookIdToName(normalizedId);
+      _normalizeStructuredBookId(bookId) ?? bookId.trim().toUpperCase();
+  final prettified = _prettifyFallbackBookId(normalizedId);
+  return prettified.isEmpty ? normalizedId : prettified;
 }
 
 String? _mapBookNameToId(String bookName) {

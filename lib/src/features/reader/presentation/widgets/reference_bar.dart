@@ -335,7 +335,7 @@ class _ReferencePickerScreenState extends State<ReferencePickerScreen> {
     final book = resolveBookFromReference(widget.books, reference.bookId);
     final bookName = book != null
         ? preferredBookName(book)
-        : bookIdToName(reference.bookId);
+        : humanizeBookId(reference.bookId);
     final verseSuffix = reference.verse != null ? ':${reference.verse}' : '';
     return '$bookName ${reference.chapter}$verseSuffix';
   }
@@ -596,10 +596,10 @@ class _ExpandedBookSection extends StatelessWidget {
 
 const SliverGridDelegateWithFixedCrossAxisCount _referencePickerGridDelegate =
     SliverGridDelegateWithFixedCrossAxisCount(
-      crossAxisCount: 6,
+      crossAxisCount: 7,
       mainAxisSpacing: 8,
       crossAxisSpacing: 8,
-      childAspectRatio: 1.1,
+      childAspectRatio: 1,
     );
 
 class _ReferenceNumberTile extends StatelessWidget {

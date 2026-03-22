@@ -262,7 +262,7 @@ BibleBook _resolveCurrentBook(List<BibleBook> books, String bookId) {
   if (books.isEmpty) {
     return BibleBook(
       id: bookId,
-      name: bookIdToName(bookId),
+      name: humanizeBookId(bookId),
       shortName: bookId,
       bookNumber: 0,
     );

@@ -51,6 +51,7 @@ Status meanings:
 - `blocked`: cannot move safely without another prerequisite or decision
 
 ## Completed Recently
+- `done` Tightened the References screen chapter grid to a smaller verse-style size and removed the hardcoded canonical-name display fallback from the reader/reference labels so unresolved book IDs now show a readable source-derived label instead of bad `Unknown`-style output.
 - `done` Expanded the theme system so system dark mode now uses a true black theme, and added explicit `Pure Black` and `Pure White` theme choices to both Settings and the quick reader theme picker.
 - `done` Moved the reader chapter/reference bar to the bottom on every screen size, switched the wider layouts off the old top-mounted placement, and rebalanced the reader padding so content clears the bottom floating bar instead of leaving a fake top gap.
 - `done` Improved the Bible viewer overflow menu contrast by forcing the dropdown item icons to use the popup's high-contrast `onSurface` color instead of inheriting a dimmer default tint.
