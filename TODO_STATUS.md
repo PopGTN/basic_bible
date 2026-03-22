@@ -51,6 +51,7 @@ Status meanings:
 - `blocked`: cannot move safely without another prerequisite or decision
 
 ## Completed Recently
+- `done` Added a softer built-in-style `Soft Dark` theme option alongside `Pure Black`, and wired it into both Settings and the quick reader theme picker so users can keep a dark UI without losing selected switches, chips, and other controls against fully black surfaces.
 - `done` Tuned the monochrome theme contrast so pure black mode now uses stronger variant/outline colors, visible text-button defaults, and clearer settings chips instead of letting several controls disappear into black surfaces.
 - `done` Tightened the References screen chapter grid to a smaller verse-style size and removed the hardcoded canonical-name display fallback from the reader/reference labels so unresolved book IDs now show a readable source-derived label instead of bad `Unknown`-style output.
 - `done` Expanded the theme system so system dark mode now uses a true black theme, and added explicit `Pure Black` and `Pure White` theme choices to both Settings and the quick reader theme picker.

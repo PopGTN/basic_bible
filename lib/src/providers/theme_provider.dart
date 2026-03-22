@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/legacy.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Supported app themes.
-enum AppThemeMode { system, light, dark, black, white, blue, red }
+enum AppThemeMode { system, light, dark, softDark, black, white, blue, red }
 
 class ThemeNotifier extends StateNotifier<AppThemeMode> {
   ThemeNotifier() : super(AppThemeMode.system) {
@@ -41,6 +41,7 @@ final themeDataMap = {
     seedColor: const Color.fromARGB(254, 242, 185, 101),
     brightness: Brightness.dark,
   ),
+  AppThemeMode.softDark: _buildSoftDarkTheme(),
   AppThemeMode.black: _buildMonochromeTheme(brightness: Brightness.dark),
   AppThemeMode.white: _buildMonochromeTheme(brightness: Brightness.light),
   AppThemeMode.blue: _buildSeedTheme(
@@ -58,6 +59,7 @@ ThemeMode mapThemeMode(AppThemeMode mode) {
     case AppThemeMode.system:
       return ThemeMode.system;
     case AppThemeMode.dark:
+    case AppThemeMode.softDark:
     case AppThemeMode.black:
       return ThemeMode.dark;
     case AppThemeMode.light:
@@ -76,6 +78,8 @@ ThemeData getThemeData(AppThemeMode mode) {
       return themeDataMap[AppThemeMode.light]!;
     case AppThemeMode.dark:
       return themeDataMap[AppThemeMode.dark]!;
+    case AppThemeMode.softDark:
+      return themeDataMap[AppThemeMode.softDark]!;
     case AppThemeMode.black:
       return themeDataMap[AppThemeMode.black]!;
     case AppThemeMode.white:
@@ -95,6 +99,8 @@ ThemeData getDarkThemeData(AppThemeMode mode) {
       return themeDataMap[AppThemeMode.black]!;
     case AppThemeMode.dark:
       return themeDataMap[AppThemeMode.dark]!;
+    case AppThemeMode.softDark:
+      return themeDataMap[AppThemeMode.softDark]!;
     case AppThemeMode.black:
       return themeDataMap[AppThemeMode.black]!;
     case AppThemeMode.light:
@@ -103,6 +109,68 @@ ThemeData getDarkThemeData(AppThemeMode mode) {
     case AppThemeMode.red:
       return themeDataMap[AppThemeMode.dark]!;
   }
+}
+
+ThemeData _buildSoftDarkTheme() {
+  final base = ThemeData.dark(useMaterial3: true);
+  final scheme = base.colorScheme.copyWith(
+    brightness: Brightness.dark,
+    surface: const Color(0xFF16181C),
+    onSurface: const Color(0xFFF4F4F5),
+    onSurfaceVariant: const Color(0xFFD5D7DB),
+    primaryContainer: const Color(0xFF2A2D33),
+    onPrimaryContainer: const Color(0xFFF4F4F5),
+    secondaryContainer: const Color(0xFF2A2D33),
+    onSecondaryContainer: const Color(0xFFF4F4F5),
+    surfaceContainerLowest: const Color(0xFF111317),
+    surfaceContainerLow: const Color(0xFF1B1D22),
+    surfaceContainer: const Color(0xFF23262C),
+    surfaceContainerHigh: const Color(0xFF2B2F36),
+    surfaceContainerHighest: const Color(0xFF343841),
+    outline: const Color(0xFF70747D),
+    outlineVariant: const Color(0xFF494D55),
+    surfaceTint: Colors.transparent,
+  );
+
+  // This gives users a darker reader that still keeps selected controls
+  // readable, without the harsher black-on-black contrast of pure black mode.
+  return base.copyWith(
+    colorScheme: scheme,
+    scaffoldBackgroundColor: scheme.surface,
+    canvasColor: scheme.surface,
+    splashColor: Colors.transparent,
+    highlightColor: Colors.transparent,
+    appBarTheme: AppBarTheme(
+      backgroundColor: scheme.surface,
+      foregroundColor: scheme.onSurface,
+      surfaceTintColor: Colors.transparent,
+      elevation: 0,
+    ),
+    outlinedButtonTheme: OutlinedButtonThemeData(
+      style: OutlinedButton.styleFrom(
+        foregroundColor: scheme.onSurface,
+        side: BorderSide(color: scheme.outline),
+      ),
+    ),
+    inputDecorationTheme: InputDecorationTheme(
+      filled: true,
+      fillColor: scheme.surfaceContainerLow,
+      hintStyle: TextStyle(color: scheme.onSurfaceVariant),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(18),
+        borderSide: BorderSide(color: scheme.outlineVariant),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(18),
+        borderSide: BorderSide(color: scheme.outlineVariant),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(18),
+        borderSide: BorderSide(color: scheme.onSurface),
+      ),
+    ),
+    dividerColor: scheme.outlineVariant,
+  );
 }
 
 ThemeData _buildSeedTheme({
