@@ -51,6 +51,7 @@ Status meanings:
 - `blocked`: cannot move safely without another prerequisite or decision
 
 ## Completed Recently
+- `done` Widened continuous mode into a whole-Bible lazy section list instead of a current-book-only reader, so the reference bar can now follow both book and chapter across the loaded translation while chapter jumps and section headers continue to work in one continuous scroll surface.
 - `done` Reworked continuous scrolling so the reader now renders the full current book, keeps chapter headers formatted consistently across sections, keeps chapter 1 introductions visible in the continuous view, updates the reference bar from the visible chapter while scrolling, and makes the chapter arrows jump between chapter sections instead of acting like disconnected pagination controls.
 - `done` Changed the reader translation pill to show the translation abbreviation instead of the full translation name, which keeps the top-bar control compact and readable on mobile.
 - `done` Fixed the reader reference-bar regression after translation switches by resolving book references more flexibly, falling back to readable book names instead of `Unknown`, and moving the floating chapter bar above the reader content so its background renders as a real visible surface again.
