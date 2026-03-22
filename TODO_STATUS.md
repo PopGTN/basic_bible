@@ -35,6 +35,7 @@ Status meanings:
 - `blocked`: cannot move safely without another prerequisite or decision
 
 ## Completed Recently
+- `done` Rewrote `README.md` so it now reflects the real app status, shipped reader capabilities, current parser support, and active development gaps instead of acting only as an old wish-list snapshot.
 - `done` Reorganized the active app paths around feature folders so auth, home shell, reader, library data, menu, and settings code now live under `lib/src/features/` instead of being split across generic provider/view/repository roots.
 - `done` Cleaned up downloaded-translation lifecycle handling so stored metadata now overrides built-in defaults when a bundled translation has been downloaded, and the picker reflects whether a translation is bundled, downloaded, or imported.
 - `done` Clarified reader-mode behavior so one mode stays fully verse-listed and the other now follows the parsed document structure more literally instead of forcing all source content into paragraph-style prose.
@@ -88,17 +89,17 @@ Status meanings:
 - `in_progress` Reader modes now better match the intended behavior, but document-mode fidelity is still limited by how much positional structure the parser currently preserves.
 
 ## Recommended Next Step
-- `next` Update `README.md` so it reflects the real app state instead of an old wish-list snapshot.
+- `next` Improve document-mode fidelity by preserving more source structure for poetry, line breaks, and paragraph boundaries across the supported Bible formats.
 
 Why this is next:
-- The code and internal tracker have moved much further than the public project summary.
-- README drift is now the clearest contributor-facing mismatch in the repo.
-- This is a bounded feature that can be completed without mixing it into the structural refactor commit.
+- The reader now has a true `Document` mode, but its quality still depends on how much source structure the parser keeps.
+- This is the clearest remaining user-facing quality gap in the reading experience.
+- It continues the one-feature-at-a-time workflow without mixing another broad refactor into the repo.
 
 Definition of done for this step:
-- The README lists the major capabilities that actually work today.
-- It distinguishes shipped behavior from planned work.
-- It keeps the project-learning tone without misleading contributors about repo truth.
+- USFX, OSIS, and Zefania preserve more paragraph, poetry, and line-break structure where their source files expose it.
+- The reader uses that richer structure without flattening it back into generic prose.
+- Document mode is visibly closer to the source document layout.
 
 ## Prioritized Backlog
 
