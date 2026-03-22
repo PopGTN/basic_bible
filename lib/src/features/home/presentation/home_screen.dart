@@ -67,15 +67,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           builder: (context, ref, child) {
             final themeMode = ref.watch(themeProvider);
             final layoutMode = ref.watch(readerLayoutModeProvider);
-            final showBookIntroductions = ref.watch(
-              showBookIntroductionsProvider,
-            );
 
             return _BibleViewerSettingsSheet(
               themeMode: themeMode,
               layoutMode: layoutMode,
               continuousScrolling: ref.watch(continuousScrollingProvider),
-              showBookIntroductions: showBookIntroductions,
               onDecreaseFont: () {
                 final nextSize = (FontSizeService.instance.size - 2).clamp(
                   12.0,
@@ -99,11 +95,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               onContinuousScrollingChanged: (value) {
                 ref
                     .read(continuousScrollingProvider.notifier)
-                    .setEnabled(value);
-              },
-              onShowBookIntroductionsChanged: (value) {
-                ref
-                    .read(showBookIntroductionsProvider.notifier)
                     .setEnabled(value);
               },
               onOpenAllSettings: () {
@@ -392,26 +383,22 @@ class _BibleViewerSettingsSheet extends StatelessWidget {
     required this.themeMode,
     required this.layoutMode,
     required this.continuousScrolling,
-    required this.showBookIntroductions,
     required this.onDecreaseFont,
     required this.onIncreaseFont,
     required this.onThemeSelected,
     required this.onLayoutSelected,
     required this.onContinuousScrollingChanged,
-    required this.onShowBookIntroductionsChanged,
     required this.onOpenAllSettings,
   });
 
   final AppThemeMode themeMode;
   final ReaderLayoutMode layoutMode;
   final bool continuousScrolling;
-  final bool showBookIntroductions;
   final VoidCallback onDecreaseFont;
   final VoidCallback onIncreaseFont;
   final ValueChanged<AppThemeMode> onThemeSelected;
   final ValueChanged<ReaderLayoutMode> onLayoutSelected;
   final ValueChanged<bool> onContinuousScrollingChanged;
-  final ValueChanged<bool> onShowBookIntroductionsChanged;
   final VoidCallback onOpenAllSettings;
 
   @override
@@ -497,15 +484,6 @@ class _BibleViewerSettingsSheet extends StatelessWidget {
                             : ReaderLayoutMode.verseList,
                       );
                     },
-                  ),
-                  Divider(
-                    height: 1,
-                    color: colors.outlineVariant.withValues(alpha: 0.7),
-                  ),
-                  _ToggleSettingsRow(
-                    title: 'Show Introductions',
-                    value: showBookIntroductions,
-                    onChanged: onShowBookIntroductionsChanged,
                   ),
                 ],
               ),
