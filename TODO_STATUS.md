@@ -35,6 +35,7 @@ Status meanings:
 - `blocked`: cannot move safely without another prerequisite or decision
 
 ## Completed Recently
+- `done` Improved the verse-detail note/reference UX by grouping annotation content into clearer cards and action chips so heavily annotated verses no longer fall back to a very plain stacked list.
 - `done` Finished translation asset lookup cleanup by removing filename-guess fallback logic and unifying built-in/imported translation resolution through explicit metadata.
 - `done` Added explicit local Bible import flows so users can pick USFX, OSIS, or Zefania XML files, store them as managed local translations, and reopen them from the translation picker on later launches.
 - `done` Finished structured cross-reference navigation so verse-detail taps now use parser-provided targets like `JHN.1.1` directly and only fall back to label parsing when no structured target is available.
@@ -81,19 +82,20 @@ Status meanings:
 - `in_progress` Structured cross-reference targets now navigate directly in the reader, but the broader note/reference experience can still be improved when a verse has many annotations.
 - `in_progress` Sequential feature workflow is now the active delivery model: finish one tracked feature, verify it, commit it, then move to the next tracked feature.
 - `in_progress` Built-in and imported translations now resolve through the same explicit metadata path, but downloaded translations and broader translation-library management can still be cleaned up further over time.
+- `in_progress` The verse-detail sheet is now much clearer for dense annotations, but broader translation-library management and downloaded-translation consistency still have room to improve.
 
 ## Recommended Next Step
-- `next` Improve the verse-detail note/reference UX so heavily annotated verses remain readable and easier to navigate without falling back to a very plain list presentation.
+- `next` Clean up downloaded-translation lifecycle handling so bundled, imported, and downloaded translations all participate in one consistent translation-library model.
 
 Why this is next:
-- The reader now has richer source data and direct cross-reference navigation, but the note/reference sheet is still the roughest part of the reading experience.
-- It is a focused UI feature with a clear completion boundary.
-- It builds directly on the parser and navigation work already finished.
+- Built-in and imported translations now resolve consistently, but downloaded translations still lag behind the cleaner library model.
+- This is the most direct follow-up to the translation cleanup work that just landed.
+- It remains a single bounded feature that fits the one-feature-at-a-time workflow.
 
 Definition of done for this step:
-- Footnotes and cross-references remain readable when a verse has many entries.
-- Structured reference targets are presented clearly inside the verse-detail UI.
-- Existing reading and navigation still work.
+- Downloaded translations persist and resolve through the same metadata-driven path as bundled and imported entries.
+- Translation picker behavior stays consistent regardless of translation source.
+- Existing reading and import flows still work.
 
 ## Prioritized Backlog
 

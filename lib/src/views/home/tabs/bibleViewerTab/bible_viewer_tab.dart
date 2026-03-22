@@ -535,7 +535,7 @@ class _BibleTextViewState extends State<_BibleTextView> {
   }
 
   void _showVerseDetailsSheet(BuildContext context, BibleVerse verse) {
-    final footnotes = _footnoteLines(verse);
+    final footnotes = _displayFootnotes(verse);
     final references = _structuredReferences(verse);
 
     showModalBottomSheet<void>(
@@ -543,110 +543,57 @@ class _BibleTextViewState extends State<_BibleTextView> {
       isScrollControlled: true,
       showDragHandle: true,
       builder: (context) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
-            child: SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    'Verse ${verse.number}',
-                    style: Theme.of(context).textTheme.titleLarge,
-                  ),
-                  if (footnotes.isNotEmpty) ...[
-                    const SizedBox(height: 16),
-                    Text(
-                      'Footnotes',
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                    const SizedBox(height: 8),
-                    for (final note in footnotes)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 10),
-                        child: Text(
-                          note,
-                          style: Theme.of(context).textTheme.bodyMedium,
-                        ),
-                      ),
-                  ],
-                  if (references.isNotEmpty) ...[
-                    const SizedBox(height: 16),
-                    Text(
-                      'Cross-References',
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                    const SizedBox(height: 8),
-                    for (final referenceEntry in references)
-                      ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        title: Text(referenceEntry.label),
-                        subtitle: referenceEntry.target != null
-                            ? Text(referenceEntry.target!)
-                            : null,
-                        trailing: const Icon(Icons.chevron_right),
-                        onTap: () {
-                          final parsedReference = parseAnyReference(
-                            target: referenceEntry.target,
-                            label: referenceEntry.label,
-                          );
-
-                          if (parsedReference != null) {
-                            // Use the parser-provided target first so taps can
-                            // go straight to the intended verse instead of
-                            // depending on display-label parsing.
-                            final referenceNotifier = ProviderScope.containerOf(
-                              context,
-                              listen: false,
-                            ).read(currentReferenceProvider.notifier);
-                            referenceNotifier.setReference(parsedReference);
-                            Navigator.of(context).pop();
-                            return;
-                          }
-
-                          Navigator.of(context).pop();
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (context) => ReferenceScreen(
-                                references: [referenceEntry],
-                                currentReference: widget.reference,
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                  ],
-                ],
-              ),
-            ),
-          ),
+        return _VerseDetailsSheet(
+          verse: verse,
+          footnotes: footnotes,
+          references: references,
+          onReferenceTap: (referenceEntry) =>
+              _openReferenceFromSheet(context, referenceEntry),
         );
       },
     );
   }
 
-  List<String> _footnoteLines(BibleVerse verse) {
-    if (verse.footnotes.isNotEmpty) {
-      return verse.footnotes.map((footnote) {
-        final label = [
-          if (footnote.marker != null && footnote.marker!.isNotEmpty)
-            footnote.marker,
-          if (footnote.label != null && footnote.label!.isNotEmpty)
-            footnote.label,
-        ].join(' ');
+  void _openReferenceFromSheet(
+    BuildContext context,
+    BibleCrossReference referenceEntry,
+  ) {
+    final parsedReference = parseAnyReference(
+      target: referenceEntry.target,
+      label: referenceEntry.label,
+    );
 
-        final referenceSuffix = footnote.references.isEmpty
-            ? ''
-            : ' (${footnote.references.map((ref) => ref.label).join(', ')})';
-
-        return label.isEmpty
-            ? '${footnote.text}$referenceSuffix'
-            : '$label ${footnote.text}$referenceSuffix';
-      }).toList();
+    if (parsedReference != null) {
+      // Use the parser-provided target first so taps can go straight to the
+      // intended verse instead of depending on display-label parsing.
+      final referenceNotifier = ProviderScope.containerOf(
+        context,
+        listen: false,
+      ).read(currentReferenceProvider.notifier);
+      referenceNotifier.setReference(parsedReference);
+      Navigator.of(context).pop();
+      return;
     }
 
-    return verse.notes ?? const [];
+    Navigator.of(context).pop();
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => ReferenceScreen(
+          references: [referenceEntry],
+          currentReference: widget.reference,
+        ),
+      ),
+    );
+  }
+
+  List<BibleFootnote> _displayFootnotes(BibleVerse verse) {
+    if (verse.footnotes.isNotEmpty) {
+      return verse.footnotes;
+    }
+
+    return (verse.notes ?? const [])
+        .map((note) => BibleFootnote(text: note))
+        .toList();
   }
 
   List<BibleCrossReference> _structuredReferences(BibleVerse verse) {
@@ -778,6 +725,187 @@ class _ParagraphSection {
 
   final List<BibleDocumentBlock> leadingBlocks;
   final List<BibleVerse> verses;
+}
+
+class _VerseDetailsSheet extends StatelessWidget {
+  const _VerseDetailsSheet({
+    required this.verse,
+    required this.footnotes,
+    required this.references,
+    required this.onReferenceTap,
+  });
+
+  final BibleVerse verse;
+  final List<BibleFootnote> footnotes;
+  final List<BibleCrossReference> references;
+  final ValueChanged<BibleCrossReference> onReferenceTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('Verse ${verse.number}', style: theme.textTheme.titleLarge),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  if (footnotes.isNotEmpty)
+                    _SummaryChip(
+                      icon: Icons.info_outline,
+                      label: '${footnotes.length} footnotes',
+                    ),
+                  if (references.isNotEmpty)
+                    _SummaryChip(
+                      icon: Icons.link,
+                      label: '${references.length} cross-references',
+                    ),
+                ],
+              ),
+              if (footnotes.isNotEmpty) ...[
+                const SizedBox(height: 20),
+                Text('Footnotes', style: theme.textTheme.titleMedium),
+                const SizedBox(height: 10),
+                for (final footnote in footnotes)
+                  _VerseDetailCard(
+                    leading: Icons.info_outline,
+                    title: _footnoteTitle(footnote),
+                    body: footnote.text,
+                    footer: footnote.references.isEmpty
+                        ? null
+                        : Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: [
+                              for (final reference in footnote.references)
+                                ActionChip(
+                                  avatar: const Icon(Icons.link, size: 16),
+                                  label: Text(reference.label),
+                                  onPressed: () => onReferenceTap(reference),
+                                ),
+                            ],
+                          ),
+                  ),
+              ],
+              if (references.isNotEmpty) ...[
+                const SizedBox(height: 20),
+                Text('Cross-References', style: theme.textTheme.titleMedium),
+                const SizedBox(height: 10),
+                for (final referenceEntry in references)
+                  Card(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    color: colors.surfaceContainerHighest.withValues(
+                      alpha: 0.45,
+                    ),
+                    child: ListTile(
+                      leading: const Icon(Icons.link),
+                      title: Text(referenceEntry.label),
+                      subtitle: referenceEntry.target != null
+                          ? Text(referenceEntry.target!)
+                          : null,
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: () => onReferenceTap(referenceEntry),
+                    ),
+                  ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  String? _footnoteTitle(BibleFootnote footnote) {
+    final parts = [
+      if (footnote.marker != null && footnote.marker!.isNotEmpty)
+        footnote.marker!,
+      if (footnote.label != null && footnote.label!.isNotEmpty) footnote.label!,
+    ];
+
+    if (parts.isEmpty) return null;
+    return parts.join(' ');
+  }
+}
+
+class _VerseDetailCard extends StatelessWidget {
+  const _VerseDetailCard({
+    required this.leading,
+    required this.body,
+    this.title,
+    this.footer,
+  });
+
+  final IconData leading;
+  final String body;
+  final String? title;
+  final Widget? footer;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      color: colors.surfaceContainerHighest.withValues(alpha: 0.45),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(leading, size: 18),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (title != null) ...[
+                        Text(
+                          title!,
+                          style: Theme.of(context).textTheme.titleSmall,
+                        ),
+                        const SizedBox(height: 4),
+                      ],
+                      Text(
+                        body,
+                        style: Theme.of(
+                          context,
+                        ).textTheme.bodyMedium?.copyWith(height: 1.45),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            if (footer != null) ...[const SizedBox(height: 12), footer!],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SummaryChip extends StatelessWidget {
+  const _SummaryChip({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Chip(avatar: Icon(icon, size: 16), label: Text(label));
+  }
 }
 
 class _DocumentBlockView extends StatelessWidget {
