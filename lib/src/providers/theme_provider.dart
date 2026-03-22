@@ -380,30 +380,37 @@ ThemeData _buildMonochromeTheme({required Brightness brightness}) {
       elevation: 0,
     ),
     iconTheme: IconThemeData(color: foreground),
-    switchTheme: !isDark
-        ? null
-        : SwitchThemeData(
-            thumbColor: WidgetStateProperty.resolveWith((states) {
-              if (states.contains(WidgetState.selected)) return foreground;
-              return onSurfaceVariant;
-            }),
-            trackColor: WidgetStateProperty.resolveWith((states) {
-              if (states.contains(WidgetState.selected)) {
-                return foreground.withValues(alpha: 0.22);
-              }
-              return highSurface;
-            }),
-            trackOutlineColor: WidgetStateProperty.resolveWith((states) {
-              if (states.contains(WidgetState.selected)) return foreground;
-              return outline;
-            }),
-            // Pure black mode needs an explicit border width or the switch can
-            // disappear into the all-black settings background.
-            trackOutlineWidth: WidgetStateProperty.resolveWith((states) {
-              if (states.contains(WidgetState.selected)) return 1.8;
-              return 1.4;
-            }),
-          ),
+    switchTheme: SwitchThemeData(
+      thumbColor: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.selected)) return foreground;
+        return onSurfaceVariant;
+      }),
+      trackColor: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.selected)) {
+          return foreground.withValues(alpha: isDark ? 0.22 : 0.14);
+        }
+        return highSurface;
+      }),
+      trackOutlineColor: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.selected)) return foreground;
+        return outline;
+      }),
+      // Monochrome themes need an explicit border width or the switch can
+      // disappear into fully black or fully white settings backgrounds.
+      trackOutlineWidth: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.selected)) return 1.8;
+        return 1.4;
+      }),
+    ),
+    bottomNavigationBarTheme: BottomNavigationBarThemeData(
+      backgroundColor: background,
+      selectedItemColor: foreground,
+      unselectedItemColor: onSurfaceVariant,
+      selectedIconTheme: IconThemeData(color: foreground),
+      unselectedIconTheme: IconThemeData(color: onSurfaceVariant),
+      selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w700),
+      unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500),
+    ),
     textButtonTheme: TextButtonThemeData(
       style: TextButton.styleFrom(
         foregroundColor: foreground,
