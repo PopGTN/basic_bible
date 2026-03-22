@@ -1536,6 +1536,7 @@ class _BibleTextViewState extends State<_BibleTextView> {
       case BibleVerseSpanKind.translatorAddition:
       case BibleVerseSpanKind.quote:
       case BibleVerseSpanKind.poetry:
+      case BibleVerseSpanKind.selah:
         return FontStyle.italic;
       default:
         return FontStyle.normal;
@@ -1547,6 +1548,7 @@ class _BibleTextViewState extends State<_BibleTextView> {
       case BibleVerseSpanKind.wordsOfJesus:
         return FontWeight.w600;
       case BibleVerseSpanKind.divineNameTag:
+      case BibleVerseSpanKind.acrosticHeading:
         return FontWeight.w700;
       case BibleVerseSpanKind.word:
         return FontWeight.w500;
@@ -1558,6 +1560,7 @@ class _BibleTextViewState extends State<_BibleTextView> {
   TextDecoration? _spanDecoration(BibleVerseSpanKind kind) {
     switch (kind) {
       case BibleVerseSpanKind.word:
+      case BibleVerseSpanKind.properName:
         return TextDecoration.underline;
       default:
         return null;
@@ -1925,6 +1928,7 @@ class _VersePreviewText {
       case BibleVerseSpanKind.translatorAddition:
       case BibleVerseSpanKind.quote:
       case BibleVerseSpanKind.poetry:
+      case BibleVerseSpanKind.selah:
         return FontStyle.italic;
       default:
         return FontStyle.normal;
@@ -1936,6 +1940,7 @@ class _VersePreviewText {
       case BibleVerseSpanKind.wordsOfJesus:
         return FontWeight.w600;
       case BibleVerseSpanKind.divineNameTag:
+      case BibleVerseSpanKind.acrosticHeading:
         return FontWeight.w700;
       case BibleVerseSpanKind.word:
         return FontWeight.w500;
@@ -1947,6 +1952,7 @@ class _VersePreviewText {
   TextDecoration? _spanDecoration(BibleVerseSpanKind kind) {
     switch (kind) {
       case BibleVerseSpanKind.word:
+      case BibleVerseSpanKind.properName:
         return TextDecoration.underline;
       default:
         return null;
