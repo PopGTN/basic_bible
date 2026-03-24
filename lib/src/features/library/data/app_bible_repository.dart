@@ -197,10 +197,20 @@ class AppBibleRepository {
         final parsed = await compute(_parseBibleToSerializable, content);
 
         final books = parsed.map(_mapSerializableBook).toList();
+        final downloadedTranslation = BibleTranslation(
+          id: translation.id,
+          name: translation.name,
+          language: translation.language,
+          description: translation.description,
+          isLocal: true,
+          githubUrl: translation.githubUrl,
+          format: translation.format,
+          sourceType: BibleSourceType.download,
+        );
 
         await _db.insertBible(translationId, books);
         await _db.upsertTranslationMetadata(
-          translation: translation,
+          translation: downloadedTranslation,
           sourceLocation: translation.githubUrl,
           sourceTypeOverride: BibleSourceType.download,
         );
@@ -316,6 +326,45 @@ class AppBibleRepository {
     }
 
     await _db.deleteBible(translationId);
+    _memoryCacheByTranslation.remove(translationId);
+    if (_currentTranslationId == translationId) {
+      _currentTranslationId = null;
+      _cachedBooks = [];
+    }
+  }
+
+  Future<void> removeDownloadedTranslation(String translationId) async {
+    final storedTranslations = await _db.getStoredTranslations();
+    BibleTranslation? translation;
+    for (final candidate in storedTranslations) {
+      if (candidate.id == translationId) {
+        translation = candidate;
+        break;
+      }
+    }
+
+    if (translation == null) {
+      throw Exception('Translation $translationId was not found.');
+    }
+    if (translation.sourceType != BibleSourceType.download) {
+      throw Exception('Only downloaded translations can be removed.');
+    }
+
+    await _db.deleteBibleContent(translationId);
+    await _db.upsertTranslationMetadata(
+      translation: BibleTranslation(
+        id: translation.id,
+        name: translation.name,
+        language: translation.language,
+        description: translation.description,
+        isLocal: false,
+        githubUrl: translation.githubUrl,
+        format: translation.format,
+        sourceType: BibleSourceType.download,
+      ),
+      sourceLocation: translation.githubUrl,
+      sourceTypeOverride: BibleSourceType.download,
+    );
     _memoryCacheByTranslation.remove(translationId);
     if (_currentTranslationId == translationId) {
       _currentTranslationId = null;

@@ -70,6 +70,17 @@ class VersionsScreen extends ConsumerWidget {
                       allTranslations: translations,
                     )
                   : null,
+              onRemoveDownloaded:
+                  translation.sourceType == BibleSourceType.download &&
+                      translation.isLocal
+                  ? () => _removeDownloadedTranslation(
+                      context,
+                      ref,
+                      translation: translation,
+                      currentTranslationId: currentTranslationId,
+                      allTranslations: translations,
+                    )
+                  : null,
             );
           },
         ),
@@ -206,6 +217,65 @@ class VersionsScreen extends ConsumerWidget {
       );
     }
   }
+
+  Future<void> _removeDownloadedTranslation(
+    BuildContext context,
+    WidgetRef ref, {
+    required BibleTranslation translation,
+    required String currentTranslationId,
+    required List<BibleTranslation> allTranslations,
+  }) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Remove ${translation.name} download?'),
+        content: const Text(
+          'This removes the downloaded Bible from local app storage. It will stay in the library as a downloadable option so you can download it again later.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Remove'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !context.mounted) return;
+
+    try {
+      if (currentTranslationId == translation.id) {
+        final fallback = allTranslations.firstWhere(
+          (candidate) => candidate.id != translation.id,
+          orElse: () => AppBibleRepository.builtInTranslations.first,
+        );
+        await ref
+            .read(currentTranslationProvider.notifier)
+            .setTranslation(fallback.id);
+      }
+
+      await ref
+          .read(bibleBooksProvider.notifier)
+          .removeDownloadedTranslation(translation.id);
+      ref.invalidate(availableTranslationsProvider);
+
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Removed local download for ${translation.name}.'),
+        ),
+      );
+    } catch (error) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not remove download: $error')),
+      );
+    }
+  }
 }
 
 enum _VersionsMenuAction { importBibleXml }
@@ -216,12 +286,14 @@ class _TranslationListTile extends StatelessWidget {
     required this.isSelected,
     required this.onTap,
     this.onDeleteImported,
+    this.onRemoveDownloaded,
   });
 
   final BibleTranslation translation;
   final bool isSelected;
   final VoidCallback onTap;
   final VoidCallback? onDeleteImported;
+  final VoidCallback? onRemoveDownloaded;
 
   @override
   Widget build(BuildContext context) {
@@ -229,7 +301,8 @@ class _TranslationListTile extends StatelessWidget {
     final textTheme = Theme.of(context).textTheme;
     final sourceLabel = switch (translation.sourceType) {
       BibleSourceType.asset => 'Bundled',
-      BibleSourceType.download => 'Downloaded',
+      BibleSourceType.download =>
+        translation.isLocal ? 'Downloaded' : 'Downloadable',
       BibleSourceType.import => 'Imported',
     };
 
@@ -295,24 +368,38 @@ class _TranslationListTile extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 12),
-              if (onDeleteImported != null)
+              if (onDeleteImported != null || onRemoveDownloaded != null)
                 PopupMenuButton<_TranslationAction>(
                   onSelected: (action) {
                     if (action == _TranslationAction.deleteImported) {
                       onDeleteImported!();
+                    } else if (action == _TranslationAction.removeDownloaded) {
+                      onRemoveDownloaded!();
                     }
                   },
-                  itemBuilder: (context) => const [
-                    PopupMenuItem(
-                      value: _TranslationAction.deleteImported,
-                      child: Row(
-                        children: [
-                          Icon(Icons.delete_outline),
-                          SizedBox(width: 8),
-                          Text('Delete import'),
-                        ],
+                  itemBuilder: (context) => [
+                    if (onDeleteImported != null)
+                      const PopupMenuItem(
+                        value: _TranslationAction.deleteImported,
+                        child: Row(
+                          children: [
+                            Icon(Icons.delete_outline),
+                            SizedBox(width: 8),
+                            Text('Delete import'),
+                          ],
+                        ),
                       ),
-                    ),
+                    if (onRemoveDownloaded != null)
+                      const PopupMenuItem(
+                        value: _TranslationAction.removeDownloaded,
+                        child: Row(
+                          children: [
+                            Icon(Icons.delete_sweep_outlined),
+                            SizedBox(width: 8),
+                            Text('Remove download'),
+                          ],
+                        ),
+                      ),
                   ],
                   icon: const Icon(Icons.more_vert),
                   tooltip: 'More actions',
@@ -333,7 +420,6 @@ class _TranslationListTile extends StatelessWidget {
     final isAvailableOffline =
         translation.isLocal ||
         translation.sourceType == BibleSourceType.asset ||
-        translation.sourceType == BibleSourceType.download ||
         translation.sourceType == BibleSourceType.import ||
         (translation.filePath?.isNotEmpty ?? false);
 
@@ -381,7 +467,7 @@ class _TranslationListTile extends StatelessWidget {
   }
 }
 
-enum _TranslationAction { deleteImported }
+enum _TranslationAction { deleteImported, removeDownloaded }
 
 class _TranslationActionChip extends StatelessWidget {
   const _TranslationActionChip({

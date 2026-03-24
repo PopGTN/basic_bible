@@ -509,37 +509,47 @@ class AppDatabase extends _$AppDatabase {
     return rows.isNotEmpty;
   }
 
+  Future<void> deleteBibleContent(String translationId) async {
+    await transaction(() async {
+      await _deleteBibleRows(translationId);
+    });
+  }
+
   Future<void> deleteBible(String translationId) async {
     await transaction(() async {
-      await (delete(verses)..where(
-            (v) => v.chapterId.isInQuery(
-              selectOnly(chapters)
-                ..addColumns([chapters.id])
-                ..where(
-                  chapters.bookId.isInQuery(
-                    selectOnly(books)
-                      ..addColumns([books.id])
-                      ..where(books.translationId.equals(translationId)),
-                  ),
-                ),
-            ),
-          ))
-          .go();
-      await (delete(chapters)..where(
-            (c) => c.bookId.isInQuery(
-              selectOnly(books)
-                ..addColumns([books.id])
-                ..where(books.translationId.equals(translationId)),
-            ),
-          ))
-          .go();
-      await (delete(
-        books,
-      )..where((b) => b.translationId.equals(translationId))).go();
+      await _deleteBibleRows(translationId);
       await (delete(
         translations,
       )..where((t) => t.id.equals(translationId))).go();
     });
+  }
+
+  Future<void> _deleteBibleRows(String translationId) async {
+    await (delete(verses)..where(
+          (v) => v.chapterId.isInQuery(
+            selectOnly(chapters)
+              ..addColumns([chapters.id])
+              ..where(
+                chapters.bookId.isInQuery(
+                  selectOnly(books)
+                    ..addColumns([books.id])
+                    ..where(books.translationId.equals(translationId)),
+                ),
+              ),
+          ),
+        ))
+        .go();
+    await (delete(chapters)..where(
+          (c) => c.bookId.isInQuery(
+            selectOnly(books)
+              ..addColumns([books.id])
+              ..where(books.translationId.equals(translationId)),
+          ),
+        ))
+        .go();
+    await (delete(
+      books,
+    )..where((b) => b.translationId.equals(translationId))).go();
   }
 
   Future<void> deleteAllBibles() async {

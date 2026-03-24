@@ -590,8 +590,16 @@ class _BibleTextViewState extends State<_BibleTextView> {
     final headings = visibleBlocks
         .where((block) => block.kind == BibleDocumentBlockKind.heading)
         .toList();
+    final tableRows = visibleBlocks
+        .where((block) =>
+            block.kind == BibleDocumentBlockKind.table ||
+            block.kind == BibleDocumentBlockKind.tableRow)
+        .toList();
     final supportingBlocks = visibleBlocks
-        .where((block) => block.kind != BibleDocumentBlockKind.heading)
+        .where((block) =>
+            block.kind != BibleDocumentBlockKind.heading &&
+            block.kind != BibleDocumentBlockKind.table &&
+            block.kind != BibleDocumentBlockKind.tableRow)
         .toList();
 
     return [
@@ -600,6 +608,11 @@ class _BibleTextViewState extends State<_BibleTextView> {
           block: block,
           fontSize: widget.fontSize,
           isEmphasized: true,
+        ),
+      if (tableRows.isNotEmpty)
+        _TableBlockSection(
+          rows: tableRows,
+          fontSize: widget.fontSize,
         ),
       if (supportingBlocks.isNotEmpty)
         _DocumentBlockSection(
@@ -920,8 +933,16 @@ class _BibleTextViewState extends State<_BibleTextView> {
     final headings = visibleBlocks
         .where((block) => block.kind == BibleDocumentBlockKind.heading)
         .toList();
+    final tableRows = visibleBlocks
+        .where((block) =>
+            block.kind == BibleDocumentBlockKind.table ||
+            block.kind == BibleDocumentBlockKind.tableRow)
+        .toList();
     final supportingBlocks = visibleBlocks
-        .where((block) => block.kind != BibleDocumentBlockKind.heading)
+        .where((block) =>
+            block.kind != BibleDocumentBlockKind.heading &&
+            block.kind != BibleDocumentBlockKind.table &&
+            block.kind != BibleDocumentBlockKind.tableRow)
         .toList();
 
     return [
@@ -930,6 +951,11 @@ class _BibleTextViewState extends State<_BibleTextView> {
           block: block,
           fontSize: widget.fontSize,
           isEmphasized: true,
+        ),
+      if (tableRows.isNotEmpty)
+        _TableBlockSection(
+          rows: tableRows,
+          fontSize: widget.fontSize,
         ),
       if (supportingBlocks.isNotEmpty)
         _DocumentBlockSection(
@@ -2093,17 +2119,21 @@ class _DocumentBlockView extends StatelessWidget {
       BibleDocumentBlockKind.heading => theme.textTheme.titleLarge?.copyWith(
         fontWeight: FontWeight.w700,
       ),
-      BibleDocumentBlockKind.preface ||
-      BibleDocumentBlockKind.introduction => theme.textTheme.bodyLarge,
+      BibleDocumentBlockKind.preface => theme.textTheme.bodyLarge,
+      BibleDocumentBlockKind.introduction => theme.textTheme.bodyMedium?.copyWith(
+        color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+      ),
       BibleDocumentBlockKind.poetry => theme.textTheme.bodyLarge?.copyWith(
         fontStyle: FontStyle.italic,
       ),
       _ => theme.textTheme.bodyMedium,
     };
 
+    final isIntro = block.kind == BibleDocumentBlockKind.introduction;
     return Padding(
       padding: EdgeInsets.only(
         bottom: block.kind == BibleDocumentBlockKind.heading ? 12 : 10,
+        left: isIntro ? 12 : 0,
       ),
       child: Text(
         block.text,
@@ -2174,6 +2204,84 @@ class _DocumentBlockSection extends StatelessWidget {
           const SizedBox(height: 10),
           for (final block in blocks)
             _DocumentBlockView(block: block, fontSize: fontSize),
+        ],
+      ),
+    );
+  }
+}
+
+class _TableBlockSection extends StatelessWidget {
+  const _TableBlockSection({
+    required this.rows,
+    required this.fontSize,
+  });
+
+  final List<BibleDocumentBlock> rows;
+  final double fontSize;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+
+    // Filter to only tableRow blocks (skip the table container block).
+    final dataRows = rows
+        .where((b) => b.kind == BibleDocumentBlockKind.tableRow)
+        .toList();
+    if (dataRows.isEmpty) return const SizedBox.shrink();
+
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 18),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: colors.outlineVariant.withValues(alpha: 0.55),
+        ),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          for (var i = 0; i < dataRows.length; i++)
+            _buildRow(context, dataRows[i], i, colors),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRow(
+    BuildContext context,
+    BibleDocumentBlock row,
+    int index,
+    ColorScheme colors,
+  ) {
+    final isHeader = row.metadata['role'] == 'label';
+    final cellsRaw = row.metadata['cells'] ?? row.text;
+    final cells = cellsRaw.split('\t');
+
+    return Container(
+      color: isHeader
+          ? colors.surfaceContainerHighest.withValues(alpha: 0.6)
+          : index.isOdd
+              ? colors.surfaceContainerLow.withValues(alpha: 0.3)
+              : null,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      child: Row(
+        children: [
+          for (var c = 0; c < cells.length; c++) ...[
+            if (c > 0) const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                cells[c],
+                style: TextStyle(
+                  fontSize: fontSize,
+                  fontWeight: isHeader ? FontWeight.w700 : FontWeight.normal,
+                  height: 1.4,
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );

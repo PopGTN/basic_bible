@@ -29,6 +29,8 @@ enum BibleDocumentBlockKind {
   heading,
   tocLabel,
   poetry,
+  table,
+  tableRow,
 }
 
 // These richer model types are Phase 1 groundwork. They let the app keep

@@ -54,17 +54,18 @@ Separate from feature backlog — these affect correctness, safety, and maintain
 
 ## Recommended Next Step
 
-- `next` Finish the focused References-screen regression check so changing references from the picker always keeps the whole-Bible scroller and visible-position state in sync.
+- `next` Add user-facing removal for downloaded Bibles from the Versions screen, so users can reclaim storage without losing the translation catalog entry.
 
 **Why this first:**
 
-- The picker layout is now more responsive on both narrow and wide screens, so the remaining reference-flow problem is behavioral rather than visual.
-- This is the clearest unresolved gap still called out in `Current Status`, and it directly affects navigation confidence in the reader.
+- The download-removal infrastructure (repository, database, provider) already landed from the Codex agent's work and compiles cleanly — only the UI integration in the versions screen needs verification and any remaining polish.
+- This is the most user-visible gap in translation-library management right now.
 
 **Definition of done:**
 
-- Picking a book/chapter/verse from the References screen always lands on the correct visible location in both normal and continuous reading modes.
-- Returning from the picker does not leave the reference bar, selected reference, and visible scroller position disagreeing about the current location.
+- A downloaded (non-bundled) translation shows a "Remove download" action in the Versions screen.
+- Removing a download deletes the cached content but keeps the translation visible as a re-downloadable option.
+- The active translation falls back to another available translation if the user removes the one they're reading.
 
 ---
 
@@ -81,6 +82,8 @@ Separate from feature backlog — these affect correctness, safety, and maintain
 
 ## Completed Recently
 
+- `done` Added distinct document-mode rendering for `introduction` blocks (muted color, left indent) and `table`/`tableRow` blocks (cell grid with header-row styling and alternating row tint) so these parser-preserved structures are visually distinct instead of falling through to generic prose.
+- `done` Synced `table` and `tableRow` values into `BibleDocumentBlockKind` to mirror the parser's new `DocumentBlockKind` values.
 - `done` Reworked the References picker layout so it now adapts more cleanly across mobile and desktop: phones keep a tighter one-book-at-a-time card flow with adaptive chapter/verse grids, while wider screens use a split book-list/detail-pane layout with clearer search and selection context.
 - `done` Fixed verse focus highlight re-appearing when returning to Bible tab — `_showSelectedVerseFocus` now starts as `false` and only enables on explicit navigation events (cross-ref/footnote jumps).
 - `done` Fixed `wordsOfJesus` and `word` spans not dimming when another verse is focused — `_spanColor` now respects the base color alpha for all span kinds.

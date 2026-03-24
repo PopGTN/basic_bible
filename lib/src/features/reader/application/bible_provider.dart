@@ -91,9 +91,17 @@ final currentTranslationProvider =
     });
 
 class TranslationNotifier extends StateNotifier<String> {
-  TranslationNotifier() : super('kjv') {
-    _loadSavedTranslation();
+  TranslationNotifier({
+    String initialTranslationId = 'kjv',
+    bool persist = true,
+  }) : _persist = persist,
+       super(initialTranslationId) {
+    if (_persist) {
+      _loadSavedTranslation();
+    }
   }
+
+  final bool _persist;
 
   Future<void> _loadSavedTranslation() async {
     final prefs = await SharedPreferences.getInstance();
@@ -102,8 +110,10 @@ class TranslationNotifier extends StateNotifier<String> {
   }
 
   Future<void> setTranslation(String translationId) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('bible_translation', translationId);
+    if (_persist) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('bible_translation', translationId);
+    }
     state = translationId;
   }
 }
@@ -153,9 +163,20 @@ final currentReferenceProvider =
     });
 
 class ReferenceNotifier extends StateNotifier<BibleReference> {
-  ReferenceNotifier() : super(BibleReference(bookId: 'GEN', chapter: 1)) {
-    _loadSavedReference();
+  ReferenceNotifier({
+    BibleReference initialReference = const BibleReference(
+      bookId: 'GEN',
+      chapter: 1,
+    ),
+    bool persist = true,
+  }) : _persist = persist,
+       super(initialReference) {
+    if (_persist) {
+      _loadSavedReference();
+    }
   }
+
+  final bool _persist;
 
   Future<void> _loadSavedReference() async {
     final prefs = await SharedPreferences.getInstance();
@@ -167,13 +188,15 @@ class ReferenceNotifier extends StateNotifier<BibleReference> {
   }
 
   Future<void> setReference(BibleReference reference) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('bible_book', reference.bookId);
-    await prefs.setInt('bible_chapter', reference.chapter);
-    if (reference.verse != null) {
-      await prefs.setInt('bible_verse', reference.verse!);
-    } else {
-      await prefs.remove('bible_verse');
+    if (_persist) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('bible_book', reference.bookId);
+      await prefs.setInt('bible_chapter', reference.chapter);
+      if (reference.verse != null) {
+        await prefs.setInt('bible_verse', reference.verse!);
+      } else {
+        await prefs.remove('bible_verse');
+      }
     }
     state = reference;
   }
@@ -426,6 +449,13 @@ class BibleBooksNotifier extends StateNotifier<AsyncValue<List<BibleBook>>> {
 
   Future<void> deleteImportedTranslation(String translationId) async {
     await repository.deleteImportedTranslation(translationId);
+    if (_currentTranslationId == translationId && mounted) {
+      state = const AsyncValue.loading();
+    }
+  }
+
+  Future<void> removeDownloadedTranslation(String translationId) async {
+    await repository.removeDownloadedTranslation(translationId);
     if (_currentTranslationId == translationId && mounted) {
       state = const AsyncValue.loading();
     }
