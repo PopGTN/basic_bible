@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -430,7 +432,7 @@ class _BibleViewerSettingsSheet extends StatelessWidget {
     final colors = Theme.of(context).colorScheme;
 
     return SafeArea(
-      child: Padding(
+      child: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -517,19 +519,28 @@ class _BibleViewerSettingsSheet extends StatelessWidget {
             const SizedBox(height: 14),
             SizedBox(
               height: 146,
-              child: ListView(
-                scrollDirection: Axis.horizontal,
-                children: [
-                  for (final mode in AppThemeMode.values)
-                    Padding(
-                      padding: const EdgeInsets.only(right: 12),
-                      child: _ThemePreviewCard(
-                        mode: mode,
-                        selected: mode == themeMode,
-                        onTap: () => onThemeSelected(mode),
+              child: ScrollConfiguration(
+                behavior: ScrollConfiguration.of(context).copyWith(
+                  dragDevices: {
+                    PointerDeviceKind.touch,
+                    PointerDeviceKind.mouse,
+                    PointerDeviceKind.trackpad,
+                  },
+                ),
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  children: [
+                    for (final mode in AppThemeMode.values)
+                      Padding(
+                        padding: const EdgeInsets.only(right: 12),
+                        child: _ThemePreviewCard(
+                          mode: mode,
+                          selected: mode == themeMode,
+                          onTap: () => onThemeSelected(mode),
+                        ),
                       ),
-                    ),
-                ],
+                  ],
+                ),
               ),
             ),
             const SizedBox(height: 16),
