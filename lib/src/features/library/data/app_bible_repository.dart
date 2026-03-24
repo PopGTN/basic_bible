@@ -814,6 +814,7 @@ Map<String, dynamic> _serializeCrossReference(CrossReference reference) {
     'target': reference.target,
     'marker': reference.marker,
     'originRef': reference.originRef,
+    'spanIndex': reference.spanIndex,
   };
 }
 
@@ -825,6 +826,7 @@ Map<String, dynamic> _serializeFootnote(Footnote footnote) {
     'bodyText': footnote.bodyText,
     'quotedText': footnote.quotedText,
     'references': footnote.references.map(_serializeCrossReference).toList(),
+    'spanIndex': footnote.spanIndex,
   };
 }
 

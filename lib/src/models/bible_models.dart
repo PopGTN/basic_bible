@@ -71,12 +71,14 @@ class BibleCrossReference extends Equatable {
   final String? target;
   final String? marker;
   final String? originRef;
+  final int? spanIndex;
 
   const BibleCrossReference({
     required this.label,
     this.target,
     this.marker,
     this.originRef,
+    this.spanIndex,
   });
 
   factory BibleCrossReference.fromJson(Map<String, dynamic> json) {
@@ -85,6 +87,7 @@ class BibleCrossReference extends Equatable {
       target: json['target'] as String?,
       marker: json['marker'] as String?,
       originRef: json['originRef'] as String?,
+      spanIndex: json['spanIndex'] as int?,
     );
   }
 
@@ -94,11 +97,12 @@ class BibleCrossReference extends Equatable {
       'target': target,
       'marker': marker,
       'originRef': originRef,
+      'spanIndex': spanIndex,
     };
   }
 
   @override
-  List<Object?> get props => [label, target, marker, originRef];
+  List<Object?> get props => [label, target, marker, originRef, spanIndex];
 }
 
 class BibleFootnote extends Equatable {
@@ -108,6 +112,7 @@ class BibleFootnote extends Equatable {
   final String? bodyText;
   final String? quotedText;
   final List<BibleCrossReference> references;
+  final int? spanIndex;
 
   const BibleFootnote({
     required this.text,
@@ -116,6 +121,7 @@ class BibleFootnote extends Equatable {
     this.bodyText,
     this.quotedText,
     this.references = const [],
+    this.spanIndex,
   });
 
   factory BibleFootnote.fromJson(Map<String, dynamic> json) {
@@ -128,6 +134,7 @@ class BibleFootnote extends Equatable {
       references: (json['references'] as List<dynamic>? ?? const [])
           .map((e) => BibleCrossReference.fromJson(e as Map<String, dynamic>))
           .toList(),
+      spanIndex: json['spanIndex'] as int?,
     );
   }
 
@@ -139,11 +146,12 @@ class BibleFootnote extends Equatable {
       'bodyText': bodyText,
       'quotedText': quotedText,
       'references': references.map((e) => e.toJson()).toList(),
+      'spanIndex': spanIndex,
     };
   }
 
   @override
-  List<Object?> get props => [text, marker, label, bodyText, quotedText, references];
+  List<Object?> get props => [text, marker, label, bodyText, quotedText, references, spanIndex];
 }
 
 class BibleDocumentBlock extends Equatable {
