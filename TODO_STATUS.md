@@ -54,18 +54,12 @@ Separate from feature backlog — these affect correctness, safety, and maintain
 
 ## Recommended Next Step
 
-- `next` Add user-facing removal for downloaded Bibles from the Versions screen, so users can reclaim storage without losing the translation catalog entry.
+- `next` Focused References screen regression check: verify that picking a book/chapter/verse always lands on the correct visible location and that returning from the picker does not leave the reference bar and scroller position out of sync.
 
 **Why this first:**
 
-- The download-removal infrastructure (repository, database, provider) already landed from the Codex agent's work and compiles cleanly — only the UI integration in the versions screen needs verification and any remaining polish.
-- This is the most user-visible gap in translation-library management right now.
-
-**Definition of done:**
-
-- A downloaded (non-bundled) translation shows a "Remove download" action in the Versions screen.
-- Removing a download deletes the cached content but keeps the translation visible as a re-downloadable option.
-- The active translation falls back to another available translation if the user removes the one they're reading.
+- This has been called out in Current Status for multiple sessions and directly affects navigation confidence in the reader.
+- The download-removal and document-mode rendering gaps are now closed, so reference navigation is the next user-facing friction point.
 
 ---
 
@@ -82,18 +76,16 @@ Separate from feature backlog — these affect correctness, safety, and maintain
 
 ## Completed Recently
 
+- `done` Added `spanIndex` anchor field to `BibleFootnote` and `BibleCrossReference` with JSON serialization and isolate-boundary serializers, mirroring the parser's new positional anchor tracking.
+- `done` Fixed settings sheet overflow (scrolls on small screens) and added mouse/trackpad scrolling to the theme preview cards for desktop.
+- `done` Added user-facing removal for downloaded Bibles from the Versions screen with confirmation dialog, fallback translation selection, and re-downloadable catalog entry.
 - `done` Added distinct document-mode rendering for `introduction` blocks (muted color, left indent) and `table`/`tableRow` blocks (cell grid with header-row styling and alternating row tint) so these parser-preserved structures are visually distinct instead of falling through to generic prose.
 - `done` Synced `table` and `tableRow` values into `BibleDocumentBlockKind` to mirror the parser's new `DocumentBlockKind` values.
 - `done` Reworked the References picker layout so it now adapts more cleanly across mobile and desktop: phones keep a tighter one-book-at-a-time card flow with adaptive chapter/verse grids, while wider screens use a split book-list/detail-pane layout with clearer search and selection context.
 - `done` Fixed verse focus highlight re-appearing when returning to Bible tab — `_showSelectedVerseFocus` now starts as `false` and only enables on explicit navigation events (cross-ref/footnote jumps).
 - `done` Fixed `wordsOfJesus` and `word` spans not dimming when another verse is focused — `_spanColor` now respects the base color alpha for all span kinds.
 - `done` Fixed verse focus not dismissing on desktop mouse scroll — wrapped build in `Listener(onPointerSignal:)` to catch `PointerScrollEvent`.
-- `done` Added `<q who="...">` speaker attribution metadata to OSIS parser — non-Jesus speakers now emit `quoteWho` in span metadata.
 - `done` Added `emphasis`, `bold`, `italic`, `properName`, `selah`, `acrosticHeading` to `BibleVerseSpanKind` with matching render styles (italic, bold w700, underline).
-- `done` Added `divineNameTag` to `BibleVerseSpanKind` and wired bold rendering for it in both verse-list and document mode span helpers.
-- `done` Added `BibleCrossReference.originRef`, updated serializer, and wired it to the note sheet as a muted origin prefix on cross-reference rows.
-- `done` OSIS and Zefania footnotes now use the structured note sheet rendering path after the parser started populating `bodyText` for all three formats.
-- `done` Updated note sheet to render `bodyText`, `originRef`, and `quotedText` as distinct visual elements — origin ref in muted smaller text, body in normal weight, quoted text in italic; falls back to merged `text` for OSIS/Zefania.
 
 ---
 
