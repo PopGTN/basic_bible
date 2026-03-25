@@ -61,6 +61,13 @@ class AppBibleRepository {
   final Map<String, List<BibleBook>> _memoryCacheByTranslation =
       <String, List<BibleBook>>{};
 
+  /// Bump this integer every time the parser output format changes in a way
+  /// that requires existing cached Bibles to be re-parsed.
+  /// Current reasons to invalidate cache:
+  ///   0 = initial version
+  ///   1 = inline anchor markers added (replaces _needsInlineAnchorRefresh check)
+  static const int _currentParserVersion = 1;
+
   AppBibleRepository(this._db);
 
   /// Built-in Bible translations bundled with the app.
@@ -132,7 +139,12 @@ class AppBibleRepository {
 
     final cachedBooks = await _db.getBible(translationId);
     if (cachedBooks.isNotEmpty) {
-      if (!_needsInlineAnchorRefresh(cachedBooks)) {
+      // Check if cache is valid by comparing parser versions
+      final meta = await _db.getTranslationMeta(translationId);
+      final cacheIsValid = meta != null &&
+          meta.parserVersion >= _currentParserVersion;
+
+      if (cacheIsValid) {
         return _rememberLoadedTranslation(translationId, cachedBooks);
       }
 
@@ -157,10 +169,45 @@ class AppBibleRepository {
         translation: translation,
         sourceLocation: translation.filePath,
       );
+      // Record the parser version after successful parse
+      await _db.updateTranslationParserVersion(
+        translationId,
+        _currentParserVersion,
+      );
       return _rememberLoadedTranslation(translationId, books);
     } catch (e) {
       throw Exception('Failed to load local Bible: $e');
     }
+  }
+
+  /// Load books and chapter metadata (no verses) for fast shell rendering.
+  /// Use for showing navigation UI before verses are loaded.
+  Future<List<BibleBook>> loadLocalBibleShell(String translationId) async {
+    final memoryCached = getLoadedTranslation(translationId);
+    if (memoryCached != null) {
+      return memoryCached;
+    }
+
+    // Load from DB - fast path since it skips verse loading
+    final shell = await _db.getBooksShell(translationId);
+    if (shell.isNotEmpty) {
+      // Don't cache the shell to memory - verses will be hydrated on demand
+      return shell;
+    }
+
+    // If no cache exists, we need to parse. Fall back to loadLocalBible
+    // which does the full load (including verses).
+    return loadLocalBible(translationId);
+  }
+
+  /// Load verses for a specific chapter on demand.
+  /// Returns the chapter with verses populated, or null if not found.
+  Future<BibleChapter?> loadChapterVerses(
+    String translationId,
+    String bookId,
+    int chapterNumber,
+  ) async {
+    return _db.getChapter(translationId, bookId, chapterNumber);
   }
 
   /// Download Bible from GitHub and cache it
@@ -172,7 +219,12 @@ class AppBibleRepository {
 
     final cachedBooks = await _db.getBible(translationId);
     if (cachedBooks.isNotEmpty) {
-      if (!_needsInlineAnchorRefresh(cachedBooks)) {
+      // Check if cache is valid by comparing parser versions
+      final meta = await _db.getTranslationMeta(translationId);
+      final cacheIsValid = meta != null &&
+          meta.parserVersion >= _currentParserVersion;
+
+      if (cacheIsValid) {
         return _rememberLoadedTranslation(translationId, cachedBooks);
       }
 
@@ -667,28 +719,6 @@ class AppBibleRepository {
     };
   }
 
-  bool _needsInlineAnchorRefresh(List<BibleBook> books) {
-    for (final book in books) {
-      for (final chapter in book.chapters) {
-        for (final verse in chapter.verses) {
-          final hasAnnotations =
-              verse.footnotes.isNotEmpty || verse.crossReferences.isNotEmpty;
-          if (!hasAnnotations) continue;
-
-          final hasAnchoredMarkers = verse.spans.any(
-            (span) =>
-                (span.metadata['footnoteMarkers']?.isNotEmpty ?? false) ||
-                (span.metadata['referenceMarkers']?.isNotEmpty ?? false),
-          );
-          if (!hasAnchoredMarkers) {
-            return true;
-          }
-        }
-      }
-    }
-
-    return false;
-  }
 }
 
 /// Top-level parser function run inside an isolate via `compute`.
@@ -815,6 +845,7 @@ Map<String, dynamic> _serializeCrossReference(CrossReference reference) {
     'marker': reference.marker,
     'originRef': reference.originRef,
     'spanIndex': reference.spanIndex,
+    'charOffset': reference.charOffset,
   };
 }
 
@@ -827,6 +858,7 @@ Map<String, dynamic> _serializeFootnote(Footnote footnote) {
     'quotedText': footnote.quotedText,
     'references': footnote.references.map(_serializeCrossReference).toList(),
     'spanIndex': footnote.spanIndex,
+    'charOffset': footnote.charOffset,
   };
 }
 

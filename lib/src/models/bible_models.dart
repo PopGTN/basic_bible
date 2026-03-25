@@ -72,6 +72,7 @@ class BibleCrossReference extends Equatable {
   final String? marker;
   final String? originRef;
   final int? spanIndex;
+  final int? charOffset;
 
   const BibleCrossReference({
     required this.label,
@@ -79,6 +80,7 @@ class BibleCrossReference extends Equatable {
     this.marker,
     this.originRef,
     this.spanIndex,
+    this.charOffset,
   });
 
   factory BibleCrossReference.fromJson(Map<String, dynamic> json) {
@@ -88,6 +90,7 @@ class BibleCrossReference extends Equatable {
       marker: json['marker'] as String?,
       originRef: json['originRef'] as String?,
       spanIndex: json['spanIndex'] as int?,
+      charOffset: json['charOffset'] as int?,
     );
   }
 
@@ -98,11 +101,12 @@ class BibleCrossReference extends Equatable {
       'marker': marker,
       'originRef': originRef,
       'spanIndex': spanIndex,
+      'charOffset': charOffset,
     };
   }
 
   @override
-  List<Object?> get props => [label, target, marker, originRef, spanIndex];
+  List<Object?> get props => [label, target, marker, originRef, spanIndex, charOffset];
 }
 
 class BibleFootnote extends Equatable {
@@ -113,6 +117,7 @@ class BibleFootnote extends Equatable {
   final String? quotedText;
   final List<BibleCrossReference> references;
   final int? spanIndex;
+  final int? charOffset;
 
   const BibleFootnote({
     required this.text,
@@ -122,6 +127,7 @@ class BibleFootnote extends Equatable {
     this.quotedText,
     this.references = const [],
     this.spanIndex,
+    this.charOffset,
   });
 
   factory BibleFootnote.fromJson(Map<String, dynamic> json) {
@@ -135,6 +141,7 @@ class BibleFootnote extends Equatable {
           .map((e) => BibleCrossReference.fromJson(e as Map<String, dynamic>))
           .toList(),
       spanIndex: json['spanIndex'] as int?,
+      charOffset: json['charOffset'] as int?,
     );
   }
 
@@ -147,11 +154,12 @@ class BibleFootnote extends Equatable {
       'quotedText': quotedText,
       'references': references.map((e) => e.toJson()).toList(),
       'spanIndex': spanIndex,
+      'charOffset': charOffset,
     };
   }
 
   @override
-  List<Object?> get props => [text, marker, label, bodyText, quotedText, references, spanIndex];
+  List<Object?> get props => [text, marker, label, bodyText, quotedText, references, spanIndex, charOffset];
 }
 
 class BibleDocumentBlock extends Equatable {
