@@ -63,14 +63,12 @@ Separate from feature backlog — these affect correctness, safety, and maintain
 
 ---
 
-## Current Status
-
-- `in_progress` References screen chapter tiles still need a focused regression check — interacting with the reference bar or selector does not always keep the whole-Bible scroller and visible position in sync.
-- `in_progress` The reader has working verse-list and document modes, structured note popups, inline annotation markers, and source-driven paragraph support, but document-mode fidelity is limited by what the parser preserves.
-- `in_progress` The parser/app pipeline preserves partial rich content across USFX, OSIS, and Zefania, but many non-verse layout cases and source-specific tags are still normalized too aggressively before the reader sees them.
-- `in_progress` Non-web Bible caching is persistent; web still falls back to in-memory storage.
-- `in_progress` Built-in, downloaded, and imported translations share one metadata-driven resolution path, but broader translation-library management is still unfinished.
-- `in_progress` Active app code is mostly organized under `lib/src/features/`, but some shared providers/services still sit outside that feature-first structure.
+- `in_progress` References screen navigation: regression check recommended to verify picker selection keeps reader scroll in sync.
+- `done` The reader now has working verse-list and document modes with comprehensive span rendering: red-letter, emphasis/bold/italic, divine names, proper names, selah, acrostic headings, structured footnotes and cross-references with inline markers, and source-driven introductions/tables.
+- `done` Parser/app pipeline preserves rich content: footnotes and cross-references now include spanIndex anchors; poetry/quote structure is consistent across all three formats with stanza groups and indentation; document-mode rendering reflects all preserved parser structures.
+- `partial` Non-web Bible caching is persistent; web still falls back to in-memory storage.
+- `done` Built-in, downloaded, and imported translations share one metadata-driven resolution path with user-facing removal for downloaded Bibles.
+- `partial` Active app code is mostly organized under `lib/src/features/`, but some shared providers/services still sit outside that feature-first structure.
 
 ---
 
