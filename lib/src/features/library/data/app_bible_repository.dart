@@ -66,7 +66,8 @@ class AppBibleRepository {
   /// Current reasons to invalidate cache:
   ///   0 = initial version
   ///   1 = inline anchor markers added (replaces _needsInlineAnchorRefresh check)
-  static const int _currentParserVersion = 1;
+  ///   2 = book IDs normalized to uppercase in DB (fixes OSIS cross-translation lookup)
+  static const int _currentParserVersion = 2;
 
   AppBibleRepository(this._db);
 

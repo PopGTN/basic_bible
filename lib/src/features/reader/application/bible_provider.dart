@@ -2,6 +2,7 @@ import 'package:bible_parser_flutter/bible_parser_flutter.dart';
 import 'package:basic_bible/src/features/library/data/app_bible_repository.dart';
 import 'package:basic_bible/src/models/bible_models.dart';
 import 'package:basic_bible/src/services/app_database.dart';
+import 'package:basic_bible/src/services/shared_preferences_provider.dart';
 import 'package:basic_bible/src/utils/reference_utils.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
@@ -11,69 +12,61 @@ enum ReaderLayoutMode { verseList, document }
 
 final continuousScrollingProvider =
     StateNotifierProvider<ContinuousScrollingNotifier, bool>((ref) {
-      return ContinuousScrollingNotifier();
+      return ContinuousScrollingNotifier(
+        ref.read(sharedPreferencesProvider),
+      );
     });
 
 final showBookIntroductionsProvider =
     StateNotifierProvider<ShowBookIntroductionsNotifier, bool>((ref) {
-      return ShowBookIntroductionsNotifier();
+      return ShowBookIntroductionsNotifier(
+        ref.read(sharedPreferencesProvider),
+      );
     });
 
 final showVerseSelectorProvider =
     StateNotifierProvider<ShowVerseSelectorNotifier, bool>((ref) {
-      return ShowVerseSelectorNotifier();
+      return ShowVerseSelectorNotifier(
+        ref.read(sharedPreferencesProvider),
+      );
     });
 
 class ContinuousScrollingNotifier extends StateNotifier<bool> {
-  ContinuousScrollingNotifier() : super(false) {
-    _loadSavedValue();
-  }
+  final SharedPreferences _prefs;
 
-  Future<void> _loadSavedValue() async {
-    final prefs = await SharedPreferences.getInstance();
-    state = prefs.getBool('reader_continuous_scrolling') ?? false;
-  }
+  ContinuousScrollingNotifier(this._prefs)
+    : super(_prefs.getBool('reader_continuous_scrolling') ?? false);
 
   Future<void> setEnabled(bool enabled) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('reader_continuous_scrolling', enabled);
+    await _prefs.setBool('reader_continuous_scrolling', enabled);
     state = enabled;
   }
 }
 
 class ShowBookIntroductionsNotifier extends StateNotifier<bool> {
-  ShowBookIntroductionsNotifier() : super(true) {
-    _loadSavedValue();
-  }
+  final SharedPreferences _prefs;
 
-  Future<void> _loadSavedValue() async {
-    final prefs = await SharedPreferences.getInstance();
-    state =
-        prefs.getBool('reader_show_book_introductions') ??
-        prefs.getBool('reader_show_chapter_headers') ??
-        true;
-  }
+  ShowBookIntroductionsNotifier(this._prefs)
+    : super(
+        _prefs.getBool('reader_show_book_introductions') ??
+        _prefs.getBool('reader_show_chapter_headers') ??
+        true,
+      );
 
   Future<void> setEnabled(bool enabled) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('reader_show_book_introductions', enabled);
+    await _prefs.setBool('reader_show_book_introductions', enabled);
     state = enabled;
   }
 }
 
 class ShowVerseSelectorNotifier extends StateNotifier<bool> {
-  ShowVerseSelectorNotifier() : super(true) {
-    _loadSavedValue();
-  }
+  final SharedPreferences _prefs;
 
-  Future<void> _loadSavedValue() async {
-    final prefs = await SharedPreferences.getInstance();
-    state = prefs.getBool('reader_show_verse_selector') ?? true;
-  }
+  ShowVerseSelectorNotifier(this._prefs)
+    : super(_prefs.getBool('reader_show_verse_selector') ?? true);
 
   Future<void> setEnabled(bool enabled) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('reader_show_verse_selector', enabled);
+    await _prefs.setBool('reader_show_verse_selector', enabled);
     state = enabled;
   }
 }
@@ -87,64 +80,45 @@ final bibleRepositoryProvider = Provider<AppBibleRepository>((ref) {
 // Current translation provider
 final currentTranslationProvider =
     StateNotifierProvider<TranslationNotifier, String>((ref) {
-      return TranslationNotifier();
+      return TranslationNotifier(ref.read(sharedPreferencesProvider));
     });
 
 class TranslationNotifier extends StateNotifier<String> {
-  TranslationNotifier({
-    String initialTranslationId = 'kjv',
-    bool persist = true,
-  }) : _persist = persist,
-       super(initialTranslationId) {
-    if (_persist) {
-      _loadSavedTranslation();
-    }
-  }
+  final SharedPreferences _prefs;
 
-  final bool _persist;
-
-  Future<void> _loadSavedTranslation() async {
-    final prefs = await SharedPreferences.getInstance();
-    final saved = prefs.getString('bible_translation') ?? 'kjv';
-    state = saved;
-  }
+  TranslationNotifier(this._prefs)
+    : super(_prefs.getString('bible_translation') ?? 'kjv');
 
   Future<void> setTranslation(String translationId) async {
-    if (_persist) {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('bible_translation', translationId);
-    }
+    await _prefs.setString('bible_translation', translationId);
     state = translationId;
   }
 }
 
 final readerLayoutModeProvider =
     StateNotifierProvider<ReaderLayoutModeNotifier, ReaderLayoutMode>((ref) {
-      return ReaderLayoutModeNotifier();
+      return ReaderLayoutModeNotifier(ref.read(sharedPreferencesProvider));
     });
 
 class ReaderLayoutModeNotifier extends StateNotifier<ReaderLayoutMode> {
-  ReaderLayoutModeNotifier() : super(ReaderLayoutMode.verseList) {
-    _loadSavedLayoutMode();
-  }
+  final SharedPreferences _prefs;
 
-  Future<void> _loadSavedLayoutMode() async {
-    final prefs = await SharedPreferences.getInstance();
-    final rawMode = prefs.getString('reader_layout_mode');
+  ReaderLayoutModeNotifier(this._prefs)
+    : super(_parseLayoutMode(_prefs.getString('reader_layout_mode')));
+
+  static ReaderLayoutMode _parseLayoutMode(String? rawMode) {
     if (rawMode == 'paragraph') {
       // Migrate the older name to the clearer "document" mode label.
-      state = ReaderLayoutMode.document;
-      return;
+      return ReaderLayoutMode.document;
     }
-    state = ReaderLayoutMode.values.firstWhere(
+    return ReaderLayoutMode.values.firstWhere(
       (mode) => mode.name == rawMode,
       orElse: () => ReaderLayoutMode.verseList,
     );
   }
 
   Future<void> setLayoutMode(ReaderLayoutMode mode) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('reader_layout_mode', mode.name);
+    await _prefs.setString('reader_layout_mode', mode.name);
     state = mode;
   }
 }
@@ -159,44 +133,28 @@ final availableTranslationsProvider = FutureProvider<List<BibleTranslation>>((
 // Current reference provider
 final currentReferenceProvider =
     StateNotifierProvider<ReferenceNotifier, BibleReference>((ref) {
-      return ReferenceNotifier();
+      return ReferenceNotifier(ref.read(sharedPreferencesProvider));
     });
 
 class ReferenceNotifier extends StateNotifier<BibleReference> {
-  ReferenceNotifier({
-    BibleReference initialReference = const BibleReference(
-      bookId: 'GEN',
-      chapter: 1,
-    ),
-    bool persist = true,
-  }) : _persist = persist,
-       super(initialReference) {
-    if (_persist) {
-      _loadSavedReference();
-    }
-  }
+  final SharedPreferences _prefs;
 
-  final bool _persist;
-
-  Future<void> _loadSavedReference() async {
-    final prefs = await SharedPreferences.getInstance();
-    final bookId = prefs.getString('bible_book') ?? 'GEN';
-    final chapter = prefs.getInt('bible_chapter') ?? 1;
-    final verse = prefs.getInt('bible_verse');
-
-    state = BibleReference(bookId: bookId, chapter: chapter, verse: verse);
-  }
+  ReferenceNotifier(this._prefs)
+    : super(
+        BibleReference(
+          bookId: _prefs.getString('bible_book') ?? 'GEN',
+          chapter: _prefs.getInt('bible_chapter') ?? 1,
+          verse: _prefs.getInt('bible_verse'),
+        ),
+      );
 
   Future<void> setReference(BibleReference reference) async {
-    if (_persist) {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('bible_book', reference.bookId);
-      await prefs.setInt('bible_chapter', reference.chapter);
-      if (reference.verse != null) {
-        await prefs.setInt('bible_verse', reference.verse!);
-      } else {
-        await prefs.remove('bible_verse');
-      }
+    await _prefs.setString('bible_book', reference.bookId);
+    await _prefs.setInt('bible_chapter', reference.chapter);
+    if (reference.verse != null) {
+      await _prefs.setInt('bible_verse', reference.verse!);
+    } else {
+      await _prefs.remove('bible_verse');
     }
     state = reference;
   }
@@ -264,7 +222,98 @@ class ReferenceNotifier extends StateNotifier<BibleReference> {
   }
 }
 
-// Bible books provider
+// Bible books shell provider (fast load without verses)
+final bibleBooksShellProvider =
+    StateNotifierProvider<BibleBooksShellNotifier, AsyncValue<List<BibleBook>>>((
+      ref,
+    ) {
+      final repository = ref.watch(bibleRepositoryProvider);
+      final notifier = BibleBooksShellNotifier(
+        repository,
+        ref.read(currentTranslationProvider),
+      );
+      // Keep the notifier alive across translation changes so switching feels instant
+      ref.listen<String>(currentTranslationProvider, (previous, next) {
+        notifier.changeTranslation(next);
+      });
+      return notifier;
+    });
+
+class BibleBooksShellNotifier extends StateNotifier<AsyncValue<List<BibleBook>>> {
+  final AppBibleRepository repository;
+  String _currentTranslationId;
+  int _loadGeneration = 0;
+
+  BibleBooksShellNotifier(this.repository, this._currentTranslationId)
+    : super(_initialBibleBooksState(repository, _currentTranslationId)) {
+    if (!state.hasValue) {
+      loadShell();
+    }
+  }
+
+  Future<void> loadShell() async {
+    final requestedTranslationId = _currentTranslationId;
+    final loadGeneration = ++_loadGeneration;
+    if (!state.hasValue) {
+      state = const AsyncValue.loading();
+    }
+
+    try {
+      List<BibleBook> books;
+
+      // Try to load shell from local first
+      try {
+        books = await repository.loadLocalBibleShell(requestedTranslationId);
+      } on BibleParserException catch (e, st) {
+        if (mounted && loadGeneration == _loadGeneration) {
+          state = AsyncValue.error(
+            'There was an error loading the Bible. Please try a different translation or contact support.',
+            st,
+          );
+        }
+        return;
+      } catch (e) {
+        // Shell load failed, try full load
+        books = await repository.loadLocalBible(requestedTranslationId);
+      }
+
+      if (mounted &&
+          loadGeneration == _loadGeneration &&
+          requestedTranslationId == _currentTranslationId) {
+        state = AsyncValue.data(books);
+      }
+    } on BibleParserException catch (e, st) {
+      if (mounted && loadGeneration == _loadGeneration) {
+        state = AsyncValue.error(
+          'There was an error loading the Bible. Please try a different translation or contact support.',
+          st,
+        );
+      }
+    } catch (e, st) {
+      if (mounted && loadGeneration == _loadGeneration) {
+        state = AsyncValue.error(e, st);
+      }
+    }
+  }
+
+  Future<void> changeTranslation(String translationId) async {
+    if (_currentTranslationId == translationId) return;
+
+    _currentTranslationId = translationId;
+    final inMemoryBooks = repository.getLoadedTranslation(translationId);
+    if (inMemoryBooks != null) {
+      if (mounted) {
+        state = AsyncValue.data(inMemoryBooks);
+      }
+      return;
+    }
+
+    // Load the shell for this translation
+    await loadShell();
+  }
+}
+
+// Bible books provider (full load with all verses)
 final bibleBooksProvider =
     StateNotifierProvider<BibleBooksNotifier, AsyncValue<List<BibleBook>>>((
       ref,

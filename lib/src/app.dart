@@ -8,6 +8,7 @@ import 'package:basic_bible/l10n/app_localizations.dart';
 import 'features/auth/presentation/login_screen.dart';
 import 'features/home/presentation/home_screen.dart';
 import 'features/library/presentation/versions_screen.dart';
+import 'features/annotations/presentation/notes_screen.dart';
 import 'features/settings/application/app_preferences_provider.dart';
 import 'views/other_screen.dart';
 import 'features/settings/presentation/settings_screen.dart';
@@ -59,6 +60,10 @@ class MyApp extends ConsumerWidget {
             GoRoute(
               path: 'settings',
               builder: (context, state) => SettingsScreen(),
+            ),
+            GoRoute(
+              path: 'notes',
+              builder: (context, state) => const NotesScreen(),
             ),
           ],
         ),

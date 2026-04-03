@@ -16,6 +16,8 @@ class SettingsScreen extends ConsumerWidget {
     final selectedLanguage = ref.watch(languageProvider);
     final showBookIntroductions = ref.watch(showBookIntroductionsProvider);
     final showVerseSelector = ref.watch(showVerseSelectorProvider);
+    final boldDivineName = ref.watch(boldDivineNameProvider);
+    final underlineProperNames = ref.watch(underlineProperNamesProvider);
     final openBibleTabByDefault = ref.watch(openBibleTabByDefaultProvider);
     final requireDummyLogin = ref.watch(requireDummyLoginProvider);
     final colors = Theme.of(context).colorScheme;
@@ -127,6 +129,30 @@ class SettingsScreen extends ConsumerWidget {
               onChanged: (value) {
                 ref
                     .read(showBookIntroductionsProvider.notifier)
+                    .setEnabled(value);
+              },
+            ),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Bold Divine Name (LORD)'),
+              subtitle: const Text(
+                'Display the divine name (LORD / Yahweh) in bold. Off by default — turn on if your translation marks it.',
+              ),
+              value: boldDivineName,
+              onChanged: (value) {
+                ref.read(boldDivineNameProvider.notifier).setEnabled(value);
+              },
+            ),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Underline Proper Names'),
+              subtitle: const Text(
+                'Underline proper nouns and Strong\'s-tagged words when the source marks them.',
+              ),
+              value: underlineProperNames,
+              onChanged: (value) {
+                ref
+                    .read(underlineProperNamesProvider.notifier)
                     .setEnabled(value);
               },
             ),

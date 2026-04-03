@@ -33,6 +33,12 @@ This README is intentionally status-focused. It should reflect what the repo act
   - paragraph and poetry-style structure where the source exposes it
 - Open verse notes from the side annotation button and view structured note/reference sheets.
 - Render inline note/reference markers in the reader where parser metadata is available.
+- Select verses in the reader and save:
+  - standalone highlights
+  - personal notes
+  - notes with connected highlight colors
+- Link extra verses to a personal note and preserve the translation label used when each verse was added.
+- Browse and edit saved personal notes/highlights from a dedicated `Notes` screen.
 - Use multiple themes, including:
   - system
   - light
@@ -52,10 +58,12 @@ This README is intentionally status-focused. It should reflect what the repo act
 - Continuous scrolling works as a whole-Bible lazy reader, but it still has an open regression item around keeping the scroller and reference controls fully in sync during some interactions.
 - Translation-library management is much better than before, but online-only translation access and fuller library lifecycle management are still not finished.
 - Offline persistence works on non-web platforms, but web still falls back to in-memory storage.
+- Personal annotations now save and reopen, but:
+  - partial-verse annotation is still future work
+  - native platform share/export/sync are still follow-up work
 
 ### Not done yet
 
-- Notes authoring
 - Sync
 - Audio / TTS playback
 - Daily verse features
@@ -173,6 +181,8 @@ These files are the main internal docs for the app:
 
 - `CONTEXT.md`
 - `TODO_STATUS.md`
+- `ANNOTATIONS_CONTEXT.md`
+- `ANNOTATIONS_STATUS.md`
 
 ## Near-Term Focus
 

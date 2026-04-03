@@ -19,7 +19,8 @@ Use `TODO_STATUS.md` beside this file as the execution tracker:
 - Bible content is bundled in `assets/bible/` and can also be fetched from GitHub-defined translation URLs.
 - The app has translation selection for Bible data with `kjv`, `asv`, and `web` currently defined in code.
 - UI scaffolding exists for authentication, settings, themes, language selection, and menu-driven feature areas.
-- Many non-reader features are still placeholders, "coming soon" destinations, or partially scaffolded.
+- Personal notes/highlights now exist as a separate user-data feature with a reader selection bar, note editor, and Notes screen.
+- Several non-reader features are still placeholders, "coming soon" destinations, or partially scaffolded.
 - Localization support exists in code/assets for English, French, Spanish, German, and Chinese.
 
 ## Architecture Overview
@@ -73,6 +74,17 @@ Use `TODO_STATUS.md` beside this file as the execution tracker:
 - `lib/src/services/app_database.dart` defines the Drift-backed storage layer.
 - It stores parsed Bible data as books, chapters, and verses.
 - The repository reads from and writes to this layer for caching-oriented workflows.
+- It also stores personal annotations in dedicated user-annotation tables separate from parser-originated footnotes/references.
+
+### Personal annotations
+- The personal annotations feature lives under `lib/src/features/annotations/`.
+- It is intentionally separate from parser-provided footnotes and cross-references.
+- The current model supports:
+  - standalone highlights
+  - standalone notes
+  - notes with connected highlight colors
+  - extra linked verses with saved translation metadata
+- The first version is whole-verse only; partial-verse anchors are future work.
 
 ## Important Implementation Caveats
 
@@ -84,14 +96,14 @@ Use `TODO_STATUS.md` beside this file as the execution tracker:
   - `asv_osis.xml`
 - Because the IDs in code are `kjv`, `web`, and `asv`, local lookup may miss bundled assets and fall back to download behavior.
 
-### Database cache is not persisted across restarts
-- `AppDatabase` currently connects through `NativeDatabase.memory()`.
-- This means the Drift-backed Bible cache is in-memory only for the current app session.
-- The API surface reads like persistent caching, but the current implementation does not survive app restarts.
+### Web storage still falls back to memory
+- Non-web platforms use a file-backed SQLite path.
+- Web still falls back to in-memory storage.
+- This means Bible cache and personal annotations do not survive browser reloads yet.
 
 ### Menu routes outpace registered routes
-- `MenuTab` includes navigation targets such as `/coming-soon/notes`, `/coming-soon/prayer`, `/coming-soon/about`, and similar paths.
-- Those routes do not appear to be registered in `lib/src/app.dart`.
+- Most placeholder menu routes still go through `/coming-soon/...`.
+- `Notes` is now a real route and should be treated as a live feature, not a placeholder.
 - Future navigation work should verify route registration before assuming a destination exists.
 
 ### Mixed old and new code structure
@@ -108,6 +120,7 @@ Use `TODO_STATUS.md` beside this file as the execution tracker:
 - Verify route, provider, and storage assumptions before extending features.
 - Keep the app functioning as a simple Bible reader first; add roadmap features in layers rather than assuming the scaffolding is already complete.
 - When touching Bible loading or caching, check both the translation ID flow and the real persistence behavior.
+- When touching notes/highlights, keep personal annotations separate from parser content at every layer.
 
 ## Plain-Language Note On Bible Formatting
 Supporting Bible formatting from USFX, OSIS, and Zefania does not mean "just read the XML and save one string per verse."

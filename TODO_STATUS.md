@@ -42,7 +42,7 @@ Separate from feature backlog — these affect correctness, safety, and maintain
 
 | Issue | Severity | Description |
 | --- | --- | --- |
-| Destructive database migrations | High | `MigrationStrategy` currently deletes all tables on any schema version bump. This destroys all user-imported Bibles when the schema changes. Needs additive migrations that preserve data. |
+| Migration coverage is still thin | Medium | The app now uses additive migration steps for recent schema changes, but there is still no test that opens an older on-disk database and proves upgrade safety end to end. |
 | App models duplicate parser models | High | `lib/src/models/bible_models.dart` redefines every type from `bible_parser_flutter` with a `Bible` prefix (`BibleVerseSpanKind`, `BibleFootnote`, etc.). If the parser model changes, the app breaks silently. These should re-export the parser types or share a common interface. |
 | No lazy loading | Medium | The entire Bible is loaded into memory. There is no chapter-level streaming or lazy page loading. For large translations this is a memory and startup cost that will eventually need addressing. |
 | SharedPreferences async loading not exposed | Medium | Each Riverpod `StateNotifier` loads from `SharedPreferences` asynchronously in `_loadSavedValue()` but exposes no loading state. This can cause brief UI glitches on startup before saved values are applied. |
@@ -54,16 +54,18 @@ Separate from feature backlog — these affect correctness, safety, and maintain
 
 ## Recommended Next Step
 
-- `next` Focused References screen regression check: verify that picking a book/chapter/verse always lands on the correct visible location and that returning from the picker does not leave the reference bar and scroller position out of sync.
+- `next` Add widget tests for the new personal-annotations flow: reader verse selection, saved-note markers, and Notes-screen open-in-reader navigation, then run a manual regression pass across document mode and continuous scrolling.
 
 **Why this first:**
 
-- This has been called out in Current Status for multiple sessions and directly affects navigation confidence in the reader.
-- The download-removal and document-mode rendering gaps are now closed, so reference navigation is the next user-facing friction point.
+- The annotation repository/storage tests are now in place, but the highest-risk regressions are still in the UI layer.
+- The reader now has another interactive bottom-layer system, so selection/navigation/manual-scroll behavior needs stronger confidence.
 
 ---
 
-- `in_progress` References screen navigation: regression check recommended to verify picker selection keeps reader scroll in sync.
+- `in_progress` Personal annotations need widget-test coverage and manual QA across reader layouts.
+- `in_progress` References screen navigation still deserves a regression pass after the new verse-selection bar landed in the reader.
+- `done` Personal notes and highlights now exist as a real user-data feature with dedicated models, repository/provider plumbing, additive Drift storage, a note editor, and a Notes screen.
 - `done` The reader now has working verse-list and document modes with comprehensive span rendering: red-letter, emphasis/bold/italic, divine names, proper names, selah, acrostic headings, structured footnotes and cross-references with inline markers, and source-driven introductions/tables.
 - `done` Parser/app pipeline preserves rich content: footnotes and cross-references now include spanIndex anchors; poetry/quote structure is consistent across all three formats with stanza groups and indentation; document-mode rendering reflects all preserved parser structures.
 - `partial` Non-web Bible caching is persistent; web still falls back to in-memory storage.
@@ -74,16 +76,16 @@ Separate from feature backlog — these affect correctness, safety, and maintain
 
 ## Completed Recently
 
+- `done` Added personal annotation storage with additive schema step `v6`, separate `user_annotations` / `annotation_verses` tables, and repository tests for save/load/edit/delete flows.
+- `done` Added reader verse selection with a bottom action bar for quick highlight, note creation, copy, and share fallback.
+- `done` Added a dedicated note editor supporting connected highlight color, linked verses, labels, and saved translation metadata for each linked verse.
+- `done` Added a real `Notes` screen, Menu route, and open-in-reader flow; removed the old fake profile header from the Menu.
 - `done` Added `spanIndex` anchor field to `BibleFootnote` and `BibleCrossReference` with JSON serialization and isolate-boundary serializers, mirroring the parser's new positional anchor tracking.
 - `done` Fixed settings sheet overflow (scrolls on small screens) and added mouse/trackpad scrolling to the theme preview cards for desktop.
 - `done` Added user-facing removal for downloaded Bibles from the Versions screen with confirmation dialog, fallback translation selection, and re-downloadable catalog entry.
 - `done` Added distinct document-mode rendering for `introduction` blocks (muted color, left indent) and `table`/`tableRow` blocks (cell grid with header-row styling and alternating row tint) so these parser-preserved structures are visually distinct instead of falling through to generic prose.
 - `done` Synced `table` and `tableRow` values into `BibleDocumentBlockKind` to mirror the parser's new `DocumentBlockKind` values.
 - `done` Reworked the References picker layout so it now adapts more cleanly across mobile and desktop: phones keep a tighter one-book-at-a-time card flow with adaptive chapter/verse grids, while wider screens use a split book-list/detail-pane layout with clearer search and selection context.
-- `done` Fixed verse focus highlight re-appearing when returning to Bible tab — `_showSelectedVerseFocus` now starts as `false` and only enables on explicit navigation events (cross-ref/footnote jumps).
-- `done` Fixed `wordsOfJesus` and `word` spans not dimming when another verse is focused — `_spanColor` now respects the base color alpha for all span kinds.
-- `done` Fixed verse focus not dismissing on desktop mouse scroll — wrapped build in `Listener(onPointerSignal:)` to catch `PointerScrollEvent`.
-- `done` Added `emphasis`, `bold`, `italic`, `properName`, `selah`, `acrosticHeading` to `BibleVerseSpanKind` with matching render styles (italic, bold w700, underline).
 
 ---
 

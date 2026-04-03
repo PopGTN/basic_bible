@@ -6,6 +6,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
 import 'package:basic_bible/l10n/app_localizations.dart';
 import 'package:basic_bible/src/features/library/data/app_bible_repository.dart';
+import 'package:basic_bible/src/features/home/application/home_tab_provider.dart';
 import 'package:basic_bible/src/features/menu/presentation/menu_tab.dart';
 import 'package:basic_bible/src/features/reader/application/bible_provider.dart';
 import 'package:basic_bible/src/features/reader/presentation/bible_viewer_tab.dart';
@@ -36,6 +37,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     // Startup tab selection is read once from persisted settings so the shell
     // opens on Bible when requested without fighting later manual tab changes.
     _currentIndex = ref.read(openBibleTabByDefaultProvider) ? 1 : 0;
+    ref.read(homeTabIndexProvider.notifier).state = _currentIndex;
     _bottomNavController = _createController();
     _appBarController = _createController();
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -137,6 +139,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   @override
   Widget build(BuildContext context) {
     final t = AppLocalizations.of(context)!;
+    final syncedTabIndex = ref.watch(homeTabIndexProvider);
+    if (syncedTabIndex != _currentIndex) {
+      _currentIndex = syncedTabIndex;
+    }
 
     // Responsive checks
     final width = MediaQuery.of(context).size.width;
@@ -189,8 +195,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                 // Side navigation for wide screens
                 NavigationRail(
                   selectedIndex: _currentIndex,
-                  onDestinationSelected: (i) =>
-                      setState(() => _currentIndex = i),
+                  onDestinationSelected: (i) => setState(() {
+                    _currentIndex = i;
+                    ref.read(homeTabIndexProvider.notifier).state = i;
+                  }),
                   labelType: NavigationRailLabelType.all,
                   destinations: tabs
                       .map(
@@ -227,7 +235,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                 ),
                 child: BottomNavigationBar(
                   currentIndex: _currentIndex,
-                  onTap: (i) => setState(() => _currentIndex = i),
+                  onTap: (i) => setState(() {
+                    _currentIndex = i;
+                    ref.read(homeTabIndexProvider.notifier).state = i;
+                  }),
                   items: tabs
                       .map(
                         (tab) => BottomNavigationBarItem(

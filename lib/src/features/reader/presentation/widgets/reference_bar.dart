@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:basic_bible/src/models/bible_models.dart';
+import 'package:basic_bible/src/features/reader/application/bible_provider.dart';
 import 'package:basic_bible/src/utils/reference_utils.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -186,7 +188,7 @@ class _BarActionButton extends StatelessWidget {
   }
 }
 
-class ReferencePickerScreen extends StatefulWidget {
+class ReferencePickerScreen extends ConsumerStatefulWidget {
   const ReferencePickerScreen({
     super.key,
     required this.books,
@@ -199,10 +201,11 @@ class ReferencePickerScreen extends StatefulWidget {
   final bool showVerseSelector;
 
   @override
-  State<ReferencePickerScreen> createState() => _ReferencePickerScreenState();
+  ConsumerState<ReferencePickerScreen> createState() =>
+      _ReferencePickerScreenState();
 }
 
-class _ReferencePickerScreenState extends State<ReferencePickerScreen> {
+class _ReferencePickerScreenState extends ConsumerState<ReferencePickerScreen> {
   late String expandedBookId;
   late int selectedChapter;
   int? selectedVerse;
@@ -210,6 +213,8 @@ class _ReferencePickerScreenState extends State<ReferencePickerScreen> {
   List<BibleBook> filteredBooks = [];
   bool _alphabeticalOrder = false;
   List<BibleReference> _history = const [];
+  /// Cache of hydrated chapters (with verses) keyed by "bookId:chapterNumber".
+  final Map<String, BibleChapter> _hydratedChapters = {};
 
   @override
   void initState() {
@@ -355,6 +360,23 @@ class _ReferencePickerScreenState extends State<ReferencePickerScreen> {
     return BibleReference(bookId: parts[0], chapter: chapter, verse: verse);
   }
 
+  /// Load verses for a chapter so the verse grid can be shown.
+  Future<void> _hydrateChapter(String bookId, int chapterNumber) async {
+    final key = '$bookId:$chapterNumber';
+    if (_hydratedChapters.containsKey(key)) return;
+    final translation = ref.read(currentTranslationProvider);
+    final repository = ref.read(bibleRepositoryProvider);
+    final chapter = await repository.loadChapterVerses(
+      translation,
+      bookId,
+      chapterNumber,
+    );
+    if (!mounted || chapter == null) return;
+    setState(() {
+      _hydratedChapters[key] = chapter;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     if (widget.books.isEmpty) {
@@ -364,12 +386,15 @@ class _ReferencePickerScreenState extends State<ReferencePickerScreen> {
       (book) => book.id == expandedBookId,
       orElse: () => widget.books.first,
     );
-    final selectedChapterModel = expandedBook.chapters.firstWhere(
+    final shellChapter = expandedBook.chapters.firstWhere(
       (chapter) => chapter.number == selectedChapter,
       orElse: () => expandedBook.chapters.isNotEmpty
           ? expandedBook.chapters.first
           : const BibleChapter(number: 1),
     );
+    final hydratedKey = '${expandedBook.id}:$selectedChapter';
+    final selectedChapterModel =
+        _hydratedChapters[hydratedKey] ?? shellChapter;
     final visibleBooks = _visibleBooks;
     final colors = Theme.of(context).colorScheme;
 
@@ -467,6 +492,10 @@ class _ReferencePickerScreenState extends State<ReferencePickerScreen> {
                                     selectedChapter = chapterNumber;
                                     selectedVerse = null;
                                   });
+                                  _hydrateChapter(
+                                    expandedBook.id,
+                                    chapterNumber,
+                                  );
                                 },
                                 onChapterSelect: () => _selectReference(
                                   BibleReference(
@@ -536,6 +565,7 @@ class _ReferencePickerScreenState extends State<ReferencePickerScreen> {
                                         selectedChapter = chapterNumber;
                                         selectedVerse = null;
                                       });
+                                      _hydrateChapter(book.id, chapterNumber);
                                     },
                                     onChapterSelect: () => _selectReference(
                                       BibleReference(
@@ -857,35 +887,37 @@ class _ReferenceSelectionPanel extends StatelessWidget {
             );
           },
         ),
-        if (showVerseSelector && selectedChapterModel.verses.isNotEmpty) ...[
+        if (showVerseSelector) ...[
           SizedBox(height: compact ? 14 : 18),
           TextButton.icon(
             onPressed: onChapterSelect,
             icon: const Icon(Icons.arrow_forward, size: 18),
             label: Text('Go to ${preferredBookName(book)} $selectedChapter'),
           ),
-          SizedBox(height: compact ? 10 : 14),
-          _ReferenceSectionLabel(
-            label: 'Verses in $selectedChapter',
-            compact: compact,
-          ),
-          const SizedBox(height: 10),
-          _ReferenceNumberGrid(
-            itemCount: selectedChapterModel.verses.length,
-            compact: compact,
-            verseGrid: true,
-            itemBuilder: (context, index) {
-              final verse = selectedChapterModel.verses[index];
-              final isSelected = verse.number == selectedVerse;
-              return _ReferenceNumberTile(
-                label: '${verse.number}',
-                isSelected: isSelected,
-                colors: colors,
-                compact: compact,
-                onTap: () => onVerseTap(verse.number),
-              );
-            },
-          ),
+          if (selectedChapterModel.verses.isNotEmpty) ...[
+            SizedBox(height: compact ? 10 : 14),
+            _ReferenceSectionLabel(
+              label: 'Verses in $selectedChapter',
+              compact: compact,
+            ),
+            const SizedBox(height: 10),
+            _ReferenceNumberGrid(
+              itemCount: selectedChapterModel.verses.length,
+              compact: compact,
+              verseGrid: true,
+              itemBuilder: (context, index) {
+                final verse = selectedChapterModel.verses[index];
+                final isSelected = verse.number == selectedVerse;
+                return _ReferenceNumberTile(
+                  label: '${verse.number}',
+                  isSelected: isSelected,
+                  colors: colors,
+                  compact: compact,
+                  onTap: () => onVerseTap(verse.number),
+                );
+              },
+            ),
+          ],
         ],
       ],
     );

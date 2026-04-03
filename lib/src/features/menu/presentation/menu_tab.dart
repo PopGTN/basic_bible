@@ -45,35 +45,11 @@ class MenuTab extends ConsumerWidget {
     return ListView(
       padding: const EdgeInsets.all(8.0),
       children: [
-        // Profile header
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 16.0),
-          child: Row(
-            children: [
-              const CircleAvatar(
-                radius: 30,
-                backgroundImage: AssetImage(
-                  'assets/images/profile_placeholder.png',
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Text(
-                  "User Name", // TODO: Replace with actual user name from auth
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-              ),
-            ],
-          ),
-        ),
-
-        const Divider(),
-
         // Notes
         ListTile(
           leading: const Icon(Icons.note),
           title: Text("Notes"),
-          onTap: () => context.go('/coming-soon/notes'),
+          onTap: () => context.go('/home/notes'),
         ),
 
         // Prayer List
