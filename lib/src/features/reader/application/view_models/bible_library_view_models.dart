@@ -24,21 +24,22 @@ final availableTranslationsProvider = FutureProvider<List<BibleTranslation>>((
 
 // Bible books shell provider (fast load without verses)
 final bibleBooksShellProvider =
-    StateNotifierProvider<BibleBooksShellNotifier, AsyncValue<List<BibleBook>>>((
-      ref,
-    ) {
-      final repository = ref.watch(bibleRepositoryProvider);
-      final notifier = BibleBooksShellNotifier(
-        repository,
-        ref.read(currentTranslationProvider),
-      );
-      ref.listen<String>(currentTranslationProvider, (previous, next) {
-        notifier.changeTranslation(next);
-      });
-      return notifier;
-    });
+    StateNotifierProvider<BibleBooksShellNotifier, AsyncValue<List<BibleBook>>>(
+      (ref) {
+        final repository = ref.watch(bibleRepositoryProvider);
+        final notifier = BibleBooksShellNotifier(
+          repository,
+          ref.read(currentTranslationProvider),
+        );
+        ref.listen<String>(currentTranslationProvider, (previous, next) {
+          notifier.changeTranslation(next);
+        });
+        return notifier;
+      },
+    );
 
-class BibleBooksShellNotifier extends StateNotifier<AsyncValue<List<BibleBook>>> {
+class BibleBooksShellNotifier
+    extends StateNotifier<AsyncValue<List<BibleBook>>> {
   BibleBooksShellNotifier(this.repository, this._currentTranslationId)
     : super(_initialBibleBooksState(repository, _currentTranslationId)) {
     if (!state.hasValue) {
@@ -237,7 +238,7 @@ class BibleBooksNotifier extends StateNotifier<AsyncValue<List<BibleBook>>> {
     } on BibleParserException catch (e, st) {
       if (mounted) {
         state = AsyncValue.error(
-          'There was an error parsing the Bible file. Please make sure the selected file is valid USFX, OSIS, or Zefania XML.',
+          'There was an error importing the Bible file. Please make sure the selected file is a valid XML Bible or exported SQLite translation database.',
           st,
         );
       }
@@ -270,7 +271,7 @@ class BibleBooksNotifier extends StateNotifier<AsyncValue<List<BibleBook>>> {
     } on BibleParserException catch (e, st) {
       if (mounted) {
         state = AsyncValue.error(
-          'There was an error parsing the Bible file. Please make sure the selected file is valid USFX, OSIS, or Zefania XML.',
+          'There was an error importing the Bible file. Please make sure the selected file is a valid XML Bible or exported SQLite translation database.',
           st,
         );
       }

@@ -1,6 +1,6 @@
 import 'package:equatable/equatable.dart';
 
-enum BibleFormat { usfx, usfm, osis, auto }
+enum BibleFormat { usfx, usfm, osis, sqlite, auto }
 
 enum BibleSourceType { asset, download, import }
 
@@ -29,14 +29,14 @@ class BibleTranslation extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
-        name,
-        language,
-        description,
-        isLocal,
-        filePath,
-        githubUrl,
-        format,
-        sourceType,
-      ];
+    id,
+    name,
+    language,
+    description,
+    isLocal,
+    filePath,
+    githubUrl,
+    format,
+    sourceType,
+  ];
 }

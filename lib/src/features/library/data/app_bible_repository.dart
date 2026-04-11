@@ -7,6 +7,7 @@ import 'package:http/http.dart' as http;
 import 'package:bible_parser_flutter/bible_parser_flutter.dart';
 import 'package:basic_bible/src/models/bible_models.dart';
 import 'package:basic_bible/src/services/app_database.dart';
+import 'package:basic_bible/src/services/translation_database.dart';
 import 'package:basic_bible/src/services/translation_database_manager.dart';
 import 'package:path/path.dart' as p;
 
@@ -190,9 +191,9 @@ class AppBibleRepository {
 
     return _inFlight.putIfAbsent(
       translationId,
-      () => _doLoadLocalBible(translationId).whenComplete(
-        () => _inFlight.remove(translationId),
-      ),
+      () => _doLoadLocalBible(
+        translationId,
+      ).whenComplete(() => _inFlight.remove(translationId)),
     );
   }
 
@@ -212,6 +213,26 @@ class AppBibleRepository {
     try {
       final translation = await _getTranslation(translationId);
       await _invalidateCache(translationId);
+
+      if (_isImportedSqliteTranslation(translation)) {
+        await _restoreImportedSqliteCache(
+          translationId: translationId,
+          translation: translation,
+        );
+        await _db.updateInstalledTranslationParserVersion(
+          translationId,
+          _currentParserVersion,
+        );
+        final path = await _sqlitePathFor(translationId);
+        final translationDb = await _dbManager.open(translationId, path);
+        final books = await translationDb.getBible();
+        if (books.isEmpty) {
+          throw Exception(
+            'Imported SQLite translation ${translation.id} did not contain any Bible books.',
+          );
+        }
+        return _rememberLoadedTranslation(translationId, books);
+      }
 
       final content = await _loadLocalContent(translation);
       final parsed = await compute(_parseBibleToSerializable, content);
@@ -346,14 +367,22 @@ class AppBibleRepository {
       throw Exception('Selected Bible file does not exist.');
     }
 
-    final content = await file.readAsString();
-    final parsed = await compute(_parseBibleToSerializable, content);
-    final importedBooks = parsed.map(_mapSerializableBook).toList();
+    late final BibleFormat detectedFormat;
+    late final List<BibleBook> importedBooks;
+    if (_isLikelySqliteFile(filePath)) {
+      detectedFormat = BibleFormat.sqlite;
+      importedBooks = await _readBibleFromSqlite(filePath);
+    } else {
+      final content = await file.readAsString();
+      final parsed = await compute(_parseBibleToSerializable, content);
+      importedBooks = parsed.map(_mapSerializableBook).toList();
+      detectedFormat = _detectFormatFromContent(content);
+    }
+
     if (importedBooks.isEmpty) {
       throw Exception('The selected file did not contain any Bible books.');
     }
 
-    final detectedFormat = _detectFormatFromContent(content);
     final translation = await _buildImportedTranslation(
       filePath: filePath,
       format: detectedFormat,
@@ -400,9 +429,16 @@ class AppBibleRepository {
       sourceType: BibleSourceType.import,
     );
 
-    final path = await _sqlitePathFor(normalizedId);
-    final translationDb = await _dbManager.open(normalizedId, path);
-    await translationDb.insertBible(request.importedBooks);
+    if (request.format == BibleFormat.sqlite) {
+      await _installImportedSqlite(
+        translationId: normalizedId,
+        managedImportPath: managedImportPath,
+      );
+    } else {
+      final path = await _sqlitePathFor(normalizedId);
+      final translationDb = await _dbManager.open(normalizedId, path);
+      await translationDb.insertBible(request.importedBooks);
+    }
 
     await _db.upsertInstalledTranslation(
       translation: translation,
@@ -802,6 +838,88 @@ class AppBibleRepository {
       'ita' || 'it' => 'it',
       _ => '',
     };
+  }
+
+  bool _isLikelySqliteFile(String filePath) {
+    final extension = p.extension(filePath).toLowerCase();
+    return extension == '.sqlite' ||
+        extension == '.db' ||
+        extension == '.sqlite3';
+  }
+
+  bool _isImportedSqliteTranslation(BibleTranslation translation) {
+    return translation.sourceType == BibleSourceType.import &&
+        translation.format == BibleFormat.sqlite;
+  }
+
+  Future<List<BibleBook>> _readBibleFromSqlite(String filePath) async {
+    final translationDb = openTranslationDatabase(filePath);
+    try {
+      final books = await translationDb.getBible();
+      if (books.isEmpty) {
+        throw Exception(
+          'The selected SQLite database did not contain any Bible books.',
+        );
+      }
+      return books;
+    } catch (error) {
+      throw Exception('Unable to read SQLite Bible database: $error');
+    } finally {
+      await translationDb.close();
+    }
+  }
+
+  Future<void> _installImportedSqlite({
+    required String translationId,
+    required String managedImportPath,
+  }) async {
+    final destinationPath = await _sqlitePathFor(translationId);
+    await _copySqliteFile(
+      sourcePath: managedImportPath,
+      destinationPath: destinationPath,
+      translationId: translationId,
+    );
+  }
+
+  Future<void> _restoreImportedSqliteCache({
+    required String translationId,
+    required BibleTranslation translation,
+  }) async {
+    final sourcePath = translation.filePath;
+    if (sourcePath == null || sourcePath.isEmpty) {
+      throw Exception(
+        'Imported SQLite translation ${translation.id} is missing a source file.',
+      );
+    }
+    final sourceFile = File(sourcePath);
+    if (!await sourceFile.exists()) {
+      throw Exception('Imported translation file was not found: $sourcePath');
+    }
+
+    final destinationPath = await _sqlitePathFor(translationId);
+    await _copySqliteFile(
+      sourcePath: sourcePath,
+      destinationPath: destinationPath,
+      translationId: translationId,
+    );
+  }
+
+  Future<void> _copySqliteFile({
+    required String sourcePath,
+    required String destinationPath,
+    required String translationId,
+  }) async {
+    _dbManager.close(translationId);
+    final sourceFile = File(sourcePath);
+    if (!await sourceFile.exists()) {
+      throw Exception('Selected Bible file does not exist.');
+    }
+
+    final destinationFile = File(destinationPath);
+    if (await destinationFile.exists()) {
+      await destinationFile.delete();
+    }
+    await sourceFile.copy(destinationPath);
   }
 }
 

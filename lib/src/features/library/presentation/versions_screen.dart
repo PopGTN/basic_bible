@@ -41,7 +41,7 @@ class VersionsScreen extends ConsumerWidget {
                   children: [
                     Icon(Icons.upload_file),
                     SizedBox(width: 8),
-                    Text('Import Bible XML'),
+                    Text('Import Bible File'),
                   ],
                 ),
               ),
@@ -120,11 +120,11 @@ class VersionsScreen extends ConsumerWidget {
   }
 
   Future<void> _importBibleFile(BuildContext context, WidgetRef ref) async {
-    const xmlTypeGroup = XTypeGroup(
-      label: 'Bible XML',
-      extensions: <String>['xml', 'usfx', 'osis'],
+    const bibleFileTypeGroup = XTypeGroup(
+      label: 'Bible files',
+      extensions: <String>['xml', 'usfx', 'osis', 'sqlite', 'sqlite3', 'db'],
     );
-    final file = await openFile(acceptedTypeGroups: [xmlTypeGroup]);
+    final file = await openFile(acceptedTypeGroups: [bibleFileTypeGroup]);
     if (file == null || !context.mounted) return;
 
     final messenger = ScaffoldMessenger.of(context);
@@ -174,7 +174,7 @@ class VersionsScreen extends ConsumerWidget {
       builder: (context) => AlertDialog(
         title: Text('Delete ${translation.name}?'),
         content: Text(
-          'This removes the imported Bible from the app library and cache. The original XML file on disk will not be deleted.',
+          'This removes the imported Bible from the app library and cache. The original file on disk will not be deleted.',
         ),
         actions: [
           TextButton(

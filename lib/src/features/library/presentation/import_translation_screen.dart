@@ -162,7 +162,8 @@ class _ImportTranslationScreenState
                       maxLines: 3,
                       decoration: const InputDecoration(
                         labelText: 'Description',
-                        hintText: 'Imported from my_local_bible.xml',
+                        hintText:
+                            'Imported from my_local_bible.xml or my_translation.sqlite',
                       ),
                     ),
                     const SizedBox(height: 24),
@@ -182,7 +183,7 @@ class _ImportTranslationScreenState
                               )
                             : const Icon(Icons.library_add),
                         label: Text(
-                          _isSubmitting ? 'Importing...' : 'Import Bible',
+                          _isSubmitting ? 'Importing...' : 'Import Translation',
                         ),
                       ),
                     ),
