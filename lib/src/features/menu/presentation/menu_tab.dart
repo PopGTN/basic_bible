@@ -1,5 +1,5 @@
-import 'package:basic_bible/src/features/auth/application/auth_provider.dart';
-import 'package:basic_bible/src/features/settings/application/app_preferences_provider.dart';
+import 'package:basic_bible/src/features/auth/application/view_models/auth_view_model.dart';
+import 'package:basic_bible/src/features/settings/application/view_models/app_launch_preferences_view_models.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';

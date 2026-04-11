@@ -25,6 +25,18 @@ Use `TODO_STATUS.md` beside this file as the execution tracker:
 
 ## Architecture Overview
 
+### Project structure pattern
+- The app now follows a pragmatic MVVM-style feature layout on top of Riverpod.
+- Use this mental model when adding or moving code:
+  - `models/` = durable domain objects and DTO-style data structures
+  - `data/` = repositories and persistence/integration code
+  - `application/view_models/` = Riverpod state, UI-facing orchestration, and screen/session state
+  - `presentation/` = widgets, screens, layout, and interaction rendering
+- This is intentionally an incremental MVVM setup, not a framework-heavy rewrite.
+  - Riverpod remains the state tool.
+  - Repositories remain the data boundary.
+  - Widgets still own local ephemeral UI state when it is truly view-only.
+
 ### App bootstrap
 - `lib/main.dart` initializes Flutter bindings, sets up database factory behavior for web and desktop, configures desktop window sizing, and launches the app inside a `ProviderScope`.
 
@@ -72,18 +84,97 @@ Use `TODO_STATUS.md` beside this file as the execution tracker:
   - `reference_picker/chapter_bar.dart` owns the chapter bar
   - `reference_picker/reference_picker_screen.dart` owns the main picker screen
   - `reference_picker/reference_screen.dart` owns the separate references screen
-  - `reference_picker/reference_bar.dart` is a barrel export for shared picker entry points
 
 This split is a structural maintenance improvement, not a feature change. Treat the current priority as regression confidence, not more reader-surface expansion.
 
 ### Bible state and loading
-- `lib/src/providers/bible_provider.dart` contains the main Bible-reading state.
-- It manages:
-  - the selected translation
-  - the current Bible reference
-  - async loading of parsed Bible books
+- Reader-facing state is now split into explicit ViewModel files under `lib/src/features/reader/application/view_models/`.
+- The main reader ViewModel groups are:
+  - `reader_session_view_models.dart`
+    - selected translation
+    - current Bible reference
+  - `reader_preferences_view_models.dart`
+    - layout mode
+    - continuous scrolling
+    - intro/selector visibility preferences
+  - `bible_library_view_models.dart`
+    - repository provider
+    - available translations
+    - shell/full Bible loading
+  - `current_chapter_view_model.dart`
+    - chapter hydration on demand
 - Translation and reference state are persisted with `SharedPreferences`.
 - Bible content loading is exposed through Riverpod state notifiers and `AsyncValue`.
+
+### Feature-by-feature MVVM map
+- `lib/src/features/auth/`
+  - `application/view_models/auth_view_model.dart`
+  - `presentation/login_screen.dart`
+- `lib/src/features/home/`
+  - `application/view_models/home_navigation_view_model.dart`
+  - `presentation/home_screen.dart`
+- `lib/src/features/settings/`
+  - `application/view_models/app_launch_preferences_view_models.dart`
+  - `application/view_models/reader_display_preferences_view_models.dart`
+  - `presentation/settings_screen.dart`
+  - `presentation/advanced_settings_screen.dart`
+- `lib/src/features/annotations/`
+  - `models/user_annotations.dart`
+  - `data/user_annotation_repository.dart`
+  - `application/view_models/annotation_data_view_models.dart`
+  - `application/view_models/annotation_selection_view_models.dart`
+  - `presentation/notes_screen.dart`
+  - `presentation/note_editor_screen.dart`
+- `lib/src/features/reader/`
+  - `application/view_models/` for reader/session/loading state
+  - `presentation/reader_view/` for the reading surface
+  - `presentation/reference_picker/` for reference selection flows
+
+### Permanent architecture rule
+- If a change affects what the user sees or taps, start in `presentation/`.
+- If a change affects screen state, selection, loading, or UI orchestration, place it in `application/view_models/`.
+- If a change affects storage, parsing, persistence, or integration boundaries, place it in `data/` or `services/`.
+- If a type needs to survive across layers, make it a model instead of hiding it inside a widget or repository.
+- Avoid adding fresh business logic directly into screens when the same logic could be tested as a ViewModel or repository method.
+
+### Anti-drift rules for future AI work
+- Treat the MVVM-style feature layout as the default architecture for all new work.
+- Do not recreate old top-level feature provider files under `application/`.
+  - Add the real implementation under `application/view_models/`.
+  - Import the concrete `view_models/` file directly.
+- Do not add repository or persistence logic directly inside widgets or screens.
+- Do not add parser/content-source concerns into personal-annotation code paths.
+- Before creating a new file, first check whether the code belongs in an existing feature folder under:
+  - `models/`
+  - `data/`
+  - `application/view_models/`
+  - `presentation/`
+
+### Large-file guardrails
+- Prefer splitting by responsibility before a file becomes hard to scan.
+- As a rule of thumb:
+  - around `300-400` lines: pause and check whether the file now has more than one responsibility
+  - around `500-700` lines: split unless there is a strong reason not to
+  - `800+` lines: treat as a refactor target, not a normal resting state
+- Split by ownership, not arbitrarily.
+  - Good splits:
+    - screen widget vs reusable child widgets
+    - rendering helpers vs state orchestration
+    - repository vs mapper/serializer helpers
+    - session state vs preferences vs derived UI state
+  - Bad splits:
+    - one file per tiny helper with no clear ownership
+    - moving code into random `utils` files just to reduce line count
+- If a widget file has multiple major `switch` branches, multiple modal/sheet builders, and multiple long callbacks, that is usually a signal to extract subwidgets or view-model helpers.
+- If a provider file starts owning unrelated concerns, split it into focused `view_models/` files instead of creating another "god provider" file.
+
+### Review checklist for maintainers and AI
+- Ask:
+  - Does this code live in the right layer?
+  - Would this logic be easier to test outside the widget tree?
+  - Did this change make an existing file meaningfully harder to re-enter later?
+  - Should this be a new focused file rather than another section in a large one?
+- If the answer is "yes" to the last two questions, split the file before continuing feature work.
 
 ### Bible repository and parsing
 - `lib/src/repositories/app_bible_repository.dart` is the main repository for Bible data.

@@ -4,8 +4,6 @@ This module owns choosing and opening Bible references.
 
 ## Files
 
-- `reference_bar.dart`
-  - Barrel export used by callers that only need the public picker entry points.
 - `chapter_bar.dart`
   - Reader chapter bar with previous/next controls and picker entry.
 - `reference_picker_screen.dart`

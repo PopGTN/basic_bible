@@ -1,8 +1,8 @@
-import 'package:basic_bible/src/features/annotations/application/annotation_providers.dart';
+import 'package:basic_bible/src/features/annotations/application/view_models/annotation_data_view_models.dart';
 import 'package:basic_bible/src/features/annotations/models/user_annotations.dart';
 import 'package:basic_bible/src/features/annotations/presentation/annotation_theme.dart';
-import 'package:basic_bible/src/features/reader/application/bible_provider.dart';
-import 'package:basic_bible/src/features/reader/presentation/reference_picker/reference_bar.dart';
+import 'package:basic_bible/src/features/reader/application/view_models/bible_library_view_models.dart';
+import 'package:basic_bible/src/features/reader/presentation/reference_picker/reference_picker_screen.dart';
 import 'package:basic_bible/src/models/bible_models.dart';
 import 'package:basic_bible/src/utils/reference_utils.dart';
 import 'package:flutter/material.dart';

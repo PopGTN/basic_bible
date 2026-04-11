@@ -1,5 +1,6 @@
 import 'package:basic_bible/src/features/library/data/app_bible_repository.dart';
-import 'package:basic_bible/src/features/reader/application/bible_provider.dart';
+import 'package:basic_bible/src/features/reader/application/view_models/bible_library_view_models.dart';
+import 'package:basic_bible/src/features/reader/application/view_models/reader_session_view_models.dart';
 import 'package:basic_bible/src/models/bible_models.dart';
 import 'package:basic_bible/src/widgets/app_back_button.dart';
 import 'package:basic_bible/src/features/library/presentation/import_translation_screen.dart';

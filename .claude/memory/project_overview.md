@@ -29,8 +29,13 @@ type: project
 - Parser version (`_currentParserVersion = 2`) tracked per translation; cache is invalidated and re-parsed when bumped
 
 ## State management
-- **Riverpod 3.0** throughout — mix of `StateNotifierProvider`, `FutureProvider`, `StreamProvider`
-- Key providers: `currentTranslationProvider`, `currentReferenceProvider`, `bibleBooksShellProvider`, `currentChapterProvider`, `userAnnotationsProvider`, `annotationEditorDraftProvider`
+- **Riverpod 3.0** throughout — used in an explicit MVVM-style feature layout
+- Feature convention:
+  - `models/` = cross-layer types
+  - `data/` = repositories and persistence
+  - `application/view_models/` = Riverpod state + UI orchestration
+  - `presentation/` = widgets and screens
+- Key providers: `currentTranslationProvider`, `currentReferenceProvider`, `bibleBooksShellProvider`, `currentChapterProvider`, `userAnnotationsProvider`
 - Persistent settings in `SharedPreferences`: current book/chapter/verse, layout mode, continuous scroll, font size
 
 ## Bible parsing

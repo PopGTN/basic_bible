@@ -32,6 +32,13 @@ If you skip this step the next agent will start from stale information.
 - Move finished work to `Completed Recently` as soon as it is verified.
 - When a task changes user-visible behavior, add a `README.md` reminder.
 - After any meaningful unit of work, commit with a clear message describing the actual change.
+- Keep the MVVM-style feature structure intact:
+  - `models/`
+  - `data/`
+  - `application/view_models/`
+  - `presentation/`
+- Do not recreate old feature-level provider files under `application/`; import the concrete `view_models/` files directly.
+- When a file grows past roughly `500-700` lines and owns multiple concerns, split it before adding more feature work unless there is a documented reason not to.
 
 ---
 
@@ -68,7 +75,7 @@ Separate from feature backlog — these affect correctness, safety, and maintain
 - `in_progress` Personal annotations need widget-test coverage and manual QA across reader layouts after the reader presentation refactor.
 - `in_progress` References screen navigation still deserves a regression pass after the new verse-selection bar landed in the reader.
 - `in_progress` Reader presentation code is now organized into `reader_view/` and `reference_picker/`; behavior should now be regression-checked instead of adding more UI complexity blindly.
-- `in_progress` Reader readability improved with local module READMEs and typed home-tab configuration, but the reader still needs future extraction away from one large state object.
+- `in_progress` The repo now follows an explicit MVVM-style feature layout with `application/view_models/` folders, but screens still need gradual cleanup so more orchestration moves out of large widget state classes over time.
 - `todo` After regression coverage improves, do a second reader architecture pass to extract more standalone widgets/controllers from `_BibleTextViewState` instead of continuing to grow the state class through `part` extensions alone.
 - `todo` Review the older `.claude/memory/*.md` files and either trim, merge, or refresh them so repo memory stays consistent with the main tracking docs.
 - `done` Personal notes and highlights now exist as a real user-data feature with dedicated models, repository/provider plumbing, additive Drift storage, a note editor, and a Notes screen.
@@ -82,6 +89,7 @@ Separate from feature backlog — these affect correctness, safety, and maintain
 
 ## Completed Recently
 
+- `done` Converted feature state files into an explicit MVVM-style layout by moving Riverpod logic into dedicated `application/view_models/` files and removing the old feature-level provider files.
 - `done` Removed duplicated reader rendering logic by consolidating shared chapter-block and verse-card rendering paths in `bible_viewer_tab_state_rendering.dart`.
 - `done` Reduced outer reader-shell complexity further by moving watched shell state into a small snapshot model and splitting the main content layer into named helpers.
 - `done` Simplified the outer reader shell by replacing large inline selection/chapter-bar callback blocks with named methods in `reader_view/bible_viewer_tab.dart`, making the file easier to scan by intent.
@@ -89,7 +97,7 @@ Separate from feature backlog — these affect correctness, safety, and maintain
 - `done` Replaced the loose tab-map pattern in `home_screen.dart` with a typed tab definition to make the app shell easier to read and maintain.
 - `done` Organized reader presentation files into `reader_view/` and `reference_picker/` folders so file layout now matches feature responsibilities instead of staying flat under `presentation/`.
 - `done` Split the oversized reader presentation code into responsibility-based part files so `reader_view/bible_viewer_tab.dart` now acts as a coordinator instead of carrying the full implementation.
-- `done` Split the oversized references UI into dedicated files under `reference_picker/`, leaving `reference_bar.dart` as a barrel export.
+- `done` Split the oversized references UI into dedicated files under `reference_picker/` with direct imports to `chapter_bar.dart` and `reference_picker_screen.dart`.
 - `done` Added personal annotation storage with additive schema step `v6`, separate `user_annotations` / `annotation_verses` tables, and repository tests for save/load/edit/delete flows.
 - `done` Added reader verse selection with a bottom action bar for quick highlight, note creation, copy, and share fallback.
 - `done` Added a dedicated note editor supporting connected highlight color, linked verses, labels, and saved translation metadata for each linked verse.

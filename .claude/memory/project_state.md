@@ -12,6 +12,14 @@
 - The Notes screen is real and supports browsing, editing, and jumping back into the reader.
 
 ## Recent Structural Work
+- The app structure is now explicitly documented as a pragmatic MVVM-style Riverpod project.
+- Several feature `application/` files were removed after imports were moved to the concrete `application/view_models/` files.
+- New explicit ViewModel folders now exist for:
+  - `auth`
+  - `home`
+  - `settings`
+  - `annotations`
+  - `reader`
 - Reader presentation is now organized into:
   - `lib/src/features/reader/presentation/reader_view/`
   - `lib/src/features/reader/presentation/reference_picker/`
@@ -27,7 +35,6 @@
   - `chapter_bar.dart`
   - `reference_picker_screen.dart`
   - `reference_screen.dart`
-  - `reference_bar.dart` as a barrel export
 - Local `README.md` files were added under the reader presentation folders to make file ownership easier to understand for future maintainers.
 - The outer reader shell now uses named methods for chapter-bar actions and verse-selection actions, which makes `bible_viewer_tab.dart` much easier to re-enter after time away.
 - The outer reader shell now also uses a small snapshot model for watched state, which reduces the amount of provider noise inside the main `build()` method.
@@ -35,7 +42,7 @@
 - `flutter analyze` was clean after the refactor.
 
 ## Highest-Value Next Step
-- Add widget tests for annotations in the reader and Notes flow, then run manual QA across verse-list, document, and continuous-scrolling layouts after the reader refactor.
+- Add widget tests for annotations in the reader and Notes flow, then run manual QA across verse-list, document, and continuous-scrolling layouts after the reader refactor and ViewModel split.
 
 ## Important Open Risks
 - Document-mode paragraph layout still has limitations around per-verse highlight backgrounds because prose verses are rendered inline in a shared `RichText` tree.
@@ -44,6 +51,7 @@
 
 ## Follow-Up Todo
 - After reader regression coverage is stronger, do a second architecture cleanup pass to move more responsibilities out of `_BibleTextViewState` into standalone widgets/controllers where that improves testability and ownership.
+- Keep screens importing the concrete `application/view_models/` files directly so ownership stays obvious in the file header.
 - Review the older `.claude/memory/*.md` files and keep them aligned with `CONTEXT.md`, `TODO_STATUS.md`, `ANNOTATIONS_CONTEXT.md`, and `ANNOTATIONS_STATUS.md`.
 
 ## Source Of Truth Files

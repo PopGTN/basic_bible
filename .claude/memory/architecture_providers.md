@@ -7,9 +7,18 @@ type: project
 ## State management: Riverpod 3.0
 Imports: `flutter_riverpod`, `hooks_riverpod`, `riverpod/legacy.dart` (for `StateNotifierProvider`).
 
+## Project pattern
+
+The repo now uses a pragmatic MVVM-style layout:
+
+- `models/` for shared structured types
+- `data/` for repositories and persistence
+- `application/view_models/` for Riverpod-driven screen state
+- `presentation/` for widgets and rendering
+
 ## Key providers
 
-### Reader (`lib/src/features/reader/application/bible_provider.dart`)
+### Reader session and preferences (`lib/src/features/reader/application/view_models/`)
 | Provider | Type | State |
 |---|---|---|
 | `currentTranslationProvider` | `StateNotifierProvider<TranslationNotifier, String>` | active translation ID (default: `'kjv'`) |
@@ -23,20 +32,20 @@ Imports: `flutter_riverpod`, `hooks_riverpod`, `riverpod/legacy.dart` (for `Stat
 | `bibleBooksProvider` | `StateNotifierProvider<BibleBooksNotifier, AsyncValue<List<BibleBook>>>` | full books with all verses |
 | `availableTranslationsProvider` | `FutureProvider<List<BibleTranslation>>` | all stored translations |
 
-### Current chapter (`lib/src/features/reader/application/current_chapter_provider.dart`)
+### Current chapter (`lib/src/features/reader/application/view_models/current_chapter_view_model.dart`)
 | Provider | Type | Description |
 |---|---|---|
 | `currentChapterProvider` | `FutureProvider<BibleChapter?>` | Watches shell + reference; hydrates verses on demand via `repository.loadChapterVerses()` if shell chapter has empty verses |
 
-### Annotations (`lib/src/features/annotations/application/annotation_providers.dart`)
+### Annotations (`lib/src/features/annotations/application/view_models/`)
 | Provider | Type | Description |
 |---|---|---|
 | `userAnnotationRepositoryProvider` | `Provider<UserAnnotationRepository>` | singleton repo |
 | `userAnnotationsProvider` | `StreamProvider<List<UserAnnotation>>` | live stream of all annotations |
 | `visibleChapterAnnotationsProvider` | `Provider<List<UserAnnotation>>` | annotations for current chapter + translation |
-| `selectedVerseProvider` | `StateProvider.autoDispose<BibleReference?>` | which verse is tapped |
+| `selectedVersesProvider` | `StateNotifierProvider.autoDispose<SelectedVersesNotifier, List<BibleReference>>` | current multi-selection in the reader |
+| `selectedVerseProvider` | `Provider.autoDispose<BibleReference?>` | first selected verse convenience accessor |
 | `selectedVerseAnnotationsProvider` | `Provider<List<UserAnnotation>>` | annotations for tapped verse |
-| `annotationEditorDraftProvider` | `StateNotifierProvider<AnnotationEditorDraftNotifier, AnnotationEditorDraft?>` | editor state |
 | `highlightPaletteExpandedProvider` | `StateProvider.autoDispose<bool>` | palette open state |
 
 ## Two-phase loading strategy

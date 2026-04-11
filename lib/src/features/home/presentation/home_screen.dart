@@ -6,11 +6,13 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
 import 'package:basic_bible/l10n/app_localizations.dart';
 import 'package:basic_bible/src/features/library/data/app_bible_repository.dart';
-import 'package:basic_bible/src/features/home/application/home_tab_provider.dart';
+import 'package:basic_bible/src/features/home/application/view_models/home_navigation_view_model.dart';
 import 'package:basic_bible/src/features/menu/presentation/menu_tab.dart';
-import 'package:basic_bible/src/features/reader/application/bible_provider.dart';
+import 'package:basic_bible/src/features/reader/application/view_models/bible_library_view_models.dart';
+import 'package:basic_bible/src/features/reader/application/view_models/reader_preferences_view_models.dart';
+import 'package:basic_bible/src/features/reader/application/view_models/reader_session_view_models.dart';
 import 'package:basic_bible/src/features/reader/presentation/reader_view/bible_viewer_tab.dart';
-import 'package:basic_bible/src/features/settings/application/app_preferences_provider.dart';
+import 'package:basic_bible/src/features/settings/application/view_models/app_launch_preferences_view_models.dart';
 import 'package:basic_bible/src/providers/theme_provider.dart';
 import 'package:basic_bible/src/services/font_size_service.dart';
 

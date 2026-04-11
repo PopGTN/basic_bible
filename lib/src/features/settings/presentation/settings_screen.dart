@@ -1,6 +1,7 @@
 import 'package:basic_bible/l10n/app_localizations.dart';
-import 'package:basic_bible/src/features/reader/application/bible_provider.dart';
-import 'package:basic_bible/src/features/settings/application/app_preferences_provider.dart';
+import 'package:basic_bible/src/features/reader/application/view_models/reader_preferences_view_models.dart';
+import 'package:basic_bible/src/features/settings/application/view_models/app_launch_preferences_view_models.dart';
+import 'package:basic_bible/src/features/settings/application/view_models/reader_display_preferences_view_models.dart';
 import 'package:basic_bible/src/widgets/app_back_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

@@ -173,6 +173,13 @@ Most active app code lives under `lib/src/features/`:
 - `reader`
 - `settings`
 
+The codebase now uses a pragmatic MVVM-style feature layout:
+
+- `models/` for shared structured types
+- `data/` for repositories and persistence
+- `application/view_models/` for Riverpod-based screen state and UI orchestration
+- `presentation/` for widgets, screens, and rendering
+
 Shared models, services, providers, and a few older placeholder/shared pieces still live in shared folders under `lib/src/`.
 
 ## Internal Project Docs

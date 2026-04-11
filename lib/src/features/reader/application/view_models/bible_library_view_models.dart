@@ -3,74 +3,10 @@ import 'package:basic_bible/src/features/library/data/app_bible_repository.dart'
 import 'package:basic_bible/src/models/bible_models.dart';
 import 'package:basic_bible/src/services/app_database.dart';
 import 'package:basic_bible/src/services/translation_database_manager.dart';
-import 'package:basic_bible/src/services/shared_preferences_provider.dart';
-import 'package:basic_bible/src/utils/reference_utils.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
-enum ReaderLayoutMode { verseList, document }
-
-final continuousScrollingProvider =
-    StateNotifierProvider<ContinuousScrollingNotifier, bool>((ref) {
-      return ContinuousScrollingNotifier(
-        ref.read(sharedPreferencesProvider),
-      );
-    });
-
-final showBookIntroductionsProvider =
-    StateNotifierProvider<ShowBookIntroductionsNotifier, bool>((ref) {
-      return ShowBookIntroductionsNotifier(
-        ref.read(sharedPreferencesProvider),
-      );
-    });
-
-final showVerseSelectorProvider =
-    StateNotifierProvider<ShowVerseSelectorNotifier, bool>((ref) {
-      return ShowVerseSelectorNotifier(
-        ref.read(sharedPreferencesProvider),
-      );
-    });
-
-class ContinuousScrollingNotifier extends StateNotifier<bool> {
-  final SharedPreferences _prefs;
-
-  ContinuousScrollingNotifier(this._prefs)
-    : super(_prefs.getBool('reader_continuous_scrolling') ?? false);
-
-  Future<void> setEnabled(bool enabled) async {
-    await _prefs.setBool('reader_continuous_scrolling', enabled);
-    state = enabled;
-  }
-}
-
-class ShowBookIntroductionsNotifier extends StateNotifier<bool> {
-  final SharedPreferences _prefs;
-
-  ShowBookIntroductionsNotifier(this._prefs)
-    : super(
-        _prefs.getBool('reader_show_book_introductions') ??
-        _prefs.getBool('reader_show_chapter_headers') ??
-        true,
-      );
-
-  Future<void> setEnabled(bool enabled) async {
-    await _prefs.setBool('reader_show_book_introductions', enabled);
-    state = enabled;
-  }
-}
-
-class ShowVerseSelectorNotifier extends StateNotifier<bool> {
-  final SharedPreferences _prefs;
-
-  ShowVerseSelectorNotifier(this._prefs)
-    : super(_prefs.getBool('reader_show_verse_selector') ?? true);
-
-  Future<void> setEnabled(bool enabled) async {
-    await _prefs.setBool('reader_show_verse_selector', enabled);
-    state = enabled;
-  }
-}
+import 'reader_session_view_models.dart';
 
 // Repository provider
 final bibleRepositoryProvider = Provider<AppBibleRepository>((ref) {
@@ -79,150 +15,12 @@ final bibleRepositoryProvider = Provider<AppBibleRepository>((ref) {
   return AppBibleRepository(db, dbManager);
 });
 
-// Current translation provider
-final currentTranslationProvider =
-    StateNotifierProvider<TranslationNotifier, String>((ref) {
-      return TranslationNotifier(ref.read(sharedPreferencesProvider));
-    });
-
-class TranslationNotifier extends StateNotifier<String> {
-  final SharedPreferences _prefs;
-
-  TranslationNotifier(this._prefs)
-    : super(_prefs.getString('bible_translation') ?? 'kjv');
-
-  Future<void> setTranslation(String translationId) async {
-    await _prefs.setString('bible_translation', translationId);
-    state = translationId;
-  }
-}
-
-final readerLayoutModeProvider =
-    StateNotifierProvider<ReaderLayoutModeNotifier, ReaderLayoutMode>((ref) {
-      return ReaderLayoutModeNotifier(ref.read(sharedPreferencesProvider));
-    });
-
-class ReaderLayoutModeNotifier extends StateNotifier<ReaderLayoutMode> {
-  final SharedPreferences _prefs;
-
-  ReaderLayoutModeNotifier(this._prefs)
-    : super(_parseLayoutMode(_prefs.getString('reader_layout_mode')));
-
-  static ReaderLayoutMode _parseLayoutMode(String? rawMode) {
-    if (rawMode == 'paragraph') {
-      // Migrate the older name to the clearer "document" mode label.
-      return ReaderLayoutMode.document;
-    }
-    return ReaderLayoutMode.values.firstWhere(
-      (mode) => mode.name == rawMode,
-      orElse: () => ReaderLayoutMode.verseList,
-    );
-  }
-
-  Future<void> setLayoutMode(ReaderLayoutMode mode) async {
-    await _prefs.setString('reader_layout_mode', mode.name);
-    state = mode;
-  }
-}
-
 final availableTranslationsProvider = FutureProvider<List<BibleTranslation>>((
   ref,
 ) async {
   final repository = ref.watch(bibleRepositoryProvider);
   return repository.getAvailableTranslations();
 });
-
-// Current reference provider
-final currentReferenceProvider =
-    StateNotifierProvider<ReferenceNotifier, BibleReference>((ref) {
-      return ReferenceNotifier(ref.read(sharedPreferencesProvider));
-    });
-
-class ReferenceNotifier extends StateNotifier<BibleReference> {
-  final SharedPreferences _prefs;
-
-  ReferenceNotifier(this._prefs)
-    : super(
-        BibleReference(
-          bookId: _prefs.getString('bible_book') ?? 'GEN',
-          chapter: _prefs.getInt('bible_chapter') ?? 1,
-          verse: _prefs.getInt('bible_verse'),
-        ),
-      );
-
-  Future<void> setReference(BibleReference reference) async {
-    await _prefs.setString('bible_book', reference.bookId);
-    await _prefs.setInt('bible_chapter', reference.chapter);
-    if (reference.verse != null) {
-      await _prefs.setInt('bible_verse', reference.verse!);
-    } else {
-      await _prefs.remove('bible_verse');
-    }
-    state = reference;
-  }
-
-  void goToNextChapter(List<BibleBook> books) {
-    if (books.isEmpty) return;
-    final currentBook =
-        resolveBookFromReference(books, state.bookId) ?? books.first;
-    final currentChapterIndex = currentBook.chapters.indexWhere(
-      (c) => c.number == state.chapter,
-    );
-
-    if (currentChapterIndex < currentBook.chapters.length - 1) {
-      // Next chapter in same book
-      final nextChapter = currentBook.chapters[currentChapterIndex + 1];
-      setReference(
-        BibleReference(bookId: currentBook.id, chapter: nextChapter.number),
-      );
-    } else {
-      // First chapter of next book
-      final currentBookIndex = books.indexWhere((b) => b.id == currentBook.id);
-      if (currentBookIndex < books.length - 1) {
-        final nextBook = books[currentBookIndex + 1];
-        if (nextBook.chapters.isNotEmpty) {
-          setReference(
-            BibleReference(
-              bookId: nextBook.id,
-              chapter: nextBook.chapters.first.number,
-            ),
-          );
-        }
-      }
-    }
-  }
-
-  void goToPreviousChapter(List<BibleBook> books) {
-    if (books.isEmpty) return;
-    final currentBook =
-        resolveBookFromReference(books, state.bookId) ?? books.first;
-    final currentChapterIndex = currentBook.chapters.indexWhere(
-      (c) => c.number == state.chapter,
-    );
-
-    if (currentChapterIndex > 0) {
-      // Previous chapter in same book
-      final prevChapter = currentBook.chapters[currentChapterIndex - 1];
-      setReference(
-        BibleReference(bookId: currentBook.id, chapter: prevChapter.number),
-      );
-    } else {
-      // Last chapter of previous book
-      final currentBookIndex = books.indexWhere((b) => b.id == currentBook.id);
-      if (currentBookIndex > 0) {
-        final prevBook = books[currentBookIndex - 1];
-        if (prevBook.chapters.isNotEmpty) {
-          setReference(
-            BibleReference(
-              bookId: prevBook.id,
-              chapter: prevBook.chapters.last.number,
-            ),
-          );
-        }
-      }
-    }
-  }
-}
 
 // Bible books shell provider (fast load without verses)
 final bibleBooksShellProvider =
@@ -234,7 +32,6 @@ final bibleBooksShellProvider =
         repository,
         ref.read(currentTranslationProvider),
       );
-      // Keep the notifier alive across translation changes so switching feels instant
       ref.listen<String>(currentTranslationProvider, (previous, next) {
         notifier.changeTranslation(next);
       });
@@ -242,16 +39,16 @@ final bibleBooksShellProvider =
     });
 
 class BibleBooksShellNotifier extends StateNotifier<AsyncValue<List<BibleBook>>> {
-  final AppBibleRepository repository;
-  String _currentTranslationId;
-  int _loadGeneration = 0;
-
   BibleBooksShellNotifier(this.repository, this._currentTranslationId)
     : super(_initialBibleBooksState(repository, _currentTranslationId)) {
     if (!state.hasValue) {
       loadShell();
     }
   }
+
+  final AppBibleRepository repository;
+  String _currentTranslationId;
+  int _loadGeneration = 0;
 
   Future<void> loadShell() async {
     final requestedTranslationId = _currentTranslationId;
@@ -263,7 +60,6 @@ class BibleBooksShellNotifier extends StateNotifier<AsyncValue<List<BibleBook>>>
     try {
       List<BibleBook> books;
 
-      // Try to load shell from local first
       try {
         books = await repository.loadLocalBibleShell(requestedTranslationId);
       } on BibleParserException catch (e, st) {
@@ -275,7 +71,6 @@ class BibleBooksShellNotifier extends StateNotifier<AsyncValue<List<BibleBook>>>
         }
         return;
       } catch (e) {
-        // Shell load failed, try full load
         books = await repository.loadLocalBible(requestedTranslationId);
       }
 
@@ -310,7 +105,6 @@ class BibleBooksShellNotifier extends StateNotifier<AsyncValue<List<BibleBook>>>
       return;
     }
 
-    // Load the shell for this translation
     await loadShell();
   }
 }
@@ -325,9 +119,6 @@ final bibleBooksProvider =
         repository,
         ref.read(currentTranslationProvider),
       );
-      // Keep the notifier alive across translation changes so cached
-      // translations can swap in quickly without recreating the whole loading
-      // state from scratch on every pill selection.
       ref.listen<String>(currentTranslationProvider, (previous, next) {
         notifier.changeTranslation(next);
       });
@@ -335,16 +126,16 @@ final bibleBooksProvider =
     });
 
 class BibleBooksNotifier extends StateNotifier<AsyncValue<List<BibleBook>>> {
-  final AppBibleRepository repository;
-  String _currentTranslationId;
-  int _loadGeneration = 0;
-
   BibleBooksNotifier(this.repository, this._currentTranslationId)
     : super(_initialBibleBooksState(repository, _currentTranslationId)) {
     if (!state.hasValue) {
       loadBible();
     }
   }
+
+  final AppBibleRepository repository;
+  String _currentTranslationId;
+  int _loadGeneration = 0;
 
   Future<void> loadBible({bool showLoading = true}) async {
     final requestedTranslationId = _currentTranslationId;
@@ -356,7 +147,6 @@ class BibleBooksNotifier extends StateNotifier<AsyncValue<List<BibleBook>>> {
     try {
       List<BibleBook> books;
 
-      // Try to load from local first, then download if needed
       try {
         books = await repository.loadLocalBible(requestedTranslationId);
       } on BibleParserException catch (e, st) {
@@ -368,12 +158,9 @@ class BibleBooksNotifier extends StateNotifier<AsyncValue<List<BibleBook>>> {
         }
         return;
       } catch (e) {
-        // Local load failed, try to download
         books = await repository.downloadBible(requestedTranslationId);
       }
 
-      // If the user already switched again while this load was running, keep
-      // the newer request in control instead of repainting stale Bible data.
       if (mounted &&
           loadGeneration == _loadGeneration &&
           requestedTranslationId == _currentTranslationId) {
@@ -410,8 +197,6 @@ class BibleBooksNotifier extends StateNotifier<AsyncValue<List<BibleBook>>> {
       return;
     }
 
-    // When we already have a rendered translation on screen, keep it visible
-    // until the next translation has finished loading from disk/network.
     loadBible(showLoading: !state.hasValue);
   }
 

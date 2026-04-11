@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:basic_bible/src/features/reader/application/bible_provider.dart';
+import 'package:basic_bible/src/features/reader/application/view_models/bible_library_view_models.dart';
 import 'package:basic_bible/src/models/bible_models.dart';
 import 'package:basic_bible/src/services/translation_database_manager.dart';
 import 'package:basic_bible/src/widgets/app_back_button.dart';
