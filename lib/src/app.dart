@@ -12,6 +12,7 @@ import 'features/annotations/presentation/notes_screen.dart';
 import 'features/settings/application/app_preferences_provider.dart';
 import 'views/other_screen.dart';
 import 'features/settings/presentation/settings_screen.dart';
+import 'features/settings/presentation/advanced_settings_screen.dart';
 import 'views/placeholder/coming_soon_screen.dart';
 
 // Providers
@@ -60,6 +61,13 @@ class MyApp extends ConsumerWidget {
             GoRoute(
               path: 'settings',
               builder: (context, state) => SettingsScreen(),
+              routes: [
+                GoRoute(
+                  path: 'advanced',
+                  builder: (context, state) =>
+                      const AdvancedSettingsScreen(),
+                ),
+              ],
             ),
             GoRoute(
               path: 'notes',

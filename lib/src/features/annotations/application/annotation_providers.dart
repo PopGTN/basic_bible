@@ -12,9 +12,42 @@ final userAnnotationRepositoryProvider = Provider<UserAnnotationRepository>((
   return UserAnnotationRepository(ref.watch(appDatabaseProvider));
 });
 
-final selectedVerseProvider = StateProvider.autoDispose<BibleReference?>(
-  (ref) => null,
-);
+class SelectedVersesNotifier extends StateNotifier<List<BibleReference>> {
+  SelectedVersesNotifier() : super(const []);
+
+  void clear() => state = const [];
+
+  void setSingle(BibleReference reference) => state = [reference];
+
+  void toggle(BibleReference reference) {
+    final index = state.indexWhere(
+      (item) =>
+          item.bookId == reference.bookId &&
+          item.chapter == reference.chapter &&
+          item.verse == reference.verse,
+    );
+
+    if (index >= 0) {
+      final next = [...state]..removeAt(index);
+      state = next;
+      return;
+    }
+
+    state = [...state, reference];
+  }
+}
+
+final selectedVersesProvider =
+    StateNotifierProvider.autoDispose<
+      SelectedVersesNotifier,
+      List<BibleReference>
+    >((ref) => SelectedVersesNotifier());
+
+final selectedVerseProvider = Provider.autoDispose<BibleReference?>((ref) {
+  final selected = ref.watch(selectedVersesProvider);
+  if (selected.isEmpty) return null;
+  return selected.first;
+});
 
 final highlightPaletteExpandedProvider = StateProvider.autoDispose<bool>(
   (ref) => false,
@@ -45,108 +78,17 @@ final visibleChapterAnnotationsProvider = Provider<List<UserAnnotation>>((ref) {
 });
 
 final selectedVerseAnnotationsProvider = Provider<List<UserAnnotation>>((ref) {
-  final selectedVerse = ref.watch(selectedVerseProvider);
-  if (selectedVerse == null) return const [];
+  final selectedVerses = ref.watch(selectedVersesProvider);
+  if (selectedVerses.isEmpty) return const [];
   final translationId = ref.watch(currentTranslationProvider);
   final annotations = ref.watch(visibleChapterAnnotationsProvider);
-  return annotations
-      .where(
-        (annotation) => annotation.touchesReference(
-          selectedVerse,
-          translationId: translationId,
-        ),
-      )
-      .toList();
+  return annotations.where((annotation) {
+    return selectedVerses.any(
+      (reference) =>
+          annotation.touchesReference(reference, translationId: translationId),
+    );
+  }).toList();
 });
-
-final annotationEditorDraftProvider =
-    StateNotifierProvider<AnnotationEditorDraftNotifier, AnnotationEditorDraft?>(
-      (ref) => AnnotationEditorDraftNotifier(),
-    );
-
-class AnnotationEditorDraftNotifier
-    extends StateNotifier<AnnotationEditorDraft?> {
-  AnnotationEditorDraftNotifier() : super(null);
-
-  void startNew({
-    required AnnotationVerseLink primaryVerse,
-    UserAnnotationType type = UserAnnotationType.note,
-    int? highlightColorValue,
-  }) {
-    state = AnnotationEditorDraft(
-      type: type,
-      primaryVerse: primaryVerse,
-      highlightColorValue: highlightColorValue,
-    );
-  }
-
-  void editExisting(UserAnnotation annotation) {
-    state = AnnotationEditorDraft.fromAnnotation(annotation);
-  }
-
-  void setNoteText(String value) {
-    final current = state;
-    if (current == null) return;
-    state = current.copyWith(noteText: value);
-  }
-
-  void setLabels(List<String> labels) {
-    final current = state;
-    if (current == null) return;
-    state = current.copyWith(labels: labels);
-  }
-
-  void setHighlightColor(int? value) {
-    final current = state;
-    if (current == null) return;
-    state = current.copyWith(
-      highlightColorValue: value,
-      clearHighlightColor: value == null,
-    );
-  }
-
-  void addLinkedVerse(AnnotationVerseLink verse) {
-    final current = state;
-    if (current == null) return;
-    final exists = current.linkedVerses.any(
-      (link) =>
-          link.bookId == verse.bookId &&
-          link.chapter == verse.chapter &&
-          link.verse == verse.verse &&
-          link.translationId == verse.translationId,
-    );
-    if (exists) return;
-    final nextLinked = [
-      ...current.linkedVerses,
-      verse.copyWith(sortOrder: current.linkedVerses.length),
-    ];
-    state = current.copyWith(linkedVerses: nextLinked);
-  }
-
-  void removeLinkedVerse(AnnotationVerseLink verse) {
-    final current = state;
-    if (current == null) return;
-    final nextLinked = current.linkedVerses
-        .where(
-          (link) =>
-              !(link.bookId == verse.bookId &&
-                  link.chapter == verse.chapter &&
-                  link.verse == verse.verse &&
-                  link.translationId == verse.translationId),
-        )
-        .toList();
-    state = current.copyWith(
-      linkedVerses: [
-        for (var i = 0; i < nextLinked.length; i++)
-          nextLinked[i].copyWith(sortOrder: i),
-      ],
-    );
-  }
-
-  void reset() {
-    state = null;
-  }
-}
 
 AnnotationVerseLink buildAnnotationVerseLink({
   required BibleReference reference,

@@ -14,63 +14,194 @@ class NoteEditorScreen extends ConsumerStatefulWidget {
     required this.primaryVerse,
     this.existingAnnotation,
     this.initialHighlightColorValue,
+    this.initialLinkedVerses = const [],
   });
 
   final AnnotationVerseLink primaryVerse;
   final UserAnnotation? existingAnnotation;
   final int? initialHighlightColorValue;
+  final List<AnnotationVerseLink> initialLinkedVerses;
 
   @override
   ConsumerState<NoteEditorScreen> createState() => _NoteEditorScreenState();
 }
 
 class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
+  late AnnotationEditorDraft _draft;
   late final TextEditingController _noteController;
   late final TextEditingController _labelsController;
+  bool _isSaving = false;
 
   @override
   void initState() {
     super.initState();
-    final draftNotifier = ref.read(annotationEditorDraftProvider.notifier);
-    if (widget.existingAnnotation != null) {
-      draftNotifier.editExisting(widget.existingAnnotation!);
-    } else {
-      draftNotifier.startNew(
-        primaryVerse: widget.primaryVerse,
-        type: UserAnnotationType.note,
-        highlightColorValue: widget.initialHighlightColorValue,
-      );
-    }
-    final draft = ref.read(annotationEditorDraftProvider);
-    _noteController = TextEditingController(text: draft?.noteText ?? '');
-    _labelsController = TextEditingController(text: draft?.labels.join(', ') ?? '');
+    final existing = widget.existingAnnotation;
+    _draft = existing != null
+        ? AnnotationEditorDraft.fromAnnotation(existing)
+        : AnnotationEditorDraft(
+            type: UserAnnotationType.note,
+            primaryVerse: widget.primaryVerse,
+            highlightColorValue: widget.initialHighlightColorValue,
+            linkedVerses: widget.initialLinkedVerses,
+          );
+    _noteController = TextEditingController(text: _draft.noteText);
+    _labelsController = TextEditingController(text: _draft.labels.join(', '));
   }
 
   @override
   void dispose() {
     _noteController.dispose();
     _labelsController.dispose();
-    // Provider is no longer autoDispose; reset the draft so stale state
-    // does not bleed into the next editor session if the screen is re-pushed.
-    ref.read(annotationEditorDraftProvider.notifier).reset();
     super.dispose();
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final draft = ref.watch(annotationEditorDraftProvider);
-    final booksAsync = ref.watch(bibleBooksShellProvider);
-    if (draft == null) {
-      return const Scaffold(body: SizedBox.shrink());
+  // ---------------------------------------------------------------------------
+  // Draft mutation — local setState, no global provider needed
+  // ---------------------------------------------------------------------------
+
+  void _setNoteText(String value) =>
+      setState(() => _draft = _draft.copyWith(noteText: value));
+
+  void _setLabels(List<String> labels) =>
+      setState(() => _draft = _draft.copyWith(labels: labels));
+
+  void _setHighlightColor(int? value) => setState(
+    () => _draft = _draft.copyWith(
+      highlightColorValue: value,
+      clearHighlightColor: value == null,
+    ),
+  );
+
+  void _addLinkedVerse(AnnotationVerseLink verse) {
+    final exists = _draft.linkedVerses.any(
+      (link) =>
+          link.bookId == verse.bookId &&
+          link.chapter == verse.chapter &&
+          link.verse == verse.verse &&
+          link.translationId == verse.translationId,
+    );
+    if (exists) return;
+    setState(
+      () => _draft = _draft.copyWith(
+        linkedVerses: [
+          ..._draft.linkedVerses,
+          verse.copyWith(sortOrder: _draft.linkedVerses.length),
+        ],
+      ),
+    );
+  }
+
+  void _removeLinkedVerse(AnnotationVerseLink verse) {
+    final next = _draft.linkedVerses
+        .where(
+          (link) =>
+              !(link.bookId == verse.bookId &&
+                  link.chapter == verse.chapter &&
+                  link.verse == verse.verse &&
+                  link.translationId == verse.translationId),
+        )
+        .toList();
+    setState(
+      () => _draft = _draft.copyWith(
+        linkedVerses: [
+          for (var i = 0; i < next.length; i++) next[i].copyWith(sortOrder: i),
+        ],
+      ),
+    );
+  }
+
+  // Promotes the first linked verse to primary and removes it from the linked
+  // list. Only callable when linkedVerses is non-empty.
+  void _removePrimaryVerse() {
+    if (_draft.linkedVerses.isEmpty) return;
+    final newPrimary = _draft.linkedVerses.first;
+    final remaining = [
+      for (var i = 1; i < _draft.linkedVerses.length; i++)
+        _draft.linkedVerses[i].copyWith(sortOrder: i - 1),
+    ];
+    setState(
+      () => _draft = _draft.copyWith(
+        primaryVerse: newPrimary,
+        linkedVerses: remaining,
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Actions
+  // ---------------------------------------------------------------------------
+
+  Future<void> _addVerse(BuildContext context, List<BibleBook> books) async {
+    final pickedReference = await Navigator.of(context).push<BibleReference>(
+      MaterialPageRoute(
+        builder: (context) => ReferencePickerScreen(
+          books: books,
+          currentReference: _draft.primaryVerse.reference,
+          showVerseSelector: true,
+        ),
+      ),
+    );
+    if (!mounted || !context.mounted || pickedReference?.verse == null) return;
+
+    final translation = await resolveCurrentTranslation(ref);
+    if (!mounted) return;
+    if (translation == null) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Current translation is not available.'),
+          ),
+        );
+      }
+      return;
+    }
+    _addLinkedVerse(
+      buildAnnotationVerseLink(
+        reference: pickedReference!,
+        translation: translation,
+      ),
+    );
+  }
+
+  Future<void> _save(BuildContext context) async {
+    if (_isSaving) return;
+    setState(() => _isSaving = true);
+
+    final annotation = draftToAnnotation(_draft);
+    try {
+      await ref
+          .read(userAnnotationRepositoryProvider)
+          .saveAnnotation(annotation);
+    } catch (_) {
+      if (mounted && context.mounted) {
+        setState(() => _isSaving = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to save note. Please try again.'),
+          ),
+        );
+      }
+      return;
     }
 
+    if (!mounted || !context.mounted) return;
+    Navigator.of(context).pop(true);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Build
+  // ---------------------------------------------------------------------------
+
+  @override
+  Widget build(BuildContext context) {
+    final booksAsync = ref.watch(bibleBooksShellProvider);
     final theme = Theme.of(context);
     final highlightColor = annotationColorFromValue(
-      draft.highlightColorValue,
+      _draft.highlightColorValue,
       theme.colorScheme.surfaceContainerHighest,
     );
     final canSave =
-        draft.noteText.trim().isNotEmpty || draft.highlightColorValue != null;
+        _draft.noteText.trim().isNotEmpty || _draft.highlightColorValue != null;
 
     return Scaffold(
       appBar: AppBar(
@@ -79,7 +210,7 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
         ),
         actions: [
           TextButton(
-            onPressed: canSave ? () => _save(context, draft) : null,
+            onPressed: (canSave && !_isSaving) ? () => _save(context) : null,
             child: const Text('Save'),
           ),
         ],
@@ -96,9 +227,7 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
               alignLabelWithHint: true,
               hintText: 'Write your note here.',
             ),
-            onChanged: ref
-                .read(annotationEditorDraftProvider.notifier)
-                .setNoteText,
+            onChanged: _setNoteText,
           ),
           const SizedBox(height: 16),
           Text(
@@ -110,25 +239,26 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
           const SizedBox(height: 10),
           _LinkedVerseCard(
             title: 'Primary Verse',
-            link: draft.primaryVerse,
+            link: _draft.primaryVerse,
             books: booksAsync.value ?? const [],
+            onRemove: _draft.linkedVerses.isNotEmpty
+                ? _removePrimaryVerse
+                : null,
           ),
-          for (final link in draft.linkedVerses) ...[
+          for (final link in _draft.linkedVerses) ...[
             const SizedBox(height: 10),
             _LinkedVerseCard(
               title: 'Linked Verse',
               link: link,
               books: booksAsync.value ?? const [],
-              onRemove: () => ref
-                  .read(annotationEditorDraftProvider.notifier)
-                  .removeLinkedVerse(link),
+              onRemove: () => _removeLinkedVerse(link),
             ),
           ],
           const SizedBox(height: 10),
           OutlinedButton.icon(
             onPressed: booksAsync.value == null
                 ? null
-                : () => _addVerse(context, draft, booksAsync.value!),
+                : () => _addVerse(context, booksAsync.value!),
             icon: const Icon(Icons.add_circle_outline),
             label: const Text('Add Verse'),
           ),
@@ -145,25 +275,21 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
             runSpacing: 10,
             children: [
               _HighlightChoice(
-                isSelected: draft.highlightColorValue == null,
+                isSelected: _draft.highlightColorValue == null,
                 label: 'None',
                 fillColor: theme.colorScheme.surfaceContainerHighest,
-                onTap: () => ref
-                    .read(annotationEditorDraftProvider.notifier)
-                    .setHighlightColor(null),
+                onTap: () => _setHighlightColor(null),
               ),
               for (final color in annotationHighlightPalette)
                 _HighlightChoice(
-                  isSelected: draft.highlightColorValue == color.toARGB32(),
+                  isSelected: _draft.highlightColorValue == color.toARGB32(),
                   label: '',
                   fillColor: color,
-                  onTap: () => ref
-                      .read(annotationEditorDraftProvider.notifier)
-                      .setHighlightColor(color.toARGB32()),
+                  onTap: () => _setHighlightColor(color.toARGB32()),
                 ),
             ],
           ),
-          if (draft.highlightColorValue != null) ...[
+          if (_draft.highlightColorValue != null) ...[
             const SizedBox(height: 12),
             Container(
               padding: const EdgeInsets.all(12),
@@ -189,57 +315,12 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
                   .map((item) => item.trim())
                   .where((item) => item.isNotEmpty)
                   .toList();
-              ref
-                  .read(annotationEditorDraftProvider.notifier)
-                  .setLabels(labels);
+              _setLabels(labels);
             },
           ),
         ],
       ),
     );
-  }
-
-  Future<void> _addVerse(
-    BuildContext context,
-    AnnotationEditorDraft draft,
-    List<BibleBook> books,
-  ) async {
-    final pickedReference = await Navigator.of(context).push<BibleReference>(
-      MaterialPageRoute(
-        builder: (context) => ReferencePickerScreen(
-          books: books,
-          currentReference: draft.primaryVerse.reference,
-          showVerseSelector: true,
-        ),
-      ),
-    );
-    if (!mounted || !context.mounted || pickedReference?.verse == null) return;
-
-    final translation = await resolveCurrentTranslation(ref);
-    if (translation == null) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Current translation is not available.')),
-        );
-      }
-      return;
-    }
-    ref
-        .read(annotationEditorDraftProvider.notifier)
-        .addLinkedVerse(
-          buildAnnotationVerseLink(
-            reference: pickedReference!,
-            translation: translation,
-          ),
-        );
-  }
-
-  Future<void> _save(BuildContext context, AnnotationEditorDraft draft) async {
-    final annotation = draftToAnnotation(draft);
-    await ref.read(userAnnotationRepositoryProvider).saveAnnotation(annotation);
-    if (!mounted || !context.mounted) return;
-    ref.read(annotationEditorDraftProvider.notifier).reset();
-    Navigator.of(context).pop(true);
   }
 }
 

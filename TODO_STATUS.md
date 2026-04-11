@@ -43,7 +43,7 @@ Separate from feature backlog — these affect correctness, safety, and maintain
 | Issue | Severity | Description |
 | --- | --- | --- |
 | Migration coverage is still thin | Medium | The app now uses additive migration steps for recent schema changes, but there is still no test that opens an older on-disk database and proves upgrade safety end to end. |
-| App models duplicate parser models | High | `lib/src/models/bible_models.dart` redefines every type from `bible_parser_flutter` with a `Bible` prefix (`BibleVerseSpanKind`, `BibleFootnote`, etc.). If the parser model changes, the app breaks silently. These should re-export the parser types or share a common interface. |
+| App models duplicate parser models | High | `lib/src/models/bible_models.dart` re-exports split app model files under `lib/src/models/bible_models/`, but still duplicates parser types with `Bible` prefixes (`BibleVerseSpanKind`, `BibleFootnote`, etc.). If the parser model changes, the app breaks silently. These should re-export the parser types or share a common interface. |
 | No lazy loading | Medium | The entire Bible is loaded into memory. There is no chapter-level streaming or lazy page loading. For large translations this is a memory and startup cost that will eventually need addressing. |
 | SharedPreferences async loading not exposed | Medium | Each Riverpod `StateNotifier` loads from `SharedPreferences` asynchronously in `_loadSavedValue()` but exposes no loading state. This can cause brief UI glitches on startup before saved values are applied. |
 | Generic error handling | Low | `AppBibleRepository` throws `Exception('...')` with plain context strings instead of structured error types. Makes error handling and user-facing messaging harder to improve. |
@@ -86,6 +86,7 @@ Separate from feature backlog — these affect correctness, safety, and maintain
 - `done` Added distinct document-mode rendering for `introduction` blocks (muted color, left indent) and `table`/`tableRow` blocks (cell grid with header-row styling and alternating row tint) so these parser-preserved structures are visually distinct instead of falling through to generic prose.
 - `done` Synced `table` and `tableRow` values into `BibleDocumentBlockKind` to mirror the parser's new `DocumentBlockKind` values.
 - `done` Reworked the References picker layout so it now adapts more cleanly across mobile and desktop: phones keep a tighter one-book-at-a-time card flow with adaptive chapter/verse grids, while wider screens use a split book-list/detail-pane layout with clearer search and selection context.
+- `done` Split `lib/src/models/bible_models.dart` into a barrel export plus smaller domain model files under `lib/src/models/bible_models/`.
 
 ---
 

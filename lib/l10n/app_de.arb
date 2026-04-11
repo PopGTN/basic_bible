@@ -10,9 +10,14 @@
   "language": "Sprache",
   "theme": "Thema",
   "login": "Anmelden",
-  "language": "Sprache",
   "english": "Englisch",
   "spanish": "Spanisch",
   "french": "Französisch",
-  "german": "Deutsch"
+  "german": "Deutsch",
+  "readerFootnotesTooltip": "Fußnoten und Verweise anzeigen",
+  "readerNotesTooltip": "Persönliche Notizen anzeigen",
+  "savedNoteLabel": "Gespeicherte Notiz",
+  "savedNotesLabel": "Gespeicherte Notizen",
+  "openAction": "Öffnen",
+  "editAction": "Bearbeiten"
 }

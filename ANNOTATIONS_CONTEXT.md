@@ -107,3 +107,66 @@ The Notes screen can now:
 - export pipeline (`docx`, `csv`)
 - sync abstraction for free providers later
 - text-range anchors for partial-verse annotations
+
+## Future Reader Architecture Note
+
+The current app should stay a basic single-reader experience.
+
+Do not partially implement split panes, comparison grids, or desktop-class
+study workspaces inside the current V1 notes/highlights task.
+
+Those ideas are valid future directions, but they should be treated as a later
+reader-architecture phase or a separate advanced fork.
+
+### Future direction to preserve
+
+The longer-term reader may eventually support:
+
+- two or more reader panes on larger screens
+- different translations open at the same time
+- different chapters or books open at the same time
+- pane-specific selection state
+- pane-specific current reference and translation
+- notes opened beside one or more reader panes
+- optional cross-pane verse comparison and selection
+
+### Constraint for current engineering work
+
+When touching reader state now, prefer designs that can later move from:
+
+- one global reader state
+
+to:
+
+- one reusable reader-pane state per open pane/session
+
+without rewriting the annotation model.
+
+### What should stay shared vs pane-scoped later
+
+Shared later:
+
+- annotation repository
+- saved note/highlight storage
+- translation metadata on saved verse links
+- export and sync abstractions
+
+Pane-scoped later:
+
+- current reference
+- current translation
+- current reader layout mode if comparison views need different layouts
+- active verse selection set
+- open temporary sheets/tool state tied to one pane
+
+### Recommended future model language
+
+If advanced comparison mode is added later, prefer concepts such as:
+
+- `ReaderPaneState`
+- `ReaderSessionId`
+- pane-scoped selection providers
+- pane-scoped current-reference providers
+
+This keeps the basic app clean now while preserving a path toward a more
+advanced tablet/foldable/desktop reading workspace later.

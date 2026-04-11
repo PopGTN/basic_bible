@@ -2,6 +2,7 @@ import 'package:bible_parser_flutter/bible_parser_flutter.dart';
 import 'package:basic_bible/src/features/library/data/app_bible_repository.dart';
 import 'package:basic_bible/src/models/bible_models.dart';
 import 'package:basic_bible/src/services/app_database.dart';
+import 'package:basic_bible/src/services/translation_database_manager.dart';
 import 'package:basic_bible/src/services/shared_preferences_provider.dart';
 import 'package:basic_bible/src/utils/reference_utils.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -74,7 +75,8 @@ class ShowVerseSelectorNotifier extends StateNotifier<bool> {
 // Repository provider
 final bibleRepositoryProvider = Provider<AppBibleRepository>((ref) {
   final db = ref.watch(appDatabaseProvider);
-  return AppBibleRepository(db);
+  final dbManager = ref.watch(translationDatabaseManagerProvider);
+  return AppBibleRepository(db, dbManager);
 });
 
 // Current translation provider

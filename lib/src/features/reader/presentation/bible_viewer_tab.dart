@@ -1,4 +1,5 @@
 import 'reference_screen.dart';
+import 'package:basic_bible/l10n/app_localizations.dart';
 import 'package:basic_bible/src/features/annotations/application/annotation_providers.dart';
 import 'package:basic_bible/src/features/annotations/models/user_annotations.dart';
 import 'package:basic_bible/src/features/annotations/presentation/annotation_theme.dart';
@@ -10,7 +11,8 @@ import 'package:basic_bible/src/features/settings/application/app_preferences_pr
 import 'package:basic_bible/src/models/bible_models.dart';
 import 'package:basic_bible/src/services/font_size_service.dart';
 import 'package:basic_bible/src/utils/reference_utils.dart';
-import 'package:flutter/gestures.dart' show PointerScrollEvent;
+import 'package:flutter/gestures.dart'
+    show PointerScrollEvent, TapGestureRecognizer;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -45,6 +47,7 @@ class _BibleViewerTabState extends ConsumerState<BibleViewerTab> {
 
   double? _lastScroll;
   bool _isHiding = false;
+  bool _selectionActionInFlight = false;
 
   @override
   void initState() {
@@ -86,6 +89,13 @@ class _BibleViewerTabState extends ConsumerState<BibleViewerTab> {
     _isHiding = !show;
   }
 
+  void _setSelectionActionInFlight(bool value) {
+    if (!mounted || _selectionActionInFlight == value) return;
+    setState(() {
+      _selectionActionInFlight = value;
+    });
+  }
+
   @override
   void dispose() {
     _scrollController
@@ -111,6 +121,7 @@ class _BibleViewerTabState extends ConsumerState<BibleViewerTab> {
     final chapterAsync = ref.watch(currentChapterProvider);
     final showBookIntroductions = ref.watch(showBookIntroductionsProvider);
     final showVerseSelector = ref.watch(showVerseSelectorProvider);
+    final selectedVerses = ref.watch(selectedVersesProvider);
     final selectedVerse = ref.watch(selectedVerseProvider);
     final showHighlightPalette = ref.watch(highlightPaletteExpandedProvider);
     final selectedVerseAnnotations = ref.watch(
@@ -119,7 +130,7 @@ class _BibleViewerTabState extends ConsumerState<BibleViewerTab> {
     const readerBarHeight = 56.0;
     const readerBarBottomInset = 12.0;
     const readerBarBottomPadding = readerBarHeight + readerBarBottomInset + 8;
-    final selectionBarHeight = selectedVerse == null
+    final selectionBarHeight = selectedVerses.isEmpty
         ? 0.0
         : showHighlightPalette
         ? 140.0
@@ -127,7 +138,7 @@ class _BibleViewerTabState extends ConsumerState<BibleViewerTab> {
     final contentBottomPadding =
         readerBarBottomPadding +
         selectionBarHeight +
-        (selectedVerse == null ? 0 : 12);
+        (selectedVerses.isEmpty ? 0 : 12);
 
     final displayReference =
         continuousScrolling && _continuousVisibleReference != null
@@ -207,7 +218,7 @@ class _BibleViewerTabState extends ConsumerState<BibleViewerTab> {
               books: booksAsync.value ?? const [],
               showVerseSelector: showVerseSelector,
               onReferenceChanged: (reference) {
-                ref.read(selectedVerseProvider.notifier).state = null;
+                ref.read(selectedVersesProvider.notifier).clear();
                 ref.read(highlightPaletteExpandedProvider.notifier).state =
                     false;
                 if (continuousScrolling) {
@@ -220,7 +231,7 @@ class _BibleViewerTabState extends ConsumerState<BibleViewerTab> {
                     .setReference(reference);
               },
               onPreviousChapter: () {
-                ref.read(selectedVerseProvider.notifier).state = null;
+                ref.read(selectedVersesProvider.notifier).clear();
                 ref.read(highlightPaletteExpandedProvider.notifier).state =
                     false;
                 if (booksAsync.value != null) {
@@ -239,7 +250,7 @@ class _BibleViewerTabState extends ConsumerState<BibleViewerTab> {
                 }
               },
               onNextChapter: () {
-                ref.read(selectedVerseProvider.notifier).state = null;
+                ref.read(selectedVersesProvider.notifier).clear();
                 ref.read(highlightPaletteExpandedProvider.notifier).state =
                     false;
                 if (booksAsync.value != null) {
@@ -260,7 +271,7 @@ class _BibleViewerTabState extends ConsumerState<BibleViewerTab> {
             ),
           ),
         ),
-        if (selectedVerse != null)
+        if (selectedVerses.isNotEmpty && selectedVerse != null)
           Align(
             alignment: Alignment.bottomCenter,
             child: SafeArea(
@@ -269,122 +280,239 @@ class _BibleViewerTabState extends ConsumerState<BibleViewerTab> {
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 80),
                 child: _VerseSelectionBar(
-                  reference: selectedVerse,
+                  references: selectedVerses,
                   books: booksAsync.value ?? const [],
                   existingAnnotations: selectedVerseAnnotations,
                   showHighlightPalette: showHighlightPalette,
+                  isBusy: _selectionActionInFlight,
                   onDismiss: () {
-                    ref.read(selectedVerseProvider.notifier).state = null;
+                    if (_selectionActionInFlight) return;
+                    ref.read(selectedVersesProvider.notifier).clear();
                     ref.read(highlightPaletteExpandedProvider.notifier).state =
                         false;
                   },
                   onHighlightPressed: () {
+                    if (_selectionActionInFlight) return;
                     final notifier = ref.read(
                       highlightPaletteExpandedProvider.notifier,
                     );
                     notifier.state = !notifier.state;
                   },
                   onHighlightSelected: (color) async {
-                    final translation = await resolveCurrentTranslation(ref);
-                    if (translation == null) {
-                      if (context.mounted) {
+                    if (_selectionActionInFlight) return;
+                    final selectedReferences = [
+                      ...ref.read(selectedVersesProvider),
+                    ];
+                    if (selectedReferences.isEmpty) return;
+                    // Snapshot existing annotations before any async gap so we
+                    // can merge the new color into them instead of creating a
+                    // second orphan entry for the same verse.
+                    final existingAnnotations = [
+                      ...ref.read(selectedVerseAnnotationsProvider),
+                    ];
+                    _setSelectionActionInFlight(true);
+
+                    try {
+                      final translation = await resolveCurrentTranslation(ref);
+                      if (!context.mounted) return;
+                      if (translation == null) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
                             content: Text('Translation not available.'),
                           ),
                         );
+                        return;
                       }
-                      return;
-                    }
-                    final link = buildAnnotationVerseLink(
-                      reference: selectedVerse,
-                      translation: translation,
-                    );
-                    await ref
-                        .read(userAnnotationRepositoryProvider)
-                        .saveAnnotation(
-                          UserAnnotation(
-                            type: UserAnnotationType.highlight,
-                            primaryVerse: link,
-                            highlightColorValue: color.toARGB32(),
-                            createdAt: DateTime.now(),
-                            updatedAt: DateTime.now(),
-                          ),
+                      for (final reference in selectedReferences) {
+                        final link = buildAnnotationVerseLink(
+                          reference: reference,
+                          translation: translation,
                         );
-                    ref.read(highlightPaletteExpandedProvider.notifier).state =
-                        false;
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Highlight saved.')),
-                      );
-                    }
-                  },
-                  onNotePressed: () async {
-                    final translation = await resolveCurrentTranslation(ref);
-                    if (translation == null) {
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Translation not available.'),
-                          ),
-                        );
+                        final existing = existingAnnotations
+                            .where(
+                              (a) => a.touchesReference(
+                                reference,
+                                translationId: translation.id,
+                              ),
+                            )
+                            .firstOrNull;
+                        final annotationToSave = existing != null
+                            ? existing.copyWith(
+                                highlightColorValue: color.toARGB32(),
+                              )
+                            : UserAnnotation(
+                                type: UserAnnotationType.highlight,
+                                primaryVerse: link,
+                                highlightColorValue: color.toARGB32(),
+                                createdAt: DateTime.now(),
+                                updatedAt: DateTime.now(),
+                              );
+                        await ref
+                            .read(userAnnotationRepositoryProvider)
+                            .saveAnnotation(annotationToSave);
                       }
-                      return;
-                    }
-                    final link = buildAnnotationVerseLink(
-                      reference: selectedVerse,
-                      translation: translation,
-                    );
-                    if (!context.mounted) return;
-                    await Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (context) =>
-                            NoteEditorScreen(primaryVerse: link),
-                      ),
-                    );
-                  },
-                  onCopyPressed: () async {
-                    final chapter = chapterAsync.value;
-                    final verse = _findVerseInChapter(
-                      chapter,
-                      selectedVerse.verse,
-                    );
-                    final bookName = displayBookNameForReference(
-                      booksAsync.value ?? const [],
-                      selectedVerse.bookId,
-                    );
-                    final text = verse == null
-                        ? '$bookName ${selectedVerse.chapter}:${selectedVerse.verse}'
-                        : '$bookName ${selectedVerse.chapter}:${selectedVerse.verse} ${verse.text}';
-                    await Clipboard.setData(ClipboardData(text: text));
-                    if (context.mounted) {
+                      if (!context.mounted) return;
+                      ref
+                              .read(highlightPaletteExpandedProvider.notifier)
+                              .state =
+                          false;
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Verse copied.')),
-                      );
-                    }
-                  },
-                  onSharePressed: () async {
-                    final chapter = chapterAsync.value;
-                    final verse = _findVerseInChapter(
-                      chapter,
-                      selectedVerse.verse,
-                    );
-                    final bookName = displayBookNameForReference(
-                      booksAsync.value ?? const [],
-                      selectedVerse.bookId,
-                    );
-                    final text = verse == null
-                        ? '$bookName ${selectedVerse.chapter}:${selectedVerse.verse}'
-                        : '$bookName ${selectedVerse.chapter}:${selectedVerse.verse} ${verse.text}';
-                    await Clipboard.setData(ClipboardData(text: text));
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
+                        SnackBar(
                           content: Text(
-                            'Share text copied. Native share can be added later without changing your notes data.',
+                            selectedReferences.length == 1
+                                ? 'Highlight saved.'
+                                : 'Highlights saved for ${selectedReferences.length} verses.',
                           ),
                         ),
                       );
+                    } finally {
+                      _setSelectionActionInFlight(false);
+                    }
+                  },
+                  onNotePressed: () async {
+                    if (_selectionActionInFlight) return;
+                    final selectedReferences = [
+                      ...ref.read(selectedVersesProvider),
+                    ];
+                    if (selectedReferences.isEmpty) return;
+                    final selectedAnnotations = [
+                      ...ref.read(selectedVerseAnnotationsProvider),
+                    ];
+                    _setSelectionActionInFlight(true);
+
+                    try {
+                      final translation = await resolveCurrentTranslation(ref);
+                      if (!context.mounted) return;
+                      if (translation == null) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Translation not available.'),
+                          ),
+                        );
+                        return;
+                      }
+                      final selectedLinks = [
+                        for (final reference in selectedReferences)
+                          buildAnnotationVerseLink(
+                            reference: reference,
+                            translation: translation,
+                          ),
+                      ];
+                      final link = selectedLinks.first;
+                      // Promote an existing annotation into the editor only
+                      // when ALL of these are true:
+                      //  1. Single verse selected (multi-select always creates new)
+                      //  2. The annotation has no text yet (pure highlight) —
+                      //     merges the highlight + first note into one entry
+                      //  3. The selected verse is the annotation's PRIMARY verse,
+                      //     not just a linked verse — so notes on verse 1 don't
+                      //     accidentally open an unrelated annotation that merely
+                      //     has verse 1 in its linked-verse list.
+                      final selectedRef = selectedReferences.length == 1
+                          ? selectedReferences.first
+                          : null;
+                      final existingNote = selectedRef != null
+                          ? (selectedAnnotations
+                                .where(
+                                  (a) =>
+                                      !a.hasNoteText &&
+                                      a.primaryVerse.bookId ==
+                                          selectedRef.bookId &&
+                                      a.primaryVerse.chapter ==
+                                          selectedRef.chapter &&
+                                      a.primaryVerse.verse == selectedRef.verse,
+                                )
+                                .toList()
+                              ..sort(
+                                (a, b) => b.updatedAt.compareTo(a.updatedAt),
+                              ))
+                          : <UserAnnotation>[];
+                      final saved = await Navigator.of(context).push<bool>(
+                        MaterialPageRoute(
+                          builder: (context) => NoteEditorScreen(
+                            primaryVerse: link,
+                            initialLinkedVerses: selectedLinks.skip(1).toList(),
+                            existingAnnotation: existingNote.isEmpty
+                                ? null
+                                : existingNote.first,
+                          ),
+                        ),
+                      );
+                      if (saved == true && context.mounted) {
+                        ref.read(selectedVersesProvider.notifier).clear();
+                        ref
+                                .read(highlightPaletteExpandedProvider.notifier)
+                                .state =
+                            false;
+                      }
+                    } finally {
+                      _setSelectionActionInFlight(false);
+                    }
+                  },
+                  onCopyPressed: () async {
+                    if (_selectionActionInFlight) return;
+                    final selectedReferences = [
+                      ...ref.read(selectedVersesProvider),
+                    ];
+                    if (selectedReferences.isEmpty) return;
+                    _setSelectionActionInFlight(true);
+                    final books = booksAsync.value ?? const <BibleBook>[];
+                    final text = selectedReferences
+                        .map((reference) {
+                          final verse = _findVerseInBooks(books, reference);
+                          final bookName = displayBookNameForReference(
+                            books,
+                            reference.bookId,
+                          );
+                          return verse == null
+                              ? '$bookName ${reference.chapter}:${reference.verse}'
+                              : '$bookName ${reference.chapter}:${reference.verse} ${verse.text}';
+                        })
+                        .join('\n');
+                    try {
+                      await Clipboard.setData(ClipboardData(text: text));
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Verse copied.')),
+                        );
+                      }
+                    } finally {
+                      _setSelectionActionInFlight(false);
+                    }
+                  },
+                  onSharePressed: () async {
+                    if (_selectionActionInFlight) return;
+                    final selectedReferences = [
+                      ...ref.read(selectedVersesProvider),
+                    ];
+                    if (selectedReferences.isEmpty) return;
+                    _setSelectionActionInFlight(true);
+                    final books = booksAsync.value ?? const <BibleBook>[];
+                    final text = selectedReferences
+                        .map((reference) {
+                          final verse = _findVerseInBooks(books, reference);
+                          final bookName = displayBookNameForReference(
+                            books,
+                            reference.bookId,
+                          );
+                          return verse == null
+                              ? '$bookName ${reference.chapter}:${reference.verse}'
+                              : '$bookName ${reference.chapter}:${reference.verse} ${verse.text}';
+                        })
+                        .join('\n');
+                    try {
+                      await Clipboard.setData(ClipboardData(text: text));
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'Share text copied. Native share can be added later without changing your notes data.',
+                            ),
+                          ),
+                        );
+                      }
+                    } finally {
+                      _setSelectionActionInFlight(false);
                     }
                   },
                 ),
@@ -449,6 +577,14 @@ BibleVerse? _findVerseInChapter(BibleChapter? chapter, int? verseNumber) {
   return null;
 }
 
+BibleVerse? _findVerseInBooks(List<BibleBook> books, BibleReference reference) {
+  final book = resolveBookFromReference(books, reference.bookId);
+  final chapter = book?.chapters
+      .where((item) => item.number == reference.chapter)
+      .firstOrNull;
+  return _findVerseInChapter(chapter, reference.verse);
+}
+
 /// Bible text display widget
 class _BibleTextView extends ConsumerStatefulWidget {
   const _BibleTextView({
@@ -488,6 +624,8 @@ class _BibleTextView extends ConsumerStatefulWidget {
 class _BibleTextViewState extends ConsumerState<_BibleTextView> {
   final Map<String, GlobalKey> _verseKeys = <String, GlobalKey>{};
   final Map<String, GlobalKey> _chapterSectionKeys = <String, GlobalKey>{};
+  final Map<String, TapGestureRecognizer> _verseTapRecognizers =
+      <String, TapGestureRecognizer>{};
   List<_ContinuousChapterSection> _continuousSections =
       <_ContinuousChapterSection>[];
   bool _showSelectedVerseFocus = true;
@@ -509,6 +647,11 @@ class _BibleTextViewState extends ConsumerState<_BibleTextView> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.books != widget.books) {
       _rebuildContinuousSections();
+      _resetVerseTapRecognizers();
+    } else if (!widget.continuousScrolling &&
+        (oldWidget.book.id != widget.book.id ||
+            oldWidget.chapter.number != widget.chapter.number)) {
+      _resetVerseTapRecognizers();
     }
     if (oldWidget.reference != widget.reference ||
         oldWidget.chapter != widget.chapter) {
@@ -578,6 +721,13 @@ class _BibleTextViewState extends ConsumerState<_BibleTextView> {
   bool get _hasActiveVerseFocus =>
       _showSelectedVerseFocus && widget.reference.verse != null;
 
+  void _resetVerseTapRecognizers() {
+    for (final recognizer in _verseTapRecognizers.values) {
+      recognizer.dispose();
+    }
+    _verseTapRecognizers.clear();
+  }
+
   GlobalKey _verseKey(String bookId, int chapterNumber, int verseNumber) {
     final key = '$bookId:$chapterNumber:$verseNumber';
     return _verseKeys.putIfAbsent(key, GlobalKey.new);
@@ -586,6 +736,20 @@ class _BibleTextViewState extends ConsumerState<_BibleTextView> {
   GlobalKey _chapterSectionKey(String bookId, int chapterNumber) {
     final key = '$bookId:$chapterNumber';
     return _chapterSectionKeys.putIfAbsent(key, GlobalKey.new);
+  }
+
+  TapGestureRecognizer _verseTapRecognizer(
+    String bookId,
+    int chapterNumber,
+    BibleVerse verse,
+  ) {
+    final key = '$bookId:$chapterNumber:${verse.number}';
+    final recognizer = _verseTapRecognizers.putIfAbsent(
+      key,
+      TapGestureRecognizer.new,
+    );
+    recognizer.onTap = () => _selectVerse(bookId, chapterNumber, verse);
+    return recognizer;
   }
 
   bool _isFocusedVerse(String bookId, int chapterNumber, BibleVerse verse) =>
@@ -607,10 +771,13 @@ class _BibleTextViewState extends ConsumerState<_BibleTextView> {
   }
 
   bool _isSelectedVerse(String bookId, int chapterNumber, BibleVerse verse) {
-    final selectedVerse = ref.watch(selectedVerseProvider);
-    return selectedVerse?.bookId == bookId &&
-        selectedVerse?.chapter == chapterNumber &&
-        selectedVerse?.verse == verse.number;
+    final selectedVerses = ref.watch(selectedVersesProvider);
+    return selectedVerses.any(
+      (reference) =>
+          reference.bookId == bookId &&
+          reference.chapter == chapterNumber &&
+          reference.verse == verse.number,
+    );
   }
 
   List<UserAnnotation> _annotationsForVerse(
@@ -635,6 +802,16 @@ class _BibleTextViewState extends ConsumerState<_BibleTextView> {
     return verseAnnotations.any((annotation) => annotation.hasNoteText);
   }
 
+  List<UserAnnotation> _personalNoteAnnotations(
+    List<UserAnnotation> verseAnnotations,
+  ) {
+    final notes = verseAnnotations
+        .where((annotation) => annotation.hasNoteText)
+        .toList();
+    notes.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+    return notes;
+  }
+
   Color? _highlightColorForVerse(
     BuildContext context,
     List<UserAnnotation> verseAnnotations,
@@ -646,20 +823,28 @@ class _BibleTextViewState extends ConsumerState<_BibleTextView> {
         .where(
           (annotation) =>
               annotation.highlightColorValue != null &&
-              annotation.primaryVerse.bookId == bookId &&
-              annotation.primaryVerse.chapter == chapterNumber &&
-              annotation.primaryVerse.verse == verse.number,
+              annotation.touchesReference(
+                _verseReference(bookId, chapterNumber, verse),
+                translationId: ref.watch(currentTranslationProvider),
+              ),
         )
         .toList();
     if (matches.isEmpty) return null;
-    final latest = matches.reduce(
-      (current, next) =>
-          current.updatedAt.isAfter(next.updatedAt) ? current : next,
-    );
-    return annotationColorFromValue(
-      latest.highlightColorValue,
-      Theme.of(context).colorScheme.secondary,
-    ).withValues(alpha: 0.24);
+    matches.sort((a, b) => a.updatedAt.compareTo(b.updatedAt));
+
+    Color? blendedColor;
+    final fallback = Theme.of(context).colorScheme.secondary;
+    for (final annotation in matches) {
+      final layer = annotationColorFromValue(
+        annotation.highlightColorValue,
+        fallback,
+      ).withValues(alpha: 0.24);
+      blendedColor = blendedColor == null
+          ? layer
+          : Color.alphaBlend(layer, blendedColor);
+    }
+
+    return blendedColor;
   }
 
   // Convenience wrappers used inside collection-literal for-loops (paragraph
@@ -684,13 +869,165 @@ class _BibleTextViewState extends ConsumerState<_BibleTextView> {
     verse,
   );
 
-  void _selectVerse(String bookId, int chapterNumber, BibleVerse verse) {
-    ref.read(selectedVerseProvider.notifier).state = _verseReference(
-      bookId,
-      chapterNumber,
-      verse,
+  BibleChapter? _chapterForReference(String bookId, int chapterNumber) {
+    for (final book in widget.books) {
+      if (book.id != bookId) continue;
+      for (final chapter in book.chapters) {
+        if (chapter.number == chapterNumber) return chapter;
+      }
+    }
+    return null;
+  }
+
+  bool _chapterHasVerse(BibleChapter? chapter, int verseNumber) =>
+      chapter?.verses.any((verse) => verse.number == verseNumber) ?? false;
+
+  bool _sharesHighlightedAnnotationWithVerse(
+    String bookId,
+    int chapterNumber,
+    BibleVerse verse,
+    int otherVerseNumber,
+  ) {
+    final chapter = _chapterForReference(bookId, chapterNumber);
+    if (!_chapterHasVerse(chapter, otherVerseNumber)) return false;
+
+    final translationId = ref.watch(currentTranslationProvider);
+    final annotations = ref.watch(visibleChapterAnnotationsProvider);
+    final currentReference = _verseReference(bookId, chapterNumber, verse);
+    final otherReference = BibleReference(
+      bookId: bookId,
+      chapter: chapterNumber,
+      verse: otherVerseNumber,
     );
+
+    return annotations.any(
+      (annotation) =>
+          annotation.highlightColorValue != null &&
+          annotation.touchesReference(
+            currentReference,
+            translationId: translationId,
+          ) &&
+          annotation.touchesReference(
+            otherReference,
+            translationId: translationId,
+          ),
+    );
+  }
+
+  bool _joinsHighlightedRunWithPrevious(
+    String bookId,
+    int chapterNumber,
+    BibleVerse verse,
+  ) => _sharesHighlightedAnnotationWithVerse(
+    bookId,
+    chapterNumber,
+    verse,
+    verse.number - 1,
+  );
+
+  bool _joinsHighlightedRunWithNext(
+    String bookId,
+    int chapterNumber,
+    BibleVerse verse,
+  ) => _sharesHighlightedAnnotationWithVerse(
+    bookId,
+    chapterNumber,
+    verse,
+    verse.number + 1,
+  );
+
+  Color _selectionTint(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final alpha = Theme.of(context).brightness == Brightness.dark ? 0.16 : 0.1;
+    return colors.secondary.withValues(alpha: alpha);
+  }
+
+  Color? _selectionAwareBackground(
+    BuildContext context, {
+    required bool isSelected,
+    Color? baseBackground,
+  }) {
+    if (!isSelected) return baseBackground;
+    final selectionTint = _selectionTint(context);
+    if (baseBackground == null) return selectionTint;
+    return Color.alphaBlend(selectionTint, baseBackground);
+  }
+
+  void _selectVerse(String bookId, int chapterNumber, BibleVerse verse) {
+    ref
+        .read(selectedVersesProvider.notifier)
+        .toggle(_verseReference(bookId, chapterNumber, verse));
     ref.read(highlightPaletteExpandedProvider.notifier).state = false;
+  }
+
+  Future<void> _showPersonalNotesSheet(
+    BuildContext context, {
+    required String bookId,
+    required int chapterNumber,
+    required BibleVerse verse,
+    required List<UserAnnotation> verseAnnotations,
+  }) async {
+    final noteAnnotations = _personalNoteAnnotations(verseAnnotations);
+    if (noteAnnotations.isEmpty) return;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (context) {
+        return _PersonalNotesSheet(
+          referenceLabel:
+              '${displayBookNameForReference(widget.books, bookId)} '
+              '$chapterNumber:${verse.number}',
+          verseText: verse.text,
+          books: widget.books,
+          annotations: noteAnnotations,
+          onOpenReference: (annotation) async {
+            if (!context.mounted) return;
+            final translationId = annotation.primaryVerse.translationId;
+            final available = await ref.read(
+              availableTranslationsProvider.future,
+            );
+            if (!context.mounted) return;
+            final exists = available.any((t) => t.id == translationId);
+            if (exists) {
+              await ref
+                  .read(currentTranslationProvider.notifier)
+                  .setTranslation(translationId);
+            }
+            if (!context.mounted) return;
+            await ref
+                .read(currentReferenceProvider.notifier)
+                .setReference(annotation.primaryVerse.reference);
+            if (context.mounted) Navigator.of(context).pop();
+          },
+          onEdit: (annotation) async {
+            if (!context.mounted) return;
+            final translationId = annotation.primaryVerse.translationId;
+            final available = await ref.read(
+              availableTranslationsProvider.future,
+            );
+            if (!context.mounted) return;
+            final exists = available.any((t) => t.id == translationId);
+            if (exists) {
+              await ref
+                  .read(currentTranslationProvider.notifier)
+                  .setTranslation(translationId);
+            }
+            if (!context.mounted) return;
+            Navigator.of(context).pop();
+            await Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => NoteEditorScreen(
+                  primaryVerse: annotation.primaryVerse,
+                  existingAnnotation: annotation,
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 
   void _dismissSelectedVerseFocus() {
@@ -698,6 +1035,32 @@ class _BibleTextViewState extends ConsumerState<_BibleTextView> {
     setState(() {
       _showSelectedVerseFocus = false;
     });
+  }
+
+  Rect? _focusedVerseHitRect() {
+    if (!_hasActiveVerseFocus) return null;
+    final verseNumber = widget.reference.verse;
+    if (verseNumber == null) return null;
+
+    final targetContext = _verseKey(
+      widget.reference.bookId,
+      widget.reference.chapter,
+      verseNumber,
+    ).currentContext;
+    final renderBox = targetContext?.findRenderObject() as RenderBox?;
+    if (renderBox == null || !renderBox.attached) return null;
+
+    final size = renderBox.size;
+    if (size.isEmpty) return null;
+
+    final topLeft = renderBox.localToGlobal(Offset.zero);
+    return topLeft & size;
+  }
+
+  @override
+  void dispose() {
+    _resetVerseTapRecognizers();
+    super.dispose();
   }
 
   Color? _verseTextColor(
@@ -737,6 +1100,13 @@ class _BibleTextViewState extends ConsumerState<_BibleTextView> {
     // Listener catches mouse-wheel scroll (PointerScrollEvent) on desktop,
     // which does not set dragDetails on ScrollStartNotification.
     return Listener(
+      onPointerDown: (event) {
+        final focusedVerseRect = _focusedVerseHitRect();
+        if (focusedVerseRect != null &&
+            !focusedVerseRect.contains(event.position)) {
+          _dismissSelectedVerseFocus();
+        }
+      },
       onPointerSignal: (event) {
         if (event is PointerScrollEvent) _dismissSelectedVerseFocus();
       },
@@ -925,6 +1295,7 @@ class _BibleTextViewState extends ConsumerState<_BibleTextView> {
       verse,
     );
     final hasPersonalNotes = _hasPersonalNotes(verseAnnotations);
+    final noteAnnotations = _personalNoteAnnotations(verseAnnotations);
     final highlightColor = _highlightColorForVerse(
       context,
       verseAnnotations,
@@ -937,6 +1308,11 @@ class _BibleTextViewState extends ConsumerState<_BibleTextView> {
       widget.chapter.number,
       verse,
     );
+    final containerColor = _selectionAwareBackground(
+      context,
+      isSelected: isSelected,
+      baseBackground: highlightColor,
+    );
 
     return Padding(
       key: verseKey,
@@ -948,7 +1324,7 @@ class _BibleTextViewState extends ConsumerState<_BibleTextView> {
           duration: const Duration(milliseconds: 220),
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
           decoration: BoxDecoration(
-            color: highlightColor,
+            color: containerColor,
             borderRadius: BorderRadius.circular(14),
             border: isSelected
                 ? Border(
@@ -983,6 +1359,9 @@ class _BibleTextViewState extends ConsumerState<_BibleTextView> {
                         context,
                         verse,
                         bodyColor: bodyColor,
+                        isSelectedVerse: isSelected,
+                        backgroundColor: containerColor,
+                        applySelectionTint: false,
                       ),
                     ],
                   ),
@@ -991,10 +1370,14 @@ class _BibleTextViewState extends ConsumerState<_BibleTextView> {
               if (hasPersonalNotes)
                 Padding(
                   padding: const EdgeInsets.only(left: 8, top: 2),
-                  child: Icon(
-                    Icons.bookmark_rounded,
-                    size: 18,
-                    color: Theme.of(context).colorScheme.secondary,
+                  child: _VerseNoteButton(
+                    onPressed: () => _showPersonalNotesSheet(
+                      context,
+                      bookId: widget.book.id,
+                      chapterNumber: widget.chapter.number,
+                      verse: verse,
+                      verseAnnotations: noteAnnotations,
+                    ),
                   ),
                 ),
               if (hasAnnotations) ...[
@@ -1303,6 +1686,7 @@ class _BibleTextViewState extends ConsumerState<_BibleTextView> {
     );
     final verseAnnotations = _annotationsForVerse(bookId, chapterNumber, verse);
     final hasPersonalNotes = _hasPersonalNotes(verseAnnotations);
+    final noteAnnotations = _personalNoteAnnotations(verseAnnotations);
     final highlightColor = _highlightColorForVerse(
       context,
       verseAnnotations,
@@ -1311,6 +1695,11 @@ class _BibleTextViewState extends ConsumerState<_BibleTextView> {
       verse,
     );
     final isSelected = _isSelectedVerse(bookId, chapterNumber, verse);
+    final containerColor = _selectionAwareBackground(
+      context,
+      isSelected: isSelected,
+      baseBackground: highlightColor,
+    );
 
     return Padding(
       key: verseKey,
@@ -1322,7 +1711,7 @@ class _BibleTextViewState extends ConsumerState<_BibleTextView> {
           duration: const Duration(milliseconds: 220),
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
           decoration: BoxDecoration(
-            color: highlightColor,
+            color: containerColor,
             borderRadius: BorderRadius.circular(14),
             border: isSelected
                 ? Border(
@@ -1357,6 +1746,9 @@ class _BibleTextViewState extends ConsumerState<_BibleTextView> {
                         context,
                         verse,
                         bodyColor: bodyColor,
+                        isSelectedVerse: isSelected,
+                        backgroundColor: containerColor,
+                        applySelectionTint: false,
                       ),
                     ],
                   ),
@@ -1365,10 +1757,14 @@ class _BibleTextViewState extends ConsumerState<_BibleTextView> {
               if (hasPersonalNotes)
                 Padding(
                   padding: const EdgeInsets.only(left: 8, top: 2),
-                  child: Icon(
-                    Icons.bookmark_rounded,
-                    size: 18,
-                    color: Theme.of(context).colorScheme.secondary,
+                  child: _VerseNoteButton(
+                    onPressed: () => _showPersonalNotesSheet(
+                      context,
+                      bookId: bookId,
+                      chapterNumber: chapterNumber,
+                      verse: verse,
+                      verseAnnotations: noteAnnotations,
+                    ),
                   ),
                 ),
               if (hasAnnotations) ...[
@@ -1487,7 +1883,7 @@ class _BibleTextViewState extends ConsumerState<_BibleTextView> {
                     verse,
                   ),
                   isSelected: _isSelectedVerse(bookId, chapterNumber, verse),
-                  hasNote: _docVerseHasPersonalNotes(bookId, chapterNumber, verse),
+                  hasNote: false,
                   onTap: () => _selectVerse(bookId, chapterNumber, verse),
                 ),
               ),
@@ -1496,7 +1892,40 @@ class _BibleTextViewState extends ConsumerState<_BibleTextView> {
               context,
               verse,
               bodyColor: _verseTextColor(context, bookId, chapterNumber, verse),
+              isSelectedVerse: _isSelectedVerse(bookId, chapterNumber, verse),
+              backgroundColor: _selectionAwareBackground(
+                context,
+                isSelected: _isSelectedVerse(bookId, chapterNumber, verse),
+                baseBackground: _docVerseHighlightColor(
+                  context,
+                  bookId,
+                  chapterNumber,
+                  verse,
+                ),
+              ),
+              recognizer: _verseTapRecognizer(bookId, chapterNumber, verse),
             ),
+            if (_docVerseHasPersonalNotes(bookId, chapterNumber, verse))
+              WidgetSpan(
+                alignment: PlaceholderAlignment.middle,
+                child: Padding(
+                  padding: const EdgeInsets.only(left: 6, right: 2),
+                  child: _VerseNoteButton(
+                    compact: true,
+                    onPressed: () => _showPersonalNotesSheet(
+                      context,
+                      bookId: bookId,
+                      chapterNumber: chapterNumber,
+                      verse: verse,
+                      verseAnnotations: _annotationsForVerse(
+                        bookId,
+                        chapterNumber,
+                        verse,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
             if (_hasParserNotes(verse))
               WidgetSpan(
                 alignment: PlaceholderAlignment.middle,
@@ -1511,6 +1940,7 @@ class _BibleTextViewState extends ConsumerState<_BibleTextView> {
               ),
             const TextSpan(text: ' '),
           ],
+          const TextSpan(text: ' '),
         ],
       ),
     );
@@ -1528,87 +1958,160 @@ class _BibleTextViewState extends ConsumerState<_BibleTextView> {
         for (final verse in section.verses)
           Padding(
             key: _verseKey(bookId, chapterNumber, verse.number),
-            padding: const EdgeInsets.only(bottom: 8),
-            child: Container(
-              decoration: BoxDecoration(
-                color: _docVerseHighlightColor(
-                  context,
-                  bookId,
-                  chapterNumber,
-                  verse,
-                ),
-                borderRadius: BorderRadius.circular(12),
-                border: _isSelectedVerse(bookId, chapterNumber, verse)
-                    ? Border(
-                        bottom: BorderSide(
-                          color: Theme.of(context).colorScheme.secondary,
-                          width: 2.5,
-                        ),
-                      )
-                    : null,
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-              child: RichText(
-                text: TextSpan(
-                  style: TextStyle(
-                    fontSize: widget.fontSize,
-                    color: Theme.of(context).textTheme.bodyLarge?.color,
-                    height: 1.7,
+            padding: EdgeInsets.only(
+              bottom: _joinsHighlightedRunWithNext(bookId, chapterNumber, verse)
+                  ? 0
+                  : 8,
+            ),
+            child: GestureDetector(
+              behavior: HitTestBehavior.translucent,
+              onTap: () => _selectVerse(bookId, chapterNumber, verse),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: _selectionAwareBackground(
+                    context,
+                    isSelected: _isSelectedVerse(bookId, chapterNumber, verse),
+                    baseBackground: _docVerseHighlightColor(
+                      context,
+                      bookId,
+                      chapterNumber,
+                      verse,
+                    ),
                   ),
-                  children: [
-                    WidgetSpan(
-                      alignment: PlaceholderAlignment.middle,
-                      child: Padding(
-                        padding: const EdgeInsets.only(right: 4),
-                        child: _InlineVerseSelector(
-                          verseNumber: verse.number,
-                          color: _verseNumberColor(
-                            context,
+                  borderRadius: BorderRadius.vertical(
+                    top: Radius.circular(
+                      _joinsHighlightedRunWithPrevious(
                             bookId,
                             chapterNumber,
                             verse,
+                          )
+                          ? 4
+                          : 12,
+                    ),
+                    bottom: Radius.circular(
+                      _joinsHighlightedRunWithNext(bookId, chapterNumber, verse)
+                          ? 4
+                          : 12,
+                    ),
+                  ),
+                  border: _isSelectedVerse(bookId, chapterNumber, verse)
+                      ? Border(
+                          bottom: BorderSide(
+                            color: Theme.of(context).colorScheme.secondary,
+                            width: 2.5,
                           ),
+                        )
+                      : null,
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                child: RichText(
+                  text: TextSpan(
+                    style: TextStyle(
+                      fontSize: widget.fontSize,
+                      color: Theme.of(context).textTheme.bodyLarge?.color,
+                      height: 1.7,
+                    ),
+                    children: [
+                      WidgetSpan(
+                        alignment: PlaceholderAlignment.middle,
+                        child: Padding(
+                          padding: const EdgeInsets.only(right: 4),
+                          child: _InlineVerseSelector(
+                            verseNumber: verse.number,
+                            color: _verseNumberColor(
+                              context,
+                              bookId,
+                              chapterNumber,
+                              verse,
+                            ),
+                            isSelected: _isSelectedVerse(
+                              bookId,
+                              chapterNumber,
+                              verse,
+                            ),
+                            hasNote: false,
+                            onTap: () =>
+                                _selectVerse(bookId, chapterNumber, verse),
+                          ),
+                        ),
+                      ),
+                      ..._buildVerseContentSpans(
+                        context,
+                        verse,
+                        bodyColor: _verseTextColor(
+                          context,
+                          bookId,
+                          chapterNumber,
+                          verse,
+                        ),
+                        isSelectedVerse: _isSelectedVerse(
+                          bookId,
+                          chapterNumber,
+                          verse,
+                        ),
+                        backgroundColor: _selectionAwareBackground(
+                          context,
                           isSelected: _isSelectedVerse(
                             bookId,
                             chapterNumber,
                             verse,
                           ),
-                          hasNote: _docVerseHasPersonalNotes(
+                          baseBackground: _docVerseHighlightColor(
+                            context,
                             bookId,
                             chapterNumber,
                             verse,
                           ),
-                          onTap: () =>
-                              _selectVerse(bookId, chapterNumber, verse),
+                        ),
+                        applySelectionTint: false,
+                        recognizer: _verseTapRecognizer(
+                          bookId,
+                          chapterNumber,
+                          verse,
                         ),
                       ),
-                    ),
-                    ..._buildVerseContentSpans(
-                      context,
-                      verse,
-                      bodyColor: _verseTextColor(
-                        context,
+                      if (_docVerseHasPersonalNotes(
                         bookId,
                         chapterNumber,
                         verse,
-                      ),
-                    ),
-                    if (_hasParserNotes(verse))
-                      WidgetSpan(
-                        alignment: PlaceholderAlignment.middle,
-                        child: Padding(
-                          padding: const EdgeInsets.only(left: 6),
-                          child: _VerseAnnotationButton(
-                            compact: true,
-                            onPressed: () => _showVerseDetailsSheet(
-                              context,
-                              chapterNumber,
-                              verse,
+                      ))
+                        WidgetSpan(
+                          alignment: PlaceholderAlignment.middle,
+                          child: Padding(
+                            padding: const EdgeInsets.only(left: 6),
+                            child: _VerseNoteButton(
+                              compact: true,
+                              onPressed: () => _showPersonalNotesSheet(
+                                context,
+                                bookId: bookId,
+                                chapterNumber: chapterNumber,
+                                verse: verse,
+                                verseAnnotations: _annotationsForVerse(
+                                  bookId,
+                                  chapterNumber,
+                                  verse,
+                                ),
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                  ],
+                      if (_hasParserNotes(verse))
+                        WidgetSpan(
+                          alignment: PlaceholderAlignment.middle,
+                          child: Padding(
+                            padding: const EdgeInsets.only(left: 6),
+                            child: _VerseAnnotationButton(
+                              compact: true,
+                              onPressed: () => _showVerseDetailsSheet(
+                                context,
+                                chapterNumber,
+                                verse,
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -1816,13 +2319,28 @@ class _BibleTextViewState extends ConsumerState<_BibleTextView> {
     BuildContext context,
     BibleVerse verse, {
     Color? bodyColor,
+    bool isSelectedVerse = false,
+    Color? backgroundColor,
+    bool applySelectionTint = true,
+    TapGestureRecognizer? recognizer,
   }) {
     final spans = _displaySpans(verse);
+    final effectiveBackgroundColor = applySelectionTint
+        ? _selectionAwareBackground(
+            context,
+            isSelected: isSelectedVerse,
+            baseBackground: backgroundColor,
+          )
+        : backgroundColor;
     if (spans.isEmpty) {
       return [
         TextSpan(
           text: verse.text,
-          style: TextStyle(color: bodyColor),
+          recognizer: recognizer,
+          style: TextStyle(
+            color: bodyColor,
+            backgroundColor: effectiveBackgroundColor,
+          ),
         ),
       ];
     }
@@ -1838,6 +2356,7 @@ class _BibleTextViewState extends ConsumerState<_BibleTextView> {
       inlineSpans.add(
         TextSpan(
           text: _spanText(span),
+          recognizer: recognizer,
           style: TextStyle(
             color: _spanColor(span.kind, baseColor, secondaryColor),
             fontStyle: _spanFontStyle(span.kind),
@@ -1849,6 +2368,7 @@ class _BibleTextViewState extends ConsumerState<_BibleTextView> {
               span.kind,
               underlineProperNames: underlineProperNames,
             ),
+            backgroundColor: effectiveBackgroundColor,
           ),
         ),
       );
@@ -2166,24 +2686,65 @@ class _VerseAnnotationButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final colors = Theme.of(context).colorScheme;
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onPressed,
-        borderRadius: BorderRadius.circular(14),
-        child: Ink(
-          width: compact ? 22 : 30,
-          height: compact ? 22 : 30,
-          decoration: BoxDecoration(
-            color: colors.surfaceContainerHighest.withValues(alpha: 0.38),
-            borderRadius: BorderRadius.circular(14),
+    return Tooltip(
+      message: l10n.readerFootnotesTooltip,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onPressed,
+          borderRadius: BorderRadius.circular(14),
+          child: Ink(
+            width: compact ? 22 : 30,
+            height: compact ? 22 : 30,
+            decoration: BoxDecoration(
+              color: colors.surfaceContainerHighest.withValues(alpha: 0.38),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Icon(
+              Icons.notes_outlined,
+              size: compact ? 14 : 18,
+              color: colors.onSurfaceVariant,
+            ),
           ),
-          child: Icon(
-            Icons.notes_outlined,
-            size: compact ? 14 : 18,
-            color: colors.onSurfaceVariant,
+        ),
+      ),
+    );
+  }
+}
+
+class _VerseNoteButton extends StatelessWidget {
+  const _VerseNoteButton({required this.onPressed, this.compact = false});
+
+  final VoidCallback onPressed;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final colors = Theme.of(context).colorScheme;
+
+    return Tooltip(
+      message: l10n.readerNotesTooltip,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onPressed,
+          borderRadius: BorderRadius.circular(14),
+          child: Ink(
+            width: compact ? 22 : 30,
+            height: compact ? 22 : 30,
+            decoration: BoxDecoration(
+              color: colors.surfaceContainerHighest.withValues(alpha: 0.38),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Icon(
+              Icons.sticky_note_2_outlined,
+              size: compact ? 14 : 18,
+              color: colors.secondary,
+            ),
           ),
         ),
       ),
@@ -2214,12 +2775,13 @@ class _InlineVerseSelector extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
         decoration: BoxDecoration(
+          color: isSelected
+              ? theme.colorScheme.secondary.withValues(alpha: 0.16)
+              : null,
+          borderRadius: BorderRadius.circular(8),
           border: isSelected
-              ? Border(
-                  bottom: BorderSide(
-                    color: theme.colorScheme.secondary,
-                    width: 2,
-                  ),
+              ? Border.all(
+                  color: theme.colorScheme.secondary.withValues(alpha: 0.5),
                 )
               : null,
         ),
@@ -2247,10 +2809,11 @@ class _InlineVerseSelector extends StatelessWidget {
 
 class _VerseSelectionBar extends StatelessWidget {
   const _VerseSelectionBar({
-    required this.reference,
+    required this.references,
     required this.books,
     required this.existingAnnotations,
     required this.showHighlightPalette,
+    required this.isBusy,
     required this.onDismiss,
     required this.onHighlightPressed,
     required this.onHighlightSelected,
@@ -2259,10 +2822,11 @@ class _VerseSelectionBar extends StatelessWidget {
     required this.onSharePressed,
   });
 
-  final BibleReference reference;
+  final List<BibleReference> references;
   final List<BibleBook> books;
   final List<UserAnnotation> existingAnnotations;
   final bool showHighlightPalette;
+  final bool isBusy;
   final VoidCallback onDismiss;
   final VoidCallback onHighlightPressed;
   final ValueChanged<Color> onHighlightSelected;
@@ -2273,9 +2837,11 @@ class _VerseSelectionBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final referenceLabel =
-        '${displayBookNameForReference(books, reference.bookId)} '
-        '${reference.chapter}:${reference.verse ?? ''}';
+    final firstReference = references.first;
+    final referenceLabel = references.length == 1
+        ? '${displayBookNameForReference(books, firstReference.bookId)} '
+              '${firstReference.chapter}:${firstReference.verse ?? ''}'
+        : '${references.length} verses selected';
     final hasSavedNote = existingAnnotations.any(
       (annotation) => annotation.hasNoteText,
     );
@@ -2324,7 +2890,7 @@ class _VerseSelectionBar extends StatelessWidget {
                     ),
                   ),
                 IconButton(
-                  onPressed: onDismiss,
+                  onPressed: isBusy ? null : onDismiss,
                   icon: const Icon(Icons.close),
                   visualDensity: VisualDensity.compact,
                 ),
@@ -2338,22 +2904,22 @@ class _VerseSelectionBar extends StatelessWidget {
                   _SelectionActionButton(
                     icon: Icons.highlight_alt_rounded,
                     label: 'Highlight',
-                    onPressed: onHighlightPressed,
+                    onPressed: isBusy ? null : onHighlightPressed,
                   ),
                   _SelectionActionButton(
                     icon: Icons.note_alt_outlined,
                     label: 'Note',
-                    onPressed: onNotePressed,
+                    onPressed: isBusy ? null : onNotePressed,
                   ),
                   _SelectionActionButton(
                     icon: Icons.copy_all_outlined,
                     label: 'Copy',
-                    onPressed: onCopyPressed,
+                    onPressed: isBusy ? null : onCopyPressed,
                   ),
                   _SelectionActionButton(
                     icon: Icons.share_outlined,
                     label: 'Share',
-                    onPressed: onSharePressed,
+                    onPressed: isBusy ? null : onSharePressed,
                   ),
                 ],
               ),
@@ -2366,7 +2932,7 @@ class _VerseSelectionBar extends StatelessWidget {
                 children: [
                   for (final color in annotationHighlightPalette)
                     InkWell(
-                      onTap: () => onHighlightSelected(color),
+                      onTap: isBusy ? null : () => onHighlightSelected(color),
                       borderRadius: BorderRadius.circular(999),
                       child: Container(
                         width: 34,
@@ -2400,7 +2966,7 @@ class _SelectionActionButton extends StatelessWidget {
 
   final IconData icon;
   final String label;
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
 
   @override
   Widget build(BuildContext context) {
@@ -2761,6 +3327,190 @@ class _VerseAnnotationRow extends StatelessWidget {
               color: colors.onSurfaceVariant,
             ),
           ],
+        ],
+      ),
+    );
+  }
+}
+
+class _PersonalNotesSheet extends StatelessWidget {
+  const _PersonalNotesSheet({
+    required this.referenceLabel,
+    required this.verseText,
+    required this.books,
+    required this.annotations,
+    required this.onOpenReference,
+    required this.onEdit,
+  });
+
+  final String referenceLabel;
+  final String verseText;
+  final List<BibleBook> books;
+  final List<UserAnnotation> annotations;
+  final ValueChanged<UserAnnotation> onOpenReference;
+  final ValueChanged<UserAnnotation> onEdit;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    return SafeArea(
+      top: false,
+      child: DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: 0.5,
+        minChildSize: 0.18,
+        maxChildSize: 0.96,
+        snap: true,
+        snapSizes: const [0.5, 0.96],
+        shouldCloseOnMinExtent: true,
+        builder: (context, controller) {
+          return Padding(
+            padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
+            child: ListView(
+              controller: controller,
+              children: [
+                Text(
+                  referenceLabel,
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surfaceContainerHighest.withValues(
+                      alpha: 0.55,
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Text(
+                    verseText,
+                    style: theme.textTheme.bodyLarge?.copyWith(height: 1.5),
+                  ),
+                ),
+                const SizedBox(height: 18),
+                Text(
+                  annotations.length == 1
+                      ? l10n.savedNoteLabel
+                      : l10n.savedNotesLabel,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                for (final annotation in annotations) ...[
+                  _PersonalNoteCard(
+                    annotation: annotation,
+                    books: books,
+                    onOpenReference: () => onOpenReference(annotation),
+                    onEdit: () => onEdit(annotation),
+                  ),
+                  const SizedBox(height: 12),
+                ],
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _PersonalNoteCard extends StatelessWidget {
+  const _PersonalNoteCard({
+    required this.annotation,
+    required this.books,
+    required this.onOpenReference,
+    required this.onEdit,
+  });
+
+  final UserAnnotation annotation;
+  final List<BibleBook> books;
+  final VoidCallback onOpenReference;
+  final VoidCallback onEdit;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final highlightColor = annotation.highlightColorValue == null
+        ? null
+        : annotationColorFromValue(
+            annotation.highlightColorValue,
+            theme.colorScheme.secondary,
+          );
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHigh,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: theme.colorScheme.outlineVariant),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  annotation.primaryVerse.translationName,
+                  style: theme.textTheme.labelLarge?.copyWith(
+                    color: theme.colorScheme.secondary,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              if (highlightColor != null)
+                Container(
+                  width: 14,
+                  height: 14,
+                  decoration: BoxDecoration(
+                    color: highlightColor,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(
+            annotation.noteText ?? '',
+            style: theme.textTheme.bodyLarge?.copyWith(height: 1.5),
+          ),
+          if (annotation.linkedVerses.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final link in annotation.linkedVerses)
+                  Chip(
+                    label: Text(
+                      '${displayBookNameForReference(books, link.bookId)} '
+                      '${link.chapter}:${link.verse}',
+                    ),
+                  ),
+              ],
+            ),
+          ],
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              TextButton.icon(
+                onPressed: onOpenReference,
+                icon: const Icon(Icons.menu_book_outlined),
+                label: Text(l10n.openAction),
+              ),
+              const SizedBox(width: 8),
+              TextButton.icon(
+                onPressed: onEdit,
+                icon: const Icon(Icons.edit_outlined),
+                label: Text(l10n.editAction),
+              ),
+            ],
+          ),
         ],
       ),
     );

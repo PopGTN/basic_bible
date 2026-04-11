@@ -14,5 +14,11 @@
   "spanish": "Spanish",
   "french": "French",
   "german": "German",
-  "menu": "Menu"
+  "menu": "Menu",
+  "readerFootnotesTooltip": "View footnotes and references",
+  "readerNotesTooltip": "View personal notes",
+  "savedNoteLabel": "Saved Note",
+  "savedNotesLabel": "Saved Notes",
+  "openAction": "Open",
+  "editAction": "Edit"
 }

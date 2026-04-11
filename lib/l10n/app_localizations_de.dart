@@ -27,7 +27,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String get goToOther => 'Zur anderen Seite gehen';
 
   @override
-  String get aboutDescription => 'Diese Bibel-App ist ein kostenloses Projekt von PopGTN. Es ist ein Übungsprojekt zum Lernen von Flutter und Dart. Die App ermöglicht das Lesen der Bibel, das Erstellen von Notizen, TTS-Unterstützung und mehr. Sie ist inspiriert von Apps wie YouVersion Bible, jedoch mit zusätzlichen Funktionen und einer verbesserten Benutzeroberfläche.';
+  String get aboutDescription =>
+      'Diese Bibel-App ist ein kostenloses Projekt von PopGTN. Es ist ein Übungsprojekt zum Lernen von Flutter und Dart. Die App ermöglicht das Lesen der Bibel, das Erstellen von Notizen, TTS-Unterstützung und mehr. Sie ist inspiriert von Apps wie YouVersion Bible, jedoch mit zusätzlichen Funktionen und einer verbesserten Benutzeroberfläche.';
 
   @override
   String get language => 'Sprache';
@@ -52,4 +53,22 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get menu => 'Menu';
+
+  @override
+  String get readerFootnotesTooltip => 'Fußnoten und Verweise anzeigen';
+
+  @override
+  String get readerNotesTooltip => 'Persönliche Notizen anzeigen';
+
+  @override
+  String get savedNoteLabel => 'Gespeicherte Notiz';
+
+  @override
+  String get savedNotesLabel => 'Gespeicherte Notizen';
+
+  @override
+  String get openAction => 'Öffnen';
+
+  @override
+  String get editAction => 'Bearbeiten';
 }

@@ -1,9 +1,4 @@
-// This new file replaces database_service.dart AND bible_models.dart
-// Temporarily ignore analyzer errors related to generated Drift code while
-// build artifacts are regenerated and the analysis server catches up.
-// Remove these ignores once the analyzer no longer reports generated-symbol
-// errors (they are a temporary workaround).
-// ignore_for_file: uri_has_not_been_generated, undefined_identifier, undefined_method, undefined_getter, override_on_non_overriding_member, unnecessary_brace_in_string_interps
+// ignore_for_file: uri_has_not_been_generated, undefined_identifier, undefined_method, undefined_getter, override_on_non_overriding_member, unnecessary_brace_in_string_interps, undefined_class, argument_type_not_assignable, return_of_invalid_type
 import 'dart:convert';
 import 'dart:io';
 
@@ -15,74 +10,14 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:basic_bible/src/features/annotations/models/user_annotations.dart';
 
-// Import your app's models. We will still need them in the repository.
 import '../models/bible_models.dart';
 
-part 'app_database.g.dart'; // This file will be generated
+part 'app_database.g.dart';
 
-// --- 1. Define Tables ---
+// =============================================================================
+// 1. Type converters — shared with translation_database.dart
+// =============================================================================
 
-@DataClassName('TranslationEntry')
-class Translations extends Table {
-  // Track where a translation came from so the app can distinguish
-  // bundled assets, downloads, and future user-imported Bibles.
-  TextColumn get id => text()();
-  TextColumn get name => text()();
-  TextColumn get language => text()();
-  TextColumn get description => text()();
-  TextColumn get format => text()();
-  TextColumn get sourceType => text()();
-  TextColumn get sourceLocation => text().nullable()();
-  BoolColumn get isLocal => boolean().withDefault(const Constant(false))();
-  DateTimeColumn get importedAt => dateTime().withDefault(currentDateAndTime)();
-  // Parser version stored when the translation was cached. Used to detect
-  // stale caches when parser output format changes. Bump _currentParserVersion
-  // in app_bible_repository.dart when making incompatible changes.
-  IntColumn get parserVersion => integer().withDefault(const Constant(0))();
-
-  @override
-  Set<Column> get primaryKey => {id};
-}
-
-// SIMPLIFIED: We removed `extending: BibleBook`.
-// Drift will now generate a class called `BookEntry`.
-@DataClassName('BookEntry')
-class Books extends Table {
-  TextColumn get id => text()(); // e.g., "kjv_GEN"
-  TextColumn get translationId => text().references(Translations, #id)();
-  TextColumn get name => text()();
-  TextColumn get shortName => text()();
-  IntColumn get bookNumber => integer()();
-  // store bookType as an integer index; mapping to enum happens at the model layer
-  IntColumn get bookType => integer()();
-  // Preserve richer parser metadata at the book level while the rest of the
-  // app is still catching up to a more structured rendering pipeline.
-  TextColumn get tocLabels =>
-      text().map(const BibleTocLabelListConverter()).nullable()();
-  TextColumn get introductionBlocks =>
-      text().map(const BibleDocumentBlockListConverter()).nullable()();
-
-  @override
-  Set<Column> get primaryKey => {id};
-}
-
-// SIMPLIFIED: We removed `extending: BibleChapter`.
-// Drift will now generate a class called `ChapterEntry`.
-@DataClassName('ChapterEntry')
-class Chapters extends Table {
-  IntColumn get id => integer().autoIncrement()();
-  TextColumn get bookId => text().references(Books, #id)(); // Foreign key
-  IntColumn get number => integer()();
-  TextColumn get blocks =>
-      text().map(const BibleDocumentBlockListConverter()).nullable()();
-
-  @override
-  List<Set<Column<Object>>> get uniqueKeys => [
-    {bookId, number},
-  ];
-}
-
-// This converter is still correct
 class StringListConverter extends TypeConverter<List<String>, String> {
   const StringListConverter();
   @override
@@ -133,7 +68,7 @@ class JsonListConverter<T> extends TypeConverter<List<T>, String> {
 
 class BibleTocLabelListConverter extends JsonListConverter<BibleTocLabel> {
   const BibleTocLabelListConverter()
-    : super(fromJson: BibleTocLabel.fromJson, toJson: _bibleTocLabelToJson);
+    : super(fromJson: BibleTocLabel.fromJson, toJson: _tocLabelToJson);
 }
 
 class BibleDocumentBlockListConverter
@@ -141,18 +76,18 @@ class BibleDocumentBlockListConverter
   const BibleDocumentBlockListConverter()
     : super(
         fromJson: BibleDocumentBlock.fromJson,
-        toJson: _bibleDocumentBlockToJson,
+        toJson: _documentBlockToJson,
       );
 }
 
 class BibleVerseSpanListConverter extends JsonListConverter<BibleVerseSpan> {
   const BibleVerseSpanListConverter()
-    : super(fromJson: BibleVerseSpan.fromJson, toJson: _bibleVerseSpanToJson);
+    : super(fromJson: BibleVerseSpan.fromJson, toJson: _verseSpanToJson);
 }
 
 class BibleFootnoteListConverter extends JsonListConverter<BibleFootnote> {
   const BibleFootnoteListConverter()
-    : super(fromJson: BibleFootnote.fromJson, toJson: _bibleFootnoteToJson);
+    : super(fromJson: BibleFootnote.fromJson, toJson: _footnoteToJson);
 }
 
 class BibleCrossReferenceListConverter
@@ -160,20 +95,45 @@ class BibleCrossReferenceListConverter
   const BibleCrossReferenceListConverter()
     : super(
         fromJson: BibleCrossReference.fromJson,
-        toJson: _bibleCrossReferenceToJson,
+        toJson: _crossReferenceToJson,
       );
 }
 
-Map<String, dynamic> _bibleTocLabelToJson(BibleTocLabel value) =>
-    value.toJson();
-Map<String, dynamic> _bibleDocumentBlockToJson(BibleDocumentBlock value) =>
-    value.toJson();
-Map<String, dynamic> _bibleVerseSpanToJson(BibleVerseSpan value) =>
-    value.toJson();
-Map<String, dynamic> _bibleFootnoteToJson(BibleFootnote value) =>
-    value.toJson();
-Map<String, dynamic> _bibleCrossReferenceToJson(BibleCrossReference value) =>
-    value.toJson();
+Map<String, dynamic> _tocLabelToJson(BibleTocLabel v) => v.toJson();
+Map<String, dynamic> _documentBlockToJson(BibleDocumentBlock v) => v.toJson();
+Map<String, dynamic> _verseSpanToJson(BibleVerseSpan v) => v.toJson();
+Map<String, dynamic> _footnoteToJson(BibleFootnote v) => v.toJson();
+Map<String, dynamic> _crossReferenceToJson(BibleCrossReference v) => v.toJson();
+
+// =============================================================================
+// 2. Tables
+// =============================================================================
+
+/// Registry of every translation the user has installed (parsed from XML or
+/// downloaded as a SQLite file). Content lives in per-translation SQLite files
+/// managed by [TranslationDatabaseManager]; this table holds only metadata.
+@DataClassName('InstalledTranslationEntry')
+class InstalledTranslations extends Table {
+  TextColumn get id => text()();
+  TextColumn get name => text()();
+  TextColumn get language => text()();
+  TextColumn get description => text()();
+  TextColumn get format => text()();
+  TextColumn get sourceType => text()();
+
+  /// Original source: asset bundle path, download URL, or imported file path.
+  /// Used to re-parse when [parserVersion] is bumped.
+  TextColumn get sourceLocation => text().nullable()();
+  BoolColumn get isLocal => boolean().withDefault(const Constant(false))();
+  DateTimeColumn get importedAt => dateTime().withDefault(currentDateAndTime)();
+
+  /// Recorded parser version at last parse. Compare against
+  /// [AppBibleRepository._currentParserVersion] to detect stale caches.
+  IntColumn get parserVersion => integer().withDefault(const Constant(0))();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
 
 @DataClassName('UserAnnotationEntry')
 class UserAnnotations extends Table {
@@ -210,52 +170,18 @@ class AnnotationVerses extends Table {
   ];
 }
 
-// SIMPLIFIED: We removed `extending: BibleVerse`.
-// Drift will now generate a class called `VerseEntry`.
-@DataClassName('VerseEntry')
-class Verses extends Table {
-  IntColumn get id => integer().autoIncrement()();
-  IntColumn get chapterId =>
-      integer().references(Chapters, #id)(); // Foreign key
-  IntColumn get number => integer()();
-  // Avoid naming collision with the `text()` column builder by using
-  // `verseText` as the column name in the generated class.
-  TextColumn get verseText => text()();
-  TextColumn get notes => text().map(const StringListConverter()).nullable()();
-  TextColumn get references =>
-      text().map(const StringListConverter()).nullable()();
-  TextColumn get spans =>
-      text().map(const BibleVerseSpanListConverter()).nullable()();
-  TextColumn get footnotes =>
-      text().map(const BibleFootnoteListConverter()).nullable()();
-  TextColumn get crossReferences =>
-      text().map(const BibleCrossReferenceListConverter()).nullable()();
-
-  @override
-  List<Set<Column<Object>>> get uniqueKeys => [
-    {chapterId, number},
-  ];
-}
-
-// --- 2. Define Database Class ---
+// =============================================================================
+// 3. Database class
+// =============================================================================
 
 @DriftDatabase(
-  tables: [
-    Translations,
-    Books,
-    Chapters,
-    Verses,
-    UserAnnotations,
-    AnnotationVerses,
-  ],
+  tables: [InstalledTranslations, UserAnnotations, AnnotationVerses],
 )
 class AppDatabase extends _$AppDatabase {
-  // Use super-parameters to keep the constructor concise and satisfy the
-  // `use_super_parameters` analyzer hint.
   AppDatabase(super.e);
 
   @override
-  int get schemaVersion => 6;
+  int get schemaVersion => 7;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -266,119 +192,89 @@ class AppDatabase extends _$AppDatabase {
         );
       }
       if (from < 6) {
-        await m.createTable(userAnnotations);
-        await m.createTable(annotationVerses);
+        // user_annotations and annotation_verses were added in v6.
+        // They may already exist if this is a fresh install path.
+        await customStatement('''
+          CREATE TABLE IF NOT EXISTS user_annotations (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            type TEXT NOT NULL,
+            primary_book_id TEXT NOT NULL,
+            primary_chapter INTEGER NOT NULL,
+            primary_verse INTEGER NOT NULL,
+            primary_translation_id TEXT NOT NULL,
+            primary_translation_name TEXT NOT NULL,
+            note_text TEXT,
+            highlight_color_value INTEGER,
+            labels TEXT NOT NULL DEFAULT '',
+            created_at INTEGER NOT NULL DEFAULT (strftime('%s','now')),
+            updated_at INTEGER NOT NULL DEFAULT (strftime('%s','now'))
+          )
+        ''');
+        await customStatement('''
+          CREATE TABLE IF NOT EXISTS annotation_verses (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            annotation_id INTEGER NOT NULL REFERENCES user_annotations(id),
+            sort_order INTEGER NOT NULL,
+            book_id TEXT NOT NULL,
+            chapter INTEGER NOT NULL,
+            verse INTEGER NOT NULL,
+            translation_id TEXT NOT NULL,
+            translation_name TEXT NOT NULL,
+            UNIQUE(annotation_id, sort_order)
+          )
+        ''');
+      }
+      if (from < 7) {
+        // Create the new translation registry table.
+        await m.createTable(installedTranslations);
+
+        // Copy existing translation metadata. Set parser_version = 0 so each
+        // translation is re-parsed into its own SQLite file on next load.
+        await customStatement('''
+          INSERT OR IGNORE INTO installed_translations
+            (id, name, language, description, format, source_type,
+             source_location, is_local, imported_at, parser_version)
+          SELECT
+            id, name, language, description, format, source_type,
+            source_location, is_local, imported_at, 0
+          FROM translations
+        ''');
+
+        // Drop legacy shared Bible content tables once registry metadata has
+        // been copied into the new v7 layout.
+        await customStatement('DROP TABLE IF EXISTS verses');
+        await customStatement('DROP TABLE IF EXISTS chapters');
+        await customStatement('DROP TABLE IF EXISTS books');
+        await customStatement('DROP TABLE IF EXISTS translations');
       }
     },
     onCreate: (m) => m.createAll(),
   );
 
-  // --- 3. Define Data Access Methods ---
+  // ===========================================================================
+  // Translation registry
+  // ===========================================================================
 
-  // This insert logic is now slightly different because
-  // we are using the models from bible_models.dart as input.
-  Future<void> insertBible(
-    String translationId,
-    List<BibleBook> bibleBooks,
-  ) async {
-    // Use a single transaction and perform sequential inserts. Mixing
-    // `batch` with nested `transaction` calls led to race conditions where
-    // rows weren't reliably committed, causing lookups (like getChapter)
-    // to fail. This sequential approach is simpler and deterministic.
-    await transaction(() async {
-      // Replace the existing translation payload as one unit so callers
-      // don't end up with mixed old/new rows if the same translation is
-      // re-imported or re-parsed later.
-      await (delete(verses)..where(
-            (v) => v.chapterId.isInQuery(
-              selectOnly(chapters)
-                ..addColumns([chapters.id])
-                ..where(
-                  chapters.bookId.isInQuery(
-                    selectOnly(books)
-                      ..addColumns([books.id])
-                      ..where(books.translationId.equals(translationId)),
-                  ),
-                ),
-            ),
-          ))
-          .go();
-      await (delete(chapters)..where(
-            (c) => c.bookId.isInQuery(
-              selectOnly(books)
-                ..addColumns([books.id])
-                ..where(books.translationId.equals(translationId)),
-            ),
-          ))
-          .go();
-      await (delete(
-        books,
-      )..where((b) => b.translationId.equals(translationId))).go();
-
-      for (final book in bibleBooks) {
-        // Always uppercase the book ID segment so lookups are consistent
-        // regardless of whether the source used OSIS mixed-case IDs (Gen, Ps)
-        // or the standard 3-letter uppercase codes (GEN, PSA).
-        final bookId = '${translationId}_${book.id.toUpperCase()}';
-
-        // Insert or replace the book to avoid UNIQUE constraint errors
-        await into(books).insert(
-          BooksCompanion.insert(
-            id: bookId,
-            translationId: translationId,
-            name: book.name,
-            shortName: book.shortName,
-            bookNumber: book.bookNumber,
-            bookType: book.bookType.index,
-            tocLabels: Value(book.tocLabels),
-            introductionBlocks: Value(book.introductionBlocks),
-          ),
-          mode: InsertMode.insertOrReplace,
-        );
-
-        for (final chapter in book.chapters) {
-          final chapterId = await into(chapters).insert(
-            ChaptersCompanion.insert(
-              bookId: bookId,
-              number: chapter.number,
-              blocks: Value(chapter.blocks),
-            ),
-            mode: InsertMode.insertOrReplace,
-          );
-
-          // Insert verses for this chapter. Use a batch for multiple verses
-          // to improve insertion speed while staying inside the transaction.
-          if (chapter.verses.isNotEmpty) {
-            await batch((b) {
-              b.insertAll(verses, [
-                for (final verse in chapter.verses)
-                  VersesCompanion.insert(
-                    chapterId: chapterId,
-                    number: verse.number,
-                    verseText: verse.text,
-                    notes: Value(verse.notes),
-                    references: Value(verse.references),
-                    spans: Value(verse.spans),
-                    footnotes: Value(verse.footnotes),
-                    crossReferences: Value(verse.crossReferences),
-                  ),
-              ], mode: InsertMode.insertOrReplace);
-            });
-          }
-        }
-      }
-    });
+  Future<List<BibleTranslation>> getInstalledTranslations() async {
+    final rows = await (select(
+      installedTranslations,
+    )..orderBy([(t) => OrderingTerm.desc(t.importedAt)])).get();
+    return rows.map(_entryToTranslation).toList();
   }
 
-  Future<void> upsertTranslationMetadata({
+  Future<InstalledTranslationEntry?> getInstalledTranslation(String id) async {
+    return (select(
+      installedTranslations,
+    )..where((t) => t.id.equals(id))).getSingleOrNull();
+  }
+
+  Future<void> upsertInstalledTranslation({
     required BibleTranslation translation,
     String? sourceLocation,
     BibleSourceType? sourceTypeOverride,
   }) async {
-    // Metadata is stored separately from parsed content so the app can later
-    // build a local "library" view without reparsing the Bible files.
-    await into(translations).insertOnConflictUpdate(
-      TranslationsCompanion.insert(
+    await into(installedTranslations).insertOnConflictUpdate(
+      InstalledTranslationsCompanion.insert(
         id: translation.id,
         name: translation.name,
         language: translation.language,
@@ -392,319 +288,56 @@ class AppDatabase extends _$AppDatabase {
     );
   }
 
-  Future<List<BibleTranslation>> getStoredTranslations() async {
-    final rows = await (select(
-      translations,
-    )..orderBy([(t) => OrderingTerm.desc(t.importedAt)])).get();
-
-    return rows
-        .map(
-          (row) => BibleTranslation(
-            id: row.id,
-            name: row.name,
-            language: row.language,
-            description: row.description,
-            isLocal: row.isLocal,
-            filePath:
-                row.sourceType == BibleSourceType.asset.name ||
-                    row.sourceType == BibleSourceType.import.name
-                ? row.sourceLocation
-                : null,
-            format: BibleFormat.values.firstWhere(
-              (format) => format.name == row.format,
-              orElse: () => BibleFormat.auto,
-            ),
-            sourceType: BibleSourceType.values.firstWhere(
-              (sourceType) => sourceType.name == row.sourceType,
-              orElse: () => BibleSourceType.import,
-            ),
-            githubUrl: row.sourceType == BibleSourceType.download.name
-                ? row.sourceLocation
-                : null,
-          ),
-        )
-        .toList();
+  Future<void> deleteInstalledTranslation(String id) async {
+    await (delete(installedTranslations)..where((t) => t.id.equals(id))).go();
   }
 
-  /// Get translation metadata (including parser version) for cache validation.
-  /// Returns `null` if translation is not in the database.
-  Future<TranslationEntry?> getTranslationMeta(String translationId) async {
-    return (select(
-      translations,
-    )..where((t) => t.id.equals(translationId))).getSingleOrNull();
+  Future<void> deleteAllInstalledTranslations() async {
+    await delete(installedTranslations).go();
   }
 
-  /// Update the parser version for a cached translation.
-  /// Called after successfully parsing and storing a translation.
-  Future<void> updateTranslationParserVersion(
-    String translationId,
-    int versionNumber,
+  Future<void> updateInstalledTranslationParserVersion(
+    String id,
+    int version,
   ) async {
-    await customStatement(
-      'UPDATE translations SET parser_version = ? WHERE id = ?',
-      [versionNumber, translationId],
+    await (update(installedTranslations)..where((t) => t.id.equals(id))).write(
+      InstalledTranslationsCompanion(parserVersion: Value(version)),
     );
   }
 
-  // This method now maps the generated classes (e.g., BookEntry)
-  // back to your UI models (e.g., BibleBook).
-  Future<List<BibleBook>> getBible(String translationId) async {
-    final bookRows =
-        await (select(books)
-              ..where((b) => b.translationId.equals(translationId))
-              ..orderBy([(b) => OrderingTerm(expression: b.bookNumber)]))
-            .get();
-
-    if (bookRows.isEmpty) return const [];
-
-    final bookIds = bookRows.map((row) => row.id).toList();
-    final chapterRows =
-        await (select(chapters)
-              ..where((c) => c.bookId.isIn(bookIds))
-              ..orderBy([
-                (c) => OrderingTerm(expression: c.bookId),
-                (c) => OrderingTerm(expression: c.number),
-              ]))
-            .get();
-
-    final chapterIds = chapterRows.map((row) => row.id).toList();
-    final verseRows = chapterIds.isEmpty
-        ? const <VerseEntry>[]
-        : await (select(verses)
-                ..where((v) => v.chapterId.isIn(chapterIds))
-                ..orderBy([
-                  (v) => OrderingTerm(expression: v.chapterId),
-                  (v) => OrderingTerm(expression: v.number),
-                ]))
-              .get();
-
-    final versesByChapterId = <int, List<BibleVerse>>{};
-    for (final verseRow in verseRows) {
-      versesByChapterId
-          .putIfAbsent(verseRow.chapterId, () => <BibleVerse>[])
-          .add(
-            BibleVerse(
-              number: verseRow.number,
-              text: verseRow.verseText,
-              notes: verseRow.notes,
-              references: verseRow.references,
-              spans: verseRow.spans ?? const [],
-              footnotes: verseRow.footnotes ?? const [],
-              crossReferences: verseRow.crossReferences ?? const [],
-            ),
-          );
-    }
-
-    final chaptersByBookId = <String, List<BibleChapter>>{};
-    for (final chapterRow in chapterRows) {
-      chaptersByBookId
-          .putIfAbsent(chapterRow.bookId, () => <BibleChapter>[])
-          .add(
-            BibleChapter(
-              number: chapterRow.number,
-              verses: versesByChapterId[chapterRow.id] ?? const [],
-              blocks: chapterRow.blocks ?? const [],
-            ),
-          );
-    }
-
-    return [
-      for (final bookRow in bookRows)
-        BibleBook(
-          id: bookRow.id.split('_').last.toUpperCase(),
-          name: bookRow.name,
-          shortName: bookRow.shortName.toUpperCase(),
-          bookNumber: bookRow.bookNumber,
-          bookType: _bookTypeFromRow(bookRow.bookType),
-          chapters: chaptersByBookId[bookRow.id] ?? const [],
-          tocLabels: bookRow.tocLabels ?? const [],
-          introductionBlocks: bookRow.introductionBlocks ?? const [],
-        ),
-    ];
-  }
-
-  /// Load books and chapter metadata (no verses) for quick shell rendering.
-  /// Each chapter has empty verses list; verses are loaded on demand per chapter.
-  Future<List<BibleBook>> getBooksShell(String translationId) async {
-    final bookRows =
-        await (select(books)
-              ..where((b) => b.translationId.equals(translationId))
-              ..orderBy([(b) => OrderingTerm(expression: b.bookNumber)]))
-            .get();
-
-    if (bookRows.isEmpty) return const [];
-
-    final bookIds = bookRows.map((row) => row.id).toList();
-    final chapterRows =
-        await (select(chapters)
-              ..where((c) => c.bookId.isIn(bookIds))
-              ..orderBy([
-                (c) => OrderingTerm(expression: c.bookId),
-                (c) => OrderingTerm(expression: c.number),
-              ]))
-            .get();
-
-    final chaptersByBookId = <String, List<BibleChapter>>{};
-    for (final chapterRow in chapterRows) {
-      chaptersByBookId
-          .putIfAbsent(chapterRow.bookId, () => <BibleChapter>[])
-          .add(
-            BibleChapter(
-              number: chapterRow.number,
-              verses: const [], // Empty shell - verses loaded on demand
-              blocks: chapterRow.blocks ?? const [],
-            ),
-          );
-    }
-
-    return [
-      for (final bookRow in bookRows)
-        BibleBook(
-          id: bookRow.id.split('_').last.toUpperCase(),
-          name: bookRow.name,
-          shortName: bookRow.shortName.toUpperCase(),
-          bookNumber: bookRow.bookNumber,
-          bookType: _bookTypeFromRow(bookRow.bookType),
-          chapters: chaptersByBookId[bookRow.id] ?? const [],
-          tocLabels: bookRow.tocLabels ?? const [],
-          introductionBlocks: bookRow.introductionBlocks ?? const [],
-        ),
-    ];
-  }
-
-  /// Retrieve a single chapter (with verses) for a translation/book/chapter.
-  /// Returns `null` if not found.
-  Future<BibleChapter?> getChapter(
-    String translationId,
-    String bookId,
-    int chapterNumber,
-  ) async {
-    final compositeBookId = '${translationId}_${bookId}';
-    final lowerCompositeBookId = '${translationId}_${bookId.toLowerCase()}';
-
-    final bookRow =
-        await (select(books)..where(
-              (b) =>
-                  b.id.equals(compositeBookId) |
-                  b.id.equals(lowerCompositeBookId),
-            ))
-            .getSingleOrNull();
-    if (bookRow == null) return null;
-
-    final chapterRow =
-        await (select(chapters)..where(
-              (c) =>
-                  c.bookId.equals(bookRow.id) & c.number.equals(chapterNumber),
-            ))
-            .getSingleOrNull();
-
-    if (chapterRow == null) return null;
-
-    final verseRows =
-        await (select(verses)
-              ..where((v) => v.chapterId.equals(chapterRow.id))
-              ..orderBy([(t) => OrderingTerm(expression: t.number)]))
-            .get();
-
-    final mappedVerses = verseRows
-        .map(
-          (v) => BibleVerse(
-            number: v.number,
-            text: v.verseText,
-            notes: v.notes,
-            references: v.references,
-            spans: v.spans ?? const [],
-            footnotes: v.footnotes ?? const [],
-            crossReferences: v.crossReferences ?? const [],
-          ),
-        )
-        .toList();
-
-    return BibleChapter(
-      number: chapterRow.number,
-      verses: mappedVerses,
-      blocks: chapterRow.blocks ?? const [],
+  BibleTranslation _entryToTranslation(InstalledTranslationEntry row) {
+    return BibleTranslation(
+      id: row.id,
+      name: row.name,
+      language: row.language,
+      description: row.description,
+      isLocal: row.isLocal,
+      filePath:
+          row.sourceType == BibleSourceType.asset.name ||
+              row.sourceType == BibleSourceType.import.name
+          ? row.sourceLocation
+          : null,
+      format: BibleFormat.values.firstWhere(
+        (f) => f.name == row.format,
+        orElse: () => BibleFormat.auto,
+      ),
+      sourceType: BibleSourceType.values.firstWhere(
+        (s) => s.name == row.sourceType,
+        orElse: () => BibleSourceType.import,
+      ),
+      githubUrl: row.sourceType == BibleSourceType.download.name
+          ? row.sourceLocation
+          : null,
     );
   }
 
-  // Helper to accept either an int index or an enum value (depends on
-  // whether code generation mapped the column) and return a BibleBookType.
-  BibleBookType _bookTypeFromRow(dynamic value) {
-    if (value is int) {
-      return BibleBookType.values[value.clamp(
-        0,
-        BibleBookType.values.length - 1,
-      )];
-    }
-    if (value is BibleBookType) return value;
-    return BibleBookType.oldTestament;
-  }
-
-  Future<bool> isBibleCached(String translationId) async {
-    // Use a regular select to ensure columns are included in the generated SQL.
-    final rows =
-        await (select(books)
-              ..where((b) => b.translationId.equals(translationId))
-              ..limit(1))
-            .get();
-
-    return rows.isNotEmpty;
-  }
-
-  Future<void> deleteBibleContent(String translationId) async {
-    await transaction(() async {
-      await _deleteBibleRows(translationId);
-    });
-  }
-
-  Future<void> deleteBible(String translationId) async {
-    await transaction(() async {
-      await _deleteBibleRows(translationId);
-      await (delete(
-        translations,
-      )..where((t) => t.id.equals(translationId))).go();
-    });
-  }
-
-  Future<void> _deleteBibleRows(String translationId) async {
-    await (delete(verses)..where(
-          (v) => v.chapterId.isInQuery(
-            selectOnly(chapters)
-              ..addColumns([chapters.id])
-              ..where(
-                chapters.bookId.isInQuery(
-                  selectOnly(books)
-                    ..addColumns([books.id])
-                    ..where(books.translationId.equals(translationId)),
-                ),
-              ),
-          ),
-        ))
-        .go();
-    await (delete(chapters)..where(
-          (c) => c.bookId.isInQuery(
-            selectOnly(books)
-              ..addColumns([books.id])
-              ..where(books.translationId.equals(translationId)),
-          ),
-        ))
-        .go();
-    await (delete(
-      books,
-    )..where((b) => b.translationId.equals(translationId))).go();
-  }
-
-  Future<void> deleteAllBibles() async {
-    await delete(verses).go();
-    await delete(chapters).go();
-    await delete(books).go();
-    await delete(translations).go();
-  }
+  // ===========================================================================
+  // User annotations
+  // ===========================================================================
 
   Stream<List<UserAnnotation>> watchAllUserAnnotations() {
     final query = select(userAnnotations)
       ..orderBy([(t) => OrderingTerm.desc(t.updatedAt)]);
-
     return query.watch().asyncMap(_mapUserAnnotations);
   }
 
@@ -757,8 +390,8 @@ class AppDatabase extends _$AppDatabase {
       )..where((t) => t.annotationId.equals(annotationId))).go();
 
       if (annotation.linkedVerses.isNotEmpty) {
-        await batch((batch) {
-          batch.insertAll(annotationVerses, [
+        await batch((b) {
+          b.insertAll(annotationVerses, [
             for (var i = 0; i < annotation.linkedVerses.length; i++)
               AnnotationVersesCompanion.insert(
                 annotationId: annotationId,
@@ -792,7 +425,7 @@ class AppDatabase extends _$AppDatabase {
     List<UserAnnotationEntry> rows,
   ) async {
     if (rows.isEmpty) return const [];
-    final ids = rows.map((row) => row.id).toList();
+    final ids = rows.map((r) => r.id).toList();
     final verseRows =
         await (select(annotationVerses)
               ..where((t) => t.annotationId.isIn(ids))
@@ -824,7 +457,7 @@ class AppDatabase extends _$AppDatabase {
         UserAnnotation(
           id: row.id,
           type: UserAnnotationType.values.firstWhere(
-            (value) => value.name == row.type,
+            (v) => v.name == row.type,
             orElse: () => UserAnnotationType.note,
           ),
           primaryVerse: AnnotationVerseLink(
@@ -845,34 +478,32 @@ class AppDatabase extends _$AppDatabase {
   }
 }
 
-// --- 4. Database Connection & Provider ---
+// =============================================================================
+// 4. Connection & provider
+// =============================================================================
 
-// FIXED: This now *correctly* uses the factories you set up in main.dart
-// for all platforms.
-QueryExecutor _connect() {
+QueryExecutor _connectAppDatabase() {
   return LazyDatabase(() async {
-    if (kIsWeb) {
-      // Web persistence is still a follow-up task. Keep behavior explicit
-      // instead of pretending the desktop/mobile file-backed path exists here.
-      return NativeDatabase.memory();
-    }
+    if (kIsWeb) return NativeDatabase.memory();
 
     final dir = await getApplicationSupportDirectory();
     final dbDir = Directory(p.join(dir.path, 'database'));
-    if (!await dbDir.exists()) {
-      await dbDir.create(recursive: true);
-    }
+    if (!await dbDir.exists()) await dbDir.create(recursive: true);
 
-    final file = File(p.join(dbDir.path, 'basic_bible.sqlite'));
-    // Use a background isolate so opening the file-backed database does not
-    // block startup more than necessary on desktop/mobile platforms.
-    return NativeDatabase.createInBackground(file);
+    final file = File(p.join(dbDir.path, 'app.sqlite'));
+    return NativeDatabase.createInBackground(
+      file,
+      setup: (db) {
+        db.execute('PRAGMA journal_mode=WAL;');
+        db.execute('PRAGMA synchronous=NORMAL;');
+        db.execute('PRAGMA temp_store=MEMORY;');
+      },
+    );
   });
 }
 
-// This provider is unchanged and correct.
 final appDatabaseProvider = Provider<AppDatabase>((ref) {
-  final db = AppDatabase(_connect());
+  final db = AppDatabase(_connectAppDatabase());
   ref.onDispose(() => db.close());
   return db;
 });

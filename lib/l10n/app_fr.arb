@@ -13,6 +13,11 @@
   "english": "Anglais",
   "spanish": "Espagnol",
   "french": "Français",
-  "german": "Allemand"
+  "german": "Allemand",
+  "readerFootnotesTooltip": "Voir les notes de bas de page et les références",
+  "readerNotesTooltip": "Voir les notes personnelles",
+  "savedNoteLabel": "Note enregistrée",
+  "savedNotesLabel": "Notes enregistrées",
+  "openAction": "Ouvrir",
+  "editAction": "Modifier"
 }
-

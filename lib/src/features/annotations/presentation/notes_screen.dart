@@ -46,31 +46,39 @@ class NotesScreen extends ConsumerWidget {
                 books: books,
                 onOpenReference: () async {
                   final translationId = annotation.primaryVerse.translationId;
-                  final available =
-                      await ref.read(availableTranslationsProvider.future);
-                  final exists = available.any((t) => t.id == translationId);
-                  if (!exists) {
+                  try {
+                    final available =
+                        await ref.read(availableTranslationsProvider.future);
+                    final exists = available.any((t) => t.id == translationId);
+                    if (!exists) {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              '"${annotation.primaryVerse.translationName}" is not installed. '
+                              'Opening in current translation.',
+                            ),
+                          ),
+                        );
+                      }
+                    } else {
+                      await ref
+                          .read(currentTranslationProvider.notifier)
+                          .setTranslation(translationId);
+                    }
+                    await ref
+                        .read(currentReferenceProvider.notifier)
+                        .setReference(annotation.primaryVerse.reference);
+                    ref.read(homeTabIndexProvider.notifier).state = 1;
+                    if (context.mounted) context.go('/home');
+                  } catch (_) {
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            '"${annotation.primaryVerse.translationName}" is not installed. '
-                            'Opening in current translation.',
-                          ),
+                        const SnackBar(
+                          content: Text('Failed to open reference.'),
                         ),
                       );
                     }
-                  } else {
-                    await ref
-                        .read(currentTranslationProvider.notifier)
-                        .setTranslation(translationId);
-                  }
-                  await ref
-                      .read(currentReferenceProvider.notifier)
-                      .setReference(annotation.primaryVerse.reference);
-                  ref.read(homeTabIndexProvider.notifier).state = 1;
-                  if (context.mounted) {
-                    context.go('/home');
                   }
                 },
                 onEdit: () async {
@@ -106,9 +114,19 @@ class NotesScreen extends ConsumerWidget {
                     ),
                   );
                   if (confirmed != true) return;
-                  await ref
-                      .read(userAnnotationRepositoryProvider)
-                      .deleteAnnotation(id);
+                  try {
+                    await ref
+                        .read(userAnnotationRepositoryProvider)
+                        .deleteAnnotation(id);
+                  } catch (_) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Failed to delete note.'),
+                        ),
+                      );
+                    }
+                  }
                 },
               );
             },
@@ -133,9 +151,9 @@ class _AnnotationListCard extends StatelessWidget {
 
   final UserAnnotation annotation;
   final List<BibleBook> books;
-  final VoidCallback onOpenReference;
-  final VoidCallback onEdit;
-  final VoidCallback onDelete;
+  final Future<void> Function() onOpenReference;
+  final Future<void> Function() onEdit;
+  final Future<void> Function() onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -190,14 +208,12 @@ class _AnnotationListCard extends StatelessWidget {
                 ),
               ),
               PopupMenuButton<String>(
-                onSelected: (value) {
+                onSelected: (value) async {
                   switch (value) {
                     case 'edit':
-                      onEdit();
-                      break;
+                      await onEdit();
                     case 'delete':
-                      onDelete();
-                      break;
+                      await onDelete();
                   }
                 },
                 itemBuilder: (context) => const [

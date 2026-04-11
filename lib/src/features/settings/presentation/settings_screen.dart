@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:basic_bible/src/providers/language_provider.dart';
 import 'package:basic_bible/src/providers/theme_provider.dart';
+import 'package:go_router/go_router.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -166,6 +167,17 @@ class SettingsScreen extends ConsumerWidget {
               onChanged: (value) {
                 ref.read(showVerseSelectorProvider.notifier).setEnabled(value);
               },
+            ),
+            const SizedBox(height: 20),
+
+            const Divider(),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.developer_mode_outlined),
+              title: const Text('Advanced'),
+              subtitle: const Text('Developer tools — export translation databases'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => context.push('/home/settings/advanced'),
             ),
           ],
         ),

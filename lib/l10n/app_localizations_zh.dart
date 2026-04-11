@@ -27,7 +27,8 @@ class AppLocalizationsZh extends AppLocalizations {
   String get goToOther => '前往其他页面';
 
   @override
-  String get aboutDescription => '这个圣经应用是 PopGTN 的免费项目。它是学习 Flutter 和 Dart 的练习项目。该应用允许阅读圣经、做笔记、支持 TTS 等功能。它的灵感来自 YouVersion 圣经等应用，但具有额外功能和改进的界面。';
+  String get aboutDescription =>
+      '这个圣经应用是 PopGTN 的免费项目。它是学习 Flutter 和 Dart 的练习项目。该应用允许阅读圣经、做笔记、支持 TTS 等功能。它的灵感来自 YouVersion 圣经等应用，但具有额外功能和改进的界面。';
 
   @override
   String get language => '语言';
@@ -52,4 +53,22 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get menu => 'Menu';
+
+  @override
+  String get readerFootnotesTooltip => '查看脚注和参考资料';
+
+  @override
+  String get readerNotesTooltip => '查看个人笔记';
+
+  @override
+  String get savedNoteLabel => '已保存笔记';
+
+  @override
+  String get savedNotesLabel => '已保存笔记';
+
+  @override
+  String get openAction => '打开';
+
+  @override
+  String get editAction => '编辑';
 }

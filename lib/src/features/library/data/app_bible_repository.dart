@@ -7,6 +7,7 @@ import 'package:http/http.dart' as http;
 import 'package:bible_parser_flutter/bible_parser_flutter.dart';
 import 'package:basic_bible/src/models/bible_models.dart';
 import 'package:basic_bible/src/services/app_database.dart';
+import 'package:basic_bible/src/services/translation_database_manager.dart';
 import 'package:path/path.dart' as p;
 
 class BibleImportDraft {
@@ -53,27 +54,34 @@ class BibleImportRequest {
 
 class AppBibleRepository {
   final AppDatabase _db;
+  final TranslationDatabaseManager _dbManager;
 
   List<BibleBook> _cachedBooks = [];
   String? _currentTranslationId;
-  // Keep previously opened translations hot so switching back to them feels
-  // instant instead of forcing another DB read and full widget loading state.
   final Map<String, List<BibleBook>> _memoryCacheByTranslation =
       <String, List<BibleBook>>{};
 
+  // In-flight deduplication: if two callers request the same translation
+  // concurrently (e.g., BibleBooksShellNotifier + BibleBooksNotifier on first
+  // load) they share one Future instead of running two concurrent parses that
+  // would both write to the same SQLite file.
+  final Map<String, Future<List<BibleBook>>> _inFlight = {};
+
   /// Bump this integer every time the parser output format changes in a way
   /// that requires existing cached Bibles to be re-parsed.
-  /// Current reasons to invalidate cache:
   ///   0 = initial version
-  ///   1 = inline anchor markers added (replaces _needsInlineAnchorRefresh check)
-  ///   2 = book IDs normalized to uppercase in DB (fixes OSIS cross-translation lookup)
-  static const int _currentParserVersion = 2;
+  ///   1 = inline anchor markers added
+  ///   2 = book IDs normalized to uppercase
+  ///   3 = per-translation SQLite split (forces rebuild into new file layout)
+  static const int _currentParserVersion = 3;
 
-  AppBibleRepository(this._db);
+  AppBibleRepository(this._db, this._dbManager);
 
-  /// Built-in Bible translations bundled with the app.
+  // ---------------------------------------------------------------------------
+  // Built-in translations
+  // ---------------------------------------------------------------------------
+
   static final List<BibleTranslation> builtInTranslations = [
-    // USFX translations
     BibleTranslation(
       id: 'kjv',
       name: 'King James Version',
@@ -112,171 +120,207 @@ class AppBibleRepository {
     ),
   ];
 
+  // ---------------------------------------------------------------------------
+  // Path helpers
+  // ---------------------------------------------------------------------------
+
+  Future<String> _sqlitePathFor(String id) =>
+      TranslationDatabaseManager.pathForTranslation(id);
+
+  // ---------------------------------------------------------------------------
+  // Cache validity check
+  // ---------------------------------------------------------------------------
+
+  Future<bool> _isCacheValid(String translationId) async {
+    final path = await _sqlitePathFor(translationId);
+    if (!await File(path).exists()) return false;
+    final meta = await _db.getInstalledTranslation(translationId);
+    return meta != null && meta.parserVersion >= _currentParserVersion;
+  }
+
+  Future<void> _invalidateCache(String translationId) async {
+    _dbManager.close(translationId);
+    final path = await _sqlitePathFor(translationId);
+    final file = File(path);
+    if (await file.exists()) await file.delete();
+  }
+
+  // ---------------------------------------------------------------------------
+  // Public API — available translations
+  // ---------------------------------------------------------------------------
+
   Future<List<BibleTranslation>> getAvailableTranslations() async {
-    final storedTranslations = await _db.getStoredTranslations();
+    final stored = await _db.getInstalledTranslations();
     final builtInIds = builtInTranslations.map((t) => t.id).toSet();
-    final storedById = {
-      for (final translation in storedTranslations) translation.id: translation,
-    };
+    final storedById = {for (final t in stored) t.id: t};
 
     return [
-      for (final translation in builtInTranslations)
-        _mergeBuiltInTranslation(
-          builtIn: translation,
-          stored: storedById[translation.id],
-        ),
-      ...storedTranslations.where(
-        (translation) => !builtInIds.contains(translation.id),
-      ),
+      for (final t in builtInTranslations)
+        _mergeBuiltInTranslation(builtIn: t, stored: storedById[t.id]),
+      ...stored.where((t) => !builtInIds.contains(t.id)),
     ];
   }
 
-  /// Load Bible from local asset or cache
-  Future<List<BibleBook>> loadLocalBible(String translationId) async {
+  // ---------------------------------------------------------------------------
+  // Load — shell (books + chapter metadata, no verses)
+  // ---------------------------------------------------------------------------
+
+  Future<List<BibleBook>> loadLocalBibleShell(String translationId) async {
     final memoryCached = getLoadedTranslation(translationId);
-    if (memoryCached != null) {
-      return memoryCached;
+    if (memoryCached != null) return memoryCached;
+
+    if (await _isCacheValid(translationId)) {
+      final path = await _sqlitePathFor(translationId);
+      final translationDb = await _dbManager.open(translationId, path);
+      final shell = await translationDb.getBooksShell();
+      if (shell.isNotEmpty) return shell;
     }
 
-    final cachedBooks = await _db.getBible(translationId);
-    if (cachedBooks.isNotEmpty) {
-      // Check if cache is valid by comparing parser versions
-      final meta = await _db.getTranslationMeta(translationId);
-      final cacheIsValid = meta != null &&
-          meta.parserVersion >= _currentParserVersion;
+    return loadLocalBible(translationId);
+  }
 
-      if (cacheIsValid) {
-        return _rememberLoadedTranslation(translationId, cachedBooks);
+  // ---------------------------------------------------------------------------
+  // Load — full (parses XML if needed)
+  // ---------------------------------------------------------------------------
+
+  Future<List<BibleBook>> loadLocalBible(String translationId) {
+    final memoryCached = getLoadedTranslation(translationId);
+    if (memoryCached != null) return Future.value(memoryCached);
+
+    return _inFlight.putIfAbsent(
+      translationId,
+      () => _doLoadLocalBible(translationId).whenComplete(
+        () => _inFlight.remove(translationId),
+      ),
+    );
+  }
+
+  Future<List<BibleBook>> _doLoadLocalBible(String translationId) async {
+    final memoryCached = getLoadedTranslation(translationId);
+    if (memoryCached != null) return memoryCached;
+
+    if (await _isCacheValid(translationId)) {
+      final path = await _sqlitePathFor(translationId);
+      final translationDb = await _dbManager.open(translationId, path);
+      final books = await translationDb.getBible();
+      if (books.isNotEmpty) {
+        return _rememberLoadedTranslation(translationId, books);
       }
-
-      // When the Bible is already cached locally, return that path first
-      // instead of spending more time resolving translation metadata or
-      // re-checking existence through extra DB round trips.
-      await _db.deleteBible(translationId);
     }
 
     try {
       final translation = await _getTranslation(translationId);
+      await _invalidateCache(translationId);
+
       final content = await _loadLocalContent(translation);
-
-      // Parsing can be CPU-intensive for large files. Run it in a
-      // background isolate so we don't block the UI thread.
       final parsed = await compute(_parseBibleToSerializable, content);
-
       final books = parsed.map(_mapSerializableBook).toList();
 
-      await _db.insertBible(translationId, books);
-      await _db.upsertTranslationMetadata(
+      final path = await _sqlitePathFor(translationId);
+      final translationDb = await _dbManager.open(translationId, path);
+      await translationDb.insertBible(books);
+
+      await _db.upsertInstalledTranslation(
         translation: translation,
-        sourceLocation: translation.filePath,
+        sourceLocation: _sourceLocationForTranslation(translation),
+        sourceTypeOverride: translation.sourceType,
       );
-      // Record the parser version after successful parse
-      await _db.updateTranslationParserVersion(
+      await _db.updateInstalledTranslationParserVersion(
         translationId,
         _currentParserVersion,
       );
+
       return _rememberLoadedTranslation(translationId, books);
     } catch (e) {
       throw Exception('Failed to load local Bible: $e');
     }
   }
 
-  /// Load books and chapter metadata (no verses) for fast shell rendering.
-  /// Use for showing navigation UI before verses are loaded.
-  Future<List<BibleBook>> loadLocalBibleShell(String translationId) async {
-    final memoryCached = getLoadedTranslation(translationId);
-    if (memoryCached != null) {
-      return memoryCached;
-    }
+  // ---------------------------------------------------------------------------
+  // Load — single chapter (on-demand verse hydration)
+  // ---------------------------------------------------------------------------
 
-    // Load from DB - fast path since it skips verse loading
-    final shell = await _db.getBooksShell(translationId);
-    if (shell.isNotEmpty) {
-      // Don't cache the shell to memory - verses will be hydrated on demand
-      return shell;
-    }
-
-    // If no cache exists, we need to parse. Fall back to loadLocalBible
-    // which does the full load (including verses).
-    return loadLocalBible(translationId);
-  }
-
-  /// Load verses for a specific chapter on demand.
-  /// Returns the chapter with verses populated, or null if not found.
   Future<BibleChapter?> loadChapterVerses(
     String translationId,
     String bookId,
     int chapterNumber,
   ) async {
-    return _db.getChapter(translationId, bookId, chapterNumber);
+    final path = await _sqlitePathFor(translationId);
+    if (!await File(path).exists()) return null;
+    final translationDb = await _dbManager.open(translationId, path);
+    return translationDb.getChapter(bookId, chapterNumber);
   }
 
-  /// Download Bible from GitHub and cache it
+  // ---------------------------------------------------------------------------
+  // Download
+  // ---------------------------------------------------------------------------
+
   Future<List<BibleBook>> downloadBible(String translationId) async {
     final memoryCached = getLoadedTranslation(translationId);
-    if (memoryCached != null) {
-      return memoryCached;
-    }
+    if (memoryCached != null) return memoryCached;
 
-    final cachedBooks = await _db.getBible(translationId);
-    if (cachedBooks.isNotEmpty) {
-      // Check if cache is valid by comparing parser versions
-      final meta = await _db.getTranslationMeta(translationId);
-      final cacheIsValid = meta != null &&
-          meta.parserVersion >= _currentParserVersion;
-
-      if (cacheIsValid) {
-        return _rememberLoadedTranslation(translationId, cachedBooks);
+    if (await _isCacheValid(translationId)) {
+      final path = await _sqlitePathFor(translationId);
+      final translationDb = await _dbManager.open(translationId, path);
+      final books = await translationDb.getBible();
+      if (books.isNotEmpty) {
+        return _rememberLoadedTranslation(translationId, books);
       }
-
-      // Downloaded translations can also be stale if they were cached before
-      // inline anchor support existed, so refresh them from the remote source.
-      await _db.deleteBible(translationId);
     }
+
+    await _invalidateCache(translationId);
 
     final translation = await _getTranslation(translationId);
-
     if (translation.githubUrl == null) {
       throw Exception('No download URL for translation $translationId');
     }
 
     try {
       final response = await http.get(Uri.parse(translation.githubUrl!));
-
-      if (response.statusCode == 200) {
-        final content = utf8.decode(response.bodyBytes);
-
-        // Parse in an isolate
-        final parsed = await compute(_parseBibleToSerializable, content);
-
-        final books = parsed.map(_mapSerializableBook).toList();
-        final downloadedTranslation = BibleTranslation(
-          id: translation.id,
-          name: translation.name,
-          language: translation.language,
-          description: translation.description,
-          isLocal: true,
-          githubUrl: translation.githubUrl,
-          format: translation.format,
-          sourceType: BibleSourceType.download,
-        );
-
-        await _db.insertBible(translationId, books);
-        await _db.upsertTranslationMetadata(
-          translation: downloadedTranslation,
-          sourceLocation: translation.githubUrl,
-          sourceTypeOverride: BibleSourceType.download,
-        );
-        return _rememberLoadedTranslation(translationId, books);
-      } else {
+      if (response.statusCode != 200) {
         throw Exception(
           'Failed to download Bible: HTTP ${response.statusCode}',
         );
       }
+
+      final content = utf8.decode(response.bodyBytes);
+      final parsed = await compute(_parseBibleToSerializable, content);
+      final books = parsed.map(_mapSerializableBook).toList();
+
+      final path = await _sqlitePathFor(translationId);
+      final translationDb = await _dbManager.open(translationId, path);
+      await translationDb.insertBible(books);
+
+      final downloadedTranslation = BibleTranslation(
+        id: translation.id,
+        name: translation.name,
+        language: translation.language,
+        description: translation.description,
+        isLocal: true,
+        githubUrl: translation.githubUrl,
+        format: translation.format,
+        sourceType: BibleSourceType.download,
+      );
+
+      await _db.upsertInstalledTranslation(
+        translation: downloadedTranslation,
+        sourceLocation: translation.githubUrl,
+        sourceTypeOverride: BibleSourceType.download,
+      );
+      await _db.updateInstalledTranslationParserVersion(
+        translationId,
+        _currentParserVersion,
+      );
+
+      return _rememberLoadedTranslation(translationId, books);
     } catch (e) {
       throw Exception('Failed to download Bible: $e');
     }
   }
+
+  // ---------------------------------------------------------------------------
+  // Import
+  // ---------------------------------------------------------------------------
 
   Future<BibleTranslation> importBibleFromFile(String filePath) async {
     final draft = await prepareBibleImport(filePath);
@@ -339,6 +383,10 @@ class AppBibleRepository {
       throw Exception('Please enter a valid abbreviation.');
     }
     await _ensureTranslationIdAvailable(normalizedId);
+    final managedImportPath = await _persistImportedSource(
+      originalPath: request.filePath,
+      translationId: normalizedId,
+    );
 
     final translation = BibleTranslation(
       id: normalizedId,
@@ -346,39 +394,48 @@ class AppBibleRepository {
       language: request.language.trim(),
       description: request.description.trim(),
       isLocal: true,
-      filePath: request.filePath,
+      filePath: managedImportPath,
       format: request.format,
       sourceType: BibleSourceType.import,
     );
 
-    await _db.insertBible(translation.id, request.importedBooks);
-    await _db.upsertTranslationMetadata(
+    final path = await _sqlitePathFor(normalizedId);
+    final translationDb = await _dbManager.open(normalizedId, path);
+    await translationDb.insertBible(request.importedBooks);
+
+    await _db.upsertInstalledTranslation(
       translation: translation,
-      sourceLocation: request.filePath,
+      sourceLocation: managedImportPath,
       sourceTypeOverride: BibleSourceType.import,
     );
-    _rememberLoadedTranslation(translation.id, request.importedBooks);
+    await _db.updateInstalledTranslationParserVersion(
+      normalizedId,
+      _currentParserVersion,
+    );
+
+    _rememberLoadedTranslation(normalizedId, request.importedBooks);
     return translation;
   }
 
-  Future<void> deleteImportedTranslation(String translationId) async {
-    final storedTranslations = await _db.getStoredTranslations();
-    BibleTranslation? translation;
-    for (final candidate in storedTranslations) {
-      if (candidate.id == translationId) {
-        translation = candidate;
-        break;
-      }
-    }
+  // ---------------------------------------------------------------------------
+  // Delete / remove
+  // ---------------------------------------------------------------------------
 
-    if (translation == null) {
-      throw Exception('Translation $translationId was not found.');
-    }
+  Future<void> deleteImportedTranslation(String translationId) async {
+    final stored = await _db.getInstalledTranslations();
+    final translation = stored.firstWhere(
+      (t) => t.id == translationId,
+      orElse: () =>
+          throw Exception('Translation $translationId was not found.'),
+    );
+
     if (translation.sourceType != BibleSourceType.import) {
       throw Exception('Only imported translations can be deleted.');
     }
 
-    await _db.deleteBible(translationId);
+    await _invalidateCache(translationId);
+    await _deleteManagedImportSnapshot(translation);
+    await _db.deleteInstalledTranslation(translationId);
     _memoryCacheByTranslation.remove(translationId);
     if (_currentTranslationId == translationId) {
       _currentTranslationId = null;
@@ -387,24 +444,20 @@ class AppBibleRepository {
   }
 
   Future<void> removeDownloadedTranslation(String translationId) async {
-    final storedTranslations = await _db.getStoredTranslations();
-    BibleTranslation? translation;
-    for (final candidate in storedTranslations) {
-      if (candidate.id == translationId) {
-        translation = candidate;
-        break;
-      }
-    }
+    final stored = await _db.getInstalledTranslations();
+    final translation = stored.firstWhere(
+      (t) => t.id == translationId,
+      orElse: () =>
+          throw Exception('Translation $translationId was not found.'),
+    );
 
-    if (translation == null) {
-      throw Exception('Translation $translationId was not found.');
-    }
     if (translation.sourceType != BibleSourceType.download) {
       throw Exception('Only downloaded translations can be removed.');
     }
 
-    await _db.deleteBibleContent(translationId);
-    await _db.upsertTranslationMetadata(
+    // Delete the content file but keep the registry row (marks as not local).
+    await _invalidateCache(translationId);
+    await _db.upsertInstalledTranslation(
       translation: BibleTranslation(
         id: translation.id,
         name: translation.name,
@@ -425,7 +478,10 @@ class AppBibleRepository {
     }
   }
 
-  /// Get a specific book
+  // ---------------------------------------------------------------------------
+  // In-memory accessors
+  // ---------------------------------------------------------------------------
+
   BibleBook? getBook(String bookId) {
     return _cachedBooks.firstWhere(
       (book) => book.id == bookId,
@@ -433,7 +489,6 @@ class AppBibleRepository {
     );
   }
 
-  /// Get a specific chapter
   BibleChapter? getChapter(String bookId, int chapterNumber) {
     final book = getBook(bookId);
     return book?.chapters.firstWhere(
@@ -443,17 +498,13 @@ class AppBibleRepository {
     );
   }
 
-  /// Get verses for a chapter
   List<BibleVerse> getVerses(String bookId, int chapterNumber) {
-    final chapter = getChapter(bookId, chapterNumber);
-    return chapter?.verses ?? [];
+    return getChapter(bookId, chapterNumber)?.verses ?? [];
   }
 
-  /// Search for text across all books
   List<BibleVerse> searchText(String query, {String? bookId}) {
     final results = <BibleVerse>[];
     final searchQuery = query.toLowerCase();
-
     final booksToSearch = bookId != null
         ? [getBook(bookId)].where((b) => b != null).cast<BibleBook>()
         : _cachedBooks;
@@ -467,11 +518,9 @@ class AppBibleRepository {
         }
       }
     }
-
     return results;
   }
 
-  /// Get all available books
   List<BibleBook> getAllBooks() => List.unmodifiable(_cachedBooks);
 
   List<BibleBook>? getLoadedTranslation(String translationId) {
@@ -482,17 +531,22 @@ class AppBibleRepository {
     return books;
   }
 
-  /// Get current translation ID
   String? getCurrentTranslationId() => _currentTranslationId;
 
-  /// Check if a translation is cached
   Future<bool> isCached(String translationId) async {
-    return await _db.isBibleCached(translationId);
+    return _isCacheValid(translationId);
   }
 
-  /// Clear cache for a specific translation
   Future<void> clearCache(String translationId) async {
-    await _db.deleteBible(translationId);
+    final translation = await _db.getInstalledTranslations().then(
+      (rows) => rows.where((row) => row.id == translationId).firstOrNull,
+    );
+
+    await _invalidateCache(translationId);
+    await _db.deleteInstalledTranslation(translationId);
+    if (translation?.sourceType == BibleSourceType.import) {
+      await _deleteManagedImportSnapshot(translation!);
+    }
     _memoryCacheByTranslation.remove(translationId);
     if (_currentTranslationId == translationId) {
       _currentTranslationId = null;
@@ -500,13 +554,42 @@ class AppBibleRepository {
     }
   }
 
-  /// Clear all cache
   Future<void> clearAllCache() async {
-    await _db.deleteAllBibles();
+    // Delete every bibles/*.sqlite file.
+    try {
+      final dir = Directory(await TranslationDatabaseManager.biblesDir());
+      if (await dir.exists()) {
+        await for (final entity in dir.list()) {
+          if (entity is File && entity.path.endsWith('.sqlite')) {
+            await entity.delete();
+          }
+        }
+      }
+    } catch (_) {}
+
+    try {
+      final dir = Directory(
+        await TranslationDatabaseManager.importedSourcesDir(),
+      );
+      if (await dir.exists()) {
+        await for (final entity in dir.list()) {
+          if (entity is File) {
+            await entity.delete();
+          }
+        }
+      }
+    } catch (_) {}
+
+    await _dbManager.closeAll();
+    await _db.deleteAllInstalledTranslations();
     _memoryCacheByTranslation.clear();
     _currentTranslationId = null;
     _cachedBooks = const [];
   }
+
+  // ---------------------------------------------------------------------------
+  // Internal helpers
+  // ---------------------------------------------------------------------------
 
   List<BibleBook> _rememberLoadedTranslation(
     String translationId,
@@ -518,36 +601,60 @@ class AppBibleRepository {
     return books;
   }
 
+  Future<String> _persistImportedSource({
+    required String originalPath,
+    required String translationId,
+  }) async {
+    final sourceFile = File(originalPath);
+    if (!await sourceFile.exists()) {
+      throw Exception('Selected Bible file does not exist.');
+    }
+
+    final destinationPath =
+        await TranslationDatabaseManager.pathForImportedSource(
+          translationId,
+          extension: p.extension(originalPath),
+        );
+    final destinationFile = File(destinationPath);
+    if (await destinationFile.exists()) {
+      await destinationFile.delete();
+    }
+    await sourceFile.copy(destinationPath);
+    return destinationPath;
+  }
+
+  Future<void> _deleteManagedImportSnapshot(
+    BibleTranslation translation,
+  ) async {
+    final filePath = translation.filePath;
+    if (filePath == null || filePath.isEmpty) return;
+
+    try {
+      final file = File(filePath);
+      if (await file.exists()) {
+        await file.delete();
+      }
+    } catch (_) {}
+  }
+
+  String? _sourceLocationForTranslation(BibleTranslation translation) {
+    return switch (translation.sourceType) {
+      BibleSourceType.asset || BibleSourceType.import => translation.filePath,
+      BibleSourceType.download => translation.githubUrl,
+    };
+  }
+
   Future<BibleTranslation> _getTranslation(String translationId) async {
-    final storedTranslations = await _db.getStoredTranslations();
-    final builtInMatches = builtInTranslations.where(
-      (t) => t.id == translationId,
-    );
-    final storedMatches = storedTranslations.where(
-      (t) => t.id == translationId,
-    );
-    final builtInTranslation = builtInMatches.isNotEmpty
-        ? builtInMatches.first
-        : null;
-    final storedTranslation = storedMatches.isNotEmpty
-        ? storedMatches.first
-        : null;
+    final stored = await _db.getInstalledTranslations();
+    final builtIn = builtInTranslations
+        .where((t) => t.id == translationId)
+        .firstOrNull;
+    final storedMatch = stored.where((t) => t.id == translationId).firstOrNull;
 
-    if (builtInTranslation != null) {
-      // Built-in translations should always retain their bundled asset
-      // fallback. Stored metadata can describe lifecycle state such as a prior
-      // download, but it should not make a bundled translation stop working
-      // offline when the asset still ships with the app.
-      return _mergeBuiltInTranslation(
-        builtIn: builtInTranslation,
-        stored: storedTranslation,
-      );
+    if (builtIn != null) {
+      return _mergeBuiltInTranslation(builtIn: builtIn, stored: storedMatch);
     }
-
-    if (storedTranslation != null) {
-      return storedTranslation;
-    }
-
+    if (storedMatch != null) return storedMatch;
     throw Exception('Translation $translationId not found');
   }
 
@@ -556,7 +663,6 @@ class AppBibleRepository {
     BibleTranslation? stored,
   }) {
     if (stored == null) return builtIn;
-
     return BibleTranslation(
       id: builtIn.id,
       name: stored.name,
@@ -571,16 +677,13 @@ class AppBibleRepository {
   }
 
   Future<String> _loadLocalContent(BibleTranslation translation) async {
-    switch (translation.sourceType) {
-      case BibleSourceType.asset:
-        return _loadAssetContent(translation);
-      case BibleSourceType.import:
-        return _loadImportedContent(translation);
-      case BibleSourceType.download:
-        throw Exception(
-          'Downloaded translation ${translation.id} is not available locally without cache.',
-        );
-    }
+    return switch (translation.sourceType) {
+      BibleSourceType.asset => _loadAssetContent(translation),
+      BibleSourceType.import => _loadImportedContent(translation),
+      BibleSourceType.download => throw Exception(
+        'Downloaded translation ${translation.id} is not available locally without cache.',
+      ),
+    };
   }
 
   Future<String> _loadImportedContent(BibleTranslation translation) async {
@@ -590,12 +693,10 @@ class AppBibleRepository {
         'Imported translation ${translation.id} is missing a file path.',
       );
     }
-
     final file = File(filePath);
     if (!await file.exists()) {
       throw Exception('Imported translation file was not found: $filePath');
     }
-
     return file.readAsString();
   }
 
@@ -606,10 +707,6 @@ class AppBibleRepository {
         'Bundled translation ${translation.id} is missing an asset path.',
       );
     }
-
-    // Built-in translations must use their explicit configured asset path.
-    // Falling back to guessed filenames hides metadata drift and breaks the
-    // unified translation-library model introduced by imports.
     try {
       return await rootBundle.loadString(assetPath);
     } catch (error) {
@@ -625,7 +722,7 @@ class AppBibleRepository {
     required List<BibleBook> importedBooks,
   }) async {
     final storedIds =
-        (await _db.getStoredTranslations()).map((t) => t.id).toSet()
+        (await _db.getInstalledTranslations()).map((t) => t.id).toSet()
           ..addAll(builtInTranslations.map((t) => t.id));
     final baseName = p.basenameWithoutExtension(filePath);
     final sanitizedId = _sanitizeTranslationId(baseName);
@@ -635,15 +732,12 @@ class AppBibleRepository {
       candidateId = '${sanitizedId}_$suffix';
       suffix++;
     }
-
-    final suggestedName = _buildImportedTranslationName(
-      filePath: filePath,
-      importedBooks: importedBooks,
-    );
-
     return BibleTranslation(
       id: candidateId,
-      name: suggestedName,
+      name: _buildImportedTranslationName(
+        filePath: filePath,
+        importedBooks: importedBooks,
+      ),
       language: 'unknown',
       description: 'Imported from ${p.basename(filePath)}',
       isLocal: true,
@@ -655,7 +749,7 @@ class AppBibleRepository {
 
   Future<void> _ensureTranslationIdAvailable(String candidateId) async {
     final storedIds =
-        (await _db.getStoredTranslations()).map((t) => t.id).toSet()
+        (await _db.getInstalledTranslations()).map((t) => t.id).toSet()
           ..addAll(builtInTranslations.map((t) => t.id));
     if (storedIds.contains(candidateId)) {
       throw Exception(
@@ -665,16 +759,10 @@ class AppBibleRepository {
   }
 
   BibleFormat _detectFormatFromContent(String content) {
-    final lowerContent = content.toLowerCase();
-    if (lowerContent.contains('<usfx')) return BibleFormat.usfx;
-    if (lowerContent.contains('<osis') || lowerContent.contains('<osistext')) {
+    final lower = content.toLowerCase();
+    if (lower.contains('<usfx')) return BibleFormat.usfx;
+    if (lower.contains('<osis') || lower.contains('<osistext')) {
       return BibleFormat.osis;
-    }
-    if (lowerContent.contains('<xmlbible')) {
-      // The app model does not yet expose a dedicated Zefania enum value, so
-      // keep these imports as `auto` while the parser still detects them
-      // correctly from the XML content at runtime.
-      return BibleFormat.auto;
     }
     return BibleFormat.auto;
   }
@@ -684,9 +772,8 @@ class AppBibleRepository {
       RegExp(r'[^a-z0-9]+'),
       '_',
     );
-    return normalized.replaceAll(RegExp(r'^_+|_+$'), '').isEmpty
-        ? 'imported_bible'
-        : normalized.replaceAll(RegExp(r'^_+|_+$'), '');
+    final trimmed = normalized.replaceAll(RegExp(r'^_+|_+$'), '');
+    return trimmed.isEmpty ? 'imported_bible' : trimmed;
   }
 
   String _buildImportedTranslationName({
@@ -697,12 +784,8 @@ class AppBibleRepository {
         .basenameWithoutExtension(filePath)
         .replaceAll('_', ' ')
         .trim();
-    if (baseName.isNotEmpty) {
-      return baseName;
-    }
-    if (importedBooks.isNotEmpty) {
-      return '${importedBooks.first.name} Import';
-    }
+    if (baseName.isNotEmpty) return baseName;
+    if (importedBooks.isNotEmpty) return '${importedBooks.first.name} Import';
     return 'Imported Bible';
   }
 
@@ -719,19 +802,18 @@ class AppBibleRepository {
       _ => '',
     };
   }
-
 }
 
-/// Top-level parser function run inside an isolate via `compute`.
-/// It returns a JSON-serializable representation of the books.
+// =============================================================================
+// Isolate parser — unchanged, runs in compute()
+// =============================================================================
+
 Future<List<Map<String, dynamic>>> _parseBibleToSerializable(
   String content,
 ) async {
   final parser = BibleParser.fromString(content);
   final List<Map<String, dynamic>> books = [];
   await for (final book in parser.books) {
-    // Keep the isolate payload JSON-friendly so parsing stays off the UI
-    // thread without leaking parser package types across isolate boundaries.
     final List<Map<String, dynamic>> chapters = [];
     for (final chapter in book.chapters) {
       final verses = chapter.verses
@@ -756,7 +838,6 @@ Future<List<Map<String, dynamic>>> _parseBibleToSerializable(
         'blocks': chapter.blocks.map(_serializeDocumentBlock).toList(),
       });
     }
-
     books.add({
       'id': book.id,
       'title': book.title,
@@ -788,9 +869,7 @@ BibleBook _mapSerializableBook(Map<String, dynamic> book) {
             )
             .toList(),
     chapters: (book['chapters'] as List<dynamic>)
-        .map(
-          (chapter) => _mapSerializableChapter(chapter as Map<String, dynamic>),
-        )
+        .map((c) => _mapSerializableChapter(c as Map<String, dynamic>))
         .toList(),
   );
 }
@@ -804,7 +883,7 @@ BibleChapter _mapSerializableChapter(Map<String, dynamic> chapter) {
         )
         .toList(),
     verses: (chapter['verses'] as List<dynamic>)
-        .map((verse) => _mapSerializableVerse(verse as Map<String, dynamic>))
+        .map((v) => _mapSerializableVerse(v as Map<String, dynamic>))
         .toList(),
   );
 }
@@ -815,8 +894,6 @@ BibleVerse _mapSerializableVerse(Map<String, dynamic> verse) {
     text: verse['text'] as String,
     notes: (verse['notes'] as List<dynamic>?)?.cast<String>(),
     references: (verse['references'] as List<dynamic>?)?.cast<String>(),
-    // The app model mirrors the parser's structured fields so we can persist
-    // richer import data now even before every screen knows how to render it.
     spans: (verse['spans'] as List<dynamic>? ?? const [])
         .map((item) => BibleVerseSpan.fromJson(item as Map<String, dynamic>))
         .toList(),
@@ -831,47 +908,40 @@ BibleVerse _mapSerializableVerse(Map<String, dynamic> verse) {
   );
 }
 
-Map<String, dynamic> _serializeVerseSpan(VerseSpan span) {
-  return {
-    'text': span.text,
-    'kind': span.kind.index,
-    'metadata': span.metadata,
-  };
-}
+Map<String, dynamic> _serializeVerseSpan(VerseSpan span) => {
+  'text': span.text,
+  'kind': span.kind.index,
+  'metadata': span.metadata,
+};
 
-Map<String, dynamic> _serializeCrossReference(CrossReference reference) {
-  return {
-    'label': reference.label,
-    'target': reference.target,
-    'marker': reference.marker,
-    'originRef': reference.originRef,
-    'spanIndex': reference.spanIndex,
-    'charOffset': reference.charOffset,
-  };
-}
+Map<String, dynamic> _serializeCrossReference(CrossReference r) => {
+  'label': r.label,
+  'target': r.target,
+  'marker': r.marker,
+  'originRef': r.originRef,
+  'spanIndex': r.spanIndex,
+  'charOffset': r.charOffset,
+};
 
-Map<String, dynamic> _serializeFootnote(Footnote footnote) {
-  return {
-    'text': footnote.text,
-    'marker': footnote.marker,
-    'label': footnote.label,
-    'bodyText': footnote.bodyText,
-    'quotedText': footnote.quotedText,
-    'references': footnote.references.map(_serializeCrossReference).toList(),
-    'spanIndex': footnote.spanIndex,
-    'charOffset': footnote.charOffset,
-  };
-}
+Map<String, dynamic> _serializeFootnote(Footnote f) => {
+  'text': f.text,
+  'marker': f.marker,
+  'label': f.label,
+  'bodyText': f.bodyText,
+  'quotedText': f.quotedText,
+  'references': f.references.map(_serializeCrossReference).toList(),
+  'spanIndex': f.spanIndex,
+  'charOffset': f.charOffset,
+};
 
-Map<String, dynamic> _serializeDocumentBlock(DocumentBlock block) {
-  return {
-    'kind': block.kind.index,
-    'text': block.text,
-    'level': block.level,
-    'metadata': block.metadata,
-  };
-}
+Map<String, dynamic> _serializeDocumentBlock(DocumentBlock b) => {
+  'kind': b.kind.index,
+  'text': b.text,
+  'level': b.level,
+  'metadata': b.metadata,
+};
 
-Map<String, dynamic> _serializeTocLabel(TocLabel label) {
-  return {'text': label.text, 'level': label.level};
-}
+Map<String, dynamic> _serializeTocLabel(TocLabel l) => {
+  'text': l.text,
+  'level': l.level,
+};

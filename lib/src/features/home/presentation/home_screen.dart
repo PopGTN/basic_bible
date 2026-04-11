@@ -31,17 +31,25 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   late final AnimationController _bottomNavController;
   late final AnimationController _appBarController;
 
+  // Tracks the previous isWide value so we can reset controllers when the
+  // layout transitions from wide → small. Without this, a scroll-induced
+  // reverse() on a wide screen leaves the controllers at 0 and the bottom nav
+  // stays invisible after the user resizes back to a small window.
+  bool _wasWide = false;
+
   @override
   void initState() {
     super.initState();
     // Startup tab selection is read once from persisted settings so the shell
     // opens on Bible when requested without fighting later manual tab changes.
     _currentIndex = ref.read(openBibleTabByDefaultProvider) ? 1 : 0;
-    ref.read(homeTabIndexProvider.notifier).state = _currentIndex;
     _bottomNavController = _createController();
     _appBarController = _createController();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
+      // Sync the tab index provider after the frame so we don't mutate a
+      // provider while the widget tree is still building (Riverpod 3 rule).
+      ref.read(homeTabIndexProvider.notifier).state = _currentIndex;
       // Warm the current translation from the shell so Home/Menu tabs can
       // hide the initial Bible load instead of waiting for the reader tab.
       ref.read(bibleBooksProvider.notifier).preloadCurrentTranslation();
@@ -148,6 +156,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     final width = MediaQuery.of(context).size.width;
     final isWide = width >= 1100; // large screen breakpoint
     final isSmall = !isWide;
+
+    // When the layout transitions from wide → small, the scroll handler may
+    // have left the controllers at 0 (hidden) while the bottom nav was not
+    // rendered. Reset them so the bar is visible on the first small-screen
+    // frame — scroll-hide will take over naturally from there.
+    if (_wasWide && !isWide) {
+      _bottomNavController.value = 1.0;
+      _appBarController.value = 1.0;
+    }
+    _wasWide = isWide;
 
     // Adjust animation duration for small vs wide
     final duration = isSmall
