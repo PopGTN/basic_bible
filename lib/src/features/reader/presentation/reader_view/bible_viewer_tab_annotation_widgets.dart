@@ -170,6 +170,7 @@ class _InlineVerseSelector extends StatelessWidget {
     required this.hasNote,
     required this.onTap,
     this.inlineOnly = false,
+    this.backgroundColor,
   });
 
   final int verseNumber;
@@ -178,6 +179,7 @@ class _InlineVerseSelector extends StatelessWidget {
   final bool hasNote;
   final VoidCallback onTap;
   final bool inlineOnly;
+  final Color? backgroundColor;
 
   @override
   Widget build(BuildContext context) {
@@ -194,9 +196,7 @@ class _InlineVerseSelector extends StatelessWidget {
           duration: const Duration(milliseconds: 160),
           padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 1),
           decoration: BoxDecoration(
-            color: isSelected
-                ? theme.colorScheme.secondary.withValues(alpha: 0.08)
-                : null,
+            color: backgroundColor,
             borderRadius: BorderRadius.circular(6),
           ),
           child: Row(

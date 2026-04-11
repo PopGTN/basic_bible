@@ -176,6 +176,18 @@ extension _BibleTextViewStateDocument on _BibleTextViewState {
             alignment: PlaceholderAlignment.middle,
           ),
           for (final verse in section.verses) ...[
+            ...[
+              final inlineBackground = _selectionAwareBackground(
+                context,
+                isSelected: _isSelectedVerse(bookId, chapterNumber, verse),
+                baseBackground: _docVerseHighlightColor(
+                  context,
+                  bookId,
+                  chapterNumber,
+                  verse,
+                ),
+              ),
+            ],
             WidgetSpan(
               child: SizedBox(
                 key: _verseKey(bookId, chapterNumber, verse.number),
@@ -198,6 +210,7 @@ extension _BibleTextViewStateDocument on _BibleTextViewState {
                   isSelected: _isSelectedVerse(bookId, chapterNumber, verse),
                   hasNote: false,
                   inlineOnly: true,
+                  backgroundColor: inlineBackground,
                   onTap: () => _selectVerse(bookId, chapterNumber, verse),
                 ),
               ),
@@ -207,12 +220,8 @@ extension _BibleTextViewStateDocument on _BibleTextViewState {
               verse,
               bodyColor: _verseTextColor(context, bookId, chapterNumber, verse),
               isSelectedVerse: _isSelectedVerse(bookId, chapterNumber, verse),
-              backgroundColor: _docVerseHighlightColor(
-                context,
-                bookId,
-                chapterNumber,
-                verse,
-              ),
+              backgroundColor: inlineBackground,
+              applySelectionTint: false,
               recognizer: _verseTapRecognizer(bookId, chapterNumber, verse),
             ),
             if (_docVerseHasPersonalNotes(bookId, chapterNumber, verse))
@@ -266,6 +275,18 @@ extension _BibleTextViewStateDocument on _BibleTextViewState {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         for (final verse in section.verses)
+          ...[
+            final inlineBackground = _selectionAwareBackground(
+              context,
+              isSelected: _isSelectedVerse(bookId, chapterNumber, verse),
+              baseBackground: _docVerseHighlightColor(
+                context,
+                bookId,
+                chapterNumber,
+                verse,
+              ),
+            ),
+          ]
           Padding(
             key: _verseKey(bookId, chapterNumber, verse.number),
             padding: EdgeInsets.only(
@@ -305,6 +326,7 @@ extension _BibleTextViewStateDocument on _BibleTextViewState {
                             ),
                             hasNote: false,
                             inlineOnly: true,
+                            backgroundColor: inlineBackground,
                             onTap: () =>
                                 _selectVerse(bookId, chapterNumber, verse),
                           ),
@@ -324,12 +346,8 @@ extension _BibleTextViewStateDocument on _BibleTextViewState {
                           chapterNumber,
                           verse,
                         ),
-                        backgroundColor: _docVerseHighlightColor(
-                          context,
-                          bookId,
-                          chapterNumber,
-                          verse,
-                        ),
+                        backgroundColor: inlineBackground,
+                        applySelectionTint: false,
                         recognizer: _verseTapRecognizer(
                           bookId,
                           chapterNumber,
