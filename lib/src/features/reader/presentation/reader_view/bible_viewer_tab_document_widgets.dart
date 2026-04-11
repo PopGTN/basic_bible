@@ -24,15 +24,13 @@ class _DocumentBlockView extends StatelessWidget {
     final style = switch (block.kind) {
       BibleDocumentBlockKind.heading => switch (headingLevel) {
         1 => theme.textTheme.headlineSmall?.copyWith(
-            fontWeight: FontWeight.w800,
-          ),
+          fontWeight: FontWeight.w800,
+        ),
         3 => theme.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w600,
-            fontStyle: FontStyle.italic,
-          ),
-        _ => theme.textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.w700,
-          ),
+          fontWeight: FontWeight.w600,
+          fontStyle: FontStyle.italic,
+        ),
+        _ => theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
       },
       BibleDocumentBlockKind.preface => theme.textTheme.bodyLarge,
       BibleDocumentBlockKind.introduction =>
@@ -46,14 +44,15 @@ class _DocumentBlockView extends StatelessWidget {
     };
 
     final bottomPadding = isHeading
-        ? (headingLevel == 1 ? 16.0 : headingLevel >= 3 ? 8.0 : 12.0)
+        ? (headingLevel == 1
+              ? 16.0
+              : headingLevel >= 3
+              ? 8.0
+              : 12.0)
         : 10.0;
 
     return Padding(
-      padding: EdgeInsets.only(
-        bottom: bottomPadding,
-        left: isIntro ? 12 : 0,
-      ),
+      padding: EdgeInsets.only(bottom: bottomPadding, left: isIntro ? 12 : 0),
       child: Text(
         block.text,
         style: style?.copyWith(
@@ -69,13 +68,11 @@ class _DocumentBlockView extends StatelessWidget {
 
 class _DocumentBlockSection extends StatelessWidget {
   const _DocumentBlockSection({
-    required this.title,
     required this.blocks,
     required this.fontSize,
     this.eyebrow,
   });
 
-  final String title;
   final String? eyebrow;
   final List<BibleDocumentBlock> blocks;
   final double fontSize;
@@ -83,39 +80,25 @@ class _DocumentBlockSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colors = theme.colorScheme;
 
-    return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.only(bottom: 18),
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withValues(
-          alpha: 0.55,
-        ),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.55),
-        ),
-      ),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 18),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (eyebrow != null)
-            Text(
-              eyebrow!,
-              style: theme.textTheme.labelMedium?.copyWith(
-                color: theme.colorScheme.secondary,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 0.6,
+          if (eyebrow != null) ...[
+            if (eyebrow != null)
+              Text(
+                eyebrow!,
+                style: theme.textTheme.labelMedium?.copyWith(
+                  color: colors.secondary,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.8,
+                ),
               ),
-            ),
-          Text(
-            title,
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 10),
+            const SizedBox(height: 10),
+          ],
           for (final block in blocks)
             _DocumentBlockView(block: block, fontSize: fontSize),
         ],

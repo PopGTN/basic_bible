@@ -197,6 +197,7 @@ extension _BibleTextViewStateDocument on _BibleTextViewState {
                   ),
                   isSelected: _isSelectedVerse(bookId, chapterNumber, verse),
                   hasNote: false,
+                  inlineOnly: true,
                   onTap: () => _selectVerse(bookId, chapterNumber, verse),
                 ),
               ),
@@ -206,15 +207,11 @@ extension _BibleTextViewStateDocument on _BibleTextViewState {
               verse,
               bodyColor: _verseTextColor(context, bookId, chapterNumber, verse),
               isSelectedVerse: _isSelectedVerse(bookId, chapterNumber, verse),
-              backgroundColor: _selectionAwareBackground(
+              backgroundColor: _docVerseHighlightColor(
                 context,
-                isSelected: _isSelectedVerse(bookId, chapterNumber, verse),
-                baseBackground: _docVerseHighlightColor(
-                  context,
-                  bookId,
-                  chapterNumber,
-                  verse,
-                ),
+                bookId,
+                chapterNumber,
+                verse,
               ),
               recognizer: _verseTapRecognizer(bookId, chapterNumber, verse),
             ),
@@ -279,43 +276,7 @@ extension _BibleTextViewStateDocument on _BibleTextViewState {
             child: GestureDetector(
               behavior: HitTestBehavior.translucent,
               onTap: () => _selectVerse(bookId, chapterNumber, verse),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: _selectionAwareBackground(
-                    context,
-                    isSelected: _isSelectedVerse(bookId, chapterNumber, verse),
-                    baseBackground: _docVerseHighlightColor(
-                      context,
-                      bookId,
-                      chapterNumber,
-                      verse,
-                    ),
-                  ),
-                  borderRadius: BorderRadius.vertical(
-                    top: Radius.circular(
-                      _joinsHighlightedRunWithPrevious(
-                            bookId,
-                            chapterNumber,
-                            verse,
-                          )
-                          ? 4
-                          : 12,
-                    ),
-                    bottom: Radius.circular(
-                      _joinsHighlightedRunWithNext(bookId, chapterNumber, verse)
-                          ? 4
-                          : 12,
-                    ),
-                  ),
-                  border: _isSelectedVerse(bookId, chapterNumber, verse)
-                      ? Border(
-                          bottom: BorderSide(
-                            color: Theme.of(context).colorScheme.secondary,
-                            width: 2.5,
-                          ),
-                        )
-                      : null,
-                ),
+              child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
                 child: RichText(
                   text: TextSpan(
@@ -343,6 +304,7 @@ extension _BibleTextViewStateDocument on _BibleTextViewState {
                               verse,
                             ),
                             hasNote: false,
+                            inlineOnly: true,
                             onTap: () =>
                                 _selectVerse(bookId, chapterNumber, verse),
                           ),
@@ -362,21 +324,12 @@ extension _BibleTextViewStateDocument on _BibleTextViewState {
                           chapterNumber,
                           verse,
                         ),
-                        backgroundColor: _selectionAwareBackground(
+                        backgroundColor: _docVerseHighlightColor(
                           context,
-                          isSelected: _isSelectedVerse(
-                            bookId,
-                            chapterNumber,
-                            verse,
-                          ),
-                          baseBackground: _docVerseHighlightColor(
-                            context,
-                            bookId,
-                            chapterNumber,
-                            verse,
-                          ),
+                          bookId,
+                          chapterNumber,
+                          verse,
                         ),
-                        applySelectionTint: false,
                         recognizer: _verseTapRecognizer(
                           bookId,
                           chapterNumber,

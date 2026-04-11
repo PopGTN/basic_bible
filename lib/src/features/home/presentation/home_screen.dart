@@ -59,15 +59,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   @override
   void initState() {
     super.initState();
-    // Apply the saved startup-tab preference once per app session when the
-    // authenticated shell is first entered. After that, normal in-session tab
-    // navigation should win until the next app launch.
-    final hasAppliedStartupTab = ref.read(hasAppliedStartupHomeTabProvider);
-    final startupTabIndex = ref.read(startupHomeTabIndexProvider);
-    if (!hasAppliedStartupTab) {
-      ref.read(homeTabIndexProvider.notifier).state = startupTabIndex;
-      ref.read(hasAppliedStartupHomeTabProvider.notifier).state = true;
-    }
     _currentIndex = ref.read(homeTabIndexProvider);
     _bottomNavController = _createController();
     _appBarController = _createController();

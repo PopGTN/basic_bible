@@ -6,8 +6,6 @@ final startupHomeTabIndexProvider = Provider<int>(
   (ref) => ref.read(openBibleTabByDefaultProvider) ? 1 : 0,
 );
 
-final hasAppliedStartupHomeTabProvider = StateProvider<bool>((ref) => false);
-
 /// ViewModel for the selected tab inside the authenticated home shell.
 /// Initialises to 1 (Bible tab) when the user has enabled "Open Bible Tab By
 /// Default", so the correct tab is active from the very first build without

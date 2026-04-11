@@ -1,6 +1,7 @@
 import 'package:basic_bible/src/features/library/data/app_bible_repository.dart';
 import 'package:basic_bible/src/features/reader/application/view_models/bible_library_view_models.dart';
 import 'package:basic_bible/src/widgets/app_back_button.dart';
+import 'package:basic_bible/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -50,10 +51,11 @@ class _ImportTranslationScreenState
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
         leading: const AppBackButton(),
-        title: const Text('Import Bible'),
+        title: Text(t.importBibleTitle),
       ),
       body: FutureBuilder<BibleImportDraft>(
         future: _draftFuture,
@@ -65,7 +67,7 @@ class _ImportTranslationScreenState
             return Center(
               child: Padding(
                 padding: const EdgeInsets.all(24),
-                child: Text('Unable to prepare import: ${snapshot.error}'),
+                child: Text(t.unableToPrepareImport(snapshot.error.toString())),
               ),
             );
           }
@@ -90,14 +92,14 @@ class _ImportTranslationScreenState
                     _ImportSummaryCard(draft: draft),
                     const SizedBox(height: 20),
                     Text(
-                      'Translation Details',
+                      t.translationDetailsTitle,
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.w700,
                       ),
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Set the library name, abbreviation, language code, and description before the import is saved.',
+                      t.translationDetailsDescription,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
@@ -106,13 +108,13 @@ class _ImportTranslationScreenState
                     TextFormField(
                       controller: _nameController,
                       textInputAction: TextInputAction.next,
-                      decoration: const InputDecoration(
-                        labelText: 'Name',
-                        hintText: 'World English Bible',
+                      decoration: InputDecoration(
+                        labelText: t.translationNameLabel,
+                        hintText: t.translationNameHint,
                       ),
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
-                          return 'Enter a translation name.';
+                          return t.translationNameRequired;
                         }
                         return null;
                       },
@@ -122,20 +124,19 @@ class _ImportTranslationScreenState
                       controller: _abbreviationController,
                       textCapitalization: TextCapitalization.characters,
                       textInputAction: TextInputAction.next,
-                      decoration: const InputDecoration(
-                        labelText: 'Abbreviation',
-                        hintText: 'WEB',
-                        helperText:
-                            'Used the same way built-in abbreviations like KJV and ASV are used.',
+                      decoration: InputDecoration(
+                        labelText: t.translationAbbreviationLabel,
+                        hintText: t.translationAbbreviationHint,
+                        helperText: t.translationAbbreviationHelp,
                       ),
                       validator: (value) {
                         final normalized = _normalizeAbbreviation(value);
                         if (normalized.isEmpty) {
-                          return 'Enter an abbreviation.';
+                          return t.translationAbbreviationRequired;
                         }
                         if (widget.existingIds.contains(normalized) &&
                             normalized != draft.suggestedId) {
-                          return 'That abbreviation is already in use.';
+                          return t.translationAbbreviationTaken;
                         }
                         return null;
                       },
@@ -144,14 +145,14 @@ class _ImportTranslationScreenState
                     TextFormField(
                       controller: _languageController,
                       textInputAction: TextInputAction.next,
-                      decoration: const InputDecoration(
-                        labelText: 'Language code',
-                        hintText: 'en',
-                        helperText: 'Use a short code like en, es, fr, or de.',
+                      decoration: InputDecoration(
+                        labelText: t.translationLanguageCodeLabel,
+                        hintText: t.translationLanguageCodeHint,
+                        helperText: t.translationLanguageCodeHelp,
                       ),
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
-                          return 'Enter a language code.';
+                          return t.translationLanguageCodeRequired;
                         }
                         return null;
                       },
@@ -160,10 +161,9 @@ class _ImportTranslationScreenState
                     TextFormField(
                       controller: _descriptionController,
                       maxLines: 3,
-                      decoration: const InputDecoration(
-                        labelText: 'Description',
-                        hintText:
-                            'Imported from my_local_bible.xml or my_translation.sqlite',
+                      decoration: InputDecoration(
+                        labelText: t.translationDescriptionLabel,
+                        hintText: t.translationDescriptionHint,
                       ),
                     ),
                     const SizedBox(height: 24),
@@ -183,7 +183,9 @@ class _ImportTranslationScreenState
                               )
                             : const Icon(Icons.library_add),
                         label: Text(
-                          _isSubmitting ? 'Importing...' : 'Import Translation',
+                          _isSubmitting
+                              ? t.importingAction
+                              : t.importTranslationAction,
                         ),
                       ),
                     ),
@@ -202,6 +204,7 @@ class _ImportTranslationScreenState
     BibleImportDraft draft,
   ) async {
     if (!_formKey.currentState!.validate()) return;
+    final t = AppLocalizations.of(context)!;
     final navigator = Navigator.of(context);
     final messenger = ScaffoldMessenger.of(context);
 
@@ -229,7 +232,9 @@ class _ImportTranslationScreenState
       navigator.pop(importedTranslation);
     } catch (error) {
       if (!mounted) return;
-      messenger.showSnackBar(SnackBar(content: Text('Import failed: $error')));
+      messenger.showSnackBar(
+        SnackBar(content: Text(t.importFailedMessage(error.toString()))),
+      );
     } finally {
       if (mounted) {
         setState(() {
@@ -256,6 +261,7 @@ class _ImportSummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
     final colors = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
@@ -276,14 +282,14 @@ class _ImportSummaryCard extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            'Detected format: ${draft.format.name.toUpperCase()}',
+            t.detectedFormatLabel(draft.format.name.toUpperCase()),
             style: textTheme.bodyMedium?.copyWith(
               color: colors.onSurfaceVariant,
             ),
           ),
           const SizedBox(height: 4),
           Text(
-            'Books found: ${draft.importedBooks.length}',
+            t.booksFoundLabel(draft.importedBooks.length),
             style: textTheme.bodyMedium?.copyWith(
               color: colors.onSurfaceVariant,
             ),

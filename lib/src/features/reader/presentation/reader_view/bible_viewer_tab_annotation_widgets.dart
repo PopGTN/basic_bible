@@ -169,6 +169,7 @@ class _InlineVerseSelector extends StatelessWidget {
     required this.isSelected,
     required this.hasNote,
     required this.onTap,
+    this.inlineOnly = false,
   });
 
   final int verseNumber;
@@ -176,10 +177,46 @@ class _InlineVerseSelector extends StatelessWidget {
   final bool isSelected;
   final bool hasNote;
   final VoidCallback onTap;
+  final bool inlineOnly;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final numberText = Text(
+      '$verseNumber',
+      style: TextStyle(fontWeight: FontWeight.bold, color: color),
+    );
+
+    if (inlineOnly) {
+      return GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 1),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? theme.colorScheme.secondary.withValues(alpha: 0.08)
+                : null,
+            borderRadius: BorderRadius.circular(6),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              numberText,
+              if (hasNote) ...[
+                const SizedBox(width: 3),
+                Icon(
+                  Icons.bookmark_rounded,
+                  size: 11,
+                  color: theme.colorScheme.secondary,
+                ),
+              ],
+            ],
+          ),
+        ),
+      );
+    }
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -198,10 +235,7 @@ class _InlineVerseSelector extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              '$verseNumber',
-              style: TextStyle(fontWeight: FontWeight.bold, color: color),
-            ),
+            numberText,
             if (hasNote) ...[
               const SizedBox(width: 3),
               Icon(
@@ -879,19 +913,30 @@ class _PersonalNoteCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final primaryVerse = annotation.primaryVerse;
+    final primaryReferenceLabel =
+        '${displayBookNameForReference(books, primaryVerse.bookId)} '
+        '${primaryVerse.chapter}:${primaryVerse.verse}';
     final highlightColor = annotation.highlightColorValue == null
         ? null
         : annotationColorFromValue(
             annotation.highlightColorValue,
-            theme.colorScheme.secondary,
+            colors.secondary,
           );
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(14, 4, 4, 14),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHigh,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: theme.colorScheme.outlineVariant),
+        border: Border(
+          left: BorderSide(
+            color: (highlightColor ?? colors.secondary).withValues(alpha: 0.7),
+            width: 3,
+          ),
+          bottom: BorderSide(
+            color: colors.outlineVariant.withValues(alpha: 0.45),
+          ),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -900,17 +945,18 @@ class _PersonalNoteCard extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  annotation.primaryVerse.translationName,
+                  primaryReferenceLabel,
                   style: theme.textTheme.labelLarge?.copyWith(
-                    color: theme.colorScheme.secondary,
+                    color: colors.secondary,
                     fontWeight: FontWeight.w700,
+                    letterSpacing: 0.2,
                   ),
                 ),
               ),
               if (highlightColor != null)
                 Container(
-                  width: 14,
-                  height: 14,
+                  width: 10,
+                  height: 10,
                   decoration: BoxDecoration(
                     color: highlightColor,
                     shape: BoxShape.circle,
@@ -930,8 +976,18 @@ class _PersonalNoteCard extends StatelessWidget {
               runSpacing: 8,
               children: [
                 for (final link in annotation.linkedVerses)
-                  Chip(
-                    label: Text(
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        color: colors.outlineVariant.withValues(alpha: 0.55),
+                      ),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Text(
                       '${displayBookNameForReference(books, link.bookId)} '
                       '${link.chapter}:${link.verse}',
                     ),

@@ -1,4 +1,5 @@
 import 'package:basic_bible/src/features/library/data/app_bible_repository.dart';
+import 'package:basic_bible/l10n/app_localizations.dart';
 import 'package:basic_bible/src/features/reader/application/view_models/bible_library_view_models.dart';
 import 'package:basic_bible/src/features/reader/application/view_models/reader_session_view_models.dart';
 import 'package:basic_bible/src/models/bible_models.dart';
@@ -13,6 +14,7 @@ class VersionsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final t = AppLocalizations.of(context)!;
     final translationsAsync = ref.watch(availableTranslationsProvider);
     final currentTranslationId = ref.watch(currentTranslationProvider);
     final colors = Theme.of(context).colorScheme;
@@ -20,12 +22,12 @@ class VersionsScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         leading: const AppBackButton(),
-        title: const Text('Versions'),
+        title: Text(t.versionsTitle),
         actions: [
           IconButton(
             onPressed: () {},
             icon: const Icon(Icons.search),
-            tooltip: 'Search translations',
+            tooltip: t.searchTranslationsTooltip,
           ),
           PopupMenuButton<_VersionsMenuAction>(
             onSelected: (action) {
@@ -34,14 +36,14 @@ class VersionsScreen extends ConsumerWidget {
                   _importBibleFile(context, ref);
               }
             },
-            itemBuilder: (context) => const [
+            itemBuilder: (context) => [
               PopupMenuItem(
                 value: _VersionsMenuAction.importBibleXml,
                 child: Row(
                   children: [
-                    Icon(Icons.upload_file),
-                    SizedBox(width: 8),
-                    Text('Import Bible File'),
+                    const Icon(Icons.upload_file),
+                    const SizedBox(width: 8),
+                    Text(t.importBibleFileAction),
                   ],
                 ),
               ),
@@ -88,7 +90,7 @@ class VersionsScreen extends ConsumerWidget {
         error: (error, _) => Center(
           child: Padding(
             padding: const EdgeInsets.all(24),
-            child: Text('Unable to load translations: $error'),
+            child: Text(t.unableToLoadTranslations(error.toString())),
           ),
         ),
         loading: () => const Center(child: CircularProgressIndicator()),
@@ -102,6 +104,7 @@ class VersionsScreen extends ConsumerWidget {
     WidgetRef ref,
     String translationId,
   ) async {
+    final t = AppLocalizations.of(context)!;
     try {
       await ref
           .read(currentTranslationProvider.notifier)
@@ -114,14 +117,15 @@ class VersionsScreen extends ConsumerWidget {
     } catch (error) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not switch translation: $error')),
+        SnackBar(content: Text(t.couldNotSwitchTranslation(error.toString()))),
       );
     }
   }
 
   Future<void> _importBibleFile(BuildContext context, WidgetRef ref) async {
-    const bibleFileTypeGroup = XTypeGroup(
-      label: 'Bible files',
+    final t = AppLocalizations.of(context)!;
+    final bibleFileTypeGroup = XTypeGroup(
+      label: t.translationsFileTypeLabel,
       extensions: <String>['xml', 'usfx', 'osis', 'sqlite', 'sqlite3', 'db'],
     );
     final file = await openFile(acceptedTypeGroups: [bibleFileTypeGroup]);
@@ -154,11 +158,15 @@ class VersionsScreen extends ConsumerWidget {
 
       if (!context.mounted) return;
       messenger.showSnackBar(
-        SnackBar(content: Text('Imported ${importedTranslation.name}.')),
+        SnackBar(
+          content: Text(t.importedTranslationMessage(importedTranslation.name)),
+        ),
       );
     } catch (error) {
       if (!context.mounted) return;
-      messenger.showSnackBar(SnackBar(content: Text('Import failed: $error')));
+      messenger.showSnackBar(
+        SnackBar(content: Text(t.importFailedMessage(error.toString()))),
+      );
     }
   }
 
@@ -169,21 +177,20 @@ class VersionsScreen extends ConsumerWidget {
     required String currentTranslationId,
     required List<BibleTranslation> allTranslations,
   }) async {
+    final t = AppLocalizations.of(context)!;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Delete ${translation.name}?'),
-        content: Text(
-          'This removes the imported Bible from the app library and cache. The original file on disk will not be deleted.',
-        ),
+        title: Text(t.deleteTranslationTitle(translation.name)),
+        content: Text(t.deleteImportedTranslationDescription),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
+            child: Text(t.cancelAction),
           ),
           FilledButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Delete'),
+            child: Text(t.deleteAction),
           ),
         ],
       ),
@@ -208,13 +215,13 @@ class VersionsScreen extends ConsumerWidget {
       ref.invalidate(availableTranslationsProvider);
 
       if (!context.mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Deleted ${translation.name}.')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(t.deletedTranslationMessage(translation.name))),
+      );
     } catch (error) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not delete translation: $error')),
+        SnackBar(content: Text(t.couldNotDeleteTranslation(error.toString()))),
       );
     }
   }
@@ -226,21 +233,20 @@ class VersionsScreen extends ConsumerWidget {
     required String currentTranslationId,
     required List<BibleTranslation> allTranslations,
   }) async {
+    final t = AppLocalizations.of(context)!;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Remove ${translation.name} download?'),
-        content: const Text(
-          'This removes the downloaded Bible from local app storage. It will stay in the library as a downloadable option so you can download it again later.',
-        ),
+        title: Text(t.removeDownloadedTranslationTitle(translation.name)),
+        content: Text(t.removeDownloadedTranslationDescription),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
+            child: Text(t.cancelAction),
           ),
           FilledButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Remove'),
+            child: Text(t.removeAction),
           ),
         ],
       ),
@@ -267,13 +273,13 @@ class VersionsScreen extends ConsumerWidget {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Removed local download for ${translation.name}.'),
+          content: Text(t.removedLocalDownloadMessage(translation.name)),
         ),
       );
     } catch (error) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not remove download: $error')),
+        SnackBar(content: Text(t.couldNotRemoveDownload(error.toString()))),
       );
     }
   }
@@ -298,13 +304,16 @@ class _TranslationListTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
     final colors = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
     final sourceLabel = switch (translation.sourceType) {
-      BibleSourceType.asset => 'Bundled',
+      BibleSourceType.asset => t.bundledTranslationSource,
       BibleSourceType.download =>
-        translation.isLocal ? 'Downloaded' : 'Downloadable',
-      BibleSourceType.import => 'Imported',
+        translation.isLocal
+            ? t.downloadedTranslationSource
+            : t.downloadableTranslationSource,
+      BibleSourceType.import => t.importedTranslationSource,
     };
 
     return Material(
@@ -380,30 +389,30 @@ class _TranslationListTile extends StatelessWidget {
                   },
                   itemBuilder: (context) => [
                     if (onDeleteImported != null)
-                      const PopupMenuItem(
+                      PopupMenuItem(
                         value: _TranslationAction.deleteImported,
                         child: Row(
                           children: [
-                            Icon(Icons.delete_outline),
-                            SizedBox(width: 8),
-                            Text('Delete import'),
+                            const Icon(Icons.delete_outline),
+                            const SizedBox(width: 8),
+                            Text(t.deleteImportAction),
                           ],
                         ),
                       ),
                     if (onRemoveDownloaded != null)
-                      const PopupMenuItem(
+                      PopupMenuItem(
                         value: _TranslationAction.removeDownloaded,
                         child: Row(
                           children: [
-                            Icon(Icons.delete_sweep_outlined),
-                            SizedBox(width: 8),
-                            Text('Remove download'),
+                            const Icon(Icons.delete_sweep_outlined),
+                            const SizedBox(width: 8),
+                            Text(t.removeDownloadAction),
                           ],
                         ),
                       ),
                   ],
                   icon: const Icon(Icons.more_vert),
-                  tooltip: 'More actions',
+                  tooltip: t.moreActionsTooltip,
                 ),
             ],
           ),
@@ -416,6 +425,7 @@ class _TranslationListTile extends StatelessWidget {
     BuildContext context,
     BibleTranslation translation,
   ) {
+    final t = AppLocalizations.of(context)!;
     final colors = Theme.of(context).colorScheme;
     final buttons = <Widget>[];
     final isAvailableOffline =
@@ -431,7 +441,7 @@ class _TranslationListTile extends StatelessWidget {
       buttons.add(
         _TranslationActionChip(
           icon: Icons.check_rounded,
-          tooltip: 'Available offline',
+          tooltip: t.availableOfflineTooltip,
           color: colors.primaryContainer,
           iconColor: colors.onPrimaryContainer,
         ),
@@ -440,7 +450,7 @@ class _TranslationListTile extends StatelessWidget {
       buttons.add(
         _TranslationActionChip(
           icon: Icons.download_rounded,
-          tooltip: 'Download translation',
+          tooltip: t.downloadTranslationTooltip,
           color: colors.surfaceContainerHigh,
         ),
       );
@@ -450,7 +460,7 @@ class _TranslationListTile extends StatelessWidget {
       buttons.add(
         _TranslationActionChip(
           icon: Icons.volume_up_outlined,
-          tooltip: 'Audio options',
+          tooltip: t.audioOptionsTooltip,
           color: colors.surfaceContainerHigh,
         ),
       );

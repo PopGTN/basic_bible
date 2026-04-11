@@ -82,7 +82,6 @@ extension _BibleTextViewStateRendering on _BibleTextViewState {
     // repeating long front-matter blocks on every chapter view.
     return [
       _DocumentBlockSection(
-        title: preferredBookName(book),
         eyebrow: 'Introduction',
         blocks: visibleBlocks,
         fontSize: widget.fontSize,
@@ -140,10 +139,8 @@ extension _BibleTextViewStateRendering on _BibleTextViewState {
               section.book.id,
               section.chapter,
             ),
-            buildInlineHeading: (block) => _buildInlineSectionHeading(
-              context,
-              block,
-            ),
+            buildInlineHeading: (block) =>
+                _buildInlineSectionHeading(context, block),
             introBuilder: section.chapter.number == 1
                 ? () => Column(
                     children: _buildBookIntroductionBlocksForBook(
@@ -282,8 +279,6 @@ extension _BibleTextViewStateRendering on _BibleTextViewState {
         _TableBlockSection(rows: tableRows, fontSize: widget.fontSize),
       if (supportingBlocks.isNotEmpty)
         _DocumentBlockSection(
-          title: 'Chapter Notes',
-          eyebrow: 'Document',
           blocks: supportingBlocks,
           fontSize: widget.fontSize,
         ),
