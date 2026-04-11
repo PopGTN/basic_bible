@@ -141,6 +141,45 @@ class UserAnnotation extends Equatable {
   ];
 }
 
+bool annotationVerseLinkMatchesReference(
+  AnnotationVerseLink link,
+  BibleReference reference, {
+  String? translationId,
+}) {
+  return link.bookId == reference.bookId &&
+      link.chapter == reference.chapter &&
+      link.verse == reference.verse &&
+      (translationId == null || link.translationId == translationId);
+}
+
+UserAnnotation? removeReferencesFromStandaloneHighlight(
+  UserAnnotation annotation,
+  Iterable<BibleReference> references, {
+  required String translationId,
+}) {
+  if (!annotation.isHighlightOnly) return annotation;
+
+  final remainingVerses = annotation.allVerses.where((link) {
+    return !references.any(
+      (reference) => annotationVerseLinkMatchesReference(
+        link,
+        reference,
+        translationId: translationId,
+      ),
+    );
+  }).toList();
+
+  if (remainingVerses.isEmpty) return null;
+
+  return annotation.copyWith(
+    primaryVerse: remainingVerses.first.copyWith(sortOrder: 0),
+    linkedVerses: [
+      for (var i = 1; i < remainingVerses.length; i++)
+        remainingVerses[i].copyWith(sortOrder: i - 1),
+    ],
+  );
+}
+
 class AnnotationEditorDraft extends Equatable {
   const AnnotationEditorDraft({
     required this.type,

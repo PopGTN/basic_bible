@@ -227,6 +227,7 @@ class _VerseSelectionBar extends StatelessWidget {
     required this.onDismiss,
     required this.onHighlightPressed,
     required this.onHighlightSelected,
+    required this.onClearHighlightPressed,
     required this.onNotePressed,
     required this.onCopyPressed,
     required this.onSharePressed,
@@ -240,6 +241,7 @@ class _VerseSelectionBar extends StatelessWidget {
   final VoidCallback onDismiss;
   final VoidCallback onHighlightPressed;
   final ValueChanged<Color> onHighlightSelected;
+  final VoidCallback onClearHighlightPressed;
   final VoidCallback onNotePressed;
   final VoidCallback onCopyPressed;
   final VoidCallback onSharePressed;
@@ -257,6 +259,12 @@ class _VerseSelectionBar extends StatelessWidget {
     );
     final hasHighlight = existingAnnotations.any(
       (annotation) => annotation.highlightColorValue != null,
+    );
+    final hasStandaloneHighlight = existingAnnotations.any(
+      (annotation) => annotation.isHighlightOnly,
+    );
+    final hasNoteHighlight = existingAnnotations.any(
+      (annotation) => annotation.hasNoteText && annotation.hasHighlight,
     );
 
     return Material(
@@ -340,6 +348,28 @@ class _VerseSelectionBar extends StatelessWidget {
                 spacing: 10,
                 runSpacing: 10,
                 children: [
+                  if (hasStandaloneHighlight)
+                    InkWell(
+                      onTap: isBusy ? null : onClearHighlightPressed,
+                      borderRadius: BorderRadius.circular(999),
+                      child: Container(
+                        width: 34,
+                        height: 34,
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.surface,
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: theme.colorScheme.onSurface,
+                            width: 1,
+                          ),
+                        ),
+                        child: Icon(
+                          Icons.close,
+                          size: 18,
+                          color: theme.colorScheme.onSurface,
+                        ),
+                      ),
+                    ),
                   for (final color in annotationHighlightPalette)
                     InkWell(
                       onTap: isBusy ? null : () => onHighlightSelected(color),
@@ -359,6 +389,15 @@ class _VerseSelectionBar extends StatelessWidget {
                     ),
                 ],
               ),
+              if (hasNoteHighlight && !hasStandaloneHighlight) ...[
+                const SizedBox(height: 8),
+                Text(
+                  'Note highlights are edited from the note itself.',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
             ],
           ],
         ),

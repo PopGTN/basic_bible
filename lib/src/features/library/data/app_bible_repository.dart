@@ -73,7 +73,8 @@ class AppBibleRepository {
   ///   1 = inline anchor markers added
   ///   2 = book IDs normalized to uppercase
   ///   3 = per-translation SQLite split (forces rebuild into new file layout)
-  static const int _currentParserVersion = 3;
+  ///   4 = section headings carry `beforeVerse` metadata for inline rendering
+  static const int _currentParserVersion = 4;
 
   AppBibleRepository(this._db, this._dbManager);
 

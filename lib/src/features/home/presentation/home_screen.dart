@@ -12,8 +12,7 @@ import 'package:basic_bible/src/features/reader/application/view_models/bible_li
 import 'package:basic_bible/src/features/reader/application/view_models/reader_preferences_view_models.dart';
 import 'package:basic_bible/src/features/reader/application/view_models/reader_session_view_models.dart';
 import 'package:basic_bible/src/features/reader/presentation/reader_view/bible_viewer_tab.dart';
-import 'package:basic_bible/src/features/settings/application/view_models/app_launch_preferences_view_models.dart';
-import 'package:basic_bible/src/providers/theme_provider.dart';
+import 'package:basic_bible/src/features/settings/application/view_models/theme_view_model.dart';
 import 'package:basic_bible/src/services/font_size_service.dart';
 
 import 'home_tab.dart';
@@ -51,19 +50,27 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   // stays invisible after the user resizes back to a small window.
   bool _wasWide = false;
 
+  // Stable key so BibleViewerTab's State (and its loaded Bible data) is
+  // preserved when the body restructures between wide (Row) and small layouts.
+  // Without this Flutter disposes and recreates the state on every breakpoint
+  // crossing, causing a full reload spinner each time.
+  final _bibleViewerKey = GlobalKey();
+
   @override
   void initState() {
     super.initState();
-    // Startup tab selection is read once from persisted settings so the shell
-    // opens on Bible when requested without fighting later manual tab changes.
-    _currentIndex = ref.read(openBibleTabByDefaultProvider) ? 1 : 0;
+    // Apply the saved startup-tab preference once per app session when the
+    // authenticated shell is first entered. After that, normal in-session tab
+    // navigation should win until the next app launch.
+    final hasAppliedStartupTab = ref.read(hasAppliedStartupHomeTabProvider);
+    final startupTabIndex = ref.read(startupHomeTabIndexProvider);
+    if (!hasAppliedStartupTab) {
+      ref.read(homeTabIndexProvider.notifier).state = startupTabIndex;
+      ref.read(hasAppliedStartupHomeTabProvider.notifier).state = true;
+    }
+    _currentIndex = ref.read(homeTabIndexProvider);
     _bottomNavController = _createController();
     _appBarController = _createController();
-    // Keep the provider and local shell state aligned before the first build.
-    // If the provider stays at its default 0 for the first frame, the build
-    // method will immediately sync the shell back to Home even when startup
-    // preferences requested the Bible tab.
-    ref.read(homeTabIndexProvider.notifier).state = _currentIndex;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       // Warm the current translation from the shell so Home/Menu tabs can
@@ -272,6 +279,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       ),
       _HomeTabDefinition(
         widget: BibleViewerTab(
+          key: _bibleViewerKey,
           showBottomNav: showBottomNav,
           hideBottomNav: hideBottomNav,
           showAppBar: showAppBar,

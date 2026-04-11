@@ -5,8 +5,8 @@ import 'package:basic_bible/src/features/settings/application/view_models/reader
 import 'package:basic_bible/src/widgets/app_back_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:basic_bible/src/providers/language_provider.dart';
-import 'package:basic_bible/src/providers/theme_provider.dart';
+import 'package:basic_bible/src/features/settings/application/view_models/language_view_model.dart';
+import 'package:basic_bible/src/features/settings/application/view_models/theme_view_model.dart';
 import 'package:go_router/go_router.dart';
 
 class SettingsScreen extends ConsumerWidget {

@@ -14,10 +14,26 @@ class _DocumentBlockView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isHeading = block.kind == BibleDocumentBlockKind.heading;
+    final isIntro = block.kind == BibleDocumentBlockKind.introduction;
+
+    // Level 1 = major section heading (ms), 2 = standard section (s),
+    // 3+ = sub-section (s2, s3). Default to 2 when no level is stored.
+    final headingLevel = isHeading ? (block.level ?? 2) : 0;
+
     final style = switch (block.kind) {
-      BibleDocumentBlockKind.heading => theme.textTheme.titleLarge?.copyWith(
-        fontWeight: FontWeight.w700,
-      ),
+      BibleDocumentBlockKind.heading => switch (headingLevel) {
+        1 => theme.textTheme.headlineSmall?.copyWith(
+            fontWeight: FontWeight.w800,
+          ),
+        3 => theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w600,
+            fontStyle: FontStyle.italic,
+          ),
+        _ => theme.textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.w700,
+          ),
+      },
       BibleDocumentBlockKind.preface => theme.textTheme.bodyLarge,
       BibleDocumentBlockKind.introduction =>
         theme.textTheme.bodyMedium?.copyWith(
@@ -29,10 +45,13 @@ class _DocumentBlockView extends StatelessWidget {
       _ => theme.textTheme.bodyMedium,
     };
 
-    final isIntro = block.kind == BibleDocumentBlockKind.introduction;
+    final bottomPadding = isHeading
+        ? (headingLevel == 1 ? 16.0 : headingLevel >= 3 ? 8.0 : 12.0)
+        : 10.0;
+
     return Padding(
       padding: EdgeInsets.only(
-        bottom: block.kind == BibleDocumentBlockKind.heading ? 12 : 10,
+        bottom: bottomPadding,
         left: isIntro ? 12 : 0,
       ),
       child: Text(
@@ -42,9 +61,7 @@ class _DocumentBlockView extends StatelessWidget {
           color: isEmphasized ? theme.colorScheme.secondary : style.color,
           height: 1.5,
         ),
-        textAlign: block.kind == BibleDocumentBlockKind.heading
-            ? TextAlign.center
-            : TextAlign.start,
+        textAlign: isHeading ? TextAlign.center : TextAlign.start,
       ),
     );
   }

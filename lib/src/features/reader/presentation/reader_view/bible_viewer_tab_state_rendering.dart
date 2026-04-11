@@ -23,7 +23,7 @@ extension _BibleTextViewStateRendering on _BibleTextViewState {
       ),
       ..._buildChapterBlocks(context),
       if (widget.layoutMode == ReaderLayoutMode.verseList)
-        ...widget.chapter.verses.map((verse) => _buildVerse(context, verse))
+        ..._buildVerseListWithInlineHeadings(context, widget.chapter)
       else
         _buildDocumentReadingView(context),
     ];
@@ -139,6 +139,10 @@ extension _BibleTextViewStateRendering on _BibleTextViewState {
               context,
               section.book.id,
               section.chapter,
+            ),
+            buildInlineHeading: (block) => _buildInlineSectionHeading(
+              context,
+              block,
             ),
             introBuilder: section.chapter.number == 1
                 ? () => Column(
@@ -302,13 +306,16 @@ extension _BibleTextViewStateRendering on _BibleTextViewState {
 
   List<BibleDocumentBlock> _visibleChapterSupportBlocks(BibleChapter chapter) {
     // Paragraph/poetry blocks are rendered by document-mode section builders.
-    // This helper filters down to the remaining chapter-level support content
-    // such as headings, tables, and other non-verse document blocks.
+    // Heading blocks with `beforeVerse` are also rendered inline by those
+    // section builders — exclude them here to avoid double-rendering.
+    // Only chapter-top headings (no `beforeVerse`) stay here.
     return chapter.blocks
         .where(
           (block) =>
               block.kind != BibleDocumentBlockKind.paragraph &&
-              block.text.trim().isNotEmpty,
+              block.text.trim().isNotEmpty &&
+              !(block.kind == BibleDocumentBlockKind.heading &&
+                  block.metadata.containsKey('beforeVerse')),
         )
         .toList();
   }
@@ -394,7 +401,9 @@ extension _BibleTextViewStateRendering on _BibleTextViewState {
                         verse,
                         bodyColor: bodyColor,
                         isSelectedVerse: isSelected,
-                        backgroundColor: containerColor,
+                        // Verse-list mode should use the card highlight only.
+                        // Document mode owns the inline text highlighting style.
+                        backgroundColor: null,
                         applySelectionTint: false,
                       ),
                     ],
@@ -424,6 +433,31 @@ extension _BibleTextViewStateRendering on _BibleTextViewState {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  List<Widget> _buildVerseListWithInlineHeadings(
+    BuildContext context,
+    BibleChapter chapter,
+  ) {
+    return _interleaveVerseListWithHeadings(
+      chapter: chapter,
+      buildVerse: (verse) => _buildVerse(context, verse),
+      buildInlineHeading: (block) => _buildInlineSectionHeading(context, block),
+    );
+  }
+
+  Widget _buildInlineSectionHeading(
+    BuildContext context,
+    BibleDocumentBlock block,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 12, bottom: 4),
+      child: _DocumentBlockView(
+        block: block,
+        fontSize: widget.fontSize,
+        isEmphasized: true,
       ),
     );
   }

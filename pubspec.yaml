@@ -1,5 +1,5 @@
 name: basic_bible
-description: "A new Flutter project."
+description: "A cross-platform Flutter Bible reader with rich formatting, annotations, and multi-translation support."
 publish_to: 'none'
 version: 0.1.0
 
@@ -12,7 +12,6 @@ dependencies:
   flutter_localizations:
     sdk: flutter
   intl: any
-  provider: ^6.1.5+1
   riverpod: ^3.0.0
   flutter_riverpod: ^3.0.0
   hooks_riverpod: ^3.0.0
@@ -30,7 +29,7 @@ dependencies:
       url: https://github.com/google/flutter-desktop-embedding.git
       path: plugins/window_size
   bible_parser_flutter:
-    path: /home/joshua/Documents/Flutter Apps/Bible App Projects/bible_parser_flutter
+    path: ../bible_parser_flutter
   equatable: ^2.0.7
   sqflite: ^2.4.2
   sqflite_common_ffi: ^2.3.6

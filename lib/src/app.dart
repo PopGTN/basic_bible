@@ -10,15 +10,15 @@ import 'features/home/presentation/home_screen.dart';
 import 'features/library/presentation/versions_screen.dart';
 import 'features/annotations/presentation/notes_screen.dart';
 import 'features/settings/application/view_models/app_launch_preferences_view_models.dart';
-import 'views/other_screen.dart';
+import 'views/placeholder/other_screen.dart';
 import 'features/settings/presentation/settings_screen.dart';
 import 'features/settings/presentation/advanced_settings_screen.dart';
 import 'views/placeholder/coming_soon_screen.dart';
 
 // Providers
 import 'features/auth/application/view_models/auth_view_model.dart';
-import 'providers/theme_provider.dart' hide themeDataMap;
-import 'providers/language_provider.dart';
+import 'features/settings/application/view_models/theme_view_model.dart' hide themeDataMap;
+import 'features/settings/application/view_models/language_view_model.dart';
 
 class MyApp extends ConsumerWidget {
   const MyApp({super.key});

@@ -94,8 +94,15 @@ extension _BibleTextViewStateDocument on _BibleTextViewState {
 
     final paragraphBlocksByVerse = <int, List<BibleDocumentBlock>>{};
     for (final block in chapter.blocks) {
+      // Include paragraph/poetry blocks and heading blocks that carry a
+      // `beforeVerse` annotation — headings without one are rendered by
+      // _visibleChapterSupportBlocks at the chapter top instead.
+      final isInlineHeading =
+          block.kind == BibleDocumentBlockKind.heading &&
+          block.metadata.containsKey('beforeVerse');
       if (block.kind != BibleDocumentBlockKind.paragraph &&
-          block.kind != BibleDocumentBlockKind.poetry) {
+          block.kind != BibleDocumentBlockKind.poetry &&
+          !isInlineHeading) {
         continue;
       }
       final beforeVerse = int.tryParse(block.metadata['beforeVerse'] ?? '');

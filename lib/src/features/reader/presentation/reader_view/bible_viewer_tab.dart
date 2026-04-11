@@ -415,6 +415,7 @@ class _BibleViewerTabState extends ConsumerState<BibleViewerTab> {
             },
             onHighlightPressed: _toggleHighlightPalette,
             onHighlightSelected: _handleHighlightColorSelected,
+            onClearHighlightPressed: _handleClearHighlightPressed,
             onNotePressed: _handleNotePressed,
             onCopyPressed: () =>
                 _handleSelectionCopy(books, copiedMessage: 'Verse copied.'),
@@ -433,6 +434,26 @@ class _BibleViewerTabState extends ConsumerState<BibleViewerTab> {
     if (_selectionActionInFlight) return;
     final notifier = ref.read(highlightPaletteExpandedProvider.notifier);
     notifier.state = !notifier.state;
+  }
+
+  List<UserAnnotation> _standaloneHighlightAnnotationsForSelection({
+    required List<UserAnnotation> annotations,
+    required List<BibleReference> references,
+    required String translationId,
+  }) {
+    final matchedById = <int?, UserAnnotation>{};
+    for (final annotation in annotations) {
+      if (!annotation.isHighlightOnly) continue;
+      final touchesSelection = references.any(
+        (reference) => annotation.touchesReference(
+          reference,
+          translationId: translationId,
+        ),
+      );
+      if (!touchesSelection) continue;
+      matchedById[annotation.id] = annotation;
+    }
+    return matchedById.values.toList();
   }
 
   Future<void> _handleHighlightColorSelected(Color color) async {
@@ -454,12 +475,18 @@ class _BibleViewerTabState extends ConsumerState<BibleViewerTab> {
         return;
       }
 
+      final highlightAnnotations = _standaloneHighlightAnnotationsForSelection(
+        annotations: existingAnnotations,
+        references: selectedReferences,
+        translationId: translation.id,
+      );
+
       for (final reference in selectedReferences) {
         final link = buildAnnotationVerseLink(
           reference: reference,
           translation: translation,
         );
-        final existing = existingAnnotations
+        final existing = highlightAnnotations
             .where(
               (annotation) => annotation.touchesReference(
                 reference,
@@ -497,6 +524,75 @@ class _BibleViewerTabState extends ConsumerState<BibleViewerTab> {
     }
   }
 
+  Future<void> _handleClearHighlightPressed() async {
+    if (_selectionActionInFlight) return;
+    final selectedReferences = [...ref.read(selectedVersesProvider)];
+    if (selectedReferences.isEmpty) return;
+
+    final messenger = ScaffoldMessenger.of(context);
+    final existingAnnotations = [...ref.read(selectedVerseAnnotationsProvider)];
+    _setSelectionActionInFlight(true);
+
+    try {
+      final translation = await resolveCurrentTranslation(ref);
+      if (!mounted) return;
+      if (translation == null) {
+        messenger.showSnackBar(
+          const SnackBar(content: Text('Translation not available.')),
+        );
+        return;
+      }
+
+      final highlightAnnotations = _standaloneHighlightAnnotationsForSelection(
+        annotations: existingAnnotations,
+        references: selectedReferences,
+        translationId: translation.id,
+      );
+      if (highlightAnnotations.isEmpty) {
+        ref.read(highlightPaletteExpandedProvider.notifier).state = false;
+        messenger.showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Only standalone highlights can be removed here. Edit a note to change its highlight.',
+            ),
+          ),
+        );
+        return;
+      }
+
+      final repository = ref.read(userAnnotationRepositoryProvider);
+      for (final annotation in highlightAnnotations) {
+        final nextAnnotation = removeReferencesFromStandaloneHighlight(
+          annotation,
+          selectedReferences,
+          translationId: translation.id,
+        );
+        if (nextAnnotation == null) {
+          final annotationId = annotation.id;
+          if (annotationId != null) {
+            await repository.deleteAnnotation(annotationId);
+          }
+        } else {
+          await repository.saveAnnotation(nextAnnotation);
+        }
+      }
+
+      if (!mounted) return;
+      ref.read(highlightPaletteExpandedProvider.notifier).state = false;
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            highlightAnnotations.length == 1
+                ? 'Highlight removed.'
+                : 'Highlights removed.',
+          ),
+        ),
+      );
+    } finally {
+      _setSelectionActionInFlight(false);
+    }
+  }
+
   Future<void> _handleNotePressed() async {
     if (_selectionActionInFlight) return;
     final selectedReferences = [...ref.read(selectedVersesProvider)];
@@ -524,33 +620,65 @@ class _BibleViewerTabState extends ConsumerState<BibleViewerTab> {
       ];
       final primaryLink = selectedLinks.first;
 
-      // Promote an existing highlight into the editor only when a single
-      // selected verse matches the annotation's primary verse. Multi-select
-      // still creates a new note draft anchored by the first selected verse.
-      final selectedRef = selectedReferences.length == 1
-          ? selectedReferences.first
-          : null;
-      final existingNote = selectedRef != null
-          ? (selectedAnnotations
-                .where(
-                  (annotation) =>
-                      !annotation.hasNoteText &&
-                      annotation.primaryVerse.bookId == selectedRef.bookId &&
-                      annotation.primaryVerse.chapter == selectedRef.chapter &&
-                      annotation.primaryVerse.verse == selectedRef.verse,
-                )
-                .toList()
-              ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt)))
-          : <UserAnnotation>[];
+      // Find a highlight-only annotation whose PRIMARY verse is the first
+      // selected verse. Works for both single and multi-verse selections so
+      // tapping "Note" after highlighting a group promotes the existing
+      // highlight rather than creating a separate orphan annotation.
+      // Annotations where the verse only appears as a linked verse are
+      // intentionally skipped.
+      final primaryRef = selectedReferences.first;
+      final matchingHighlights =
+          selectedAnnotations
+              .where(
+                (a) =>
+                    !a.hasNoteText &&
+                    a.primaryVerse.bookId == primaryRef.bookId &&
+                    a.primaryVerse.chapter == primaryRef.chapter &&
+                    a.primaryVerse.verse == primaryRef.verse,
+              )
+              .toList()
+            ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+
+      // When opening a multi-verse selection that already has a highlight on
+      // verse 1, merge any additionally selected verses that aren't already
+      // on the annotation into its linked-verse list so the editor opens
+      // fully pre-filled with the whole group.
+      UserAnnotation? annotationToEdit;
+      if (matchingHighlights.isNotEmpty) {
+        final base = matchingHighlights.first;
+        final extras = selectedLinks
+            .skip(1)
+            .where(
+              (l) => !base.allVerses.any(
+                (v) =>
+                    v.bookId == l.bookId &&
+                    v.chapter == l.chapter &&
+                    v.verse == l.verse,
+              ),
+            )
+            .toList();
+        annotationToEdit = extras.isEmpty
+            ? base
+            : base.copyWith(
+                linkedVerses: [
+                  ...base.linkedVerses,
+                  for (var i = 0; i < extras.length; i++)
+                    extras[i].copyWith(sortOrder: base.linkedVerses.length + i),
+                ],
+              );
+      }
 
       final saved = await navigator.push<bool>(
         MaterialPageRoute(
           builder: (context) => NoteEditorScreen(
             primaryVerse: primaryLink,
-            initialLinkedVerses: selectedLinks.skip(1).toList(),
-            existingAnnotation: existingNote.isEmpty
-                ? null
-                : existingNote.first,
+            // initialLinkedVerses is only used when no existing annotation
+            // is supplied; the merged linkedVerses already live inside
+            // annotationToEdit when we're editing a highlight.
+            initialLinkedVerses: annotationToEdit == null
+                ? selectedLinks.skip(1).toList()
+                : const [],
+            existingAnnotation: annotationToEdit,
           ),
         ),
       );

@@ -283,6 +283,13 @@ extension _BibleTextViewStateAnnotations on _BibleTextViewState {
         return '${' ' * ((level - 1) * 2)}${span.text}';
       }
     }
+    // Translator additions are words supplied by the translator that are not in
+    // the original manuscripts. Wrapping them in brackets is the standard
+    // convention used by most printed Bibles (e.g. KJV uses italics, ESV uses
+    // brackets).
+    if (span.kind == BibleVerseSpanKind.translatorAddition) {
+      return '[${span.text}]';
+    }
     return span.text;
   }
 

@@ -28,7 +28,8 @@ This README is intentionally status-focused. It should reflect what the repo act
   - words of Jesus
   - footnotes
   - cross-references
-  - headings
+  - section headings rendered inline at the correct verse position with level-aware styles (`<ms>`, `<s>`, `<s2>`)
+  - translator additions rendered italic with `[brackets]`
   - book introductions / some front-matter blocks
   - paragraph and poetry-style structure where the source exposes it
 - Open verse notes from the side annotation button and view structured note/reference sheets.
@@ -89,7 +90,7 @@ The goal is to support **every meaningful feature** each format can express — 
 | --- | --- |
 | Books / chapters / verses | ✅ |
 | Words of Jesus (`<wj>`) | ⚠️ Partial |
-| Translator additions (`<add>`) | ⚠️ Partial |
+| Translator additions (`<add>`) | ✅ Supported — rendered italic with `[brackets]` |
 | Footnotes (`<f>`) with label (`<fr>`) and body (`<ft>`) | ⚠️ Partial — nested parts not yet split |
 | Footnote quote / alt quote (`<fq>`, `<fqa>`) | ❌ Not yet |
 | Cross-references (`<x>`) with targets (`<ref tgt="...">`) | ⚠️ Partial |
@@ -100,7 +101,7 @@ The goal is to support **every meaningful feature** each format can express — 
 | Word morphology (`<w m="...">`) and lemma (`<w l="...">`) | ❌ Not yet |
 | Book heading (`<h>`) | ✅ |
 | TOC labels (`<toc>`) | ✅ |
-| Section headings (`<s>`, `<s1>`, `<s2>`) | ⚠️ Partial |
+| Section headings (`<ms>`, `<s>`, `<s2>`) | ✅ Supported — inline at correct verse, level-aware styles |
 | Paragraph starts / breaks (`<p>`, `<b>`) | ⚠️ Partial |
 | Intro paragraphs (`<ip>`, `<imt>`, `<is>`) | ❌ Not yet |
 | Intro outline entries (`<io1>`, `<io2>`) | ❌ Not yet |

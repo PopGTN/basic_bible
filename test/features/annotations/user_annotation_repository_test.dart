@@ -1,5 +1,6 @@
 import 'package:basic_bible/src/features/annotations/data/user_annotation_repository.dart';
 import 'package:basic_bible/src/features/annotations/models/user_annotations.dart';
+import 'package:basic_bible/src/models/bible_models.dart';
 import 'package:basic_bible/src/services/app_database.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -163,6 +164,98 @@ void main() {
       expect(all, hasLength(1));
       expect(all.single.id, secondId);
       expect(all.single.primaryVerse.verse, 2);
+    },
+  );
+
+  test(
+    'standalone highlights remain separate from note-owned highlights',
+    () async {
+      final noteId = await repository.saveAnnotation(
+        UserAnnotation(
+          type: UserAnnotationType.note,
+          primaryVerse: link(bookId: 'JHN', chapter: 1, verse: 1),
+          noteText: 'Keep this note-owned color',
+          highlightColorValue: const ColorTestValue(0xFF81C784).value,
+          createdAt: DateTime(2026, 4, 3, 10),
+          updatedAt: DateTime(2026, 4, 3, 10),
+        ),
+      );
+      final highlightId = await repository.saveAnnotation(
+        UserAnnotation(
+          type: UserAnnotationType.highlight,
+          primaryVerse: link(bookId: 'JHN', chapter: 1, verse: 1),
+          highlightColorValue: const ColorTestValue(0xFFFFF176).value,
+          createdAt: DateTime(2026, 4, 3, 11),
+          updatedAt: DateTime(2026, 4, 3, 11),
+        ),
+      );
+
+      final all = await repository.getAnnotations();
+      expect(all, hasLength(2));
+
+      final savedNote = await repository.getAnnotationById(noteId);
+      final savedHighlight = await repository.getAnnotationById(highlightId);
+
+      expect(savedNote, isNotNull);
+      expect(savedNote!.hasNoteText, isTrue);
+      expect(savedNote.hasHighlight, isTrue);
+      expect(savedNote.isHighlightOnly, isFalse);
+
+      expect(savedHighlight, isNotNull);
+      expect(savedHighlight!.hasHighlight, isTrue);
+      expect(savedHighlight.hasNoteText, isFalse);
+      expect(savedHighlight.isHighlightOnly, isTrue);
+    },
+  );
+
+  test(
+    'removeReferencesFromStandaloneHighlight splits a grouped highlight',
+    () {
+      final annotation = UserAnnotation(
+        id: 9,
+        type: UserAnnotationType.highlight,
+        primaryVerse: link(bookId: 'JHN', chapter: 1, verse: 1),
+        linkedVerses: [
+          link(bookId: 'JHN', chapter: 1, verse: 2, sortOrder: 0),
+          link(bookId: 'JHN', chapter: 1, verse: 3, sortOrder: 1),
+          link(bookId: 'JHN', chapter: 1, verse: 4, sortOrder: 2),
+        ],
+        highlightColorValue: const ColorTestValue(0xFFFFF176).value,
+        createdAt: DateTime(2026, 4, 3, 11),
+        updatedAt: DateTime(2026, 4, 3, 11),
+      );
+
+      final result = removeReferencesFromStandaloneHighlight(annotation, const [
+        BibleReference(bookId: 'JHN', chapter: 1, verse: 2),
+        BibleReference(bookId: 'JHN', chapter: 1, verse: 3),
+      ], translationId: 'kjv');
+
+      expect(result, isNotNull);
+      expect(result!.primaryVerse.verse, 1);
+      expect(result.linkedVerses, hasLength(1));
+      expect(result.linkedVerses.single.verse, 4);
+      expect(result.linkedVerses.single.sortOrder, 0);
+    },
+  );
+
+  test(
+    'removeReferencesFromStandaloneHighlight deletes whole highlight when fully selected',
+    () {
+      final annotation = UserAnnotation(
+        type: UserAnnotationType.highlight,
+        primaryVerse: link(bookId: 'JHN', chapter: 1, verse: 1),
+        linkedVerses: [link(bookId: 'JHN', chapter: 1, verse: 2, sortOrder: 0)],
+        highlightColorValue: const ColorTestValue(0xFFFFF176).value,
+        createdAt: DateTime(2026, 4, 3, 11),
+        updatedAt: DateTime(2026, 4, 3, 11),
+      );
+
+      final result = removeReferencesFromStandaloneHighlight(annotation, const [
+        BibleReference(bookId: 'JHN', chapter: 1, verse: 1),
+        BibleReference(bookId: 'JHN', chapter: 1, verse: 2),
+      ], translationId: 'kjv');
+
+      expect(result, isNull);
     },
   );
 }

@@ -9,9 +9,11 @@ class HomeTab extends StatelessWidget {
     final colors = Theme.of(context).colorScheme;
 
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.start,
+          children: [
           ElevatedButton(
             onPressed: () {
               GoRouter.of(context).go('/home/other');
@@ -29,7 +31,8 @@ class HomeTab extends StatelessWidget {
             label: const Text('Open Settings'),
             iconAlignment: IconAlignment.start,
           ),
-        ],
+          ],
+        ),
       ),
     );
   }
