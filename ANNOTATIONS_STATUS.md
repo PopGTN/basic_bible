@@ -4,6 +4,7 @@
 
 - `in_progress` Reader-side manual QA is still needed across verse-list, document, and continuous-scrolling layouts.
 - `in_progress` Widget-test coverage for the new annotation UI is still missing.
+- `in_progress` Annotation behavior should be regression-checked after the reader presentation reorganization into `reader_view/` and `reference_picker/`.
 - `in_progress` Document mode paragraph layout (prose) does not show per-verse highlight color backgrounds. This is a structural limitation of inline `RichText` — verses share a single `TextSpan` tree with no containing widget per verse. Highlight background in document mode only works in the poetry section (which wraps each verse in a `Container`). A future fix would require splitting paragraph verses into individual row widgets.
 - `todo` Document mode selection bar has been confirmed wired (`_InlineVerseSelector.onTap` → `_selectVerse` → `selectedVerseProvider`). Needs a full manual QA pass: verify the action bar appears when tapping verse numbers in both paragraph and poetry document layouts, and that highlight/note/copy all work from there.
 - `done` Added a dedicated personal-annotation domain separate from parser footnotes/cross-references.
@@ -18,6 +19,8 @@
 
 ## Completed Recently
 
+- `done` Split and organized the reader presentation code under `reader_view/` so the annotation flow no longer lives inside one 2500+ line reader file.
+- `done` Organized the references UI under `reference_picker/`, keeping the add-verse picker flow easier to reason about.
 - `done` Added `user_annotations` and `annotation_verses` tables with additive migration step `v6`.
 - `done` Added `UserAnnotation`, `AnnotationVerseLink`, and editor-draft models for personal note/highlight data.
 - `done` Added repository and Riverpod providers for annotation CRUD, current selection, chapter filtering, and note-editor draft state.

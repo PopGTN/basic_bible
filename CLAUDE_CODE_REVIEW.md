@@ -25,7 +25,12 @@ Important project context:
 
 Please inspect these areas especially closely:
 
-- reader selection flow in `lib/src/features/reader/presentation/bible_viewer_tab.dart`
+- reader selection flow across:
+  - `lib/src/features/reader/presentation/reader_view/bible_viewer_tab.dart`
+  - `lib/src/features/reader/presentation/reader_view/bible_viewer_tab_state_core.dart`
+  - `lib/src/features/reader/presentation/reader_view/bible_viewer_tab_state_rendering.dart`
+  - `lib/src/features/reader/presentation/reader_view/bible_viewer_tab_state_document.dart`
+  - `lib/src/features/reader/presentation/reader_view/bible_viewer_tab_state_annotations.dart`
 - annotation providers/repository/model boundaries under `lib/src/features/annotations/`
 - Drift schema and migration logic in `lib/src/services/app_database.dart`
 - Notes navigation and open-in-reader flow

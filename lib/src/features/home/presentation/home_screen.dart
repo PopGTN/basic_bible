@@ -9,12 +9,24 @@ import 'package:basic_bible/src/features/library/data/app_bible_repository.dart'
 import 'package:basic_bible/src/features/home/application/home_tab_provider.dart';
 import 'package:basic_bible/src/features/menu/presentation/menu_tab.dart';
 import 'package:basic_bible/src/features/reader/application/bible_provider.dart';
-import 'package:basic_bible/src/features/reader/presentation/bible_viewer_tab.dart';
+import 'package:basic_bible/src/features/reader/presentation/reader_view/bible_viewer_tab.dart';
 import 'package:basic_bible/src/features/settings/application/app_preferences_provider.dart';
 import 'package:basic_bible/src/providers/theme_provider.dart';
 import 'package:basic_bible/src/services/font_size_service.dart';
 
 import 'home_tab.dart';
+
+class _HomeTabDefinition {
+  const _HomeTabDefinition({
+    required this.widget,
+    required this.title,
+    required this.icon,
+  });
+
+  final Widget widget;
+  final String title;
+  final IconData icon;
+}
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -45,11 +57,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     _currentIndex = ref.read(openBibleTabByDefaultProvider) ? 1 : 0;
     _bottomNavController = _createController();
     _appBarController = _createController();
+    // Keep the provider and local shell state aligned before the first build.
+    // If the provider stays at its default 0 for the first frame, the build
+    // method will immediately sync the shell back to Home even when startup
+    // preferences requested the Bible tab.
+    ref.read(homeTabIndexProvider.notifier).state = _currentIndex;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      // Sync the tab index provider after the frame so we don't mutate a
-      // provider while the widget tree is still building (Riverpod 3 rule).
-      ref.read(homeTabIndexProvider.notifier).state = _currentIndex;
       // Warm the current translation from the shell so Home/Menu tabs can
       // hide the initial Bible load instead of waiting for the reader tab.
       ref.read(bibleBooksProvider.notifier).preloadCurrentTranslation();
@@ -174,37 +188,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     _bottomNavController.duration = duration;
     _appBarController.duration = duration;
 
-    // Tab configuration (widgets, titles, icons)
-    final tabs = [
-      {
-        'widget': const HomeTab(),
-        'title': t.home,
-        'icon': FontAwesomeIcons.house,
-      },
-      {
-        'widget': BibleViewerTab(
-          showBottomNav: showBottomNav,
-          hideBottomNav: hideBottomNav,
-          showAppBar: showAppBar,
-          hideAppBar: hideAppBar,
-          isSmallDevice: isSmall,
-        ),
-        'title': t.bible,
-        'icon': FontAwesomeIcons.book,
-      },
-      {
-        'widget': const MenuTab(),
-        'title': t.menu,
-        'icon': FontAwesomeIcons.bars,
-      },
-    ];
-
-    final current = tabs[_currentIndex]; // currently selected tab
-    final isBibleTab = _currentIndex == 1; // check if Bible tab is active
+    final tabs = _buildTabs(t, isSmall);
+    final currentTab = tabs[_currentIndex];
+    final isBibleTab = _currentIndex == 1;
 
     return Scaffold(
       // Top bar changes depending on device size + tab
-      appBar: _buildAppBar(current, isWide, isBibleTab),
+      appBar: _buildAppBar(currentTab, isWide, isBibleTab),
 
       // Main content
       body: isWide
@@ -221,17 +211,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                   destinations: tabs
                       .map(
                         (tab) => NavigationRailDestination(
-                          icon: Icon(tab['icon'] as IconData),
-                          label: Text(tab['title'] as String),
+                          icon: Icon(tab.icon),
+                          label: Text(tab.title),
                         ),
                       )
                       .toList(),
                 ),
                 const VerticalDivider(thickness: 1, width: 1),
-                Expanded(child: current['widget'] as Widget),
+                Expanded(child: currentTab.widget),
               ],
             )
-          : current['widget'] as Widget,
+          : currentTab.widget,
 
       // Bottom navigation only for small screens
       bottomNavigationBar: isWide
@@ -260,8 +250,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                   items: tabs
                       .map(
                         (tab) => BottomNavigationBarItem(
-                          icon: Icon(tab['icon'] as IconData),
-                          label: tab['title'] as String,
+                          icon: Icon(tab.icon),
+                          label: tab.title,
                         ),
                       )
                       .toList(),
@@ -271,13 +261,39 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     );
   }
 
+  List<_HomeTabDefinition> _buildTabs(AppLocalizations t, bool isSmall) {
+    return [
+      _HomeTabDefinition(
+        widget: const HomeTab(),
+        title: t.home,
+        icon: FontAwesomeIcons.house,
+      ),
+      _HomeTabDefinition(
+        widget: BibleViewerTab(
+          showBottomNav: showBottomNav,
+          hideBottomNav: hideBottomNav,
+          showAppBar: showAppBar,
+          hideAppBar: hideAppBar,
+          isSmallDevice: isSmall,
+        ),
+        title: t.bible,
+        icon: FontAwesomeIcons.book,
+      ),
+      _HomeTabDefinition(
+        widget: const MenuTab(),
+        title: t.menu,
+        icon: FontAwesomeIcons.bars,
+      ),
+    ];
+  }
+
   /// Builds the AppBar depending on screen size & active tab
   PreferredSizeWidget _buildAppBar(
-    Map<String, Object> tab,
+    _HomeTabDefinition tab,
     bool isWide,
     bool isBible,
   ) {
-    final title = Text(tab['title'] as String);
+    final title = Text(tab.title);
 
     // Extra buttons only appear on Bible tab
     final actions = isBible

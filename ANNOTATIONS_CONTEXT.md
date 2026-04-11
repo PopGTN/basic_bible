@@ -77,6 +77,8 @@ The current annotation UI is spread across:
 - the note editor screen
 - the Notes screen
 
+The reader-side implementation is now structurally split across focused presentation files instead of one monolithic reader file. That split is intentional and should be preserved as annotation work continues.
+
 The reader can now:
 
 - select a verse
@@ -100,6 +102,20 @@ The Notes screen can now:
 - Export is not implemented yet.
 - Cloud sync is not implemented yet.
 - Reader document-mode selection/highlight treatment is improved, but it still needs more polish than verse-list mode.
+- Document-mode prose paragraphs still cannot render true per-verse highlight backgrounds without a deeper rendering change, because those verses are drawn inline inside shared rich text.
+
+## Reader File Boundaries
+
+When changing annotation behavior in the reader, prefer these ownership boundaries:
+
+- `reader_view/bible_viewer_tab.dart`: coordinator and lifecycle entry
+- `reader_view/bible_viewer_tab_state_core.dart`: selection state, focus behavior, annotation lookup helpers
+- `reader_view/bible_viewer_tab_state_rendering.dart`: high-level verse-list / continuous rendering orchestration
+- `reader_view/bible_viewer_tab_state_document.dart`: document-mode paragraph and poetry rendering
+- `reader_view/bible_viewer_tab_state_annotations.dart`: parser-note sheets, span helpers, inline annotation markers
+- `reference_picker/`: add-verse picker flow and reference selection UI used by notes and reader navigation
+
+This keeps annotation changes easier to review and reduces the chance of mixing selection logic, layout code, and sheet behavior in one place.
 
 ## Next Safe Extensions
 

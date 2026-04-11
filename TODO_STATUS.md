@@ -49,6 +49,8 @@ Separate from feature backlog — these affect correctness, safety, and maintain
 | Generic error handling | Low | `AppBibleRepository` throws `Exception('...')` with plain context strings instead of structured error types. Makes error handling and user-facing messaging harder to improve. |
 | Hardcoded download URLs | Low | Built-in translation GitHub URLs are hardcoded with no version pinning or fallback mirrors. If the source repo moves or renames a file, downloads silently fail. |
 | Web storage still in-memory | Low | Non-web platforms use file-backed SQLite. Web still falls back to in-memory storage, so cached Bibles are lost on every page reload. |
+| Reader presentation still centered on one large state object | Medium | The reader refactor split files by responsibility, but much of the orchestration still lives on a single `_BibleTextViewState`. Future cleanup should extract more standalone widgets/controllers so the reader does not drift back into a giant mixed-responsibility state class. |
+| Claude memory docs may drift | Low | Repo docs and `.claude/memory` are now aligned, but the older memory files in `.claude/memory/` should be reviewed periodically so they do not diverge from `CONTEXT.md`, `TODO_STATUS.md`, and the annotations docs. |
 
 ---
 
@@ -63,8 +65,12 @@ Separate from feature backlog — these affect correctness, safety, and maintain
 
 ---
 
-- `in_progress` Personal annotations need widget-test coverage and manual QA across reader layouts.
+- `in_progress` Personal annotations need widget-test coverage and manual QA across reader layouts after the reader presentation refactor.
 - `in_progress` References screen navigation still deserves a regression pass after the new verse-selection bar landed in the reader.
+- `in_progress` Reader presentation code is now organized into `reader_view/` and `reference_picker/`; behavior should now be regression-checked instead of adding more UI complexity blindly.
+- `in_progress` Reader readability improved with local module READMEs and typed home-tab configuration, but the reader still needs future extraction away from one large state object.
+- `todo` After regression coverage improves, do a second reader architecture pass to extract more standalone widgets/controllers from `_BibleTextViewState` instead of continuing to grow the state class through `part` extensions alone.
+- `todo` Review the older `.claude/memory/*.md` files and either trim, merge, or refresh them so repo memory stays consistent with the main tracking docs.
 - `done` Personal notes and highlights now exist as a real user-data feature with dedicated models, repository/provider plumbing, additive Drift storage, a note editor, and a Notes screen.
 - `done` The reader now has working verse-list and document modes with comprehensive span rendering: red-letter, emphasis/bold/italic, divine names, proper names, selah, acrostic headings, structured footnotes and cross-references with inline markers, and source-driven introductions/tables.
 - `done` Parser/app pipeline preserves rich content: footnotes and cross-references now include spanIndex anchors; poetry/quote structure is consistent across all three formats with stanza groups and indentation; document-mode rendering reflects all preserved parser structures.
@@ -76,6 +82,14 @@ Separate from feature backlog — these affect correctness, safety, and maintain
 
 ## Completed Recently
 
+- `done` Removed duplicated reader rendering logic by consolidating shared chapter-block and verse-card rendering paths in `bible_viewer_tab_state_rendering.dart`.
+- `done` Reduced outer reader-shell complexity further by moving watched shell state into a small snapshot model and splitting the main content layer into named helpers.
+- `done` Simplified the outer reader shell by replacing large inline selection/chapter-bar callback blocks with named methods in `reader_view/bible_viewer_tab.dart`, making the file easier to scan by intent.
+- `done` Added local `README.md` module maps under reader presentation folders so the code is easier to re-enter after time away.
+- `done` Replaced the loose tab-map pattern in `home_screen.dart` with a typed tab definition to make the app shell easier to read and maintain.
+- `done` Organized reader presentation files into `reader_view/` and `reference_picker/` folders so file layout now matches feature responsibilities instead of staying flat under `presentation/`.
+- `done` Split the oversized reader presentation code into responsibility-based part files so `reader_view/bible_viewer_tab.dart` now acts as a coordinator instead of carrying the full implementation.
+- `done` Split the oversized references UI into dedicated files under `reference_picker/`, leaving `reference_bar.dart` as a barrel export.
 - `done` Added personal annotation storage with additive schema step `v6`, separate `user_annotations` / `annotation_verses` tables, and repository tests for save/load/edit/delete flows.
 - `done` Added reader verse selection with a bottom action bar for quick highlight, note creation, copy, and share fallback.
 - `done` Added a dedicated note editor supporting connected highlight color, linked verses, labels, and saved translation metadata for each linked verse.
@@ -86,7 +100,6 @@ Separate from feature backlog — these affect correctness, safety, and maintain
 - `done` Added distinct document-mode rendering for `introduction` blocks (muted color, left indent) and `table`/`tableRow` blocks (cell grid with header-row styling and alternating row tint) so these parser-preserved structures are visually distinct instead of falling through to generic prose.
 - `done` Synced `table` and `tableRow` values into `BibleDocumentBlockKind` to mirror the parser's new `DocumentBlockKind` values.
 - `done` Reworked the References picker layout so it now adapts more cleanly across mobile and desktop: phones keep a tighter one-book-at-a-time card flow with adaptive chapter/verse grids, while wider screens use a split book-list/detail-pane layout with clearer search and selection context.
-- `done` Split `lib/src/models/bible_models.dart` into a barrel export plus smaller domain model files under `lib/src/models/bible_models/`.
 
 ---
 

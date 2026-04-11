@@ -52,6 +52,30 @@ Use `TODO_STATUS.md` beside this file as the execution tracker:
   - Menu
 - The Bible tab also owns the app-bar actions for search/audio placeholders, translation selection, and Bible text size selection.
 
+### Reader presentation structure
+- The reader presentation layer now uses a coordinator-plus-parts layout instead of keeping the full screen implementation in one giant file.
+- The reader presentation layer is now organized into subfolders by responsibility:
+  - `lib/src/features/reader/presentation/reader_view/`
+  - `lib/src/features/reader/presentation/reference_picker/`
+- Each of those folders now also has a small local `README.md` so maintainers can quickly see file ownership without reconstructing it from imports and part directives.
+- `reader_view/bible_viewer_tab.dart` is now the coordinating screen/state entry.
+- Heavy reader responsibilities are split into focused part files under `reader_view/` for:
+  - core state and selection behavior
+  - rendering orchestration
+  - document-mode rendering
+  - annotation-sheet / span helpers
+  - extracted widget sections
+- The outer reader shell file was also cleaned up so the chapter-bar behavior and verse-selection actions now route through named methods instead of one large callback-heavy build block.
+- The outer reader shell now uses a small snapshot model for watched state so `bible_viewer_tab.dart` reads more like screen composition and less like one long provider/spacing calculation block.
+- Shared verse-card and chapter-support rendering now flow through common helpers in the reader rendering layer instead of maintaining separate near-duplicate implementations for current-chapter and continuous-chapter paths.
+- The reference-picker UI lives under `reference_picker/` so:
+  - `reference_picker/chapter_bar.dart` owns the chapter bar
+  - `reference_picker/reference_picker_screen.dart` owns the main picker screen
+  - `reference_picker/reference_screen.dart` owns the separate references screen
+  - `reference_picker/reference_bar.dart` is a barrel export for shared picker entry points
+
+This split is a structural maintenance improvement, not a feature change. Treat the current priority as regression confidence, not more reader-surface expansion.
+
 ### Bible state and loading
 - `lib/src/providers/bible_provider.dart` contains the main Bible-reading state.
 - It manages:
@@ -121,6 +145,8 @@ Use `TODO_STATUS.md` beside this file as the execution tracker:
 - Keep the app functioning as a simple Bible reader first; add roadmap features in layers rather than assuming the scaffolding is already complete.
 - When touching Bible loading or caching, check both the translation ID flow and the real persistence behavior.
 - When touching notes/highlights, keep personal annotations separate from parser content at every layer.
+- When touching the reader, prefer extending the split presentation files by responsibility instead of growing `bible_viewer_tab.dart` back into a giant mixed-responsibility file.
+- When re-entering the reader after time away, start with the local `README.md` files under `lib/src/features/reader/presentation/` before diving into the implementation files.
 
 ## Plain-Language Note On Bible Formatting
 Supporting Bible formatting from USFX, OSIS, and Zefania does not mean "just read the XML and save one string per verse."
