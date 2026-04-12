@@ -1,10 +1,8 @@
-import 'dart:io';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
 
 import 'translation_database.dart';
+import 'translation_storage_paths.dart';
 
 /// Manages open [TranslationDatabase] connections keyed by translation ID.
 ///
@@ -47,12 +45,7 @@ class TranslationDatabaseManager {
   // ---------------------------------------------------------------------------
 
   /// Absolute path to the `bibles/` directory, creating it if absent.
-  static Future<String> biblesDir() async {
-    final appDir = await getApplicationSupportDirectory();
-    final dir = Directory(p.join(appDir.path, 'bibles'));
-    if (!await dir.exists()) await dir.create(recursive: true);
-    return dir.path;
-  }
+  static Future<String> biblesDir() => biblesStoragePath();
 
   /// Absolute path for a translation's SQLite file.
   static Future<String> pathForTranslation(String id) async {
@@ -60,12 +53,7 @@ class TranslationDatabaseManager {
   }
 
   /// Absolute path to the `imported_sources/` directory, creating it if absent.
-  static Future<String> importedSourcesDir() async {
-    final appDir = await getApplicationSupportDirectory();
-    final dir = Directory(p.join(appDir.path, 'imported_sources'));
-    if (!await dir.exists()) await dir.create(recursive: true);
-    return dir.path;
-  }
+  static Future<String> importedSourcesDir() => importedSourcesStoragePath();
 
   /// Absolute path for a managed copy of an imported source file.
   static Future<String> pathForImportedSource(

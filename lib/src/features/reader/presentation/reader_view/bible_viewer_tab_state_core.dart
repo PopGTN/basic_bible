@@ -84,7 +84,7 @@ extension _BibleTextViewStateCore on _BibleTextViewState {
     // RichText spans cannot use the simpler InkWell path. We cache recognizers
     // per verse key so document-mode taps do not recreate gesture recognizers
     // on every build.
-    recognizer.onTap = () => _selectVerse(bookId, chapterNumber, verse);
+    recognizer.onTap = () => _handleVerseTap(bookId, chapterNumber, verse);
     return recognizer;
   }
 
@@ -253,17 +253,6 @@ extension _BibleTextViewStateCore on _BibleTextViewState {
     );
   }
 
-  bool _joinsHighlightedRunWithPrevious(
-    String bookId,
-    int chapterNumber,
-    BibleVerse verse,
-  ) => _sharesHighlightedAnnotationWithVerse(
-    bookId,
-    chapterNumber,
-    verse,
-    verse.number - 1,
-  );
-
   bool _joinsHighlightedRunWithNext(
     String bookId,
     int chapterNumber,
@@ -292,10 +281,96 @@ extension _BibleTextViewStateCore on _BibleTextViewState {
     return Color.alphaBlend(selectionTint, baseBackground);
   }
 
+  void _handleVerseTap(String bookId, int chapterNumber, BibleVerse verse) {
+    if (_isRangeSelectionGesture) {
+      final selectedVerses = ref.read(selectedVersesProvider);
+      if (selectedVerses.isNotEmpty && _selectionAnchorReference != null) {
+        _selectVerseRangeTo(_verseReference(bookId, chapterNumber, verse));
+        return;
+      }
+    }
+
+    _selectVerse(bookId, chapterNumber, verse);
+  }
+
+  bool get _isRangeSelectionGesture =>
+      (isWebRuntime || isDesktopRuntime) &&
+      HardwareKeyboard.instance.isShiftPressed;
+
+  List<BibleReference> _orderedSelectableReferences() {
+    if (widget.continuousScrolling) {
+      return [
+        for (final book in widget.books)
+          for (final chapter in book.chapters)
+            for (final verse in chapter.verses)
+              BibleReference(
+                bookId: book.id,
+                chapter: chapter.number,
+                verse: verse.number,
+              ),
+      ];
+    }
+
+    return [
+      for (final verse in widget.chapter.verses)
+        BibleReference(
+          bookId: widget.book.id,
+          chapter: widget.chapter.number,
+          verse: verse.number,
+        ),
+    ];
+  }
+
+  String _referenceSelectionKey(BibleReference reference) {
+    return '${reference.bookId}:${reference.chapter}:${reference.verse ?? 0}';
+  }
+
+  void _selectVerseRangeTo(BibleReference targetReference) {
+    final anchor = _selectionAnchorReference;
+    if (anchor == null) {
+      ref.read(selectedVersesProvider.notifier).setSingle(targetReference);
+      _selectionAnchorReference = targetReference;
+      ref.read(highlightPaletteExpandedProvider.notifier).state = false;
+      return;
+    }
+
+    final orderedReferences = _orderedSelectableReferences();
+    final anchorIndex = orderedReferences.indexWhere(
+      (reference) =>
+          _referenceSelectionKey(reference) == _referenceSelectionKey(anchor),
+    );
+    final targetIndex = orderedReferences.indexWhere(
+      (reference) =>
+          _referenceSelectionKey(reference) ==
+          _referenceSelectionKey(targetReference),
+    );
+
+    if (anchorIndex < 0 || targetIndex < 0) {
+      ref.read(selectedVersesProvider.notifier).toggle(targetReference);
+      _selectionAnchorReference = targetReference;
+      ref.read(highlightPaletteExpandedProvider.notifier).state = false;
+      return;
+    }
+
+    final start = anchorIndex < targetIndex ? anchorIndex : targetIndex;
+    final end = anchorIndex > targetIndex ? anchorIndex : targetIndex;
+    final range = orderedReferences.sublist(start, end + 1);
+    ref.read(selectedVersesProvider.notifier).replaceAll(range);
+    ref.read(highlightPaletteExpandedProvider.notifier).state = false;
+  }
+
   void _selectVerse(String bookId, int chapterNumber, BibleVerse verse) {
-    ref
-        .read(selectedVersesProvider.notifier)
-        .toggle(_verseReference(bookId, chapterNumber, verse));
+    final reference = _verseReference(bookId, chapterNumber, verse);
+    final notifier = ref.read(selectedVersesProvider.notifier);
+    notifier.toggle(reference);
+    final selectedVerses = ref.read(selectedVersesProvider);
+    if (selectedVerses.isEmpty) {
+      _selectionAnchorReference = null;
+      ref.read(highlightPaletteExpandedProvider.notifier).state = false;
+      return;
+    }
+
+    _selectionAnchorReference = reference;
     ref.read(highlightPaletteExpandedProvider.notifier).state = false;
   }
 
@@ -313,7 +388,7 @@ extension _BibleTextViewStateCore on _BibleTextViewState {
       context: context,
       isScrollControlled: true,
       showDragHandle: true,
-      builder: (context) {
+      builder: (sheetContext) {
         return _PersonalNotesSheet(
           referenceLabel:
               '${displayBookNameForReference(widget.books, bookId)} '
@@ -321,41 +396,88 @@ extension _BibleTextViewStateCore on _BibleTextViewState {
           verseText: verse.text,
           books: widget.books,
           annotations: noteAnnotations,
+          onPreviewLinkedVerse: (link) {
+            return showModalBottomSheet<void>(
+              context: sheetContext,
+              isScrollControlled: true,
+              showDragHandle: true,
+              builder: (previewContext) {
+                return ReferencePreviewSheet(
+                  referenceLabel:
+                      '${displayBookNameForReference(widget.books, link.bookId)} '
+                      '${link.chapter}:${link.verse}',
+                  reference: link.reference,
+                  preferredTranslationId: link.translationId,
+                  preferredTranslationName: link.translationName,
+                  fallbackTranslationId: ref.read(currentTranslationProvider),
+                  fallbackTranslationName:
+                      ref
+                          .read(availableTranslationsProvider)
+                          .asData
+                          ?.value
+                          .where(
+                            (translation) =>
+                                translation.id ==
+                                ref.read(currentTranslationProvider),
+                          )
+                          .firstOrNull
+                          ?.name ??
+                      'Current translation',
+                  books: widget.books,
+                  returnLabel: 'Back to Note',
+                  onOpenInBible: (previewSheetContext, preview) async {
+                    await ref
+                        .read(currentTranslationProvider.notifier)
+                        .setTranslation(preview.translationId);
+                    await ref
+                        .read(currentReferenceProvider.notifier)
+                        .setReference(preview.reference);
+                    if (previewSheetContext.mounted) {
+                      Navigator.of(previewSheetContext).pop();
+                    }
+                    if (sheetContext.mounted) {
+                      Navigator.of(sheetContext).pop();
+                    }
+                  },
+                );
+              },
+            );
+          },
           onOpenReference: (annotation) async {
-            if (!context.mounted) return;
+            if (!sheetContext.mounted) return;
             final translationId = annotation.primaryVerse.translationId;
             final available = await ref.read(
               availableTranslationsProvider.future,
             );
-            if (!context.mounted) return;
+            if (!sheetContext.mounted) return;
             final exists = available.any((t) => t.id == translationId);
             if (exists) {
               await ref
                   .read(currentTranslationProvider.notifier)
                   .setTranslation(translationId);
             }
-            if (!context.mounted) return;
+            if (!sheetContext.mounted) return;
             await ref
                 .read(currentReferenceProvider.notifier)
                 .setReference(annotation.primaryVerse.reference);
-            if (context.mounted) Navigator.of(context).pop();
+            if (sheetContext.mounted) Navigator.of(sheetContext).pop();
           },
           onEdit: (annotation) async {
-            if (!context.mounted) return;
+            if (!sheetContext.mounted) return;
             final translationId = annotation.primaryVerse.translationId;
             final available = await ref.read(
               availableTranslationsProvider.future,
             );
-            if (!context.mounted) return;
+            if (!sheetContext.mounted) return;
             final exists = available.any((t) => t.id == translationId);
             if (exists) {
               await ref
                   .read(currentTranslationProvider.notifier)
                   .setTranslation(translationId);
             }
-            if (!context.mounted) return;
-            Navigator.of(context).pop();
-            await Navigator.of(context).push(
+            if (!sheetContext.mounted) return;
+            Navigator.of(sheetContext).pop();
+            await Navigator.of(sheetContext).push(
               MaterialPageRoute(
                 builder: (context) => NoteEditorScreen(
                   primaryVerse: annotation.primaryVerse,

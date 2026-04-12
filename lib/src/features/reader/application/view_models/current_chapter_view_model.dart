@@ -22,8 +22,7 @@ final currentChapterProvider = FutureProvider<BibleChapter?>((ref) async {
     return null;
   }
 
-  final book =
-      resolveBookFromReference(books, reference.bookId) ?? books.first;
+  final book = resolveBookFromReference(books, reference.bookId) ?? books.first;
   final matchingChapters = book.chapters.where(
     (c) => c.number == reference.chapter,
   );
@@ -36,8 +35,11 @@ final currentChapterProvider = FutureProvider<BibleChapter?>((ref) async {
   }
 
   if (chapter.verses.isEmpty) {
-    final hydratedChapter =
-        await repository.loadChapterVerses(translation, book.id, chapter.number);
+    final hydratedChapter = await repository.loadChapterVerses(
+      translation,
+      book.id,
+      chapter.number,
+    );
     chapter = hydratedChapter ?? chapter;
   }
 

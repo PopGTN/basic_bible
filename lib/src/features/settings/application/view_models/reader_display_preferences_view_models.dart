@@ -12,28 +12,83 @@ final underlineProperNamesProvider =
       return UnderlineProperNamesNotifier(ref.read(sharedPreferencesProvider));
     });
 
-class BoldDivineNameNotifier extends StateNotifier<bool> {
-  BoldDivineNameNotifier(this._prefs)
-    : super(_prefs.getBool(_prefKey) ?? false);
+final underlineWordMetadataProvider =
+    StateNotifierProvider<UnderlineWordMetadataNotifier, bool>((ref) {
+      return UnderlineWordMetadataNotifier(ref.read(sharedPreferencesProvider));
+    });
 
-  static const _prefKey = 'reader_bold_divine_name';
+final bracketTranslatorAdditionsProvider =
+    StateNotifierProvider<BracketTranslatorAdditionsNotifier, bool>((ref) {
+      return BracketTranslatorAdditionsNotifier(
+        ref.read(sharedPreferencesProvider),
+      );
+    });
+
+final useSourceBoldStylingProvider =
+    StateNotifierProvider<UseSourceBoldStylingNotifier, bool>((ref) {
+      return UseSourceBoldStylingNotifier(ref.read(sharedPreferencesProvider));
+    });
+
+final showSourceDetailsProvider =
+    StateNotifierProvider<ShowSourceDetailsNotifier, bool>((ref) {
+      return ShowSourceDetailsNotifier(ref.read(sharedPreferencesProvider));
+    });
+
+abstract class _ReaderDisplayPreferenceNotifier extends StateNotifier<bool> {
+  _ReaderDisplayPreferenceNotifier(
+    this._prefs,
+    this._prefKey,
+    bool defaultValue,
+  ) : super(_prefs.getBool(_prefKey) ?? defaultValue);
+
   final SharedPreferences _prefs;
+  final String _prefKey;
 
   Future<void> setEnabled(bool enabled) async {
-    await _prefs.setBool(_prefKey, enabled);
+    final previousState = state;
     state = enabled;
+
+    try {
+      final didPersist = await _prefs.setBool(_prefKey, enabled);
+      if (!didPersist && state == enabled) {
+        state = previousState;
+      }
+    } catch (_) {
+      if (state == enabled) {
+        state = previousState;
+      }
+      rethrow;
+    }
   }
 }
 
-class UnderlineProperNamesNotifier extends StateNotifier<bool> {
-  UnderlineProperNamesNotifier(this._prefs)
-    : super(_prefs.getBool(_prefKey) ?? true);
+class BoldDivineNameNotifier extends _ReaderDisplayPreferenceNotifier {
+  BoldDivineNameNotifier(SharedPreferences prefs)
+    : super(prefs, 'reader_bold_divine_name', false);
+}
 
-  static const _prefKey = 'reader_underline_proper_names';
-  final SharedPreferences _prefs;
+class UnderlineProperNamesNotifier extends _ReaderDisplayPreferenceNotifier {
+  UnderlineProperNamesNotifier(SharedPreferences prefs)
+    : super(prefs, 'reader_underline_proper_names', true);
+}
 
-  Future<void> setEnabled(bool enabled) async {
-    await _prefs.setBool(_prefKey, enabled);
-    state = enabled;
-  }
+class UnderlineWordMetadataNotifier extends _ReaderDisplayPreferenceNotifier {
+  UnderlineWordMetadataNotifier(SharedPreferences prefs)
+    : super(prefs, 'reader_underline_word_metadata', false);
+}
+
+class BracketTranslatorAdditionsNotifier
+    extends _ReaderDisplayPreferenceNotifier {
+  BracketTranslatorAdditionsNotifier(SharedPreferences prefs)
+    : super(prefs, 'reader_bracket_translator_additions', true);
+}
+
+class UseSourceBoldStylingNotifier extends _ReaderDisplayPreferenceNotifier {
+  UseSourceBoldStylingNotifier(SharedPreferences prefs)
+    : super(prefs, 'reader_use_source_bold_styling', true);
+}
+
+class ShowSourceDetailsNotifier extends _ReaderDisplayPreferenceNotifier {
+  ShowSourceDetailsNotifier(SharedPreferences prefs)
+    : super(prefs, 'reader_show_source_details', false);
 }

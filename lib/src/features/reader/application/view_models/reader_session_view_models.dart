@@ -16,6 +16,9 @@ final currentReferenceProvider =
 
 class TranslationNotifier extends StateNotifier<String> {
   TranslationNotifier(this._prefs)
+    // KJV remains the built-in default translation so the app has a guaranteed
+    // local Bible available on first launch even before any remote catalog or
+    // downloads are configured.
     : super(_prefs.getString('bible_translation') ?? 'kjv');
 
   final SharedPreferences _prefs;

@@ -5,6 +5,7 @@ import 'package:basic_bible/src/features/annotations/presentation/note_editor_sc
 import 'package:basic_bible/src/features/home/application/view_models/home_navigation_view_model.dart';
 import 'package:basic_bible/src/features/reader/application/view_models/bible_library_view_models.dart';
 import 'package:basic_bible/src/features/reader/application/view_models/reader_session_view_models.dart';
+import 'package:basic_bible/src/features/reader/presentation/reference_picker/reference_preview_sheet.dart';
 import 'package:basic_bible/src/models/bible_models.dart';
 import 'package:basic_bible/src/utils/reference_utils.dart';
 import 'package:flutter/material.dart';
@@ -13,6 +14,116 @@ import 'package:go_router/go_router.dart';
 
 class NotesScreen extends ConsumerWidget {
   const NotesScreen({super.key});
+
+  Future<void> _openReferenceInReader(
+    BuildContext context,
+    WidgetRef ref, {
+    required BibleReference reference,
+    required String preferredTranslationId,
+    required String preferredTranslationName,
+    String? fallbackTranslationId,
+    String? fallbackTranslationName,
+  }) async {
+    try {
+      final available = await ref.read(availableTranslationsProvider.future);
+      final preferredExists = available.any(
+        (translation) => translation.id == preferredTranslationId,
+      );
+      final fallbackExists =
+          fallbackTranslationId != null &&
+          available.any(
+            (translation) => translation.id == fallbackTranslationId,
+          );
+      final fallbackId = fallbackTranslationId;
+
+      if (preferredExists) {
+        await ref
+            .read(currentTranslationProvider.notifier)
+            .setTranslation(preferredTranslationId);
+      } else if (fallbackExists && fallbackId != null) {
+        await ref
+            .read(currentTranslationProvider.notifier)
+            .setTranslation(fallbackId);
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                '"$preferredTranslationName" is not installed. '
+                'Opening in ${fallbackTranslationName ?? 'the current translation'}.',
+              ),
+            ),
+          );
+        }
+      } else if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              '"$preferredTranslationName" is not installed. Opening in current translation.',
+            ),
+          ),
+        );
+      }
+
+      await ref.read(currentReferenceProvider.notifier).setReference(reference);
+      ref.read(homeTabIndexProvider.notifier).state = 1;
+      if (context.mounted) context.go('/home');
+    } catch (_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to open reference.')),
+        );
+      }
+    }
+  }
+
+  Future<void> _showLinkedVersePreview(
+    BuildContext context,
+    WidgetRef ref, {
+    required AnnotationVerseLink link,
+    required List<BibleBook> books,
+  }) {
+    final currentTranslationId = ref.read(currentTranslationProvider);
+    final currentTranslationName =
+        ref
+            .read(availableTranslationsProvider)
+            .asData
+            ?.value
+            .where((translation) => translation.id == currentTranslationId)
+            .firstOrNull
+            ?.name ??
+        'Current translation';
+
+    return showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (sheetContext) {
+        return ReferencePreviewSheet(
+          referenceLabel:
+              '${displayBookNameForReference(books, link.bookId)} ${link.chapter}:${link.verse}',
+          reference: link.reference,
+          preferredTranslationId: link.translationId,
+          preferredTranslationName: link.translationName,
+          fallbackTranslationId: currentTranslationId,
+          fallbackTranslationName: currentTranslationName,
+          books: books,
+          returnLabel: 'Back to Note',
+          onOpenInBible: (previewContext, preview) async {
+            Navigator.of(previewContext).pop();
+            await _openReferenceInReader(
+              context,
+              ref,
+              reference: preview.reference,
+              preferredTranslationId: preview.translationId,
+              preferredTranslationName: preview.translationName,
+              fallbackTranslationId: currentTranslationId,
+              fallbackTranslationName: currentTranslationName,
+            );
+          },
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -46,41 +157,15 @@ class NotesScreen extends ConsumerWidget {
                 annotation: annotation,
                 books: books,
                 onOpenReference: () async {
-                  final translationId = annotation.primaryVerse.translationId;
-                  try {
-                    final available =
-                        await ref.read(availableTranslationsProvider.future);
-                    final exists = available.any((t) => t.id == translationId);
-                    if (!exists) {
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              '"${annotation.primaryVerse.translationName}" is not installed. '
-                              'Opening in current translation.',
-                            ),
-                          ),
-                        );
-                      }
-                    } else {
-                      await ref
-                          .read(currentTranslationProvider.notifier)
-                          .setTranslation(translationId);
-                    }
-                    await ref
-                        .read(currentReferenceProvider.notifier)
-                        .setReference(annotation.primaryVerse.reference);
-                    ref.read(homeTabIndexProvider.notifier).state = 1;
-                    if (context.mounted) context.go('/home');
-                  } catch (_) {
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Failed to open reference.'),
-                        ),
-                      );
-                    }
-                  }
+                  await _openReferenceInReader(
+                    context,
+                    ref,
+                    reference: annotation.primaryVerse.reference,
+                    preferredTranslationId:
+                        annotation.primaryVerse.translationId,
+                    preferredTranslationName:
+                        annotation.primaryVerse.translationName,
+                  );
                 },
                 onEdit: () async {
                   await Navigator.of(context).push(
@@ -122,13 +207,17 @@ class NotesScreen extends ConsumerWidget {
                   } catch (_) {
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Failed to delete note.'),
-                        ),
+                        const SnackBar(content: Text('Failed to delete note.')),
                       );
                     }
                   }
                 },
+                onPreviewLinkedVerse: (link) => _showLinkedVersePreview(
+                  context,
+                  ref,
+                  link: link,
+                  books: books,
+                ),
               );
             },
           );
@@ -148,6 +237,7 @@ class _AnnotationListCard extends StatelessWidget {
     required this.onOpenReference,
     required this.onEdit,
     required this.onDelete,
+    required this.onPreviewLinkedVerse,
   });
 
   final UserAnnotation annotation;
@@ -155,6 +245,7 @@ class _AnnotationListCard extends StatelessWidget {
   final Future<void> Function() onOpenReference;
   final Future<void> Function() onEdit;
   final Future<void> Function() onDelete;
+  final Future<void> Function(AnnotationVerseLink link) onPreviewLinkedVerse;
 
   @override
   Widget build(BuildContext context) {
@@ -245,7 +336,8 @@ class _AnnotationListCard extends StatelessWidget {
               runSpacing: 8,
               children: [
                 for (final link in annotation.linkedVerses)
-                  Chip(
+                  ActionChip(
+                    onPressed: () => onPreviewLinkedVerse(link),
                     label: Text(
                       '${displayBookNameForReference(books, link.bookId)} ${link.chapter}:${link.verse}',
                     ),

@@ -1,14 +1,12 @@
-import 'dart:io';
-
 import 'package:basic_bible/src/features/reader/application/view_models/bible_library_view_models.dart';
 import 'package:basic_bible/src/models/bible_models.dart';
+import 'package:basic_bible/src/platform/runtime_support.dart';
 import 'package:basic_bible/src/services/translation_database_manager.dart';
 import 'package:basic_bible/src/widgets/app_back_button.dart';
-import 'package:file_selector/file_selector.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:share_plus/share_plus.dart';
+
+import 'translation_db_exporter.dart';
 
 class AdvancedSettingsScreen extends ConsumerWidget {
   const AdvancedSettingsScreen({super.key});
@@ -60,9 +58,9 @@ class AdvancedSettingsScreen extends ConsumerWidget {
 
             Text(
               'Export Translation Databases',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 4),
             Text(
@@ -74,6 +72,16 @@ class AdvancedSettingsScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 12),
 
+            if (isWebRuntime)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Text(
+                  'Browser builds can read and cache translations, but exporting cached database files is not available on web yet.',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
             translationsAsync.when(
               data: (translations) {
                 if (translations.isEmpty) {
@@ -85,7 +93,10 @@ class AdvancedSettingsScreen extends ConsumerWidget {
                 return Column(
                   children: [
                     for (final t in translations)
-                      _TranslationExportTile(translation: t),
+                      _TranslationExportTile(
+                        translation: t,
+                        enabled: !isWebRuntime,
+                      ),
                   ],
                 );
               },
@@ -109,9 +120,13 @@ class AdvancedSettingsScreen extends ConsumerWidget {
 // ---------------------------------------------------------------------------
 
 class _TranslationExportTile extends StatefulWidget {
-  const _TranslationExportTile({required this.translation});
+  const _TranslationExportTile({
+    required this.translation,
+    this.enabled = true,
+  });
 
   final BibleTranslation translation;
+  final bool enabled;
 
   @override
   State<_TranslationExportTile> createState() => _TranslationExportTileState();
@@ -128,61 +143,27 @@ class _TranslationExportTileState extends State<_TranslationExportTile> {
       final dbPath = await TranslationDatabaseManager.pathForTranslation(
         widget.translation.id,
       );
-      final file = File(dbPath);
+      final fileName = '${widget.translation.id.toLowerCase()}.sqlite';
 
-      if (!await file.exists()) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                '"${widget.translation.name}" has not been loaded yet. '
-                'Open it in the reader first to generate the cache file.',
-              ),
-            ),
-          );
-        }
-        return;
-      }
+      await exportTranslationDatabase(
+        dbPath: dbPath,
+        fileName: fileName,
+        translationName: widget.translation.name,
+      );
 
-      final fileName =
-          '${widget.translation.id.toLowerCase()}.sqlite';
-
-      if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
-        // Mobile: share via OS share sheet
-        await Share.shareXFiles(
-          [XFile(dbPath)],
-          subject: '${widget.translation.name} Bible Database',
-          text: fileName,
+      if (mounted && !isMobileRuntime) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Export completed for ${widget.translation.name}.'),
+            duration: const Duration(seconds: 4),
+          ),
         );
-      } else {
-        // Desktop (Linux / Windows / macOS): save to a user-chosen path
-        final location = await getSaveLocation(
-          suggestedName: fileName,
-          acceptedTypeGroups: [
-            const XTypeGroup(
-              label: 'SQLite database',
-              extensions: ['sqlite', 'db'],
-            ),
-          ],
-        );
-        if (location == null) return; // user cancelled
-
-        await file.copy(location.path);
-
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Exported to ${location.path}'),
-              duration: const Duration(seconds: 5),
-            ),
-          );
-        }
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Export failed: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Export failed: $e')));
       }
     } finally {
       if (mounted) setState(() => _exporting = false);
@@ -228,7 +209,7 @@ class _TranslationExportTileState extends State<_TranslationExportTile> {
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
               : FilledButton.tonal(
-                  onPressed: _export,
+                  onPressed: widget.enabled ? _export : null,
                   child: const Text('Export'),
                 ),
         ],

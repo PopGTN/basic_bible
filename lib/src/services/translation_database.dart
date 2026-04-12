@@ -1,12 +1,8 @@
-// ignore_for_file: uri_has_not_been_generated, undefined_identifier, undefined_method, undefined_getter, override_on_non_overriding_member, undefined_class, argument_type_not_assignable
-import 'dart:io';
-
 import 'package:drift/drift.dart';
-import 'package:drift/native.dart';
-import 'package:flutter/foundation.dart';
 
 import '../models/bible_models.dart';
 import 'app_database.dart'; // shared type converters
+import 'translation_database_executor.dart';
 
 part 'translation_database.g.dart';
 
@@ -137,35 +133,46 @@ class TranslationDatabase extends _$TranslationDatabase {
     });
   }
 
+  Future<void> clearBible() async {
+    await transaction(() async {
+      await delete(tVerses).go();
+      await delete(tChapters).go();
+      await delete(tBooks).go();
+    });
+  }
+
   // -------------------------------------------------------------------------
   // Read — shell (no verses, fast)
   // -------------------------------------------------------------------------
 
   Future<List<BibleBook>> getBooksShell() async {
-    final bookRows = await (select(tBooks)
-          ..orderBy([(b) => OrderingTerm(expression: b.bookNumber)]))
-        .get();
+    final bookRows = await (select(
+      tBooks,
+    )..orderBy([(b) => OrderingTerm(expression: b.bookNumber)])).get();
 
     if (bookRows.isEmpty) return const [];
 
     final bookIds = bookRows.map((r) => r.id).toList();
-    final chapterRows = await (select(tChapters)
-          ..where((c) => c.bookId.isIn(bookIds))
-          ..orderBy([
-            (c) => OrderingTerm(expression: c.bookId),
-            (c) => OrderingTerm(expression: c.number),
-          ]))
-        .get();
+    final chapterRows =
+        await (select(tChapters)
+              ..where((c) => c.bookId.isIn(bookIds))
+              ..orderBy([
+                (c) => OrderingTerm(expression: c.bookId),
+                (c) => OrderingTerm(expression: c.number),
+              ]))
+            .get();
 
     final chaptersByBookId = <String, List<BibleChapter>>{};
     for (final c in chapterRows) {
-      chaptersByBookId.putIfAbsent(c.bookId, () => []).add(
-        BibleChapter(
-          number: c.number,
-          verses: const [],
-          blocks: c.blocks ?? const [],
-        ),
-      );
+      chaptersByBookId
+          .putIfAbsent(c.bookId, () => [])
+          .add(
+            BibleChapter(
+              number: c.number,
+              verses: const [],
+              blocks: c.blocks ?? const [],
+            ),
+          );
     }
 
     return [
@@ -188,20 +195,21 @@ class TranslationDatabase extends _$TranslationDatabase {
   // -------------------------------------------------------------------------
 
   Future<List<BibleBook>> getBible() async {
-    final bookRows = await (select(tBooks)
-          ..orderBy([(b) => OrderingTerm(expression: b.bookNumber)]))
-        .get();
+    final bookRows = await (select(
+      tBooks,
+    )..orderBy([(b) => OrderingTerm(expression: b.bookNumber)])).get();
 
     if (bookRows.isEmpty) return const [];
 
     final bookIds = bookRows.map((r) => r.id).toList();
-    final chapterRows = await (select(tChapters)
-          ..where((c) => c.bookId.isIn(bookIds))
-          ..orderBy([
-            (c) => OrderingTerm(expression: c.bookId),
-            (c) => OrderingTerm(expression: c.number),
-          ]))
-        .get();
+    final chapterRows =
+        await (select(tChapters)
+              ..where((c) => c.bookId.isIn(bookIds))
+              ..orderBy([
+                (c) => OrderingTerm(expression: c.bookId),
+                (c) => OrderingTerm(expression: c.number),
+              ]))
+            .get();
 
     final chapterIds = chapterRows.map((r) => r.id).toList();
     final verseRows = chapterIds.isEmpty
@@ -221,13 +229,15 @@ class TranslationDatabase extends _$TranslationDatabase {
 
     final chaptersByBookId = <String, List<BibleChapter>>{};
     for (final c in chapterRows) {
-      chaptersByBookId.putIfAbsent(c.bookId, () => []).add(
-        BibleChapter(
-          number: c.number,
-          verses: versesByChapterId[c.id] ?? const [],
-          blocks: c.blocks ?? const [],
-        ),
-      );
+      chaptersByBookId
+          .putIfAbsent(c.bookId, () => [])
+          .add(
+            BibleChapter(
+              number: c.number,
+              verses: versesByChapterId[c.id] ?? const [],
+              blocks: c.blocks ?? const [],
+            ),
+          );
     }
 
     return [
@@ -250,23 +260,24 @@ class TranslationDatabase extends _$TranslationDatabase {
   // -------------------------------------------------------------------------
 
   Future<BibleChapter?> getChapter(String bookId, int chapterNumber) async {
-    final bookRow = await (select(tBooks)
-          ..where((b) => b.id.equals(bookId.toUpperCase())))
-        .getSingleOrNull();
+    final bookRow = await (select(
+      tBooks,
+    )..where((b) => b.id.equals(bookId.toUpperCase()))).getSingleOrNull();
     if (bookRow == null) return null;
 
-    final chapterRow = await (select(tChapters)
-          ..where(
-            (c) =>
-                c.bookId.equals(bookRow.id) & c.number.equals(chapterNumber),
-          ))
-        .getSingleOrNull();
+    final chapterRow =
+        await (select(tChapters)..where(
+              (c) =>
+                  c.bookId.equals(bookRow.id) & c.number.equals(chapterNumber),
+            ))
+            .getSingleOrNull();
     if (chapterRow == null) return null;
 
-    final verseRows = await (select(tVerses)
-          ..where((v) => v.chapterId.equals(chapterRow.id))
-          ..orderBy([(v) => OrderingTerm(expression: v.number)]))
-        .get();
+    final verseRows =
+        await (select(tVerses)
+              ..where((v) => v.chapterId.equals(chapterRow.id))
+              ..orderBy([(v) => OrderingTerm(expression: v.number)]))
+            .get();
 
     return BibleChapter(
       number: chapterRow.number,
@@ -298,25 +309,5 @@ BibleBookType _bookTypeFromIndex(int index) =>
 // ---------------------------------------------------------------------------
 
 TranslationDatabase openTranslationDatabase(String filePath) {
-  final executor = LazyDatabase(() async {
-    if (kIsWeb) return NativeDatabase.memory();
-    return NativeDatabase.createInBackground(
-      File(filePath),
-      setup: (db) {
-        // WAL mode: reads and writes no longer block each other, which matters
-        // for a read-heavy app where a shell load or chapter fetch can run
-        // concurrently with a background write.
-        db.execute('PRAGMA journal_mode=WAL;');
-        // NORMAL is safe with WAL (data is durable after each commit) and
-        // significantly faster than the default FULL.
-        db.execute('PRAGMA synchronous=NORMAL;');
-        // 8 MB page cache — a full Bible is 10–30 MB of row data, so a
-        // generous cache reduces repeated disk reads during chapter navigation.
-        db.execute('PRAGMA cache_size=-8000;');
-        // Store temp tables in memory instead of a temp file on disk.
-        db.execute('PRAGMA temp_store=MEMORY;');
-      },
-    );
-  });
-  return TranslationDatabase(executor);
+  return TranslationDatabase(openTranslationDatabaseExecutor(filePath));
 }

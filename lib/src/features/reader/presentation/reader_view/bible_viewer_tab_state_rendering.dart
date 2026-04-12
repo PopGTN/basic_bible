@@ -354,7 +354,7 @@ extension _BibleTextViewStateRendering on _BibleTextViewState {
       key: verseKey,
       padding: const EdgeInsets.only(bottom: 8.0),
       child: InkWell(
-        onTap: () => _selectVerse(bookId, chapterNumber, verse),
+        onTap: () => _handleVerseTap(bookId, chapterNumber, verse),
         borderRadius: BorderRadius.circular(14),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 220),

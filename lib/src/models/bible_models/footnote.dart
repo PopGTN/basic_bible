@@ -52,6 +52,14 @@ class BibleFootnote extends Equatable {
   }
 
   @override
-  List<Object?> get props =>
-      [text, marker, label, bodyText, quotedText, references, spanIndex, charOffset];
+  List<Object?> get props => [
+    text,
+    marker,
+    label,
+    bodyText,
+    quotedText,
+    references,
+    spanIndex,
+    charOffset,
+  ];
 }

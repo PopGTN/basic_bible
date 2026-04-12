@@ -1,16 +1,12 @@
 // ignore_for_file: uri_has_not_been_generated, undefined_identifier, undefined_method, undefined_getter, override_on_non_overriding_member, unnecessary_brace_in_string_interps, undefined_class, argument_type_not_assignable, return_of_invalid_type
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:drift/drift.dart';
-import 'package:drift/native.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
 import 'package:basic_bible/src/features/annotations/models/user_annotations.dart';
 
 import '../models/bible_models.dart';
+import 'app_database_executor.dart';
 
 part 'app_database.g.dart';
 
@@ -483,23 +479,7 @@ class AppDatabase extends _$AppDatabase {
 // =============================================================================
 
 QueryExecutor _connectAppDatabase() {
-  return LazyDatabase(() async {
-    if (kIsWeb) return NativeDatabase.memory();
-
-    final dir = await getApplicationSupportDirectory();
-    final dbDir = Directory(p.join(dir.path, 'database'));
-    if (!await dbDir.exists()) await dbDir.create(recursive: true);
-
-    final file = File(p.join(dbDir.path, 'app.sqlite'));
-    return NativeDatabase.createInBackground(
-      file,
-      setup: (db) {
-        db.execute('PRAGMA journal_mode=WAL;');
-        db.execute('PRAGMA synchronous=NORMAL;');
-        db.execute('PRAGMA temp_store=MEMORY;');
-      },
-    );
-  });
+  return openAppDatabaseExecutor();
 }
 
 final appDatabaseProvider = Provider<AppDatabase>((ref) {

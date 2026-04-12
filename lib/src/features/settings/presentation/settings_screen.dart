@@ -20,6 +20,12 @@ class SettingsScreen extends ConsumerWidget {
     final showVerseSelector = ref.watch(showVerseSelectorProvider);
     final boldDivineName = ref.watch(boldDivineNameProvider);
     final underlineProperNames = ref.watch(underlineProperNamesProvider);
+    final underlineWordMetadata = ref.watch(underlineWordMetadataProvider);
+    final bracketTranslatorAdditions = ref.watch(
+      bracketTranslatorAdditionsProvider,
+    );
+    final useSourceBoldStyling = ref.watch(useSourceBoldStylingProvider);
+    final showSourceDetails = ref.watch(showSourceDetailsProvider);
     final openBibleTabByDefault = ref.watch(openBibleTabByDefaultProvider);
     final requireDummyLogin = ref.watch(requireDummyLoginProvider);
     final colors = Theme.of(context).colorScheme;
@@ -149,7 +155,7 @@ class SettingsScreen extends ConsumerWidget {
               contentPadding: EdgeInsets.zero,
               title: const Text('Underline Proper Names'),
               subtitle: const Text(
-                'Underline proper nouns and Strong\'s-tagged words when the source marks them.',
+                'Underline proper nouns when the source marks them.',
               ),
               value: underlineProperNames,
               onChanged: (value) {
@@ -160,9 +166,59 @@ class SettingsScreen extends ConsumerWidget {
             ),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
+              title: const Text('Underline Word Tags'),
+              subtitle: const Text(
+                'Underline source-tagged word metadata such as Strong\'s-linked words. Off by default.',
+              ),
+              value: underlineWordMetadata,
+              onChanged: (value) {
+                ref
+                    .read(underlineWordMetadataProvider.notifier)
+                    .setEnabled(value);
+              },
+            ),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Bracket Translator Additions'),
+              subtitle: const Text(
+                'Show translator-supplied words in [brackets]. Turn this off if you prefer italic-only rendering.',
+              ),
+              value: bracketTranslatorAdditions,
+              onChanged: (value) {
+                ref
+                    .read(bracketTranslatorAdditionsProvider.notifier)
+                    .setEnabled(value);
+              },
+            ),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Use Source Bold Styling'),
+              subtitle: const Text(
+                'Respect bold-style emphasis from the source format for tags such as keywords and explicit bold spans.',
+              ),
+              value: useSourceBoldStyling,
+              onChanged: (value) {
+                ref
+                    .read(useSourceBoldStylingProvider.notifier)
+                    .setEnabled(value);
+              },
+            ),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Show Source Details'),
+              subtitle: const Text(
+                'Show study metadata such as Strong\'s numbers, lemmas, morphology, and quote speakers in the verse details sheet. Off by default.',
+              ),
+              value: showSourceDetails,
+              onChanged: (value) {
+                ref.read(showSourceDetailsProvider.notifier).setEnabled(value);
+              },
+            ),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
               title: const Text('Enable Verse Selector'),
               subtitle: const Text(
-                'Allow the reference picker to drill into verse selection instead of only picking chapters.',
+                'Allow the reference picker to drill into verse selection instead of only picking chapters. Off by default.',
               ),
               value: showVerseSelector,
               onChanged: (value) {
@@ -176,7 +232,9 @@ class SettingsScreen extends ConsumerWidget {
               contentPadding: EdgeInsets.zero,
               leading: const Icon(Icons.developer_mode_outlined),
               title: const Text('Advanced'),
-              subtitle: const Text('Developer tools — export translation databases'),
+              subtitle: const Text(
+                'Developer tools — export translation databases',
+              ),
               trailing: const Icon(Icons.chevron_right),
               onTap: () => context.push('/home/settings/advanced'),
             ),

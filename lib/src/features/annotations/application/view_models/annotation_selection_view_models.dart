@@ -12,6 +12,8 @@ class SelectedVersesNotifier extends StateNotifier<List<BibleReference>> {
 
   void setSingle(BibleReference reference) => state = [reference];
 
+  void replaceAll(List<BibleReference> references) => state = references;
+
   void toggle(BibleReference reference) {
     final index = state.indexWhere(
       (item) =>

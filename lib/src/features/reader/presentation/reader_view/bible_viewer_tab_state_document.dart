@@ -176,18 +176,6 @@ extension _BibleTextViewStateDocument on _BibleTextViewState {
             alignment: PlaceholderAlignment.middle,
           ),
           for (final verse in section.verses) ...[
-            ...[
-              final inlineBackground = _selectionAwareBackground(
-                context,
-                isSelected: _isSelectedVerse(bookId, chapterNumber, verse),
-                baseBackground: _docVerseHighlightColor(
-                  context,
-                  bookId,
-                  chapterNumber,
-                  verse,
-                ),
-              ),
-            ],
             WidgetSpan(
               child: SizedBox(
                 key: _verseKey(bookId, chapterNumber, verse.number),
@@ -199,30 +187,19 @@ extension _BibleTextViewStateDocument on _BibleTextViewState {
               alignment: PlaceholderAlignment.middle,
               child: Padding(
                 padding: const EdgeInsets.only(right: 4),
-                child: _InlineVerseSelector(
-                  verseNumber: verse.number,
-                  color: _verseNumberColor(
-                    context,
-                    bookId,
-                    chapterNumber,
-                    verse,
-                  ),
-                  isSelected: _isSelectedVerse(bookId, chapterNumber, verse),
-                  hasNote: false,
-                  inlineOnly: true,
-                  backgroundColor: inlineBackground,
-                  onTap: () => _selectVerse(bookId, chapterNumber, verse),
+                child: _buildDocumentInlineVerseSelector(
+                  context,
+                  bookId,
+                  chapterNumber,
+                  verse,
                 ),
               ),
             ),
-            ..._buildVerseContentSpans(
+            ..._buildDocumentVerseTextSpans(
               context,
+              bookId,
+              chapterNumber,
               verse,
-              bodyColor: _verseTextColor(context, bookId, chapterNumber, verse),
-              isSelectedVerse: _isSelectedVerse(bookId, chapterNumber, verse),
-              backgroundColor: inlineBackground,
-              applySelectionTint: false,
-              recognizer: _verseTapRecognizer(bookId, chapterNumber, verse),
             ),
             if (_docVerseHasPersonalNotes(bookId, chapterNumber, verse))
               WidgetSpan(
@@ -275,18 +252,6 @@ extension _BibleTextViewStateDocument on _BibleTextViewState {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         for (final verse in section.verses)
-          ...[
-            final inlineBackground = _selectionAwareBackground(
-              context,
-              isSelected: _isSelectedVerse(bookId, chapterNumber, verse),
-              baseBackground: _docVerseHighlightColor(
-                context,
-                bookId,
-                chapterNumber,
-                verse,
-              ),
-            ),
-          ]
           Padding(
             key: _verseKey(bookId, chapterNumber, verse.number),
             padding: EdgeInsets.only(
@@ -296,7 +261,7 @@ extension _BibleTextViewStateDocument on _BibleTextViewState {
             ),
             child: GestureDetector(
               behavior: HitTestBehavior.translucent,
-              onTap: () => _selectVerse(bookId, chapterNumber, verse),
+              onTap: () => _handleVerseTap(bookId, chapterNumber, verse),
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
                 child: RichText(
@@ -311,48 +276,19 @@ extension _BibleTextViewStateDocument on _BibleTextViewState {
                         alignment: PlaceholderAlignment.middle,
                         child: Padding(
                           padding: const EdgeInsets.only(right: 4),
-                          child: _InlineVerseSelector(
-                            verseNumber: verse.number,
-                            color: _verseNumberColor(
-                              context,
-                              bookId,
-                              chapterNumber,
-                              verse,
-                            ),
-                            isSelected: _isSelectedVerse(
-                              bookId,
-                              chapterNumber,
-                              verse,
-                            ),
-                            hasNote: false,
-                            inlineOnly: true,
-                            backgroundColor: inlineBackground,
-                            onTap: () =>
-                                _selectVerse(bookId, chapterNumber, verse),
+                          child: _buildDocumentInlineVerseSelector(
+                            context,
+                            bookId,
+                            chapterNumber,
+                            verse,
                           ),
                         ),
                       ),
-                      ..._buildVerseContentSpans(
+                      ..._buildDocumentVerseTextSpans(
                         context,
+                        bookId,
+                        chapterNumber,
                         verse,
-                        bodyColor: _verseTextColor(
-                          context,
-                          bookId,
-                          chapterNumber,
-                          verse,
-                        ),
-                        isSelectedVerse: _isSelectedVerse(
-                          bookId,
-                          chapterNumber,
-                          verse,
-                        ),
-                        backgroundColor: inlineBackground,
-                        applySelectionTint: false,
-                        recognizer: _verseTapRecognizer(
-                          bookId,
-                          chapterNumber,
-                          verse,
-                        ),
                       ),
                       if (_docVerseHasPersonalNotes(
                         bookId,
@@ -404,6 +340,65 @@ extension _BibleTextViewStateDocument on _BibleTextViewState {
     );
   }
 
+  _DocumentVerseRenderState _docVerseRenderState(
+    BuildContext context,
+    String bookId,
+    int chapterNumber,
+    BibleVerse verse,
+  ) {
+    final isSelected = _isSelectedVerse(bookId, chapterNumber, verse);
+    final inlineBackground = _selectionAwareBackground(
+      context,
+      isSelected: isSelected,
+      baseBackground: _docVerseHighlightColor(
+        context,
+        bookId,
+        chapterNumber,
+        verse,
+      ),
+    );
+    return _DocumentVerseRenderState(
+      isSelected: isSelected,
+      inlineBackground: inlineBackground,
+    );
+  }
+
+  Widget _buildDocumentInlineVerseSelector(
+    BuildContext context,
+    String bookId,
+    int chapterNumber,
+    BibleVerse verse,
+  ) {
+    final state = _docVerseRenderState(context, bookId, chapterNumber, verse);
+    return _InlineVerseSelector(
+      verseNumber: verse.number,
+      color: _verseNumberColor(context, bookId, chapterNumber, verse),
+      isSelected: state.isSelected,
+      hasNote: false,
+      inlineOnly: true,
+      backgroundColor: state.inlineBackground,
+      onTap: () => _handleVerseTap(bookId, chapterNumber, verse),
+    );
+  }
+
+  List<InlineSpan> _buildDocumentVerseTextSpans(
+    BuildContext context,
+    String bookId,
+    int chapterNumber,
+    BibleVerse verse,
+  ) {
+    final state = _docVerseRenderState(context, bookId, chapterNumber, verse);
+    return _buildVerseContentSpans(
+      context,
+      verse,
+      bodyColor: _verseTextColor(context, bookId, chapterNumber, verse),
+      isSelectedVerse: state.isSelected,
+      backgroundColor: state.inlineBackground,
+      applySelectionTint: false,
+      recognizer: _verseTapRecognizer(bookId, chapterNumber, verse),
+    );
+  }
+
   bool _isDocumentPoetrySection(_ParagraphSection section) {
     if (section.leadingBlocks.any(
       (block) => block.kind == BibleDocumentBlockKind.poetry,
@@ -423,4 +418,14 @@ extension _BibleTextViewStateDocument on _BibleTextViewState {
 
     return false;
   }
+}
+
+class _DocumentVerseRenderState {
+  const _DocumentVerseRenderState({
+    required this.isSelected,
+    required this.inlineBackground,
+  });
+
+  final bool isSelected;
+  final Color? inlineBackground;
 }

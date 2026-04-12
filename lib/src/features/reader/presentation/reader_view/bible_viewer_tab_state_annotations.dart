@@ -17,48 +17,64 @@ extension _BibleTextViewStateAnnotations on _BibleTextViewState {
       context: context,
       isScrollControlled: true,
       showDragHandle: true,
-      builder: (context) {
+      builder: (sheetContext) {
         return _VerseDetailsSheet(
           referenceLabel:
               '${displayBookNameForReference(widget.books, widget.reference.bookId)} $chapterNumber:${verse.number}',
           verse: verse,
           annotationEntries: annotationEntries,
           onReferenceTap: (referenceEntry) =>
-              _openReferenceFromSheet(context, referenceEntry),
+              _previewReferenceFromSheet(sheetContext, referenceEntry),
         );
       },
     );
   }
 
-  void _openReferenceFromSheet(
-    BuildContext context,
+  Future<void> _previewReferenceFromSheet(
+    BuildContext sheetContext,
     BibleCrossReference referenceEntry,
-  ) {
+  ) async {
     final parsedReference = parseAnyReference(
       target: referenceEntry.target,
       label: referenceEntry.label,
     );
 
-    if (parsedReference != null) {
-      // Use the parser-provided target first so taps can go straight to the
-      // intended verse instead of depending on display-label parsing.
-      final referenceNotifier = ProviderScope.containerOf(
-        context,
-        listen: false,
-      ).read(currentReferenceProvider.notifier);
-      referenceNotifier.setReference(parsedReference);
-      Navigator.of(context).pop();
-      return;
-    }
-
-    Navigator.of(context).pop();
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => ReferenceScreen(
-          references: [referenceEntry],
-          currentReference: widget.reference,
-        ),
-      ),
+    await showModalBottomSheet<void>(
+      context: sheetContext,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (previewContext) {
+        return ReferencePreviewSheet(
+          referenceLabel: referenceEntry.label,
+          reference: parsedReference,
+          preferredTranslationId: ref.read(currentTranslationProvider),
+          preferredTranslationName:
+              ref
+                  .read(availableTranslationsProvider)
+                  .asData
+                  ?.value
+                  .where(
+                    (translation) =>
+                        translation.id == ref.read(currentTranslationProvider),
+                  )
+                  .firstOrNull
+                  ?.name ??
+              'Current translation',
+          books: widget.books,
+          returnLabel: 'Back to Details',
+          onOpenInBible: (previewSheetContext, preview) async {
+            await ref
+                .read(currentReferenceProvider.notifier)
+                .setReference(preview.reference);
+            if (previewSheetContext.mounted) {
+              Navigator.of(previewSheetContext).pop();
+            }
+            if (sheetContext.mounted) {
+              Navigator.of(sheetContext).pop();
+            }
+          },
+        );
+      },
     );
   }
 
@@ -210,13 +226,21 @@ extension _BibleTextViewStateAnnotations on _BibleTextViewState {
     final secondaryColor = Theme.of(context).colorScheme.secondary;
     final boldDivineName = ref.watch(boldDivineNameProvider);
     final underlineProperNames = ref.watch(underlineProperNamesProvider);
+    final underlineWordMetadata = ref.watch(underlineWordMetadataProvider);
+    final bracketTranslatorAdditions = ref.watch(
+      bracketTranslatorAdditionsProvider,
+    );
+    final useSourceBoldStyling = ref.watch(useSourceBoldStylingProvider);
 
     final inlineSpans = <InlineSpan>[];
 
     for (final span in spans) {
       inlineSpans.add(
         TextSpan(
-          text: _spanText(span),
+          text: _spanText(
+            span,
+            bracketTranslatorAdditions: bracketTranslatorAdditions,
+          ),
           recognizer: recognizer,
           style: TextStyle(
             color: _spanColor(span.kind, baseColor, secondaryColor),
@@ -224,10 +248,12 @@ extension _BibleTextViewStateAnnotations on _BibleTextViewState {
             fontWeight: _spanFontWeight(
               span.kind,
               boldDivineName: boldDivineName,
+              useSourceBoldStyling: useSourceBoldStyling,
             ),
             decoration: _spanDecoration(
               span.kind,
               underlineProperNames: underlineProperNames,
+              underlineWordMetadata: underlineWordMetadata,
             ),
             backgroundColor: effectiveBackgroundColor,
           ),
@@ -276,7 +302,10 @@ extension _BibleTextViewStateAnnotations on _BibleTextViewState {
     return true;
   }
 
-  String _spanText(BibleVerseSpan span) {
+  String _spanText(
+    BibleVerseSpan span, {
+    bool bracketTranslatorAdditions = true,
+  }) {
     if (span.metadata case {'quoteLevel': final levelText}) {
       final level = int.tryParse(levelText) ?? 0;
       if (level > 1) {
@@ -287,7 +316,8 @@ extension _BibleTextViewStateAnnotations on _BibleTextViewState {
     // the original manuscripts. Wrapping them in brackets is the standard
     // convention used by most printed Bibles (e.g. KJV uses italics, ESV uses
     // brackets).
-    if (span.kind == BibleVerseSpanKind.translatorAddition) {
+    if (bracketTranslatorAdditions &&
+        span.kind == BibleVerseSpanKind.translatorAddition) {
       return '[${span.text}]';
     }
     return span.text;
@@ -371,6 +401,7 @@ extension _BibleTextViewStateAnnotations on _BibleTextViewState {
   FontWeight _spanFontWeight(
     BibleVerseSpanKind kind, {
     bool boldDivineName = false,
+    bool useSourceBoldStyling = true,
   }) {
     switch (kind) {
       case BibleVerseSpanKind.wordsOfJesus:
@@ -380,7 +411,7 @@ extension _BibleTextViewStateAnnotations on _BibleTextViewState {
       case BibleVerseSpanKind.acrosticHeading:
       case BibleVerseSpanKind.bold:
       case BibleVerseSpanKind.keyword:
-        return FontWeight.w700;
+        return useSourceBoldStyling ? FontWeight.w700 : FontWeight.normal;
       case BibleVerseSpanKind.word:
         return FontWeight.w500;
       default:
@@ -391,9 +422,11 @@ extension _BibleTextViewStateAnnotations on _BibleTextViewState {
   TextDecoration? _spanDecoration(
     BibleVerseSpanKind kind, {
     bool underlineProperNames = true,
+    bool underlineWordMetadata = false,
   }) {
     switch (kind) {
       case BibleVerseSpanKind.word:
+        return underlineWordMetadata ? TextDecoration.underline : null;
       case BibleVerseSpanKind.properName:
         return underlineProperNames ? TextDecoration.underline : null;
       default:

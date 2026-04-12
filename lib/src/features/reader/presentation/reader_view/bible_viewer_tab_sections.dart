@@ -77,6 +77,7 @@ class _ChapterSectionView extends StatelessWidget {
   final Widget Function() buildDocumentView;
   final Widget Function()? introBuilder;
   final Widget Function()? headerBuilder;
+
   /// Called for each heading block that precedes a specific verse in
   /// verse-list mode. If null, inline headings are not rendered.
   final Widget Function(BibleDocumentBlock block)? buildInlineHeading;

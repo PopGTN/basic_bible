@@ -3,6 +3,7 @@ import 'package:basic_bible/l10n/app_localizations.dart';
 import 'package:basic_bible/src/features/reader/application/view_models/bible_library_view_models.dart';
 import 'package:basic_bible/src/features/reader/application/view_models/reader_session_view_models.dart';
 import 'package:basic_bible/src/models/bible_models.dart';
+import 'package:basic_bible/src/platform/runtime_support.dart';
 import 'package:basic_bible/src/widgets/app_back_button.dart';
 import 'package:basic_bible/src/features/library/presentation/import_translation_screen.dart';
 import 'package:file_selector/file_selector.dart';
@@ -124,6 +125,17 @@ class VersionsScreen extends ConsumerWidget {
 
   Future<void> _importBibleFile(BuildContext context, WidgetRef ref) async {
     final t = AppLocalizations.of(context)!;
+    if (isWebRuntime) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Importing local Bible files is not available in the browser yet.',
+          ),
+        ),
+      );
+      return;
+    }
+
     final bibleFileTypeGroup = XTypeGroup(
       label: t.translationsFileTypeLabel,
       extensions: <String>['xml', 'usfx', 'osis', 'sqlite', 'sqlite3', 'db'],

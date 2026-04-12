@@ -39,6 +39,7 @@ Use `TODO_STATUS.md` beside this file as the execution tracker:
 
 ### App bootstrap
 - `lib/main.dart` initializes Flutter bindings, sets up database factory behavior for web and desktop, configures desktop window sizing, and launches the app inside a `ProviderScope`.
+- Platform-only runtime work now goes through helper files under `lib/src/platform/` and platform-specific database executor helpers under `lib/src/services/` so web builds do not pull native `dart:io` / FFI code into the browser target.
 
 ### App shell and routing
 - `lib/src/app.dart` is the main app entry inside Flutter.
@@ -84,6 +85,10 @@ Use `TODO_STATUS.md` beside this file as the execution tracker:
   - `reference_picker/chapter_bar.dart` owns the chapter bar
   - `reference_picker/reference_picker_screen.dart` owns the main picker screen
   - `reference_picker/reference_screen.dart` owns the separate references screen
+- Desktop/web style verse-range selection now exists only inside the Bible viewer. `Shift+Click` extends selection from a local reader anchor verse, but this behavior is intentionally scoped to `reader_view/` and should not be copied into reference pickers, editors, or future split-view note/document panes without an explicit product decision.
+- Source-study metadata in the verse details sheet such as `Strong's`, lemma,
+  morphology, and quote-speaker values is controlled by the reader setting
+  `Show Source Details` and is intentionally off by default for cleaner reading.
 
 This split is a structural maintenance improvement, not a feature change. Treat the current priority as regression confidence, not more reader-surface expansion.
 
@@ -152,10 +157,15 @@ This split is a structural maintenance improvement, not a feature change. Treat 
 
 ### Large-file guardrails
 - Prefer splitting by responsibility before a file becomes hard to scan.
-- As a rule of thumb:
-  - around `300-400` lines: pause and check whether the file now has more than one responsibility
-  - around `500-700` lines: split unless there is a strong reason not to
-  - `800+` lines: treat as a refactor target, not a normal resting state
+- File-length rubric:
+  - `0-200` lines: excellent
+    - Keep doing what you're doing.
+  - `200-500` lines: acceptable
+    - Monitor for complexity; consider extracting widgets.
+  - `500-1000` lines: heavy
+    - Refactor immediately. Split logic from UI.
+  - `1000+` lines: critical
+    - Treat this as a God Object. It is likely difficult to test or maintain safely.
 - Split by ownership, not arbitrarily.
   - Good splits:
     - screen widget vs reusable child widgets
@@ -213,8 +223,11 @@ This split is a structural maintenance improvement, not a feature change. Treat 
 
 ### Web storage still falls back to memory
 - Non-web platforms use a file-backed SQLite path.
-- Web still falls back to in-memory storage.
-- This means Bible cache and personal annotations do not survive browser reloads yet.
+- Web Bible loading is intentionally session-memory only: browser builds parse
+  XML into memory for the current session instead of maintaining a durable
+  translation cache that survives reloads.
+- Personal annotations on web still depend on the current web database path and
+  should be treated separately from Bible-content loading behavior.
 
 ### Menu routes outpace registered routes
 - Most placeholder menu routes still go through `/coming-soon/...`.

@@ -6,23 +6,17 @@ enum ReaderLayoutMode { verseList, document }
 
 final continuousScrollingProvider =
     StateNotifierProvider<ContinuousScrollingNotifier, bool>((ref) {
-      return ContinuousScrollingNotifier(
-        ref.read(sharedPreferencesProvider),
-      );
+      return ContinuousScrollingNotifier(ref.read(sharedPreferencesProvider));
     });
 
 final showBookIntroductionsProvider =
     StateNotifierProvider<ShowBookIntroductionsNotifier, bool>((ref) {
-      return ShowBookIntroductionsNotifier(
-        ref.read(sharedPreferencesProvider),
-      );
+      return ShowBookIntroductionsNotifier(ref.read(sharedPreferencesProvider));
     });
 
 final showVerseSelectorProvider =
     StateNotifierProvider<ShowVerseSelectorNotifier, bool>((ref) {
-      return ShowVerseSelectorNotifier(
-        ref.read(sharedPreferencesProvider),
-      );
+      return ShowVerseSelectorNotifier(ref.read(sharedPreferencesProvider));
     });
 
 final readerLayoutModeProvider =
@@ -46,8 +40,8 @@ class ShowBookIntroductionsNotifier extends StateNotifier<bool> {
   ShowBookIntroductionsNotifier(this._prefs)
     : super(
         _prefs.getBool('reader_show_book_introductions') ??
-        _prefs.getBool('reader_show_chapter_headers') ??
-        true,
+            _prefs.getBool('reader_show_chapter_headers') ??
+            true,
       );
 
   final SharedPreferences _prefs;
@@ -60,7 +54,7 @@ class ShowBookIntroductionsNotifier extends StateNotifier<bool> {
 
 class ShowVerseSelectorNotifier extends StateNotifier<bool> {
   ShowVerseSelectorNotifier(this._prefs)
-    : super(_prefs.getBool('reader_show_verse_selector') ?? true);
+    : super(_prefs.getBool('reader_show_verse_selector') ?? false);
 
   final SharedPreferences _prefs;
 

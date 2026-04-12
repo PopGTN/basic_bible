@@ -9,9 +9,10 @@ import 'package:basic_bible/src/features/reader/application/view_models/current_
 import 'package:basic_bible/src/features/reader/application/view_models/reader_preferences_view_models.dart';
 import 'package:basic_bible/src/features/reader/application/view_models/reader_session_view_models.dart';
 import 'package:basic_bible/src/features/reader/presentation/reference_picker/chapter_bar.dart';
-import 'package:basic_bible/src/features/reader/presentation/reference_picker/reference_screen.dart';
+import 'package:basic_bible/src/features/reader/presentation/reference_picker/reference_preview_sheet.dart';
 import 'package:basic_bible/src/features/settings/application/view_models/reader_display_preferences_view_models.dart';
 import 'package:basic_bible/src/models/bible_models.dart';
+import 'package:basic_bible/src/platform/runtime_support.dart';
 import 'package:basic_bible/src/services/font_size_service.dart';
 import 'package:basic_bible/src/utils/reference_utils.dart';
 import 'package:flutter/gestures.dart'
@@ -30,8 +31,10 @@ import 'package:shimmer/shimmer.dart';
 // - *_widgets.dart / *_sections.dart: extracted local widgets and support types
 part 'bible_viewer_tab_sections.dart';
 part 'bible_viewer_tab_shell_snapshot.dart';
-part 'bible_viewer_tab_annotation_widgets.dart';
+part 'bible_viewer_tab_annotation_controls.dart';
+part 'bible_viewer_tab_annotation_details.dart';
 part 'bible_viewer_tab_document_widgets.dart';
+part 'bible_viewer_tab_personal_notes.dart';
 part 'bible_viewer_tab_state_core.dart';
 part 'bible_viewer_tab_state_rendering.dart';
 part 'bible_viewer_tab_state_document.dart';
@@ -799,6 +802,7 @@ class _BibleTextViewState extends ConsumerState<_BibleTextView> {
       <String, TapGestureRecognizer>{};
   List<_ContinuousChapterSection> _continuousSections =
       <_ContinuousChapterSection>[];
+  BibleReference? _selectionAnchorReference;
   bool _showSelectedVerseFocus = true;
   bool _suppressNextChapterAutoScroll = false;
   bool _visibleSyncQueued = false;

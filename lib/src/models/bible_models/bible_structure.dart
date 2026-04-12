@@ -100,9 +100,12 @@ class BibleBook extends Equatable {
       tocLabels: (json['tocLabels'] as List<dynamic>? ?? const [])
           .map((e) => BibleTocLabel.fromJson(e as Map<String, dynamic>))
           .toList(),
-      introductionBlocks: (json['introductionBlocks'] as List<dynamic>? ?? const [])
-          .map((e) => BibleDocumentBlock.fromJson(e as Map<String, dynamic>))
-          .toList(),
+      introductionBlocks:
+          (json['introductionBlocks'] as List<dynamic>? ?? const [])
+              .map(
+                (e) => BibleDocumentBlock.fromJson(e as Map<String, dynamic>),
+              )
+              .toList(),
     );
   }
 
@@ -121,15 +124,15 @@ class BibleBook extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
-        name,
-        shortName,
-        bookNumber,
-        chapters,
-        bookType,
-        tocLabels,
-        introductionBlocks,
-      ];
+    id,
+    name,
+    shortName,
+    bookNumber,
+    chapters,
+    bookType,
+    tocLabels,
+    introductionBlocks,
+  ];
 }
 
 class BibleChapter extends Equatable {
@@ -250,12 +253,12 @@ class BibleVerse extends Equatable {
 
   @override
   List<Object?> get props => [
-        number,
-        text,
-        notes,
-        references,
-        spans,
-        footnotes,
-        crossReferences,
-      ];
+    number,
+    text,
+    notes,
+    references,
+    spans,
+    footnotes,
+    crossReferences,
+  ];
 }

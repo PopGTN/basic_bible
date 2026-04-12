@@ -51,6 +51,7 @@ This README is intentionally status-focused. It should reflect what the repo act
   - red
 - Change app language with the current localization setup.
 - Persist parsed Bible content locally on non-web platforms.
+- Build and read bundled or downloaded Bible content in the browser with the web target.
 
 ### Partially done
 
@@ -58,7 +59,7 @@ This README is intentionally status-focused. It should reflect what the repo act
 - Introductions and front matter now render in the reader, but Bible-level front matter is still not fully modeled end to end.
 - Continuous scrolling works as a whole-Bible lazy reader, but it still has an open regression item around keeping the scroller and reference controls fully in sync during some interactions.
 - Translation-library management is much better than before, but online-only translation access and fuller library lifecycle management are still not finished.
-- Offline persistence works on non-web platforms, but web still falls back to in-memory storage.
+- Offline persistence works on non-web platforms; web now has a browser-safe database path, but local file import/export workflows are still limited there.
 - Personal annotations now save and reopen, but:
   - partial-verse annotation is still future work
   - native platform share/export/sync are still follow-up work
@@ -71,6 +72,8 @@ This README is intentionally status-focused. It should reflect what the repo act
 - Prayer features
 - Screen-reader / accessibility polish
 - Full Bible-study feature set
+- Browser import of local Bible XML/SQLite files
+- Browser export of cached translation databases
 
 ## Bible Format Support
 
@@ -89,30 +92,32 @@ The goal is to support **every meaningful feature** each format can express — 
 | Feature | Status |
 | --- | --- |
 | Books / chapters / verses | ✅ |
-| Words of Jesus (`<wj>`) | ⚠️ Partial |
+| Words of Jesus (`<wj>`) | ✅ Supported — preserved as rich spans and rendered in the reader |
 | Translator additions (`<add>`) | ✅ Supported — rendered italic with `[brackets]` |
-| Footnotes (`<f>`) with label (`<fr>`) and body (`<ft>`) | ⚠️ Partial — nested parts not yet split |
-| Footnote quote / alt quote (`<fq>`, `<fqa>`) | ❌ Not yet |
-| Cross-references (`<x>`) with targets (`<ref tgt="...">`) | ⚠️ Partial |
-| Cross-ref origin (`<xo>`) | ❌ Not yet |
-| Quote attribution (`<q who="...">`) | ❌ Not yet |
-| Poetry / quote lines (`<q level="...">`) | ⚠️ Partial |
-| Strong's word metadata (`<w s="...">`) | ⚠️ Partial |
-| Word morphology (`<w m="...">`) and lemma (`<w l="...">`) | ❌ Not yet |
+| Footnotes (`<f>`) with label (`<fr>`) and body (`<ft>`) | ✅ Supported — structured footnotes preserved in app storage and reader sheet |
+| Footnote quote / alt quote (`<fq>`, `<fqa>`) | ✅ Supported — shown as quoted text in the reader sheet |
+| Cross-references (`<x>`) with targets (`<ref tgt="...">`) | ✅ Supported — structured references preserved with tappable targets |
+| Cross-ref origin (`<xo>`) | ✅ Supported — preserved as origin metadata in the app |
+| Quote attribution (`<q who="...">`) | ✅ Supported — preserved in verse metadata and surfaced in source details |
+| Poetry / quote lines (`<q level="...">`) | ✅ Supported — quote level and poetry structure drive reader layout |
+| Strong's word metadata (`<w s="...">`) | ✅ Supported — preserved in span metadata and surfaced in source details |
+| Word morphology (`<w m="...">`) and lemma (`<w l="...">`) | ✅ Supported — preserved in span metadata and surfaced in source details |
 | Book heading (`<h>`) | ✅ |
 | TOC labels (`<toc>`) | ✅ |
 | Section headings (`<ms>`, `<s>`, `<s2>`) | ✅ Supported — inline at correct verse, level-aware styles |
-| Paragraph starts / breaks (`<p>`, `<b>`) | ⚠️ Partial |
-| Intro paragraphs (`<ip>`, `<imt>`, `<is>`) | ❌ Not yet |
-| Intro outline entries (`<io1>`, `<io2>`) | ❌ Not yet |
-| Chapter description (`<cd>`) | ❌ Not yet |
+| Paragraph starts / breaks (`<p>`, `<b>`) | ✅ Supported — preserved as chapter document blocks |
+| Intro paragraphs (`<ip>`, `<imt>`, `<is>`) | ✅ Supported — rendered as introduction blocks |
+| Intro outline entries (`<io1>`, `<io2>`) | ✅ Supported — preserved with level metadata |
+| Chapter description (`<cd>`) | ✅ Supported — preserved as chapter-level document content |
 | List items (`<li1>`, `<li2>`, `<li3>`) | ✅ |
 | Intro list items (`<ili1>`, `<ili2>`) | ✅ |
-| Divine name / LORD (`<nd>`) | ❌ Not yet |
-| Proper name (`<pn>`) | ❌ Not yet |
-| Selah / music cue (`<qs>`) | ❌ Not yet |
-| Acrostic heading (`<qa>`) | ❌ Not yet |
-| Inline emphasis (`<em>`, `<bd>`, `<it>`) | ❌ Not yet |
+| Divine name / LORD (`<nd>`) | ✅ Supported — rendered with optional bold emphasis |
+| Proper name (`<pn>`) | ✅ Supported — rendered with optional underline emphasis |
+| Selah / music cue (`<qs>`) | ✅ Supported — preserved as a dedicated span kind |
+| Acrostic heading (`<qa>`) | ✅ Supported — preserved as a dedicated span kind |
+| Inline emphasis (`<em>`, `<bd>`, `<it>`) | ✅ Supported — preserved and rendered as emphasis/bold/italic spans |
+| Foreign language (`<fl>`) | ✅ Supported — preserved and rendered as italicized foreign-language spans |
+| Keyword (`<k>`) | ✅ Supported — preserved and rendered as highlighted keyword spans |
 
 ### OSIS
 

@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
@@ -10,6 +9,8 @@ import 'package:basic_bible/src/services/app_database.dart';
 import 'package:basic_bible/src/services/translation_database.dart';
 import 'package:basic_bible/src/services/translation_database_manager.dart';
 import 'package:path/path.dart' as p;
+
+import 'library_source_io.dart';
 
 class BibleImportDraft {
   const BibleImportDraft({
@@ -134,17 +135,28 @@ class AppBibleRepository {
   // ---------------------------------------------------------------------------
 
   Future<bool> _isCacheValid(String translationId) async {
-    final path = await _sqlitePathFor(translationId);
-    if (!await File(path).exists()) return false;
     final meta = await _db.getInstalledTranslation(translationId);
-    return meta != null && meta.parserVersion >= _currentParserVersion;
+    if (meta == null || meta.parserVersion < _currentParserVersion) {
+      return false;
+    }
+    if (!usesFileBackedStorage) return true;
+
+    final path = await _sqlitePathFor(translationId);
+    return pathExists(path);
   }
 
   Future<void> _invalidateCache(String translationId) async {
     _dbManager.close(translationId);
+    if (!usesFileBackedStorage) {
+      final path = await _sqlitePathFor(translationId);
+      final translationDb = await _dbManager.open(translationId, path);
+      await translationDb.clearBible();
+      _dbManager.close(translationId);
+      return;
+    }
+
     final path = await _sqlitePathFor(translationId);
-    final file = File(path);
-    if (await file.exists()) await file.delete();
+    await deleteFileIfExists(path);
   }
 
   // ---------------------------------------------------------------------------
@@ -268,7 +280,7 @@ class AppBibleRepository {
     int chapterNumber,
   ) async {
     final path = await _sqlitePathFor(translationId);
-    if (!await File(path).exists()) return null;
+    if (usesFileBackedStorage && !await pathExists(path)) return null;
     final translationDb = await _dbManager.open(translationId, path);
     return translationDb.getChapter(bookId, chapterNumber);
   }
@@ -362,8 +374,12 @@ class AppBibleRepository {
   }
 
   Future<BibleImportDraft> prepareBibleImport(String filePath) async {
-    final file = File(filePath);
-    if (!await file.exists()) {
+    if (!supportsDirectFileImport) {
+      throw Exception(
+        'Importing local Bible files is not available on web yet.',
+      );
+    }
+    if (!await pathExists(filePath)) {
       throw Exception('Selected Bible file does not exist.');
     }
 
@@ -373,7 +389,7 @@ class AppBibleRepository {
       detectedFormat = BibleFormat.sqlite;
       importedBooks = await _readBibleFromSqlite(filePath);
     } else {
-      final content = await file.readAsString();
+      final content = await readTextFile(filePath);
       final parsed = await compute(_parseBibleToSerializable, content);
       importedBooks = parsed.map(_mapSerializableBook).toList();
       detectedFormat = _detectFormatFromContent(content);
@@ -592,29 +608,17 @@ class AppBibleRepository {
   }
 
   Future<void> clearAllCache() async {
-    // Delete every bibles/*.sqlite file.
     try {
-      final dir = Directory(await TranslationDatabaseManager.biblesDir());
-      if (await dir.exists()) {
-        await for (final entity in dir.list()) {
-          if (entity is File && entity.path.endsWith('.sqlite')) {
-            await entity.delete();
-          }
-        }
-      }
+      await clearDirectoryFiles(
+        await TranslationDatabaseManager.biblesDir(),
+        extension: '.sqlite',
+      );
     } catch (_) {}
 
     try {
-      final dir = Directory(
+      await clearDirectoryFiles(
         await TranslationDatabaseManager.importedSourcesDir(),
       );
-      if (await dir.exists()) {
-        await for (final entity in dir.list()) {
-          if (entity is File) {
-            await entity.delete();
-          }
-        }
-      }
     } catch (_) {}
 
     await _dbManager.closeAll();
@@ -642,8 +646,12 @@ class AppBibleRepository {
     required String originalPath,
     required String translationId,
   }) async {
-    final sourceFile = File(originalPath);
-    if (!await sourceFile.exists()) {
+    if (!supportsDirectFileImport) {
+      throw Exception(
+        'Importing local Bible files is not available on web yet.',
+      );
+    }
+    if (!await pathExists(originalPath)) {
       throw Exception('Selected Bible file does not exist.');
     }
 
@@ -652,11 +660,7 @@ class AppBibleRepository {
           translationId,
           extension: p.extension(originalPath),
         );
-    final destinationFile = File(destinationPath);
-    if (await destinationFile.exists()) {
-      await destinationFile.delete();
-    }
-    await sourceFile.copy(destinationPath);
+    await copyFile(originalPath, destinationPath);
     return destinationPath;
   }
 
@@ -667,10 +671,7 @@ class AppBibleRepository {
     if (filePath == null || filePath.isEmpty) return;
 
     try {
-      final file = File(filePath);
-      if (await file.exists()) {
-        await file.delete();
-      }
+      await deleteFileIfExists(filePath);
     } catch (_) {}
   }
 
@@ -700,16 +701,17 @@ class AppBibleRepository {
     BibleTranslation? stored,
   }) {
     if (stored == null) return builtIn;
+    final sourceType = stored.sourceType;
     return BibleTranslation(
       id: builtIn.id,
       name: stored.name,
       language: stored.language,
       description: stored.description,
-      isLocal: true,
-      filePath: builtIn.filePath,
+      isLocal: stored.isLocal,
+      filePath: sourceType == BibleSourceType.asset ? builtIn.filePath : null,
       githubUrl: builtIn.githubUrl,
       format: builtIn.format,
-      sourceType: BibleSourceType.asset,
+      sourceType: sourceType,
     );
   }
 
@@ -730,11 +732,10 @@ class AppBibleRepository {
         'Imported translation ${translation.id} is missing a file path.',
       );
     }
-    final file = File(filePath);
-    if (!await file.exists()) {
+    if (!await pathExists(filePath)) {
       throw Exception('Imported translation file was not found: $filePath');
     }
-    return file.readAsString();
+    return readTextFile(filePath);
   }
 
   Future<String> _loadAssetContent(BibleTranslation translation) async {
@@ -891,8 +892,7 @@ class AppBibleRepository {
         'Imported SQLite translation ${translation.id} is missing a source file.',
       );
     }
-    final sourceFile = File(sourcePath);
-    if (!await sourceFile.exists()) {
+    if (!await pathExists(sourcePath)) {
       throw Exception('Imported translation file was not found: $sourcePath');
     }
 
@@ -910,16 +910,10 @@ class AppBibleRepository {
     required String translationId,
   }) async {
     _dbManager.close(translationId);
-    final sourceFile = File(sourcePath);
-    if (!await sourceFile.exists()) {
+    if (!await pathExists(sourcePath)) {
       throw Exception('Selected Bible file does not exist.');
     }
-
-    final destinationFile = File(destinationPath);
-    if (await destinationFile.exists()) {
-      await destinationFile.delete();
-    }
-    await sourceFile.copy(destinationPath);
+    await copyFile(sourcePath, destinationPath);
   }
 }
 

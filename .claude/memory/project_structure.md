@@ -108,12 +108,18 @@ When adding code:
 
 These are repo guardrails, not absolute laws, but future work should justify violating them.
 
-- `300-400` lines:
-  - stop and check whether the file now owns more than one responsibility
-- `500-700` lines:
-  - split by responsibility unless there is a strong reason not to
-- `800+` lines:
-  - treat the file as a refactor target
+- `0-200` lines:
+  - excellent
+  - keep doing what you're doing
+- `200-500` lines:
+  - acceptable
+  - monitor for complexity; consider extracting widgets
+- `500-1000` lines:
+  - heavy
+  - refactor immediately; split logic from UI
+- `1000+` lines:
+  - critical
+  - treat the file as a God Object; it is likely difficult to test or maintain safely
 
 Preferred splits:
 

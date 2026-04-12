@@ -27,7 +27,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get goToOther => 'Aller à l\'autre page';
 
   @override
-  String get aboutDescription => 'Cette application Bible est un projet gratuit de PopGTN. C\'est un projet pratique pour apprendre Flutter et Dart. L\'application permet de lire la Bible, de prendre des notes, de bénéficier du support TTS, et plus encore. Elle est inspirée d\'applications comme YouVersion Bible mais avec des fonctionnalités supplémentaires et une interface améliorée.';
+  String get aboutDescription =>
+      'Cette application Bible est un projet gratuit de PopGTN. C\'est un projet pratique pour apprendre Flutter et Dart. L\'application permet de lire la Bible, de prendre des notes, de bénéficier du support TTS, et plus encore. Elle est inspirée d\'applications comme YouVersion Bible mais avec des fonctionnalités supplémentaires et une interface améliorée.';
 
   @override
   String get language => 'Langue';
@@ -54,7 +55,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get menu => 'Menu';
 
   @override
-  String get readerFootnotesTooltip => 'Voir les notes de bas de page et les références';
+  String get readerFootnotesTooltip =>
+      'Voir les notes de bas de page et les références';
 
   @override
   String get readerNotesTooltip => 'Voir les notes personnelles';
@@ -109,7 +111,8 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String get deleteImportedTranslationDescription => 'This removes the imported Bible from the app library and cache. The original file on disk will not be deleted.';
+  String get deleteImportedTranslationDescription =>
+      'This removes the imported Bible from the app library and cache. The original file on disk will not be deleted.';
 
   @override
   String get cancelAction => 'Cancel';
@@ -133,7 +136,8 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String get removeDownloadedTranslationDescription => 'This removes the downloaded Bible from local app storage. It will stay in the library as a downloadable option so you can download it again later.';
+  String get removeDownloadedTranslationDescription =>
+      'This removes the downloaded Bible from local app storage. It will stay in the library as a downloadable option so you can download it again later.';
 
   @override
   String get removeAction => 'Remove';
@@ -190,7 +194,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get translationDetailsTitle => 'Translation Details';
 
   @override
-  String get translationDetailsDescription => 'Set the library name, abbreviation, language code, and description before the import is saved.';
+  String get translationDetailsDescription =>
+      'Set the library name, abbreviation, language code, and description before the import is saved.';
 
   @override
   String get translationNameLabel => 'Name';
@@ -208,13 +213,15 @@ class AppLocalizationsFr extends AppLocalizations {
   String get translationAbbreviationHint => 'WEB';
 
   @override
-  String get translationAbbreviationHelp => 'Used the same way built-in abbreviations like KJV and ASV are used.';
+  String get translationAbbreviationHelp =>
+      'Used the same way built-in abbreviations like KJV and ASV are used.';
 
   @override
   String get translationAbbreviationRequired => 'Enter an abbreviation.';
 
   @override
-  String get translationAbbreviationTaken => 'That abbreviation is already in use.';
+  String get translationAbbreviationTaken =>
+      'That abbreviation is already in use.';
 
   @override
   String get translationLanguageCodeLabel => 'Language code';
@@ -223,7 +230,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get translationLanguageCodeHint => 'en';
 
   @override
-  String get translationLanguageCodeHelp => 'Use a short code like en, es, fr, or de.';
+  String get translationLanguageCodeHelp =>
+      'Use a short code like en, es, fr, or de.';
 
   @override
   String get translationLanguageCodeRequired => 'Enter a language code.';
@@ -232,7 +240,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get translationDescriptionLabel => 'Description';
 
   @override
-  String get translationDescriptionHint => 'Imported from my_local_bible.xml or my_translation.sqlite';
+  String get translationDescriptionHint =>
+      'Imported from my_local_bible.xml or my_translation.sqlite';
 
   @override
   String get importingAction => 'Importing...';

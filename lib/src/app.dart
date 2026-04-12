@@ -17,7 +17,8 @@ import 'views/placeholder/coming_soon_screen.dart';
 
 // Providers
 import 'features/auth/application/view_models/auth_view_model.dart';
-import 'features/settings/application/view_models/theme_view_model.dart' hide themeDataMap;
+import 'features/settings/application/view_models/theme_view_model.dart'
+    hide themeDataMap;
 import 'features/settings/application/view_models/language_view_model.dart';
 
 class MyApp extends ConsumerWidget {
@@ -64,8 +65,7 @@ class MyApp extends ConsumerWidget {
               routes: [
                 GoRoute(
                   path: 'advanced',
-                  builder: (context, state) =>
-                      const AdvancedSettingsScreen(),
+                  builder: (context, state) => const AdvancedSettingsScreen(),
                 ),
               ],
             ),

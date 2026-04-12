@@ -40,6 +40,12 @@ class BibleCrossReference extends Equatable {
   }
 
   @override
-  List<Object?> get props =>
-      [label, target, marker, originRef, spanIndex, charOffset];
+  List<Object?> get props => [
+    label,
+    target,
+    marker,
+    originRef,
+    spanIndex,
+    charOffset,
+  ];
 }

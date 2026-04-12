@@ -89,6 +89,11 @@ Separate from feature backlog — these affect correctness, safety, and maintain
 
 ## Completed Recently
 
+- `done` Added Bible-viewer-only desktop/web range selection: `Shift+Click` now selects verse ranges from a local reader anchor without changing picker/editor behavior, keeping future split-view note/document surfaces free from implicit desktop selection rules.
+- `done` Added reader display toggles for translator-addition brackets, word-tag underlines, proper-name underlines, and source bold styling; verse-selector preference now defaults to off.
+- `done` Added a `Show Source Details` reader toggle so verse-study metadata like `Strong's`, lemma, morphology, and quote speakers can stay hidden by default while parser support remains available.
+- `done` Clarified web Bible loading as an intentional session-memory path: browser builds now treat Bible XML parsing as in-memory-only for the current session instead of persisting translation-cache metadata that implies reload durability.
+- `done` Restored a working web build by splitting native-only database/runtime code behind platform helpers, adding browser-safe web loading paths, and wiring SQL.js correctly for hosted web output.
 - `done` Converted feature state files into an explicit MVVM-style layout by moving Riverpod logic into dedicated `application/view_models/` files and removing the old feature-level provider files.
 - `done` Removed duplicated reader rendering logic by consolidating shared chapter-block and verse-card rendering paths in `bible_viewer_tab_state_rendering.dart`.
 - `done` Reduced outer reader-shell complexity further by moving watched shell state into a small snapshot model and splitting the main content layer into named helpers.
@@ -97,17 +102,6 @@ Separate from feature backlog — these affect correctness, safety, and maintain
 - `done` Replaced the loose tab-map pattern in `home_screen.dart` with a typed tab definition to make the app shell easier to read and maintain.
 - `done` Organized reader presentation files into `reader_view/` and `reference_picker/` folders so file layout now matches feature responsibilities instead of staying flat under `presentation/`.
 - `done` Split the oversized reader presentation code into responsibility-based part files so `reader_view/bible_viewer_tab.dart` now acts as a coordinator instead of carrying the full implementation.
-- `done` Split the oversized references UI into dedicated files under `reference_picker/` with direct imports to `chapter_bar.dart` and `reference_picker_screen.dart`.
-- `done` Added personal annotation storage with additive schema step `v6`, separate `user_annotations` / `annotation_verses` tables, and repository tests for save/load/edit/delete flows.
-- `done` Added reader verse selection with a bottom action bar for quick highlight, note creation, copy, and share fallback.
-- `done` Added a dedicated note editor supporting connected highlight color, linked verses, labels, and saved translation metadata for each linked verse.
-- `done` Added a real `Notes` screen, Menu route, and open-in-reader flow; removed the old fake profile header from the Menu.
-- `done` Added `spanIndex` anchor field to `BibleFootnote` and `BibleCrossReference` with JSON serialization and isolate-boundary serializers, mirroring the parser's new positional anchor tracking.
-- `done` Fixed settings sheet overflow (scrolls on small screens) and added mouse/trackpad scrolling to the theme preview cards for desktop.
-- `done` Added user-facing removal for downloaded Bibles from the Versions screen with confirmation dialog, fallback translation selection, and re-downloadable catalog entry.
-- `done` Added distinct document-mode rendering for `introduction` blocks (muted color, left indent) and `table`/`tableRow` blocks (cell grid with header-row styling and alternating row tint) so these parser-preserved structures are visually distinct instead of falling through to generic prose.
-- `done` Synced `table` and `tableRow` values into `BibleDocumentBlockKind` to mirror the parser's new `DocumentBlockKind` values.
-- `done` Reworked the References picker layout so it now adapts more cleanly across mobile and desktop: phones keep a tighter one-book-at-a-time card flow with adaptive chapter/verse grids, while wider screens use a split book-list/detail-pane layout with clearer search and selection context.
 
 ---
 
