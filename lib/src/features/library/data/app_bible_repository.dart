@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:bible_parser_flutter/bible_parser_flutter.dart';
+import 'package:basic_bible/src/features/library/data/remote_translation_catalog_service.dart';
 import 'package:basic_bible/src/models/bible_models.dart';
 import 'package:basic_bible/src/services/app_database.dart';
 import 'package:basic_bible/src/services/translation_database.dart';
@@ -57,11 +58,13 @@ class BibleImportRequest {
 class AppBibleRepository {
   final AppDatabase _db;
   final TranslationDatabaseManager _dbManager;
+  final RemoteTranslationCatalogService _catalogService;
 
   List<BibleBook> _cachedBooks = [];
   String? _currentTranslationId;
   final Map<String, List<BibleBook>> _memoryCacheByTranslation =
       <String, List<BibleBook>>{};
+  final Set<String> _sessionTranslationIds = <String>{};
 
   // In-flight deduplication: if two callers request the same translation
   // concurrently (e.g., BibleBooksShellNotifier + BibleBooksNotifier on first
@@ -78,7 +81,7 @@ class AppBibleRepository {
   ///   4 = section headings carry `beforeVerse` metadata for inline rendering
   static const int _currentParserVersion = 4;
 
-  AppBibleRepository(this._db, this._dbManager);
+  AppBibleRepository(this._db, this._dbManager, this._catalogService);
 
   // ---------------------------------------------------------------------------
   // Built-in translations
@@ -89,37 +92,71 @@ class AppBibleRepository {
       id: 'kjv',
       name: 'King James Version',
       language: 'en',
+      languageName: 'English',
       description: 'The classic English Bible translation',
       isLocal: true,
       filePath: 'assets/bible/eng-kjv2006_usfx.xml',
       githubUrl:
-          'https://raw.githubusercontent.com/PopGTN/bible-data/refs/heads/main/English/eng-kjv2006_usfx.xml',
+          'https://raw.githubusercontent.com/PopGTN/bible-data/main/English/kjv/eng-kjv2006_usfx.xml',
       format: BibleFormat.usfx,
       sourceType: BibleSourceType.asset,
+      bundledByDefault: true,
+      displayOrder: 10,
+      artifacts: [
+        BibleTranslationArtifact(
+          format: BibleFormat.usfx,
+          downloadUrl:
+              'https://raw.githubusercontent.com/PopGTN/bible-data/main/English/kjv/eng-kjv2006_usfx.xml',
+          fileName: 'eng-kjv2006_usfx.xml',
+          isPreferred: true,
+        ),
+      ],
     ),
     BibleTranslation(
       id: 'asv',
       name: 'American Standard Version',
       language: 'en',
+      languageName: 'English',
       description: 'American Standard Version (1901)',
       isLocal: true,
       filePath: 'assets/bible/asv_osis.xml',
       githubUrl:
-          'https://raw.githubusercontent.com/PopGTN/bible-data/refs/heads/main/English/asv_osis.xml',
+          'https://raw.githubusercontent.com/PopGTN/bible-data/main/English/asv/asv_osis.xml',
       format: BibleFormat.osis,
       sourceType: BibleSourceType.asset,
+      displayOrder: 20,
+      artifacts: [
+        BibleTranslationArtifact(
+          format: BibleFormat.osis,
+          downloadUrl:
+              'https://raw.githubusercontent.com/PopGTN/bible-data/main/English/asv/asv_osis.xml',
+          fileName: 'asv_osis.xml',
+          isPreferred: true,
+        ),
+      ],
     ),
     BibleTranslation(
       id: 'web',
       name: 'World English Bible',
       language: 'en',
+      languageName: 'English',
       description: 'Modern English public domain Bible',
       isLocal: true,
       filePath: 'assets/bible/eng-web.usfx.xml',
       githubUrl:
-          'https://raw.githubusercontent.com/PopGTN/bible-data/refs/heads/main/English/eng-web.usfx.xml',
+          'https://raw.githubusercontent.com/PopGTN/bible-data/main/English/web/eng-web.usfx.xml',
       format: BibleFormat.usfx,
       sourceType: BibleSourceType.asset,
+      displayOrder: 30,
+      artifacts: [
+        BibleTranslationArtifact(
+          format: BibleFormat.usfx,
+          downloadUrl:
+              'https://raw.githubusercontent.com/PopGTN/bible-data/main/English/web/eng-web.usfx.xml',
+          fileName: 'eng-web.usfx.xml',
+          isPreferred: true,
+        ),
+      ],
     ),
   ];
 
@@ -165,13 +202,34 @@ class AppBibleRepository {
 
   Future<List<BibleTranslation>> getAvailableTranslations() async {
     final stored = await _db.getInstalledTranslations();
+    final remote = await _fetchRemoteTranslationsSafely();
     final builtInIds = builtInTranslations.map((t) => t.id).toSet();
+    final remoteById = {for (final t in remote) t.id: t};
     final storedById = {for (final t in stored) t.id: t};
+    final mergedBuiltIns = [
+      for (final t in builtInTranslations)
+        _applySessionState(
+          _mergeStoredTranslation(
+            base: _mergeCatalogTranslation(
+              builtIn: t,
+              remote: remoteById[t.id],
+            ),
+            stored: storedById[t.id],
+          ),
+        ),
+    ];
+    final remainingIds = {...remoteById.keys, ...storedById.keys}
+      ..removeAll(builtInIds);
 
     return [
-      for (final t in builtInTranslations)
-        _mergeBuiltInTranslation(builtIn: t, stored: storedById[t.id]),
-      ...stored.where((t) => !builtInIds.contains(t.id)),
+      ...mergedBuiltIns,
+      for (final id in remainingIds)
+        _applySessionState(
+          _mergeStoredTranslation(
+            base: remoteById[id] ?? storedById[id]!,
+            stored: storedById[id],
+          ),
+        ),
     ];
   }
 
@@ -304,52 +362,105 @@ class AppBibleRepository {
 
     await _invalidateCache(translationId);
 
-    final translation = await _getTranslation(translationId);
-    if (translation.githubUrl == null) {
-      throw Exception('No download URL for translation $translationId');
+    final translation = await _getTranslation(
+      translationId,
+      includeRemoteCatalog: true,
+    );
+    final artifact = firstPreferredRemoteArtifact(
+      translation,
+      supportedFormats: _downloadSupportedFormats,
+    );
+    if (artifact == null) {
+      throw Exception(
+        'No supported download artifact is available for ${translation.name}.',
+      );
     }
 
     try {
-      final response = await http.get(Uri.parse(translation.githubUrl!));
+      final response = await http.get(Uri.parse(artifact.downloadUrl));
       if (response.statusCode != 200) {
         throw Exception(
           'Failed to download Bible: HTTP ${response.statusCode}',
         );
       }
 
-      final content = utf8.decode(response.bodyBytes);
-      final parsed = await compute(_parseBibleToSerializable, content);
-      final books = parsed.map(_mapSerializableBook).toList();
-
-      final path = await _sqlitePathFor(translationId);
-      final translationDb = await _dbManager.open(translationId, path);
-      await translationDb.insertBible(books);
+      final books = await _installDownloadedArtifact(
+        translationId: translationId,
+        artifact: artifact,
+        responseBody: response.bodyBytes,
+      );
 
       final downloadedTranslation = BibleTranslation(
         id: translation.id,
         name: translation.name,
         language: translation.language,
+        languageName: translation.languageName,
         description: translation.description,
         isLocal: true,
-        githubUrl: translation.githubUrl,
-        format: translation.format,
+        githubUrl: artifact.downloadUrl,
+        format: artifact.format,
         sourceType: BibleSourceType.download,
+        bundledByDefault: translation.bundledByDefault,
+        displayOrder: translation.displayOrder,
+        artifacts: translation.artifacts,
       );
 
       await _db.upsertInstalledTranslation(
         translation: downloadedTranslation,
-        sourceLocation: translation.githubUrl,
+        sourceLocation: artifact.downloadUrl,
         sourceTypeOverride: BibleSourceType.download,
       );
       await _db.updateInstalledTranslationParserVersion(
         translationId,
         _currentParserVersion,
       );
+      _sessionTranslationIds.remove(translationId);
 
       return _rememberLoadedTranslation(translationId, books);
     } catch (e) {
       throw Exception('Failed to download Bible: $e');
     }
+  }
+
+  Future<List<BibleBook>> openTranslationForSession(
+    String translationId,
+  ) async {
+    final memoryCached = getLoadedTranslation(translationId);
+    if (memoryCached != null &&
+        _sessionTranslationIds.contains(translationId)) {
+      return memoryCached;
+    }
+
+    final translation = await _getTranslation(
+      translationId,
+      includeRemoteCatalog: true,
+    );
+    final artifact = firstPreferredRemoteArtifact(
+      translation,
+      supportedFormats: _sessionReadableFormats,
+    );
+    if (artifact == null) {
+      throw Exception(
+        'Session read is not available for ${translation.name} yet. Download it first instead.',
+      );
+    }
+
+    final response = await http.get(Uri.parse(artifact.downloadUrl));
+    if (response.statusCode != 200) {
+      throw Exception(
+        'Failed to open ${translation.name}: HTTP ${response.statusCode}',
+      );
+    }
+
+    final books = await _parseBibleBytes(response.bodyBytes);
+    if (books.isEmpty) {
+      throw Exception(
+        'The remote translation ${translation.name} did not contain any Bible books.',
+      );
+    }
+
+    _sessionTranslationIds.add(translationId);
+    return _rememberLoadedTranslation(translationId, books);
   }
 
   // ---------------------------------------------------------------------------
@@ -385,7 +496,15 @@ class AppBibleRepository {
 
     late final BibleFormat detectedFormat;
     late final List<BibleBook> importedBooks;
-    if (_isLikelySqliteFile(filePath)) {
+    if (_isLikelyZipFile(filePath)) {
+      throw Exception(
+        'ZIP Bible import is recognized but not connected yet. The planned pipeline will support single-file archives and split-book USFM/XML packages after the external import backend is added.',
+      );
+    } else if (_isLikelyUsfmFile(filePath)) {
+      throw Exception(
+        'USFM import is planned but the USFM parser backend is not connected yet.',
+      );
+    } else if (_isLikelySqliteFile(filePath)) {
       detectedFormat = BibleFormat.sqlite;
       importedBooks = await _readBibleFromSqlite(filePath);
     } else {
@@ -438,6 +557,8 @@ class AppBibleRepository {
       id: normalizedId,
       name: request.name.trim(),
       language: request.language.trim(),
+      // Leave languageName empty so effectiveLanguageName falls back to the
+      // language code. A human-readable name isn't known at import time.
       description: request.description.trim(),
       isLocal: true,
       filePath: managedImportPath,
@@ -490,6 +611,7 @@ class AppBibleRepository {
     await _deleteManagedImportSnapshot(translation);
     await _db.deleteInstalledTranslation(translationId);
     _memoryCacheByTranslation.remove(translationId);
+    _sessionTranslationIds.remove(translationId);
     if (_currentTranslationId == translationId) {
       _currentTranslationId = null;
       _cachedBooks = [];
@@ -515,16 +637,21 @@ class AppBibleRepository {
         id: translation.id,
         name: translation.name,
         language: translation.language,
+        languageName: translation.languageName,
         description: translation.description,
         isLocal: false,
         githubUrl: translation.githubUrl,
         format: translation.format,
         sourceType: BibleSourceType.download,
+        bundledByDefault: translation.bundledByDefault,
+        displayOrder: translation.displayOrder,
+        artifacts: translation.artifacts,
       ),
       sourceLocation: translation.githubUrl,
       sourceTypeOverride: BibleSourceType.download,
     );
     _memoryCacheByTranslation.remove(translationId);
+    _sessionTranslationIds.remove(translationId);
     if (_currentTranslationId == translationId) {
       _currentTranslationId = null;
       _cachedBooks = [];
@@ -601,6 +728,7 @@ class AppBibleRepository {
       await _deleteManagedImportSnapshot(translation!);
     }
     _memoryCacheByTranslation.remove(translationId);
+    _sessionTranslationIds.remove(translationId);
     if (_currentTranslationId == translationId) {
       _currentTranslationId = null;
       _cachedBooks = const [];
@@ -624,6 +752,7 @@ class AppBibleRepository {
     await _dbManager.closeAll();
     await _db.deleteAllInstalledTranslations();
     _memoryCacheByTranslation.clear();
+    _sessionTranslationIds.clear();
     _currentTranslationId = null;
     _cachedBooks = const [];
   }
@@ -640,6 +769,62 @@ class AppBibleRepository {
     _cachedBooks = books;
     _currentTranslationId = translationId;
     return books;
+  }
+
+  // Getter (not static final) so usesFileBackedStorage is evaluated at call
+  // time rather than once at class load, making the platform branch explicit.
+  Set<BibleFormat> get _downloadSupportedFormats => <BibleFormat>{
+    BibleFormat.usfx,
+    BibleFormat.osis,
+    BibleFormat.zefania,
+    if (usesFileBackedStorage) BibleFormat.sqlite,
+  };
+
+  static const Set<BibleFormat> _sessionReadableFormats = <BibleFormat>{
+    BibleFormat.usfx,
+    BibleFormat.osis,
+    BibleFormat.zefania,
+  };
+
+  Future<List<BibleBook>> _installDownloadedArtifact({
+    required String translationId,
+    required BibleTranslationArtifact artifact,
+    required List<int> responseBody,
+  }) async {
+    switch (artifact.format) {
+      case BibleFormat.sqlite:
+        final path = await _sqlitePathFor(translationId);
+        await writeBinaryFile(path, responseBody);
+        final translationDb = await _dbManager.open(translationId, path);
+        final books = await translationDb.getBible();
+        if (books.isEmpty) {
+          throw Exception(
+            'Downloaded SQLite translation $translationId did not contain any Bible books.',
+          );
+        }
+        return books;
+      case BibleFormat.usfx:
+      case BibleFormat.osis:
+      case BibleFormat.zefania:
+        final books = await _parseBibleBytes(responseBody);
+        final path = await _sqlitePathFor(translationId);
+        final translationDb = await _dbManager.open(translationId, path);
+        await translationDb.insertBible(books);
+        return books;
+      case BibleFormat.usfm:
+      case BibleFormat.usfmDirectory:
+      case BibleFormat.zip:
+      case BibleFormat.auto:
+        throw Exception(
+          'The ${artifact.format.name} download path is not connected yet.',
+        );
+    }
+  }
+
+  Future<List<BibleBook>> _parseBibleBytes(List<int> bytes) async {
+    final content = utf8.decode(bytes);
+    final parsed = await compute(_parseBibleToSerializable, content);
+    return parsed.map(_mapSerializableBook).toList();
   }
 
   Future<String> _persistImportedSource({
@@ -678,40 +863,119 @@ class AppBibleRepository {
   String? _sourceLocationForTranslation(BibleTranslation translation) {
     return switch (translation.sourceType) {
       BibleSourceType.asset || BibleSourceType.import => translation.filePath,
+      BibleSourceType.session => translation.githubUrl,
       BibleSourceType.download => translation.githubUrl,
     };
   }
 
-  Future<BibleTranslation> _getTranslation(String translationId) async {
+  Future<BibleTranslation> _getTranslation(
+    String translationId, {
+    bool includeRemoteCatalog = false,
+  }) async {
     final stored = await _db.getInstalledTranslations();
     final builtIn = builtInTranslations
         .where((t) => t.id == translationId)
         .firstOrNull;
     final storedMatch = stored.where((t) => t.id == translationId).firstOrNull;
+    final remote = includeRemoteCatalog
+        ? (await _fetchRemoteTranslationsSafely())
+              .where((t) => t.id == translationId)
+              .firstOrNull
+        : null;
 
     if (builtIn != null) {
-      return _mergeBuiltInTranslation(builtIn: builtIn, stored: storedMatch);
+      return _applySessionState(
+        _mergeStoredTranslation(
+          base: _mergeCatalogTranslation(builtIn: builtIn, remote: remote),
+          stored: storedMatch,
+        ),
+      );
     }
-    if (storedMatch != null) return storedMatch;
+    if (storedMatch != null) {
+      return _applySessionState(
+        _mergeStoredTranslation(
+          base: remote ?? storedMatch,
+          stored: storedMatch,
+        ),
+      );
+    }
+
+    if (remote != null) return _applySessionState(remote);
     throw Exception('Translation $translationId not found');
   }
 
-  BibleTranslation _mergeBuiltInTranslation({
+  Future<List<BibleTranslation>> _fetchRemoteTranslationsSafely() async {
+    try {
+      return await _catalogService.fetchTranslations();
+    } catch (e) {
+      assert(() {
+        debugPrint('[AppBibleRepository] Remote catalog fetch failed: $e');
+        return true;
+      }());
+      return const <BibleTranslation>[];
+    }
+  }
+
+  BibleTranslation _mergeCatalogTranslation({
     required BibleTranslation builtIn,
-    BibleTranslation? stored,
+    BibleTranslation? remote,
   }) {
-    if (stored == null) return builtIn;
-    final sourceType = stored.sourceType;
+    if (remote == null) return builtIn;
+    return builtIn.copyWith(
+      name: remote.name,
+      language: remote.language,
+      languageName: remote.languageName,
+      description: remote.description,
+      githubUrl: remote.githubUrl ?? builtIn.githubUrl,
+      format: remote.format == BibleFormat.auto
+          ? builtIn.format
+          : remote.format,
+      bundledByDefault: remote.bundledByDefault || builtIn.bundledByDefault,
+      displayOrder: remote.displayOrder,
+      artifacts: remote.artifacts.isEmpty
+          ? builtIn.artifacts
+          : remote.artifacts,
+    );
+  }
+
+  BibleTranslation _mergeStoredTranslation({
+    required BibleTranslation base,
+    required BibleTranslation? stored,
+  }) {
+    if (stored == null) return base;
+    // Build directly instead of copyWith so that filePath can be explicitly
+    // cleared to null for download/session types (copyWith can't pass null).
+    final resolvedFilePath = switch (stored.sourceType) {
+      BibleSourceType.asset => base.filePath,
+      BibleSourceType.import => stored.filePath,
+      BibleSourceType.download || BibleSourceType.session => null,
+    };
     return BibleTranslation(
-      id: builtIn.id,
+      id: base.id,
       name: stored.name,
       language: stored.language,
+      languageName: stored.languageName.isNotEmpty
+          ? stored.languageName
+          : base.languageName,
       description: stored.description,
       isLocal: stored.isLocal,
-      filePath: sourceType == BibleSourceType.asset ? builtIn.filePath : null,
-      githubUrl: builtIn.githubUrl,
-      format: builtIn.format,
-      sourceType: sourceType,
+      filePath: resolvedFilePath,
+      githubUrl: stored.githubUrl ?? base.githubUrl,
+      format: stored.format == BibleFormat.auto ? base.format : stored.format,
+      sourceType: stored.sourceType,
+      bundledByDefault: base.bundledByDefault,
+      displayOrder: base.displayOrder,
+      artifacts: base.artifacts,
+    );
+  }
+
+  BibleTranslation _applySessionState(BibleTranslation translation) {
+    if (!_sessionTranslationIds.contains(translation.id)) {
+      return translation;
+    }
+    return translation.copyWith(
+      isLocal: false,
+      sourceType: BibleSourceType.session,
     );
   }
 
@@ -719,6 +983,9 @@ class AppBibleRepository {
     return switch (translation.sourceType) {
       BibleSourceType.asset => _loadAssetContent(translation),
       BibleSourceType.import => _loadImportedContent(translation),
+      BibleSourceType.session => throw Exception(
+        'Session-only translation ${translation.id} is only available in memory for the current app run.',
+      ),
       BibleSourceType.download => throw Exception(
         'Downloaded translation ${translation.id} is not available locally without cache.',
       ),
@@ -777,6 +1044,7 @@ class AppBibleRepository {
         importedBooks: importedBooks,
       ),
       language: 'unknown',
+      languageName: 'Imported',
       description: 'Imported from ${p.basename(filePath)}',
       isLocal: true,
       filePath: filePath,
@@ -802,6 +1070,7 @@ class AppBibleRepository {
     if (lower.contains('<osis') || lower.contains('<osistext')) {
       return BibleFormat.osis;
     }
+    if (lower.contains('<xmlbible')) return BibleFormat.zefania;
     return BibleFormat.auto;
   }
 
@@ -846,6 +1115,15 @@ class AppBibleRepository {
     return extension == '.sqlite' ||
         extension == '.db' ||
         extension == '.sqlite3';
+  }
+
+  bool _isLikelyUsfmFile(String filePath) {
+    final extension = p.extension(filePath).toLowerCase();
+    return extension == '.usfm' || extension == '.sfm';
+  }
+
+  bool _isLikelyZipFile(String filePath) {
+    return p.extension(filePath).toLowerCase() == '.zip';
   }
 
   bool _isImportedSqliteTranslation(BibleTranslation translation) {
