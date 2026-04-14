@@ -69,11 +69,11 @@ class MenuTab extends ConsumerWidget {
         const Divider(),
 
         // About
-        ListTile(
-          leading: const Icon(Icons.info_outline),
-          title: Text(t.about),
-          onTap: () => context.go('/coming-soon/about'),
-        ),
+        // ListTile(
+        //   leading: const Icon(Icons.info_outline),
+        //   title: Text(t.about),
+        //   onTap: () => context.go('/coming-soon/about'),
+        // ),
 
         //Donate
         ListTile(
