@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find '/home/joshua/Documents/Flutter Apps/Bible App Projects/bible_parser_flutter/lib' -name *.dart)",
+      "Bash(flutter test:*)",
+      "Bash(flutter build:*)"
+    ]
+  }
+}

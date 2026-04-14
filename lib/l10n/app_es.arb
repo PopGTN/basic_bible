@@ -13,6 +13,44 @@
   "english": "Inglés",
   "spanish": "Español",
   "french": "Francés",
-  "german": "Alemán"
-  
+  "german": "Alemán",
+  "readerFootnotesTooltip": "Ver notas al pie y referencias",
+  "readerNotesTooltip": "Ver notas personales",
+  "savedNoteLabel": "Nota guardada",
+  "savedNotesLabel": "Notas guardadas",
+  "openAction": "Abrir",
+  "editAction": "Editar",
+  "searchTranslationsHint": "Search translations...",
+  "downloadedSectionHeader": "Downloaded",
+  "availableSectionHeader": "Available",
+  "downloadAction": "Download",
+  "openForSessionAction": "Open for session",
+  "openedForSessionMessage": "{name} opened for this session.",
+  "@openedForSessionMessage": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "couldNotOpenTranslation": "Could not open translation: {error}",
+  "@couldNotOpenTranslation": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "downloadedTranslationMessage": "{name} downloaded.",
+  "@downloadedTranslationMessage": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "couldNotDownloadTranslation": "Could not download translation: {error}",
+  "@couldNotDownloadTranslation": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "importNotAvailableOnWeb": "Importing local Bible files is not available in the browser yet.",
+  "languageFilterLabel": "Idioma",
+  "allLanguagesOption": "Todos los idiomas",
+  "selectLanguageTitle": "Seleccionar idioma"
 }

@@ -1,0 +1,254 @@
+
+# Basic Bible App — Todo Status
+
+## Purpose
+
+Execution tracker for `basic_bible`. Complements `CONTEXT.md` (engineering context) and `README.md` (public roadmap).
+
+**Status meanings:**
+
+- `done` — implemented and verified in the current repo
+- `in_progress` — actively being worked or partially landed
+- `next` — recommended immediate follow-up
+- `todo` — valuable but not yet the immediate next task
+- `blocked` — cannot move safely without another prerequisite or decision
+
+**Agent rule — required before ending any work session:**
+
+1. Move completed work into `Completed Recently`.
+2. Update `Current Status` to reflect what is actually in the repo right now.
+3. Set `Recommended Next Step` to ONE concrete next task.
+4. Trim `Completed Recently` to the last 10 entries — older history lives in `git log`.
+5. Remove any `Current Status` line that is no longer true.
+6. Update `CONTEXT.md` only if a structural decision changed (new architecture, new caveat, fixed caveat). Do not update it for routine task completion.
+
+If you skip this step the next agent will start from stale information.
+
+**Operating rules:**
+
+- Update this file whenever a meaningful engineering task starts or finishes.
+- Keep `Current Status` to only genuinely active or unresolved work.
+- Keep `Recommended Next Step` to ONE item — replace it when priorities shift.
+- Move finished work to `Completed Recently` as soon as it is verified.
+- When a task changes user-visible behavior, add a `README.md` reminder.
+- After any meaningful unit of work, commit with a clear message describing the actual change.
+- Keep the MVVM-style feature structure intact:
+  - `models/`
+  - `data/`
+  - `application/view_models/`
+  - `presentation/`
+- Do not recreate old feature-level provider files under `application/`; import the concrete `view_models/` files directly.
+- When a file grows past roughly `500-700` lines and owns multiple concerns, split it before adding more feature work unless there is a documented reason not to.
+
+---
+
+## Known Technical Debt
+
+Structural issues that will slow down future app work if not addressed.
+Separate from feature backlog — these affect correctness, safety, and maintainability.
+
+| Issue | Severity | Description |
+| --- | --- | --- |
+| Migration coverage is still thin | Medium | The app now uses additive migration steps for recent schema changes, but there is still no test that opens an older on-disk database and proves upgrade safety end to end. |
+| App models duplicate parser models | High | `lib/src/models/bible_models.dart` re-exports split app model files under `lib/src/models/bible_models/`, but still duplicates parser types with `Bible` prefixes (`BibleVerseSpanKind`, `BibleFootnote`, etc.). If the parser model changes, the app breaks silently. These should re-export the parser types or share a common interface. |
+| No lazy loading | Medium | The entire Bible is loaded into memory. There is no chapter-level streaming or lazy page loading. For large translations this is a memory and startup cost that will eventually need addressing. |
+| SharedPreferences async loading not exposed | Medium | Each Riverpod `StateNotifier` loads from `SharedPreferences` asynchronously in `_loadSavedValue()` but exposes no loading state. This can cause brief UI glitches on startup before saved values are applied. |
+| Generic error handling | Low | `AppBibleRepository` throws `Exception('...')` with plain context strings instead of structured error types. Makes error handling and user-facing messaging harder to improve. |
+| Hardcoded download URLs | Low | Built-in translation GitHub URLs are hardcoded with no version pinning or fallback mirrors. If the source repo moves or renames a file, downloads silently fail. |
+| Web storage still in-memory | Low | Non-web platforms use file-backed SQLite. Web still falls back to in-memory storage, so cached Bibles are lost on every page reload. |
+| Reader presentation still centered on one large state object | Medium | The reader refactor split files by responsibility, but much of the orchestration still lives on a single `_BibleTextViewState`. Future cleanup should extract more standalone widgets/controllers so the reader does not drift back into a giant mixed-responsibility state class. |
+| Claude memory docs may drift | Low | Repo docs and `.claude/memory` are now aligned, but the older memory files in `.claude/memory/` should be reviewed periodically so they do not diverge from `CONTEXT.md`, `TODO_STATUS.md`, and the annotations docs. |
+
+---
+
+## Recommended Next Step
+
+- `next` Add widget tests for the new personal-annotations flow: reader verse selection, saved-note markers, and Notes-screen open-in-reader navigation, then run a manual regression pass across document mode and continuous scrolling.
+
+**Why this first:**
+
+- The annotation repository/storage tests are now in place, but the highest-risk regressions are still in the UI layer.
+- The reader now has another interactive bottom-layer system, so selection/navigation/manual-scroll behavior needs stronger confidence.
+
+---
+
+- `in_progress` Personal annotations need widget-test coverage and manual QA across reader layouts after the reader presentation refactor.
+- `in_progress` References screen navigation still deserves a regression pass after the new verse-selection bar landed in the reader.
+- `in_progress` Reader presentation code is now organized into `reader_view/` and `reference_picker/`; behavior should now be regression-checked instead of adding more UI complexity blindly.
+- `in_progress` The repo now follows an explicit MVVM-style feature layout with `application/view_models/` folders, but screens still need gradual cleanup so more orchestration moves out of large widget state classes over time.
+- `todo` After regression coverage improves, do a second reader architecture pass to extract more standalone widgets/controllers from `_BibleTextViewState` instead of continuing to grow the state class through `part` extensions alone.
+- `todo` Review the older `.claude/memory/*.md` files and either trim, merge, or refresh them so repo memory stays consistent with the main tracking docs.
+- `done` Personal notes and highlights now exist as a real user-data feature with dedicated models, repository/provider plumbing, additive Drift storage, a note editor, and a Notes screen.
+- `done` The reader now has working verse-list and document modes with comprehensive span rendering: red-letter, emphasis/bold/italic, divine names, proper names, selah, acrostic headings, structured footnotes and cross-references with inline markers, and source-driven introductions/tables.
+- `done` Parser/app pipeline preserves rich content: footnotes and cross-references now include spanIndex anchors; poetry/quote structure is consistent across all three formats with stanza groups and indentation; document-mode rendering reflects all preserved parser structures.
+- `partial` Non-web Bible caching is persistent; web still falls back to in-memory storage.
+- `done` Built-in, downloaded, and imported translations share one metadata-driven resolution path with user-facing removal for downloaded Bibles.
+- `partial` Active app code is mostly organized under `lib/src/features/`, but some shared providers/services still sit outside that feature-first structure.
+
+---
+
+## Completed Recently
+
+- `done` Added Bible-viewer-only desktop/web range selection: `Shift+Click` now selects verse ranges from a local reader anchor without changing picker/editor behavior, keeping future split-view note/document surfaces free from implicit desktop selection rules.
+- `done` Added reader display toggles for translator-addition brackets, word-tag underlines, proper-name underlines, and source bold styling; verse-selector preference now defaults to off.
+- `done` Added a `Show Source Details` reader toggle so verse-study metadata like `Strong's`, lemma, morphology, and quote speakers can stay hidden by default while parser support remains available.
+- `done` Clarified web Bible loading as an intentional session-memory path: browser builds now treat Bible XML parsing as in-memory-only for the current session instead of persisting translation-cache metadata that implies reload durability.
+- `done` Restored a working web build by splitting native-only database/runtime code behind platform helpers, adding browser-safe web loading paths, and wiring SQL.js correctly for hosted web output.
+- `done` Converted feature state files into an explicit MVVM-style layout by moving Riverpod logic into dedicated `application/view_models/` files and removing the old feature-level provider files.
+- `done` Removed duplicated reader rendering logic by consolidating shared chapter-block and verse-card rendering paths in `bible_viewer_tab_state_rendering.dart`.
+- `done` Reduced outer reader-shell complexity further by moving watched shell state into a small snapshot model and splitting the main content layer into named helpers.
+- `done` Simplified the outer reader shell by replacing large inline selection/chapter-bar callback blocks with named methods in `reader_view/bible_viewer_tab.dart`, making the file easier to scan by intent.
+- `done` Added local `README.md` module maps under reader presentation folders so the code is easier to re-enter after time away.
+- `done` Replaced the loose tab-map pattern in `home_screen.dart` with a typed tab definition to make the app shell easier to read and maintain.
+- `done` Organized reader presentation files into `reader_view/` and `reference_picker/` folders so file layout now matches feature responsibilities instead of staying flat under `presentation/`.
+- `done` Split the oversized reader presentation code into responsibility-based part files so `reader_view/bible_viewer_tab.dart` now acts as a coordinator instead of carrying the full implementation.
+
+---
+
+## Prioritized Backlog
+
+### 1. Parser format fidelity (active)
+
+Status: `in_progress`
+
+Scope:
+
+- Preserve every meaningful tag from USFX, OSIS, and Zefania — no intentional drops.
+- See `README.md` format support tables for the specific `❌ Not yet` items that are still open.
+- Priority order within this area: footnote parts → intro paragraphs → divine name / inline tags → poetry fidelity → word metadata → tables.
+
+Why it matters:
+
+- The app's goal is full format fidelity, not just plain-verse extraction.
+- Every `❌ Not yet` row in the format tables is planned work.
+
+README reminder: Update the format support tables in `README.md` as each feature lands.
+
+### 2. Fix database migrations
+
+Status: `todo`
+
+Scope:
+
+- Replace the current destructive migration strategy with additive column/table migrations.
+- Verify that user-imported Bibles survive a schema version bump.
+- Add migration tests.
+
+Why it matters:
+
+- The current strategy will silently destroy all user-imported content on the next schema change.
+
+### 3. Deduplicate app and parser models
+
+Status: `todo`
+
+Scope:
+
+- Remove the duplicated `Bible`-prefixed model types from `lib/src/models/bible_models.dart`.
+- Re-export types from `bible_parser_flutter` directly, or move to a shared interface.
+- Fix any downstream consumers that depend on the prefixed names.
+
+Why it matters:
+
+- A parser model change currently has a high risk of silently breaking the app with no compile-time warning.
+
+### 4. Finish translation-library management
+
+Status: `in_progress`
+
+Scope:
+
+- Add clearer user-facing status for installed, downloaded, and imported translations.
+- Add search, language filtering, and per-translation actions.
+- Decide online-only vs. download behavior explicitly.
+- Preserve the same logical reading location across translation switches.
+
+### 5. Finish reader document-mode fidelity
+
+Status: `in_progress`
+
+Scope:
+
+- Render more parser-provided block types with distinct visual treatment.
+- Preserve source-driven spacing, section breaks, poetry layout, and front-matter layout in the UI.
+- Reduce app-side guessing where the parser already knows something more specific.
+
+What "done" means:
+
+- Document mode feels like it follows the source file structure, not a reconstruction from generic text blocks.
+- Poetry, headings, intros, and prose sections each render with clearly distinct visual treatment.
+
+### 6. Finish structured footnote and cross-reference UX
+
+Status: `in_progress`
+
+Scope:
+
+- Improve the note sheet so it reflects parser structure more faithfully.
+- Keep direct navigation using structured cross-reference targets.
+- Ensure popup previews use the same anchor logic as the main reader.
+- Add "go back" navigation after a cross-reference or footnote verse jump, so the user can return to the verse they were reading before the jump.
+
+### 7. Finish startup and background warm-up behavior
+
+Status: `in_progress`
+
+Scope:
+
+- Confirm that tab switches, translation switches, and fresh launches all benefit from background preload.
+- Only add a dedicated startup loading screen if background warm-up is not enough.
+
+### 8. Finish web storage behavior
+
+Status: `todo`
+
+Scope:
+
+- Replace the in-memory web fallback with a real persistent web storage path.
+- Verify imports and cached translations survive reloads on web the same way they do on desktop/mobile.
+
+### 9. Finish remaining architecture cleanup
+
+Status: `in_progress`
+
+Scope:
+
+- Move remaining shared services/providers that still sit outside the feature-first structure.
+- Keep placeholder/legacy paths from slowly becoming active app paths again.
+
+### 10. Keep README and docs aligned with repo truth
+
+Status: `in_progress`
+
+Scope:
+
+- Update format support tables in `README.md` as parser features land.
+- Update feature checkboxes and capability descriptions when behavior actually changes.
+
+---
+
+## Blockers / Risks
+
+- `blocked` Richer parser features in the app are limited by what the parser itself preserves — parser work must lead app-side rendering work.
+- `blocked` Additive database migrations need to be designed before the next schema change, or user data will be lost.
+
+---
+
+## README.md Reminder
+
+- Do not mark features done in `README.md` until the behavior is implemented and verified.
+- After any major task closes, check whether `README.md` needs updated format tables, feature checkboxes, or capability descriptions.
+
+---
+
+## Update Template
+
+1. Before coding: add the planned task to `Current Status` or backlog.
+2. Do the implementation work.
+3. Move finished work to `Completed Recently`.
+4. Update `Current Status` to reflect repo reality.
+5. Add targeted code comments where future readers would otherwise have to reverse-engineer intent.
+6. Run verification matching the scope of the change.
+7. Commit with a focused message.
+8. Replace `Recommended Next Step` if priorities changed.
+9. Add or revise the matching `README.md` reminder.

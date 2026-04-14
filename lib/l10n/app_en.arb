@@ -13,5 +13,163 @@
   "english": "English",
   "spanish": "Spanish",
   "french": "French",
-  "german": "German"
+  "german": "German",
+  "menu": "Menu",
+  "readerFootnotesTooltip": "View footnotes and references",
+  "readerNotesTooltip": "View personal notes",
+  "savedNoteLabel": "Saved Note",
+  "savedNotesLabel": "Saved Notes",
+  "openAction": "Open",
+  "editAction": "Edit",
+  "versionsTitle": "Versions",
+  "searchTranslationsTooltip": "Search translations",
+  "importBibleFileAction": "Import Bible File",
+  "translationsFileTypeLabel": "Bible files",
+  "unableToLoadTranslations": "Unable to load translations: {error}",
+  "@unableToLoadTranslations": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "couldNotSwitchTranslation": "Could not switch translation: {error}",
+  "@couldNotSwitchTranslation": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "importedTranslationMessage": "Imported {name}.",
+  "@importedTranslationMessage": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "importFailedMessage": "Import failed: {error}",
+  "@importFailedMessage": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "deleteTranslationTitle": "Delete {name}?",
+  "@deleteTranslationTitle": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "deleteImportedTranslationDescription": "This removes the imported Bible from the app library and cache. The original file on disk will not be deleted.",
+  "cancelAction": "Cancel",
+  "deleteAction": "Delete",
+  "deletedTranslationMessage": "Deleted {name}.",
+  "@deletedTranslationMessage": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "couldNotDeleteTranslation": "Could not delete translation: {error}",
+  "@couldNotDeleteTranslation": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "removeDownloadedTranslationTitle": "Remove {name} download?",
+  "@removeDownloadedTranslationTitle": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "removeDownloadedTranslationDescription": "This removes the downloaded Bible from local app storage. It will stay in the library as a downloadable option so you can download it again later.",
+  "removeAction": "Remove",
+  "removedLocalDownloadMessage": "Removed local download for {name}.",
+  "@removedLocalDownloadMessage": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "couldNotRemoveDownload": "Could not remove download: {error}",
+  "@couldNotRemoveDownload": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "moreActionsTooltip": "More actions",
+  "deleteImportAction": "Delete import",
+  "removeDownloadAction": "Remove download",
+  "availableOfflineTooltip": "Available offline",
+  "downloadTranslationTooltip": "Download translation",
+  "audioOptionsTooltip": "Audio options",
+  "bundledTranslationSource": "Bundled",
+  "downloadedTranslationSource": "Downloaded",
+  "downloadableTranslationSource": "Downloadable",
+  "importedTranslationSource": "Imported",
+  "importBibleTitle": "Import Bible",
+  "unableToPrepareImport": "Unable to prepare import: {error}",
+  "@unableToPrepareImport": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "translationDetailsTitle": "Translation Details",
+  "translationDetailsDescription": "Set the library name, abbreviation, language code, and description before the import is saved.",
+  "translationNameLabel": "Name",
+  "translationNameHint": "World English Bible",
+  "translationNameRequired": "Enter a translation name.",
+  "translationAbbreviationLabel": "Abbreviation",
+  "translationAbbreviationHint": "WEB",
+  "translationAbbreviationHelp": "Used the same way built-in abbreviations like KJV and ASV are used.",
+  "translationAbbreviationRequired": "Enter an abbreviation.",
+  "translationAbbreviationTaken": "That abbreviation is already in use.",
+  "translationLanguageCodeLabel": "Language code",
+  "translationLanguageCodeHint": "en",
+  "translationLanguageCodeHelp": "Use a short code like en, es, fr, or de.",
+  "translationLanguageCodeRequired": "Enter a language code.",
+  "translationDescriptionLabel": "Description",
+  "translationDescriptionHint": "Imported from my_local_bible.xml or my_translation.sqlite",
+  "importingAction": "Importing...",
+  "importTranslationAction": "Import Translation",
+  "detectedFormatLabel": "Detected format: {format}",
+  "@detectedFormatLabel": {
+    "placeholders": {
+      "format": {}
+    }
+  },
+  "booksFoundLabel": "Books found: {count}",
+  "@booksFoundLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "searchTranslationsHint": "Search translations...",
+  "downloadedSectionHeader": "Downloaded",
+  "availableSectionHeader": "Available",
+  "downloadAction": "Download",
+  "openForSessionAction": "Open for session",
+  "openedForSessionMessage": "{name} opened for this session.",
+  "@openedForSessionMessage": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "couldNotOpenTranslation": "Could not open translation: {error}",
+  "@couldNotOpenTranslation": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "downloadedTranslationMessage": "{name} downloaded.",
+  "@downloadedTranslationMessage": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "couldNotDownloadTranslation": "Could not download translation: {error}",
+  "@couldNotDownloadTranslation": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "importNotAvailableOnWeb": "Importing local Bible files is not available in the browser yet.",
+  "languageFilterLabel": "Language",
+  "allLanguagesOption": "All languages",
+  "selectLanguageTitle": "Select language"
 }

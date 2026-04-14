@@ -1,0 +1,495 @@
+import 'package:basic_bible/src/models/bible_models.dart';
+
+/// Parse a reference string like "John 3:16" into a [BibleReference].
+BibleReference? parseReferenceString(String refString) {
+  final parts = refString.split(' ');
+  if (parts.length < 2) return null;
+
+  String bookName = parts[0];
+  int? chapter;
+  int? verse;
+
+  if (parts.length > 2 &&
+      (parts[0].startsWith('1') ||
+          parts[0].startsWith('2') ||
+          parts[0].startsWith('3'))) {
+    bookName = '${parts[0]} ${parts[1]}';
+    final chapterVerse = parts[2].split(':');
+    chapter = int.tryParse(chapterVerse[0]);
+    if (chapterVerse.length > 1) verse = int.tryParse(chapterVerse[1]);
+  } else {
+    final chapterVerse = parts[1].split(':');
+    chapter = int.tryParse(chapterVerse[0]);
+    if (chapterVerse.length > 1) verse = int.tryParse(chapterVerse[1]);
+  }
+
+  final mapped = _mapBookNameToId(bookName);
+  if (mapped != null && chapter != null) {
+    return BibleReference(bookId: mapped, chapter: chapter, verse: verse);
+  }
+  return null;
+}
+
+/// Parse a structured parser target like `JHN.3.16` or `John.3.16`.
+BibleReference? parseStructuredReferenceTarget(String? target) {
+  if (target == null || target.trim().isEmpty) return null;
+
+  final cleanedTarget = target.trim().split(RegExp(r'[\s-]')).first;
+  final parts = cleanedTarget.split('.');
+  if (parts.length < 2) return null;
+
+  final rawBookId = parts[0];
+  final bookId = _normalizeStructuredBookId(rawBookId);
+  final chapter = int.tryParse(parts[1]);
+  final verse = parts.length > 2 ? int.tryParse(parts[2]) : null;
+
+  if (bookId == null || chapter == null) return null;
+  return BibleReference(bookId: bookId, chapter: chapter, verse: verse);
+}
+
+/// Prefer parser-provided targets and only fall back to display-label parsing.
+BibleReference? parseAnyReference({String? target, required String label}) {
+  return parseStructuredReferenceTarget(target) ?? parseReferenceString(label);
+}
+
+/// Resolve a reference book ID against the books currently available in the
+/// loaded translation. This keeps the reader usable when translations expose
+/// the same book with a slightly different source-specific ID or casing.
+BibleBook? resolveBookFromReference(
+  List<BibleBook> books,
+  String referenceBookId,
+) {
+  if (books.isEmpty) return null;
+
+  final exactMatch = books.where((book) => book.id == referenceBookId);
+  if (exactMatch.isNotEmpty) {
+    return exactMatch.first;
+  }
+
+  final referenceTokens = _bookMatchTokens(referenceBookId);
+  for (final book in books) {
+    final bookTokens = {
+      ..._bookMatchTokens(book.id),
+      ..._bookMatchTokens(book.shortName),
+      ..._bookMatchTokens(book.name),
+      for (final tocLabel in book.tocLabels) ..._bookMatchTokens(tocLabel.text),
+    };
+    if (bookTokens.any(referenceTokens.contains)) {
+      return book;
+    }
+  }
+
+  return null;
+}
+
+String preferredBookName(BibleBook book) {
+  final primaryName = book.name.trim();
+  if (primaryName.isNotEmpty && !_isPlaceholderBookName(primaryName, book.id)) {
+    return primaryName;
+  }
+
+  for (final tocLabel in book.tocLabels) {
+    final text = tocLabel.text.trim();
+    if (text.isNotEmpty && !_isPlaceholderBookName(text, book.id)) {
+      return text;
+    }
+  }
+
+  // If parser-side names are weak, prefer a full canonical name when the ID is
+  // recognizable instead of collapsing the reader UI to short codes like MAT.
+  final canonicalName = _canonicalBookNameOrNull(book.id);
+  if (canonicalName != null) return canonicalName;
+
+  final shortName = book.shortName.trim();
+  if (shortName.isNotEmpty && !_isPlaceholderBookName(shortName, book.id)) {
+    return shortName;
+  }
+
+  return humanizeBookId(book.id);
+}
+
+bool _isPlaceholderBookName(String rawName, String bookId) {
+  final normalizedName = rawName.trim().toUpperCase();
+  if (normalizedName.isEmpty) return true;
+
+  // Some parser/source combinations still fall back to generic placeholders
+  // like "Unknown". When richer labels such as TOC entries exist, prefer
+  // those over carrying the placeholder into the reader UI.
+  return normalizedName == 'UNKNOWN' ||
+      normalizedName == bookId.trim().toUpperCase();
+}
+
+String displayBookNameForReference(
+  List<BibleBook> books,
+  String referenceBookId,
+) {
+  final currentBook = resolveBookFromReference(books, referenceBookId);
+  if (currentBook != null) {
+    return preferredBookName(currentBook);
+  }
+
+  return _canonicalBookNameOrNull(referenceBookId) ??
+      humanizeBookId(referenceBookId);
+}
+
+/// When a translation exposes a source-specific book ID we don't recognize,
+/// display a readable version of that raw ID instead of forcing it through a
+/// hardcoded canonical-name list.
+String humanizeBookId(String bookId) {
+  final normalizedId =
+      _normalizeStructuredBookId(bookId) ?? bookId.trim().toUpperCase();
+  final prettified = _prettifyFallbackBookId(normalizedId);
+  return prettified.isEmpty ? normalizedId : prettified;
+}
+
+String? _canonicalBookNameOrNull(String bookId) {
+  final normalizedId = bookId.trim().toUpperCase();
+  const canonicalNames = {
+    'GEN': 'Genesis',
+    'EXO': 'Exodus',
+    'LEV': 'Leviticus',
+    'NUM': 'Numbers',
+    'DEU': 'Deuteronomy',
+    'JOS': 'Joshua',
+    'JDG': 'Judges',
+    'RUT': 'Ruth',
+    '1SA': '1 Samuel',
+    '2SA': '2 Samuel',
+    '1KI': '1 Kings',
+    '2KI': '2 Kings',
+    '1CH': '1 Chronicles',
+    '2CH': '2 Chronicles',
+    'EZR': 'Ezra',
+    'NEH': 'Nehemiah',
+    'EST': 'Esther',
+    'JOB': 'Job',
+    'PSA': 'Psalms',
+    'PRO': 'Proverbs',
+    'ECC': 'Ecclesiastes',
+    'SNG': 'Song of Songs',
+    'ISA': 'Isaiah',
+    'JER': 'Jeremiah',
+    'LAM': 'Lamentations',
+    'EZK': 'Ezekiel',
+    'DAN': 'Daniel',
+    'HOS': 'Hosea',
+    'JOL': 'Joel',
+    'AMO': 'Amos',
+    'OBA': 'Obadiah',
+    'JON': 'Jonah',
+    'MIC': 'Micah',
+    'NAM': 'Nahum',
+    'HAB': 'Habakkuk',
+    'ZEP': 'Zephaniah',
+    'HAG': 'Haggai',
+    'ZEC': 'Zechariah',
+    'MAL': 'Malachi',
+    'MAT': 'Matthew',
+    'MRK': 'Mark',
+    'LUK': 'Luke',
+    'JHN': 'John',
+    'ACT': 'Acts',
+    'ROM': 'Romans',
+    '1CO': '1 Corinthians',
+    '2CO': '2 Corinthians',
+    'GAL': 'Galatians',
+    'EPH': 'Ephesians',
+    'PHP': 'Philippians',
+    'COL': 'Colossians',
+    '1TH': '1 Thessalonians',
+    '2TH': '2 Thessalonians',
+    '1TI': '1 Timothy',
+    '2TI': '2 Timothy',
+    'TIT': 'Titus',
+    'PHM': 'Philemon',
+    'HEB': 'Hebrews',
+    'JAS': 'James',
+    '1PE': '1 Peter',
+    '2PE': '2 Peter',
+    '1JN': '1 John',
+    '2JN': '2 John',
+    '3JN': '3 John',
+    'JUD': 'Jude',
+    'REV': 'Revelation',
+  };
+
+  final directMatch = canonicalNames[normalizedId];
+  if (directMatch != null) return directMatch;
+
+  final normalizedStructured = _normalizeStructuredBookId(normalizedId);
+  if (normalizedStructured == null) return null;
+  return canonicalNames[normalizedStructured];
+}
+
+String? _mapBookNameToId(String bookName) {
+  const bookNameToIdMap = {
+    'Genesis': 'GEN',
+    'Exodus': 'EXO',
+    'Leviticus': 'LEV',
+    'Numbers': 'NUM',
+    'Deuteronomy': 'DEU',
+    'Joshua': 'JOS',
+    'Judges': 'JDG',
+    'Ruth': 'RUT',
+    '1 Samuel': '1SA',
+    '2 Samuel': '2SA',
+    '1 Kings': '1KI',
+    '2 Kings': '2KI',
+    '1 Chronicles': '1CH',
+    '2 Chronicles': '2CH',
+    'Ezra': 'EZR',
+    'Nehemiah': 'NEH',
+    'Esther': 'EST',
+    'Job': 'JOB',
+    'Psalms': 'PSA',
+    'Proverbs': 'PRO',
+    'Ecclesiastes': 'ECC',
+    'Song of Solomon': 'SNG',
+    'Isaiah': 'ISA',
+    'Jeremiah': 'JER',
+    'Lamentations': 'LAM',
+    'Ezekiel': 'EZK',
+    'Daniel': 'DAN',
+    'Hosea': 'HOS',
+    'Joel': 'JOL',
+    'Amos': 'AMO',
+    'Obadiah': 'OBA',
+    'Jonah': 'JON',
+    'Micah': 'MIC',
+    'Nahum': 'NAM',
+    'Habakkuk': 'HAB',
+    'Zephaniah': 'ZEP',
+    'Haggai': 'HAG',
+    'Zechariah': 'ZEC',
+    'Malachi': 'MAL',
+    'Matthew': 'MAT',
+    'Mark': 'MRK',
+    'Luke': 'LUK',
+    'John': 'JHN',
+    'Acts': 'ACT',
+    'Romans': 'ROM',
+    '1 Corinthians': '1CO',
+    '2 Corinthians': '2CO',
+    'Galatians': 'GAL',
+    'Ephesians': 'EPH',
+    'Philippians': 'PHP',
+    'Colossians': 'COL',
+    '1 Thessalonians': '1TH',
+    '2 Thessalonians': '2TH',
+    '1 Timothy': '1TI',
+    '2 Timothy': '2TI',
+    'Titus': 'TIT',
+    'Philemon': 'PHM',
+    'Hebrews': 'HEB',
+    'James': 'JAS',
+    '1 Peter': '1PE',
+    '2 Peter': '2PE',
+    '1 John': '1JN',
+    '2 John': '2JN',
+    '3 John': '3JN',
+    'Jude': 'JUD',
+    'Revelation': 'REV',
+  };
+  return bookNameToIdMap[bookName];
+}
+
+Set<String> _bookMatchTokens(String rawValue) {
+  final trimmed = rawValue.trim();
+  if (trimmed.isEmpty) return const {};
+
+  final collapsed = trimmed.replaceAll(RegExp(r'[^A-Za-z0-9]'), '');
+  final uppercase = collapsed.toUpperCase();
+  final normalizedStructured = _normalizeStructuredBookId(uppercase);
+  final mappedName = _mapBookNameToId(trimmed);
+
+  return {
+    trimmed,
+    trimmed.toUpperCase(),
+    collapsed,
+    uppercase,
+    if (normalizedStructured != null) normalizedStructured,
+    if (mappedName != null) mappedName,
+  };
+}
+
+String? _normalizeStructuredBookId(String rawBookId) {
+  final normalized = rawBookId.trim();
+  if (normalized.isEmpty) return null;
+
+  const structuredBookIdMap = {
+    'GEN': 'GEN',
+    'EXOD': 'EXO',
+    'EXO': 'EXO',
+    'LEV': 'LEV',
+    'NUM': 'NUM',
+    'DEUT': 'DEU',
+    'DEU': 'DEU',
+    'JOSH': 'JOS',
+    'JOS': 'JOS',
+    'JUDG': 'JDG',
+    'JDG': 'JDG',
+    'RUTH': 'RUT',
+    'RUT': 'RUT',
+    '1SAM': '1SA',
+    '2SAM': '2SA',
+    '1KGS': '1KI',
+    '2KGS': '2KI',
+    '1KI': '1KI',
+    '2KI': '2KI',
+    '1CHR': '1CH',
+    '2CHR': '2CH',
+    'EZRA': 'EZR',
+    'EZR': 'EZR',
+    'NEH': 'NEH',
+    'ESTH': 'EST',
+    'EST': 'EST',
+    'JOB': 'JOB',
+    'PS': 'PSA',
+    'PSA': 'PSA',
+    'PROV': 'PRO',
+    'PRO': 'PRO',
+    'ECCL': 'ECC',
+    'ECC': 'ECC',
+    'SONG': 'SNG',
+    'SNG': 'SNG',
+    'ISA': 'ISA',
+    'JER': 'JER',
+    'LAM': 'LAM',
+    'EZEK': 'EZK',
+    'EZK': 'EZK',
+    'DAN': 'DAN',
+    'HOS': 'HOS',
+    'JOEL': 'JOL',
+    'JOL': 'JOL',
+    'AMOS': 'AMO',
+    'AMO': 'AMO',
+    'OBAD': 'OBA',
+    'OBA': 'OBA',
+    'JONAH': 'JON',
+    'JON': 'JON',
+    'MIC': 'MIC',
+    'NAH': 'NAM',
+    'NAM': 'NAM',
+    'HAB': 'HAB',
+    'ZEPH': 'ZEP',
+    'ZEP': 'ZEP',
+    'HAG': 'HAG',
+    'ZECH': 'ZEC',
+    'ZEC': 'ZEC',
+    'MAL': 'MAL',
+    'MATT': 'MAT',
+    'MAT': 'MAT',
+    'MARK': 'MRK',
+    'MRK': 'MRK',
+    'LUKE': 'LUK',
+    'LUK': 'LUK',
+    'JOHN': 'JHN',
+    'JHN': 'JHN',
+    'ACTS': 'ACT',
+    'ACT': 'ACT',
+    'ROM': 'ROM',
+    '1COR': '1CO',
+    '2COR': '2CO',
+    'GAL': 'GAL',
+    'EPH': 'EPH',
+    'PHIL': 'PHP',
+    'PHP': 'PHP',
+    'COL': 'COL',
+    '1THESS': '1TH',
+    '2THESS': '2TH',
+    '1TIM': '1TI',
+    '2TIM': '2TI',
+    'TITUS': 'TIT',
+    'TIT': 'TIT',
+    'PHLM': 'PHM',
+    'PHILEM': 'PHM',
+    'HEB': 'HEB',
+    'JAS': 'JAS',
+    '1PET': '1PE',
+    '2PET': '2PE',
+    '1JOHN': '1JN',
+    '2JOHN': '2JN',
+    '3JOHN': '3JN',
+    'JUDE': 'JUD',
+    'JUD': 'JUD',
+    'REV': 'REV',
+  };
+
+  return structuredBookIdMap[normalized.toUpperCase()];
+}
+
+/// Public helper to map book id to human name (used by the viewer title).
+String bookIdToName(String bookId) {
+  final normalizedId = bookId.trim().toUpperCase();
+  final mapped = _canonicalBookNameOrNull(normalizedId);
+  if (mapped != null) return mapped;
+
+  final normalizedStructured =
+      _normalizeStructuredBookId(normalizedId) ?? normalizedId;
+  final normalizedMapped = _canonicalBookNameOrNull(normalizedStructured);
+  if (normalizedMapped != null) return normalizedMapped;
+
+  final prettified = _prettifyFallbackBookId(normalizedStructured);
+
+  return prettified.isEmpty ? normalizedId : prettified;
+}
+
+String _prettifyFallbackBookId(String rawValue) {
+  final buffer = StringBuffer();
+  for (var index = 0; index < rawValue.length; index++) {
+    final char = rawValue[index];
+    final previous = index > 0 ? rawValue[index - 1] : '';
+
+    if (char == '_') {
+      buffer.write(' ');
+      continue;
+    }
+
+    final isDigit = RegExp(r'\d').hasMatch(char);
+    final previousIsLetter =
+        previous.isNotEmpty && RegExp(r'[A-Za-z]').hasMatch(previous);
+    if (isDigit && previousIsLetter) {
+      buffer.write(' ');
+    }
+
+    buffer.write(char);
+  }
+
+  return buffer.toString().replaceAll(RegExp(r'\s+'), ' ').trim();
+}
+
+BibleBookType getBookType(String bookId) {
+  // This is a simplified list. You can expand it.
+  const newTestamentIds = {
+    'MAT',
+    'MRK',
+    'LUK',
+    'JHN',
+    'ACT',
+    'ROM',
+    '1CO',
+    '2CO',
+    'GAL',
+    'EPH',
+    'PHP',
+    'COL',
+    '1TH',
+    '2TH',
+    '1TI',
+    '2TI',
+    'TIT',
+    'PHM',
+    'HEB',
+    'JAS',
+    '1PE',
+    '2PE',
+    '1JN',
+    '2JN',
+    '3JN',
+    'JUD',
+    'REV',
+  };
+  return newTestamentIds.contains(bookId.toUpperCase())
+      ? BibleBookType.newTestament
+      : BibleBookType.oldTestament;
+}

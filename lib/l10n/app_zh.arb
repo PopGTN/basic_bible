@@ -8,5 +8,44 @@
   "goToOther": "前往其他页面",
   "aboutDescription": "这个圣经应用是 PopGTN 的免费项目。它是学习 Flutter 和 Dart 的练习项目。该应用允许阅读圣经、做笔记、支持 TTS 等功能。它的灵感来自 YouVersion 圣经等应用，但具有额外功能和改进的界面。",
   "language": "语言",
-  "theme": "主题"
+  "theme": "主题",
+  "readerFootnotesTooltip": "查看脚注和参考资料",
+  "readerNotesTooltip": "查看个人笔记",
+  "savedNoteLabel": "已保存笔记",
+  "savedNotesLabel": "已保存笔记",
+  "openAction": "打开",
+  "editAction": "编辑",
+  "searchTranslationsHint": "Search translations...",
+  "downloadedSectionHeader": "Downloaded",
+  "availableSectionHeader": "Available",
+  "downloadAction": "Download",
+  "openForSessionAction": "Open for session",
+  "openedForSessionMessage": "{name} opened for this session.",
+  "@openedForSessionMessage": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "couldNotOpenTranslation": "Could not open translation: {error}",
+  "@couldNotOpenTranslation": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "downloadedTranslationMessage": "{name} downloaded.",
+  "@downloadedTranslationMessage": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "couldNotDownloadTranslation": "Could not download translation: {error}",
+  "@couldNotDownloadTranslation": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "importNotAvailableOnWeb": "Importing local Bible files is not available in the browser yet.",
+  "languageFilterLabel": "语言",
+  "allLanguagesOption": "所有语言",
+  "selectLanguageTitle": "选择语言"
 }

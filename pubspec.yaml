@@ -1,10 +1,10 @@
 name: basic_bible
-description: "A new Flutter project."
+description: "A cross-platform Flutter Bible reader with rich formatting, annotations, and multi-translation support."
 publish_to: 'none'
 version: 0.1.0
 
 environment:
-  sdk: ^3.9.2
+  sdk: '>=3.9.0 <4.0.0'
 
 dependencies:
   flutter:
@@ -12,37 +12,52 @@ dependencies:
   flutter_localizations:
     sdk: flutter
   intl: any
-  #english_words: ^4.0.0 #old
-  #provider: ^6.1.5 # old
-  riverpod: ^2.6.1
-  flutter_riverpod: ^2.6.1
-  hooks_riverpod: ^2.6.1
-  go_router: ^16.2.1
+  riverpod: ^3.0.0
+  flutter_riverpod: ^3.0.0
+  hooks_riverpod: ^3.0.0
+  cupertino_icons: ^1.0.8
+  go_router: ^17.0.0
+  path: ^1.9.1
+  path_provider: ^2.1.5
   url_launcher: ^6.3.2
-  window_manager: ^0.5.1 
+  window_manager: ^0.5.1
   shared_preferences: ^2.5.3
+  font_awesome_flutter: ^10.10.0
   http: ^1.5.0
+  shimmer: ^3.0.0
   window_size:
     git:
       url: https://github.com/google/flutter-desktop-embedding.git
       path: plugins/window_size
+  bible_parser_flutter:
+    path: ../bible_parser_flutter
+  equatable: ^2.0.7
+  sqflite: ^2.4.2
+  sqflite_common_ffi: ^2.3.6
+  sqflite_common_ffi_web: ^1.0.1+2
+  # Drift (SQLite ORM) used for persistent caching  # Drift (SQLite ORM) used for persistent caching
+  drift: ^2.7.0
+  sqlite3_flutter_libs: ^0.5.40
+  file_selector: ^1.0.3
+  share_plus: ^10.0.0
+  scrollable_positioned_list: ^0.3.8
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
   flutter_launcher_icons: ^0.14.4
-
+  build_runner: ^2.6.7
+  drift_dev: ^2.7.0
 
 flutter:
   uses-material-design: true
-  generate: true # Add this line
-  assets: 
-  - "assets/icon/" 
+  generate: true
+  assets:
+    - "assets/icon/"
+    - "assets/bible/eng-kjv2006_usfx.xml"
 
 flutter_launcher_icons:
   android: "launcher_icon"
   ios: true
   image_path: "assets/icon/app_icon.png"
-
-
