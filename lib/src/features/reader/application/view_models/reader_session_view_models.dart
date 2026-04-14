@@ -23,8 +23,13 @@ class TranslationNotifier extends StateNotifier<String> {
 
   final SharedPreferences _prefs;
 
-  Future<void> setTranslation(String translationId) async {
-    await _prefs.setString('bible_translation', translationId);
+  Future<void> setTranslation(
+    String translationId, {
+    bool persist = true,
+  }) async {
+    if (persist) {
+      await _prefs.setString('bible_translation', translationId);
+    }
     state = translationId;
   }
 }

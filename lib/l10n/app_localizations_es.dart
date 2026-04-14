@@ -257,4 +257,52 @@ class AppLocalizationsEs extends AppLocalizations {
   String booksFoundLabel(int count) {
     return 'Books found: $count';
   }
+
+  @override
+  String get searchTranslationsHint => 'Search translations...';
+
+  @override
+  String get downloadedSectionHeader => 'Downloaded';
+
+  @override
+  String get availableSectionHeader => 'Available';
+
+  @override
+  String get downloadAction => 'Download';
+
+  @override
+  String get openForSessionAction => 'Open for session';
+
+  @override
+  String openedForSessionMessage(Object name) {
+    return '$name opened for this session.';
+  }
+
+  @override
+  String couldNotOpenTranslation(Object error) {
+    return 'Could not open translation: $error';
+  }
+
+  @override
+  String downloadedTranslationMessage(Object name) {
+    return '$name downloaded.';
+  }
+
+  @override
+  String couldNotDownloadTranslation(Object error) {
+    return 'Could not download translation: $error';
+  }
+
+  @override
+  String get importNotAvailableOnWeb =>
+      'Importing local Bible files is not available in the browser yet.';
+
+  @override
+  String get languageFilterLabel => 'Idioma';
+
+  @override
+  String get allLanguagesOption => 'Todos los idiomas';
+
+  @override
+  String get selectLanguageTitle => 'Seleccionar idioma';
 }

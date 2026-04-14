@@ -160,6 +160,11 @@ ThemeData _buildSoftDarkTheme() {
       filled: true,
       fillColor: scheme.surfaceContainerLow,
       hintStyle: TextStyle(color: scheme.onSurfaceVariant),
+      labelStyle: TextStyle(color: scheme.onSurfaceVariant),
+      floatingLabelStyle: TextStyle(
+        color: scheme.onSurface,
+        fontWeight: FontWeight.w600,
+      ),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(18),
         borderSide: BorderSide(color: scheme.outlineVariant),
@@ -172,6 +177,11 @@ ThemeData _buildSoftDarkTheme() {
         borderRadius: BorderRadius.circular(18),
         borderSide: BorderSide(color: scheme.onSurface),
       ),
+    ),
+    textSelectionTheme: TextSelectionThemeData(
+      cursorColor: scheme.onSurface,
+      selectionColor: scheme.onSurface.withValues(alpha: 0.28),
+      selectionHandleColor: scheme.onSurface,
     ),
     dividerColor: scheme.outlineVariant,
   );
@@ -308,6 +318,11 @@ ThemeData _buildMonochromeTheme({required Brightness brightness}) {
       filled: true,
       fillColor: midSurface,
       hintStyle: TextStyle(color: onSurfaceVariant),
+      labelStyle: TextStyle(color: onSurfaceVariant),
+      floatingLabelStyle: TextStyle(
+        color: foreground,
+        fontWeight: FontWeight.w600,
+      ),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(18),
         borderSide: BorderSide(color: outlineVariant),
@@ -320,6 +335,11 @@ ThemeData _buildMonochromeTheme({required Brightness brightness}) {
         borderRadius: BorderRadius.circular(18),
         borderSide: BorderSide(color: foreground),
       ),
+    ),
+    textSelectionTheme: TextSelectionThemeData(
+      cursorColor: foreground,
+      selectionColor: foreground.withValues(alpha: isDark ? 0.28 : 0.18),
+      selectionHandleColor: foreground,
     ),
     dividerColor: outline,
   );

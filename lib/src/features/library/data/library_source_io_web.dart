@@ -17,6 +17,12 @@ Future<void> copyFile(String sourcePath, String destinationPath) async {
   );
 }
 
+Future<void> writeBinaryFile(String destinationPath, List<int> bytes) async {
+  throw UnsupportedError(
+    'Writing raw Bible files is not available in the browser.',
+  );
+}
+
 Future<void> clearDirectoryFiles(
   String directoryPath, {
   String? extension,

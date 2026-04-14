@@ -1,6 +1,12 @@
 part of 'bible_viewer_tab.dart';
 
 extension _BibleTextViewStateCore on _BibleTextViewState {
+  void _exitSelectionMode() {
+    _selectionAnchorReference = null;
+    ref.read(selectedVersesProvider.notifier).clear();
+    ref.read(highlightPaletteExpandedProvider.notifier).state = false;
+  }
+
   void _rebuildContinuousSections() {
     // Continuous mode renders a flat chapter stream so the viewport can reason
     // about "which chapter is visible now?" without walking the nested book
@@ -36,6 +42,9 @@ extension _BibleTextViewStateCore on _BibleTextViewState {
   void _scheduleChapterFocus() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted || !widget.continuousScrolling) return;
+      final targetIndex = _continuousSectionIndexFor(widget.reference);
+      if (targetIndex == null) return;
+
       final targetContext = _chapterSectionKey(
         widget.reference.bookId,
         widget.reference.chapter,
@@ -47,8 +56,24 @@ extension _BibleTextViewStateCore on _BibleTextViewState {
           curve: Curves.easeInOut,
           alignment: 0.02,
         );
+      } else if (_continuousItemScrollController.isAttached) {
+        _continuousItemScrollController.scrollTo(
+          index: targetIndex,
+          duration: const Duration(milliseconds: 280),
+          curve: Curves.easeInOut,
+          alignment: 0.02,
+        );
       }
     });
+  }
+
+  int? _continuousSectionIndexFor(BibleReference reference) {
+    final index = _continuousSections.indexWhere(
+      (section) =>
+          section.book.id == reference.bookId &&
+          section.chapter.number == reference.chapter,
+    );
+    return index >= 0 ? index : null;
   }
 
   bool get _hasActiveVerseFocus =>
@@ -365,8 +390,7 @@ extension _BibleTextViewStateCore on _BibleTextViewState {
     notifier.toggle(reference);
     final selectedVerses = ref.read(selectedVersesProvider);
     if (selectedVerses.isEmpty) {
-      _selectionAnchorReference = null;
-      ref.read(highlightPaletteExpandedProvider.notifier).state = false;
+      _exitSelectionMode();
       return;
     }
 

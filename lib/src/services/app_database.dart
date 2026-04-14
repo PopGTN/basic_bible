@@ -302,28 +302,33 @@ class AppDatabase extends _$AppDatabase {
   }
 
   BibleTranslation _entryToTranslation(InstalledTranslationEntry row) {
+    final sourceType = BibleSourceType.values.firstWhere(
+      (s) => s.name == row.sourceType,
+      orElse: () => BibleSourceType.import,
+    );
     return BibleTranslation(
       id: row.id,
       name: row.name,
       language: row.language,
+      // No languageName column in the DB schema; leave empty so that
+      // _mergeStoredTranslation falls through to the catalog/built-in value.
+      languageName: '',
       description: row.description,
       isLocal: row.isLocal,
-      filePath:
-          row.sourceType == BibleSourceType.asset.name ||
-              row.sourceType == BibleSourceType.import.name
-          ? row.sourceLocation
-          : null,
+      filePath: switch (sourceType) {
+        BibleSourceType.asset || BibleSourceType.import => row.sourceLocation,
+        BibleSourceType.download || BibleSourceType.session => null,
+      },
       format: BibleFormat.values.firstWhere(
         (f) => f.name == row.format,
         orElse: () => BibleFormat.auto,
       ),
-      sourceType: BibleSourceType.values.firstWhere(
-        (s) => s.name == row.sourceType,
-        orElse: () => BibleSourceType.import,
-      ),
-      githubUrl: row.sourceType == BibleSourceType.download.name
-          ? row.sourceLocation
-          : null,
+      sourceType: sourceType,
+      githubUrl: switch (sourceType) {
+        BibleSourceType.download ||
+        BibleSourceType.session => row.sourceLocation,
+        BibleSourceType.asset || BibleSourceType.import => null,
+      },
     );
   }
 

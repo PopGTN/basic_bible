@@ -35,113 +35,123 @@ class ChapterBar extends StatelessWidget {
     final referenceLabel = '$referenceBookName ${reference.chapter}';
 
     if (isFloating) {
+      // SizedBox outside Material enforces the height from above so Material's
+      // background paint is exactly _barHeight tall regardless of button size.
+      // Without this the Container(height:) inner constraint can be overridden
+      // by IconButton's minimum tap-target, leaving the top of the buttons
+      // without a background.
       return Padding(
         padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-        child: Material(
-          color: colors.surfaceContainerHighest,
-          elevation: 6,
-          shadowColor: Colors.black.withValues(alpha: 0.28),
-          borderRadius: BorderRadius.circular(28),
-          clipBehavior: Clip.antiAlias,
-          child: Container(
-            height: _barHeight,
-            decoration: BoxDecoration(
-              color: colors.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(28),
-              border: Border.all(
-                color: colors.outlineVariant.withValues(alpha: 0.7),
-              ),
-            ),
-            child: Row(
-              children: [
-                _BarActionButton(
-                  icon: Icons.arrow_back_ios_new,
-                  onPressed: onPreviousChapter,
-                  tooltip: 'Previous chapter',
+        child: SizedBox(
+          height: _barHeight,
+          child: Material(
+            color: colors.surfaceContainerHighest,
+            elevation: 6,
+            shadowColor: Colors.black.withValues(alpha: 0.28),
+            borderRadius: BorderRadius.circular(28),
+            clipBehavior: Clip.antiAlias,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                border: Border.all(
+                  color: colors.outlineVariant.withValues(alpha: 0.7),
                 ),
-                Expanded(
-                  child: InkWell(
-                    onTap: () => _showReferencePicker(context),
-                    borderRadius: BorderRadius.circular(28),
-                    child: Center(
-                      child: Text(
-                        referenceLabel,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.w700,
+                borderRadius: BorderRadius.circular(28),
+              ),
+              child: Row(
+                children: [
+                  _BarActionButton(
+                    icon: Icons.arrow_back_ios_new,
+                    onPressed: onPreviousChapter,
+                    tooltip: 'Previous chapter',
+                  ),
+                  Expanded(
+                    child: InkWell(
+                      onTap: () => _showReferencePicker(context),
+                      borderRadius: BorderRadius.circular(28),
+                      child: Center(
+                        child: Text(
+                          referenceLabel,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(
+                            context,
+                          ).textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
                       ),
                     ),
                   ),
-                ),
-                _BarActionButton(
-                  icon: Icons.arrow_forward_ios,
-                  onPressed: onNextChapter,
-                  tooltip: 'Next chapter',
-                ),
-              ],
+                  _BarActionButton(
+                    icon: Icons.arrow_forward_ios,
+                    onPressed: onNextChapter,
+                    tooltip: 'Next chapter',
+                  ),
+                ],
+              ),
             ),
           ),
         ),
       );
     }
 
-    return Container(
+    return SizedBox(
       height: _barHeight,
-      margin: const EdgeInsets.fromLTRB(12, 10, 12, 0),
-      decoration: BoxDecoration(
-        color: colors.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          _BarActionButton(
-            icon: Icons.arrow_back_ios_new,
-            onPressed: onPreviousChapter,
-            tooltip: 'Previous chapter',
-          ),
-          Expanded(
-            child: InkWell(
-              onTap: () => _showReferencePicker(context),
-              borderRadius: BorderRadius.circular(20),
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  vertical: 8,
-                  horizontal: 16,
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      referenceBookName,
-                      style: Theme.of(context).textTheme.titleSmall,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    Text(
-                      '${reference.chapter}',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: colors.onSurfaceVariant,
+      child: Container(
+        margin: const EdgeInsets.fromLTRB(12, 10, 12, 0),
+        decoration: BoxDecoration(
+          color: colors.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.08),
+              blurRadius: 10,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            _BarActionButton(
+              icon: Icons.arrow_back_ios_new,
+              onPressed: onPreviousChapter,
+              tooltip: 'Previous chapter',
+            ),
+            Expanded(
+              child: InkWell(
+                onTap: () => _showReferencePicker(context),
+                borderRadius: BorderRadius.circular(20),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 8,
+                    horizontal: 16,
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        referenceBookName,
+                        style: Theme.of(context).textTheme.titleSmall,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                    ),
-                  ],
+                      Text(
+                        '${reference.chapter}',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: colors.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
-          _BarActionButton(
-            icon: Icons.arrow_forward_ios,
-            onPressed: onNextChapter,
-            tooltip: 'Next chapter',
-          ),
-        ],
+            _BarActionButton(
+              icon: Icons.arrow_forward_ios,
+              onPressed: onNextChapter,
+              tooltip: 'Next chapter',
+            ),
+          ],
+        ),
       ),
     );
   }

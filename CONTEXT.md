@@ -109,6 +109,10 @@ This split is a structural maintenance improvement, not a feature change. Treat 
   - `current_chapter_view_model.dart`
     - chapter hydration on demand
 - Translation and reference state are persisted with `SharedPreferences`.
+- Session-only remote reads are the exception: when a translation is opened
+  from the remote catalog without downloading, the current translation is moved
+  into memory for the current run only and is intentionally not written back to
+  `SharedPreferences`.
 - Bible content loading is exposed through Riverpod state notifiers and `AsyncValue`.
 
 ### Feature-by-feature MVVM map
@@ -190,10 +194,17 @@ This split is a structural maintenance improvement, not a feature change. Treat 
 - `lib/src/repositories/app_bible_repository.dart` is the main repository for Bible data.
 - It can:
   - load Bible content from bundled assets
+  - merge bundled translations with a GitHub-hosted remote translation catalog
   - download Bible content from GitHub
+  - open supported remote XML translations in a session-only mode without persisting them locally
   - parse Bible files with `bible_parser_flutter`
   - cache parsed data through the app database layer
 - Parsing is offloaded with `compute(...)` so large Bible files do not block the UI thread.
+- Persisted remote downloads now prefer catalog `sqlite` artifacts when the
+  current platform can install raw SQLite files directly. Session-only reads
+  currently support XML-family artifacts (`usfx`, `osis`, `zefania`) only.
+- Manual import now explicitly recognizes future `usfm` / `.zip` inputs and
+  returns clear "not connected yet" errors instead of pretending they are XML.
 
 ### Database layer
 - `lib/src/services/app_database.dart` defines the Drift-backed storage layer.

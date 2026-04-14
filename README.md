@@ -197,6 +197,41 @@ These files are the main internal docs for the app:
 - `ANNOTATIONS_CONTEXT.md`
 - `ANNOTATIONS_STATUS.md`
 
+## Running The Web App
+
+Start from the app folder:
+
+```bash
+cd "/home/joshua/Documents/Flutter Apps/Bible App Projects/basic_bible"
+```
+
+For normal web development, use Flutter's web runner:
+
+```bash
+flutter run -d chrome
+```
+
+That gives you hot reload and is the best option while actively changing code.
+
+If you want to test the production-style web build instead:
+
+```bash
+flutter build web
+python3 -m http.server 8000 --directory build/web
+```
+
+Then open:
+
+```text
+http://127.0.0.1:8000
+```
+
+Notes:
+
+- The production web build must be served over HTTP. Opening `build/web/index.html` directly from the file system is not enough.
+- Browser-persisted downloaded translations use the web database/cache path, so they should survive reloads after a successful build and load.
+- Local file import is still not available in the browser yet.
+
 ## Near-Term Focus
 
 The current high-value work is still:

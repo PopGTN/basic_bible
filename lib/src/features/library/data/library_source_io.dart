@@ -15,5 +15,8 @@ Future<String> readTextFile(String path) => impl.readTextFile(path);
 Future<void> copyFile(String sourcePath, String destinationPath) =>
     impl.copyFile(sourcePath, destinationPath);
 
+Future<void> writeBinaryFile(String destinationPath, List<int> bytes) =>
+    impl.writeBinaryFile(destinationPath, bytes);
+
 Future<void> clearDirectoryFiles(String directoryPath, {String? extension}) =>
     impl.clearDirectoryFiles(directoryPath, extension: extension);

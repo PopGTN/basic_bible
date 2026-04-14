@@ -535,6 +535,84 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Books found: {count}'**
   String booksFoundLabel(int count);
+
+  /// No description provided for @searchTranslationsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search translations...'**
+  String get searchTranslationsHint;
+
+  /// No description provided for @downloadedSectionHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'Downloaded'**
+  String get downloadedSectionHeader;
+
+  /// No description provided for @availableSectionHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'Available'**
+  String get availableSectionHeader;
+
+  /// No description provided for @downloadAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Download'**
+  String get downloadAction;
+
+  /// No description provided for @openForSessionAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Open for session'**
+  String get openForSessionAction;
+
+  /// No description provided for @openedForSessionMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} opened for this session.'**
+  String openedForSessionMessage(Object name);
+
+  /// No description provided for @couldNotOpenTranslation.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not open translation: {error}'**
+  String couldNotOpenTranslation(Object error);
+
+  /// No description provided for @downloadedTranslationMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} downloaded.'**
+  String downloadedTranslationMessage(Object name);
+
+  /// No description provided for @couldNotDownloadTranslation.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not download translation: {error}'**
+  String couldNotDownloadTranslation(Object error);
+
+  /// No description provided for @importNotAvailableOnWeb.
+  ///
+  /// In en, this message translates to:
+  /// **'Importing local Bible files is not available in the browser yet.'**
+  String get importNotAvailableOnWeb;
+
+  /// No description provided for @languageFilterLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Language'**
+  String get languageFilterLabel;
+
+  /// No description provided for @allLanguagesOption.
+  ///
+  /// In en, this message translates to:
+  /// **'All languages'**
+  String get allLanguagesOption;
+
+  /// No description provided for @selectLanguageTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Select language'**
+  String get selectLanguageTitle;
 }
 
 class _AppLocalizationsDelegate

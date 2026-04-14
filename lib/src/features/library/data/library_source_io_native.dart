@@ -25,6 +25,11 @@ Future<void> copyFile(String sourcePath, String destinationPath) async {
   await sourceFile.copy(destinationPath);
 }
 
+Future<void> writeBinaryFile(String destinationPath, List<int> bytes) async {
+  final destinationFile = File(destinationPath);
+  await destinationFile.writeAsBytes(bytes, flush: true);
+}
+
 Future<void> clearDirectoryFiles(
   String directoryPath, {
   String? extension,

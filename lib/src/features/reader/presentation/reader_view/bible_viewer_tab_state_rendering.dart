@@ -106,8 +106,9 @@ extension _BibleTextViewStateRendering on _BibleTextViewState {
     // Continuous mode reuses the same chapter-section widget shape for every
     // chapter so the reader can switch between verse-list and document layouts
     // without maintaining two separate "whole Bible" rendering trees.
-    return ListView.builder(
-      controller: widget.controller,
+    return ScrollablePositionedList.builder(
+      itemScrollController: _continuousItemScrollController,
+      itemPositionsListener: _continuousItemPositionsListener,
       padding: EdgeInsets.only(
         left: 16,
         right: 16,
@@ -213,28 +214,32 @@ extension _BibleTextViewStateRendering on _BibleTextViewState {
   void _syncVisibleChapterFromViewport(BuildContext context) {
     if (!widget.continuousScrolling || !mounted) return;
 
-    final threshold = widget.isSmallDevice ? 140.0 : 96.0;
-    var visibleReference = widget.displayReference;
-    var bestTop = -double.infinity;
+    final positions = _continuousItemPositionsListener.itemPositions.value;
+    if (positions.isEmpty) return;
 
-    for (final section in _continuousSections) {
-      final sectionContext = _chapterSectionKey(
-        section.book.id,
-        section.chapter.number,
-      ).currentContext;
-      if (sectionContext == null) continue;
-      final renderBox = sectionContext.findRenderObject() as RenderBox?;
-      if (renderBox == null || !renderBox.attached) continue;
+    final visibleItems = positions
+        .where(
+          (position) =>
+              position.itemLeadingEdge < 1 && position.itemTrailingEdge > 0,
+        )
+        .toList(growable: false);
+    if (visibleItems.isEmpty) return;
 
-      final top = renderBox.localToGlobal(Offset.zero).dy;
-      if (top <= threshold && top > bestTop) {
-        bestTop = top;
-        visibleReference = BibleReference(
-          bookId: section.book.id,
-          chapter: section.chapter.number,
-        );
-      }
-    }
+    visibleItems.sort((a, b) {
+      final aDistance = (a.itemLeadingEdge - 0.08).abs();
+      final bDistance = (b.itemLeadingEdge - 0.08).abs();
+      return aDistance.compareTo(bDistance);
+    });
+
+    final targetPosition = visibleItems.first;
+    final sectionIndex = targetPosition.index;
+    if (sectionIndex < 0 || sectionIndex >= _continuousSections.length) return;
+
+    final section = _continuousSections[sectionIndex];
+    final visibleReference = BibleReference(
+      bookId: section.book.id,
+      chapter: section.chapter.number,
+    );
 
     if (visibleReference == widget.displayReference) return;
 

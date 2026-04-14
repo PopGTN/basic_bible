@@ -1,93 +1,64 @@
-import 'package:basic_bible/src/features/library/data/app_bible_repository.dart';
 import 'package:basic_bible/l10n/app_localizations.dart';
+import 'package:basic_bible/src/features/library/presentation/versions_screen_actions.dart';
+import 'package:basic_bible/src/features/library/presentation/versions_screen_widgets.dart';
 import 'package:basic_bible/src/features/reader/application/view_models/bible_library_view_models.dart';
 import 'package:basic_bible/src/features/reader/application/view_models/reader_session_view_models.dart';
 import 'package:basic_bible/src/models/bible_models.dart';
-import 'package:basic_bible/src/platform/runtime_support.dart';
 import 'package:basic_bible/src/widgets/app_back_button.dart';
-import 'package:basic_bible/src/features/library/presentation/import_translation_screen.dart';
-import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class VersionsScreen extends ConsumerWidget {
+class VersionsScreen extends ConsumerStatefulWidget {
   const VersionsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<VersionsScreen> createState() => _VersionsScreenState();
+}
+
+class _VersionsScreenState extends ConsumerState<VersionsScreen>
+    with VersionsScreenActions {
+  String? _selectedLanguage;
+  bool _isSearching = false;
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _startSearch() {
+    setState(() {
+      _isSearching = true;
+      _searchQuery = '';
+      _searchController.clear();
+      _selectedLanguage = null;
+    });
+  }
+
+  void _stopSearch() {
+    setState(() {
+      _isSearching = false;
+      _searchQuery = '';
+      _searchController.clear();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final t = AppLocalizations.of(context)!;
     final translationsAsync = ref.watch(availableTranslationsProvider);
     final currentTranslationId = ref.watch(currentTranslationProvider);
-    final colors = Theme.of(context).colorScheme;
+    final loadingIds = ref.watch(translationDownloadsProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        leading: const AppBackButton(),
-        title: Text(t.versionsTitle),
-        actions: [
-          IconButton(
-            onPressed: () {},
-            icon: const Icon(Icons.search),
-            tooltip: t.searchTranslationsTooltip,
-          ),
-          PopupMenuButton<_VersionsMenuAction>(
-            onSelected: (action) {
-              switch (action) {
-                case _VersionsMenuAction.importBibleXml:
-                  _importBibleFile(context, ref);
-              }
-            },
-            itemBuilder: (context) => [
-              PopupMenuItem(
-                value: _VersionsMenuAction.importBibleXml,
-                child: Row(
-                  children: [
-                    const Icon(Icons.upload_file),
-                    const SizedBox(width: 8),
-                    Text(t.importBibleFileAction),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
+      appBar: _isSearching
+          ? _buildSearchBar(t)
+          : _buildNormalBar(t),
       body: translationsAsync.when(
-        data: (translations) => ListView.separated(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-          itemCount: translations.length,
-          separatorBuilder: (context, index) => const SizedBox(height: 6),
-          itemBuilder: (context, index) {
-            final translation = translations[index];
-            final isSelected = translation.id == currentTranslationId;
-
-            return _TranslationListTile(
-              translation: translation,
-              isSelected: isSelected,
-              onTap: () => _selectTranslation(context, ref, translation.id),
-              onDeleteImported: translation.sourceType == BibleSourceType.import
-                  ? () => _deleteImportedTranslation(
-                      context,
-                      ref,
-                      translation: translation,
-                      currentTranslationId: currentTranslationId,
-                      allTranslations: translations,
-                    )
-                  : null,
-              onRemoveDownloaded:
-                  translation.sourceType == BibleSourceType.download &&
-                      translation.isLocal
-                  ? () => _removeDownloadedTranslation(
-                      context,
-                      ref,
-                      translation: translation,
-                      currentTranslationId: currentTranslationId,
-                      allTranslations: translations,
-                    )
-                  : null,
-            );
-          },
-        ),
+        data: (translations) =>
+            _buildList(context, translations, currentTranslationId, loadingIds),
         error: (error, _) => Center(
           child: Padding(
             padding: const EdgeInsets.all(24),
@@ -96,433 +67,211 @@ class VersionsScreen extends ConsumerWidget {
         ),
         loading: () => const Center(child: CircularProgressIndicator()),
       ),
-      backgroundColor: colors.surface,
     );
   }
 
-  Future<void> _selectTranslation(
-    BuildContext context,
-    WidgetRef ref,
-    String translationId,
-  ) async {
-    final t = AppLocalizations.of(context)!;
-    try {
-      await ref
-          .read(currentTranslationProvider.notifier)
-          .setTranslation(translationId);
+  // ---------------------------------------------------------------------------
+  // App bar builders
+  // ---------------------------------------------------------------------------
 
-      if (!context.mounted) return;
-      if (Navigator.of(context).canPop()) {
-        Navigator.of(context).pop();
-      }
-    } catch (error) {
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(t.couldNotSwitchTranslation(error.toString()))),
-      );
-    }
-  }
-
-  Future<void> _importBibleFile(BuildContext context, WidgetRef ref) async {
-    final t = AppLocalizations.of(context)!;
-    if (isWebRuntime) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Importing local Bible files is not available in the browser yet.',
-          ),
+  AppBar _buildSearchBar(AppLocalizations t) {
+    return AppBar(
+      leading: IconButton(
+        icon: const Icon(Icons.arrow_back),
+        onPressed: _stopSearch,
+      ),
+      title: TextField(
+        controller: _searchController,
+        autofocus: true,
+        decoration: InputDecoration(
+          hintText: t.searchTranslationsHint,
+          border: InputBorder.none,
         ),
-      );
-      return;
-    }
-
-    final bibleFileTypeGroup = XTypeGroup(
-      label: t.translationsFileTypeLabel,
-      extensions: <String>['xml', 'usfx', 'osis', 'sqlite', 'sqlite3', 'db'],
+        onChanged: (value) => setState(() => _searchQuery = value.trim()),
+      ),
+      actions: [
+        if (_searchQuery.isNotEmpty)
+          IconButton(
+            icon: const Icon(Icons.clear),
+            onPressed: () {
+              _searchController.clear();
+              setState(() => _searchQuery = '');
+            },
+          ),
+      ],
     );
-    final file = await openFile(acceptedTypeGroups: [bibleFileTypeGroup]);
-    if (file == null || !context.mounted) return;
+  }
 
-    final messenger = ScaffoldMessenger.of(context);
-
-    try {
-      final importedTranslation = await Navigator.of(context)
-          .push<BibleTranslation>(
-            MaterialPageRoute(
-              builder: (context) => ImportTranslationScreen(
-                filePath: file.path,
-                existingIds:
-                    ref
-                        .read(availableTranslationsProvider)
-                        .asData
-                        ?.value
-                        .map((translation) => translation.id)
-                        .toSet() ??
-                    const <String>{},
+  AppBar _buildNormalBar(AppLocalizations t) {
+    return AppBar(
+      leading: const AppBackButton(),
+      title: Text(t.versionsTitle),
+      actions: [
+        IconButton(
+          onPressed: _startSearch,
+          icon: const Icon(Icons.search),
+          tooltip: t.searchTranslationsTooltip,
+        ),
+        PopupMenuButton<_MenuAction>(
+          onSelected: (action) {
+            switch (action) {
+              case _MenuAction.importBibleFile:
+                importBibleFile(context);
+            }
+          },
+          itemBuilder: (context) => [
+            PopupMenuItem(
+              value: _MenuAction.importBibleFile,
+              child: Row(
+                children: [
+                  const Icon(Icons.upload_file),
+                  const SizedBox(width: 8),
+                  Text(t.importBibleFileAction),
+                ],
               ),
             ),
-          );
-      if (importedTranslation == null || !context.mounted) return;
-      await ref
-          .read(currentTranslationProvider.notifier)
-          .setTranslation(importedTranslation.id);
-      ref.invalidate(availableTranslationsProvider);
-
-      if (!context.mounted) return;
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text(t.importedTranslationMessage(importedTranslation.name)),
+          ],
         ),
-      );
-    } catch (error) {
-      if (!context.mounted) return;
-      messenger.showSnackBar(
-        SnackBar(content: Text(t.importFailedMessage(error.toString()))),
-      );
-    }
-  }
-
-  Future<void> _deleteImportedTranslation(
-    BuildContext context,
-    WidgetRef ref, {
-    required BibleTranslation translation,
-    required String currentTranslationId,
-    required List<BibleTranslation> allTranslations,
-  }) async {
-    final t = AppLocalizations.of(context)!;
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(t.deleteTranslationTitle(translation.name)),
-        content: Text(t.deleteImportedTranslationDescription),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: Text(t.cancelAction),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: Text(t.deleteAction),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed != true || !context.mounted) return;
-
-    try {
-      if (currentTranslationId == translation.id) {
-        final fallback = allTranslations.firstWhere(
-          (candidate) => candidate.id != translation.id,
-          orElse: () => AppBibleRepository.builtInTranslations.first,
-        );
-        await ref
-            .read(currentTranslationProvider.notifier)
-            .setTranslation(fallback.id);
-      }
-
-      await ref
-          .read(bibleBooksProvider.notifier)
-          .deleteImportedTranslation(translation.id);
-      ref.invalidate(availableTranslationsProvider);
-
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(t.deletedTranslationMessage(translation.name))),
-      );
-    } catch (error) {
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(t.couldNotDeleteTranslation(error.toString()))),
-      );
-    }
-  }
-
-  Future<void> _removeDownloadedTranslation(
-    BuildContext context,
-    WidgetRef ref, {
-    required BibleTranslation translation,
-    required String currentTranslationId,
-    required List<BibleTranslation> allTranslations,
-  }) async {
-    final t = AppLocalizations.of(context)!;
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(t.removeDownloadedTranslationTitle(translation.name)),
-        content: Text(t.removeDownloadedTranslationDescription),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: Text(t.cancelAction),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: Text(t.removeAction),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed != true || !context.mounted) return;
-
-    try {
-      if (currentTranslationId == translation.id) {
-        final fallback = allTranslations.firstWhere(
-          (candidate) => candidate.id != translation.id,
-          orElse: () => AppBibleRepository.builtInTranslations.first,
-        );
-        await ref
-            .read(currentTranslationProvider.notifier)
-            .setTranslation(fallback.id);
-      }
-
-      await ref
-          .read(bibleBooksProvider.notifier)
-          .removeDownloadedTranslation(translation.id);
-      ref.invalidate(availableTranslationsProvider);
-
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(t.removedLocalDownloadMessage(translation.name)),
-        ),
-      );
-    } catch (error) {
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(t.couldNotRemoveDownload(error.toString()))),
-      );
-    }
-  }
-}
-
-enum _VersionsMenuAction { importBibleXml }
-
-class _TranslationListTile extends StatelessWidget {
-  const _TranslationListTile({
-    required this.translation,
-    required this.isSelected,
-    required this.onTap,
-    this.onDeleteImported,
-    this.onRemoveDownloaded,
-  });
-
-  final BibleTranslation translation;
-  final bool isSelected;
-  final VoidCallback onTap;
-  final VoidCallback? onDeleteImported;
-  final VoidCallback? onRemoveDownloaded;
-
-  @override
-  Widget build(BuildContext context) {
-    final t = AppLocalizations.of(context)!;
-    final colors = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
-    final sourceLabel = switch (translation.sourceType) {
-      BibleSourceType.asset => t.bundledTranslationSource,
-      BibleSourceType.download =>
-        translation.isLocal
-            ? t.downloadedTranslationSource
-            : t.downloadableTranslationSource,
-      BibleSourceType.import => t.importedTranslationSource,
-    };
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(18),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 10),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Flexible(
-                          child: Text(
-                            translation.id.toUpperCase(),
-                            style: textTheme.titleLarge?.copyWith(
-                              fontWeight: isSelected
-                                  ? FontWeight.w700
-                                  : FontWeight.w500,
-                              color: isSelected
-                                  ? colors.onSurface
-                                  : colors.onSurfaceVariant,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        ..._buildActionButtons(context, translation),
-                      ],
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      translation.name,
-                      style: textTheme.titleMedium?.copyWith(
-                        color: isSelected
-                            ? colors.onSurface
-                            : colors.onSurfaceVariant,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      '$sourceLabel • ${translation.language.toUpperCase()}',
-                      style: textTheme.bodySmall?.copyWith(
-                        color: colors.outline,
-                      ),
-                    ),
-                    if (translation.description.isNotEmpty) ...[
-                      const SizedBox(height: 4),
-                      Text(
-                        translation.description,
-                        style: textTheme.bodyMedium?.copyWith(
-                          color: colors.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-              const SizedBox(width: 12),
-              if (onDeleteImported != null || onRemoveDownloaded != null)
-                PopupMenuButton<_TranslationAction>(
-                  onSelected: (action) {
-                    if (action == _TranslationAction.deleteImported) {
-                      onDeleteImported!();
-                    } else if (action == _TranslationAction.removeDownloaded) {
-                      onRemoveDownloaded!();
-                    }
-                  },
-                  itemBuilder: (context) => [
-                    if (onDeleteImported != null)
-                      PopupMenuItem(
-                        value: _TranslationAction.deleteImported,
-                        child: Row(
-                          children: [
-                            const Icon(Icons.delete_outline),
-                            const SizedBox(width: 8),
-                            Text(t.deleteImportAction),
-                          ],
-                        ),
-                      ),
-                    if (onRemoveDownloaded != null)
-                      PopupMenuItem(
-                        value: _TranslationAction.removeDownloaded,
-                        child: Row(
-                          children: [
-                            const Icon(Icons.delete_sweep_outlined),
-                            const SizedBox(width: 8),
-                            Text(t.removeDownloadAction),
-                          ],
-                        ),
-                      ),
-                  ],
-                  icon: const Icon(Icons.more_vert),
-                  tooltip: t.moreActionsTooltip,
-                ),
-            ],
-          ),
-        ),
-      ),
+      ],
     );
   }
 
-  List<Widget> _buildActionButtons(
+  // ---------------------------------------------------------------------------
+  // List builder
+  // ---------------------------------------------------------------------------
+
+  Widget _buildList(
     BuildContext context,
-    BibleTranslation translation,
+    List<BibleTranslation> translations,
+    String currentTranslationId,
+    Set<String> loadingIds,
   ) {
-    final t = AppLocalizations.of(context)!;
-    final colors = Theme.of(context).colorScheme;
-    final buttons = <Widget>[];
-    final isAvailableOffline =
-        translation.isLocal ||
-        translation.sourceType == BibleSourceType.asset ||
-        translation.sourceType == BibleSourceType.import ||
-        (translation.filePath?.isNotEmpty ?? false);
+    final languages = _uniqueLanguages(translations);
 
-    // The first Versions screen pass is intentionally lightweight: these
-    // chips show the planned affordances without yet committing the app to
-    // full download/audio/library workflows.
-    if (isAvailableOffline) {
-      buttons.add(
-        _TranslationActionChip(
-          icon: Icons.check_rounded,
-          tooltip: t.availableOfflineTooltip,
-          color: colors.primaryContainer,
-          iconColor: colors.onPrimaryContainer,
-        ),
-      );
-    } else if (translation.githubUrl != null) {
-      buttons.add(
-        _TranslationActionChip(
-          icon: Icons.download_rounded,
-          tooltip: t.downloadTranslationTooltip,
-          color: colors.surfaceContainerHigh,
-        ),
-      );
+    var filtered = _selectedLanguage == null
+        ? translations
+        : translations
+              .where((tr) => tr.effectiveLanguageName == _selectedLanguage)
+              .toList();
+
+    if (_searchQuery.isNotEmpty) {
+      final q = _searchQuery.toLowerCase();
+      filtered = filtered
+          .where(
+            (tr) =>
+                tr.id.toLowerCase().contains(q) ||
+                tr.name.toLowerCase().contains(q),
+          )
+          .toList();
     }
 
-    if (translation.sourceType != BibleSourceType.import) {
-      buttons.add(
-        _TranslationActionChip(
-          icon: Icons.volume_up_outlined,
-          tooltip: t.audioOptionsTooltip,
-          color: colors.surfaceContainerHigh,
-        ),
-      );
-    }
+    final downloaded = filtered
+        .where(
+          (tr) =>
+              tr.availability == BibleTranslationAvailability.bundled ||
+              tr.availability == BibleTranslationAvailability.downloaded ||
+              tr.availability == BibleTranslationAvailability.imported,
+        )
+        .toList()
+      ..sort(_translationComparator);
 
-    final widgets = <Widget>[];
-    for (var i = 0; i < buttons.length; i++) {
-      widgets.add(buttons[i]);
-      if (i < buttons.length - 1) {
-        widgets.add(const SizedBox(width: 8));
-      }
-    }
+    final available = filtered
+        .where(
+          (tr) =>
+              tr.availability == BibleTranslationAvailability.downloadable ||
+              tr.availability == BibleTranslationAvailability.session,
+        )
+        .toList()
+      ..sort(_translationComparator);
 
-    return widgets;
-  }
-}
-
-enum _TranslationAction { deleteImported, removeDownloaded }
-
-class _TranslationActionChip extends StatelessWidget {
-  const _TranslationActionChip({
-    required this.icon,
-    required this.tooltip,
-    required this.color,
-    this.iconColor,
-  });
-
-  final IconData icon;
-  final String tooltip;
-  final Color color;
-  final Color? iconColor;
-
-  @override
-  Widget build(BuildContext context) {
-    return Tooltip(
-      message: tooltip,
-      child: Container(
-        width: 36,
-        height: 36,
-        decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-        child: IconButton(
-          onPressed: () {},
-          splashRadius: 18,
-          iconSize: 18,
-          icon: Icon(
-            icon,
-            color: iconColor ?? Theme.of(context).colorScheme.onSurfaceVariant,
+    return ListView(
+      children: [
+        if (!_isSearching)
+          LanguageFilterRow(
+            languages: languages,
+            selected: _selectedLanguage,
+            onSelected: (lang) => setState(() => _selectedLanguage = lang),
           ),
-        ),
-      ),
+        if (downloaded.isNotEmpty) ...[
+          TranslationSectionHeader(label: AppLocalizations.of(context)!.downloadedSectionHeader),
+          for (final tr in downloaded)
+            TranslationTile(
+              translation: tr,
+              isSelected: tr.id == currentTranslationId,
+              isLoading: loadingIds.contains(tr.id),
+              onTap: () => selectTranslation(
+                context,
+                tr.id,
+                persist: tr.sourceType != BibleSourceType.session,
+              ),
+              onOpenForSession:
+                  tr.availability == BibleTranslationAvailability.downloadable
+                  ? () => openTranslationForSession(context, tr)
+                  : null,
+              onRemoveDownloaded:
+                  tr.sourceType == BibleSourceType.download && tr.isLocal
+                  ? () => removeDownloadedTranslation(
+                      context,
+                      translation: tr,
+                      currentTranslationId: currentTranslationId,
+                      allTranslations: translations,
+                    )
+                  : null,
+              onDeleteImported: tr.sourceType == BibleSourceType.import
+                  ? () => deleteImportedTranslation(
+                      context,
+                      translation: tr,
+                      currentTranslationId: currentTranslationId,
+                      allTranslations: translations,
+                    )
+                  : null,
+            ),
+        ],
+        if (available.isNotEmpty) ...[
+          TranslationSectionHeader(label: AppLocalizations.of(context)!.availableSectionHeader),
+          for (final tr in available)
+            TranslationTile(
+              translation: tr,
+              isSelected: tr.id == currentTranslationId,
+              isLoading: loadingIds.contains(tr.id),
+              onTap: tr.availability == BibleTranslationAvailability.session
+                  ? () => selectTranslation(context, tr.id, persist: false)
+                  : null,
+              onOpenForSession:
+                  tr.availability == BibleTranslationAvailability.downloadable
+                  ? () => openTranslationForSession(context, tr)
+                  : null,
+              onDownload: () => downloadTranslation(context, tr),
+              onRemoveDownloaded: null,
+              onDeleteImported: null,
+            ),
+        ],
+        const SizedBox(height: 24),
+      ],
     );
   }
+
+  // ---------------------------------------------------------------------------
+  // Helpers
+  // ---------------------------------------------------------------------------
+
+  List<String> _uniqueLanguages(List<BibleTranslation> translations) {
+    final seen = <String>{};
+    final result = <String>[];
+    for (final t in translations) {
+      if (seen.add(t.effectiveLanguageName)) result.add(t.effectiveLanguageName);
+    }
+    result.sort();
+    return result;
+  }
+
+  int _translationComparator(BibleTranslation a, BibleTranslation b) {
+    final lang = a.effectiveLanguageName.compareTo(b.effectiveLanguageName);
+    if (lang != 0) return lang;
+    final order = a.displayOrder.compareTo(b.displayOrder);
+    if (order != 0) return order;
+    return a.name.compareTo(b.name);
+  }
 }
+
+enum _MenuAction { importBibleFile }
