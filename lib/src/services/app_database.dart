@@ -264,10 +264,27 @@ class AppDatabase extends _$AppDatabase {
     )..where((t) => t.id.equals(id))).getSingleOrNull();
   }
 
+  /// Single-row lookup that returns a mapped [BibleTranslation] or null.
+  /// Prefer this over [getInstalledTranslations] when only one translation is needed.
+  Future<BibleTranslation?> getInstalledTranslationModel(String id) async {
+    final entry = await getInstalledTranslation(id);
+    return entry != null ? _entryToTranslation(entry) : null;
+  }
+
+  /// Returns only the IDs of all installed translations.
+  /// Use this instead of [getInstalledTranslations] when full metadata is not needed.
+  Future<Set<String>> getInstalledTranslationIds() async {
+    final rows = await (selectOnly(installedTranslations)
+          ..addColumns([installedTranslations.id]))
+        .get();
+    return rows.map((r) => r.read(installedTranslations.id)!).toSet();
+  }
+
   Future<void> upsertInstalledTranslation({
     required BibleTranslation translation,
     String? sourceLocation,
     BibleSourceType? sourceTypeOverride,
+    int? parserVersion,
   }) async {
     await into(installedTranslations).insertOnConflictUpdate(
       InstalledTranslationsCompanion.insert(
@@ -280,6 +297,9 @@ class AppDatabase extends _$AppDatabase {
         sourceLocation: Value(sourceLocation),
         isLocal: Value(translation.isLocal),
         importedAt: Value(DateTime.now()),
+        parserVersion: parserVersion != null
+            ? Value(parserVersion)
+            : const Value.absent(),
       ),
     );
   }

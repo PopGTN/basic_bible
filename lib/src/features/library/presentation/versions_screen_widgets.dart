@@ -157,7 +157,7 @@ class TranslationTile extends StatelessWidget {
         translation.availability == BibleTranslationAvailability.downloaded ||
         translation.availability == BibleTranslationAvailability.imported;
 
-    final Widget statusAction = isLoading
+    final Widget? statusAction = isLoading
         ? SizedBox(
             width: 20,
             height: 20,
@@ -166,17 +166,19 @@ class TranslationTile extends StatelessWidget {
               color: colors.primary,
             ),
           )
+        : onDownload != null
+        ? IconButton(
+            tooltip: t.downloadAction,
+            onPressed: onDownload,
+            icon: const Icon(Icons.download_rounded),
+            color: colors.primary,
+          )
         : isStoredLocally
         ? Tooltip(
             message: t.availableOfflineTooltip,
             child: Icon(Icons.check_circle, color: colors.primary),
           )
-        : IconButton(
-            tooltip: t.downloadAction,
-            onPressed: onDownload,
-            icon: const Icon(Icons.download_rounded),
-            color: colors.primary,
-          );
+        : null;
 
     final Widget? overflowMenu = !hasSecondaryActions
         ? null
@@ -227,9 +229,9 @@ class TranslationTile extends StatelessWidget {
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          statusAction,
+          if (statusAction != null) statusAction,
           if (overflowMenu != null) ...[
-            const SizedBox(width: 4),
+            if (statusAction != null) const SizedBox(width: 4),
             overflowMenu,
           ],
         ],

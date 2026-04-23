@@ -12,6 +12,8 @@ Future<void> deleteFileIfExists(String path) => impl.deleteFileIfExists(path);
 
 Future<String> readTextFile(String path) => impl.readTextFile(path);
 
+Future<List<int>> readBinaryFile(String path) => impl.readBinaryFile(path);
+
 Future<void> copyFile(String sourcePath, String destinationPath) =>
     impl.copyFile(sourcePath, destinationPath);
 

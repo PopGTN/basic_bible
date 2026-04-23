@@ -1,11 +1,12 @@
 import 'package:basic_bible/src/features/library/data/bible_parser_worker.dart';
+import 'package:basic_bible/src/features/library/data/bible_archive_support.dart';
+import 'package:basic_bible/src/features/library/data/bible_source_parser.dart';
 import 'package:basic_bible/src/features/library/data/bible_translation_catalog.dart';
 import 'package:basic_bible/src/features/library/data/library_source_io.dart';
 import 'package:basic_bible/src/models/bible_models.dart';
 import 'package:basic_bible/src/services/app_database.dart';
 import 'package:basic_bible/src/services/translation_database.dart';
 import 'package:basic_bible/src/services/translation_database_manager.dart';
-import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
 
 // =============================================================================
@@ -92,22 +93,13 @@ class AppBibleImportService {
     late final BibleFormat detectedFormat;
     late final List<BibleBook> importedBooks;
 
-    if (_isLikelyZipFile(filePath)) {
-      throw Exception(
-        'ZIP Bible import is recognized but not connected yet.',
-      );
-    } else if (_isLikelyUsfmFile(filePath)) {
-      throw Exception(
-        'USFM import is planned but the USFM parser backend is not connected yet.',
-      );
-    } else if (_isLikelySqliteFile(filePath)) {
+    if (_isLikelySqliteFile(filePath)) {
       detectedFormat = BibleFormat.sqlite;
       importedBooks = await _readBibleFromSqlite(filePath);
     } else {
-      final content = await readTextFile(filePath);
-      final parsed = await compute(parseBibleToSerializable, content);
-      importedBooks = parsed.map(mapSerializableBook).toList();
-      detectedFormat = _detectFormatFromContent(content);
+      final parsed = await _readBibleDocument(filePath);
+      importedBooks = parsed.books;
+      detectedFormat = parsed.format;
     }
 
     if (importedBooks.isEmpty) {
@@ -179,10 +171,7 @@ class AppBibleImportService {
       translation: translation,
       sourceLocation: managedImportPath,
       sourceTypeOverride: BibleSourceType.import,
-    );
-    await _db.updateInstalledTranslationParserVersion(
-      normalizedId,
-      kCurrentParserVersion,
+      parserVersion: kCurrentParserVersion,
     );
 
     return (translation: translation, books: request.importedBooks);
@@ -290,9 +279,8 @@ class AppBibleImportService {
     required BibleFormat format,
     required List<BibleBook> importedBooks,
   }) async {
-    final storedIds =
-        (await _db.getInstalledTranslations()).map((t) => t.id).toSet()
-          ..addAll(kBuiltInTranslations.map((t) => t.id));
+    final storedIds = await _db.getInstalledTranslationIds()
+      ..addAll(kBuiltInTranslations.map((t) => t.id));
     final baseName = p.basenameWithoutExtension(filePath);
     final sanitizedId = _sanitizeTranslationId(baseName);
     var candidateId = sanitizedId;
@@ -318,9 +306,8 @@ class AppBibleImportService {
   }
 
   Future<void> _ensureTranslationIdAvailable(String candidateId) async {
-    final storedIds =
-        (await _db.getInstalledTranslations()).map((t) => t.id).toSet()
-          ..addAll(kBuiltInTranslations.map((t) => t.id));
+    final storedIds = await _db.getInstalledTranslationIds()
+      ..addAll(kBuiltInTranslations.map((t) => t.id));
     if (storedIds.contains(candidateId)) {
       throw Exception(
         'A translation with the abbreviation ${candidateId.toUpperCase()} already exists.',
@@ -328,14 +315,13 @@ class AppBibleImportService {
     }
   }
 
-  BibleFormat _detectFormatFromContent(String content) {
-    final lower = content.toLowerCase();
-    if (lower.contains('<usfx')) return BibleFormat.usfx;
-    if (lower.contains('<osis') || lower.contains('<osistext')) {
-      return BibleFormat.osis;
-    }
-    if (lower.contains('<xmlbible')) return BibleFormat.zefania;
-    return BibleFormat.auto;
+  Future<ParsedBibleSource> _readBibleDocument(String filePath) async {
+    final bytes = await readBinaryFile(filePath);
+    return parseBibleSourceBytes(
+      bytes,
+      sourceName: p.basename(filePath),
+      hintedFormat: detectBibleFormatFromSourceName(filePath),
+    );
   }
 
   String _sanitizeTranslationId(String value) {
@@ -377,12 +363,4 @@ class AppBibleImportService {
     final ext = p.extension(filePath).toLowerCase();
     return ext == '.sqlite' || ext == '.db' || ext == '.sqlite3';
   }
-
-  bool _isLikelyUsfmFile(String filePath) {
-    final ext = p.extension(filePath).toLowerCase();
-    return ext == '.usfm' || ext == '.sfm';
-  }
-
-  bool _isLikelyZipFile(String filePath) =>
-      p.extension(filePath).toLowerCase() == '.zip';
 }

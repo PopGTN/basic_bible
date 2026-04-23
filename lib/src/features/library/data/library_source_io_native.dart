@@ -12,6 +12,8 @@ Future<void> deleteFileIfExists(String path) async {
 
 Future<String> readTextFile(String path) => File(path).readAsString();
 
+Future<List<int>> readBinaryFile(String path) => File(path).readAsBytes();
+
 Future<void> copyFile(String sourcePath, String destinationPath) async {
   final sourceFile = File(sourcePath);
   if (!await sourceFile.exists()) {
@@ -37,9 +39,15 @@ Future<void> clearDirectoryFiles(
   final dir = Directory(directoryPath);
   if (!await dir.exists()) return;
 
-  await for (final entity in dir.list()) {
-    if (entity is! File) continue;
-    if (extension != null && !entity.path.endsWith(extension)) continue;
-    await entity.delete();
-  }
+  final files = await dir
+      .list()
+      .where(
+        (e) =>
+            e is File &&
+            (extension == null || e.path.endsWith(extension)),
+      )
+      .cast<File>()
+      .toList();
+
+  await Future.wait(files.map((f) => f.delete()));
 }

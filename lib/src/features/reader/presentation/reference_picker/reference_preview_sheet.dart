@@ -84,7 +84,7 @@ class _ReferencePreviewSheetState extends ConsumerState<ReferencePreviewSheet> {
 
     for (final attempt in attempts) {
       try {
-        await repository.loadLocalBible(attempt.id);
+        await repository.loadLocalBibleShell(attempt.id);
         final chapter = await repository.loadChapterVerses(
           attempt.id,
           reference.bookId,

@@ -5,7 +5,11 @@ part of 'app_bible_repository.dart';
 // is part of the same library.
 
 // Formats supported for session-open (no on-disk write; bytes stay in memory).
+// BibleFormat.zip is included because the ZIP is decoded in-memory — no file
+// I/O is needed. SQLite is intentionally excluded (needs file-backed storage).
 const _sessionReadableFormats = <BibleFormat>{
+  BibleFormat.zip,
+  BibleFormat.usfm,
   BibleFormat.usfx,
   BibleFormat.osis,
   BibleFormat.zefania,
@@ -27,7 +31,8 @@ extension AppBibleRepositoryNetwork on AppBibleRepository {
   Future<List<BibleBook>> _doDownloadBible(String translationId) async {
     final memoryCached = peekLoadedTranslation(translationId);
     if (memoryCached != null) {
-      return _rememberLoadedTranslation(translationId, memoryCached);
+      activateLoadedTranslation(translationId);
+      return memoryCached;
     }
 
     if (await _isCacheValid(translationId)) {
@@ -85,10 +90,7 @@ extension AppBibleRepositoryNetwork on AppBibleRepository {
         translation: downloadedTranslation,
         sourceLocation: artifact.downloadUrl,
         sourceTypeOverride: BibleSourceType.download,
-      );
-      await _db.updateInstalledTranslationParserVersion(
-        translationId,
-        kCurrentParserVersion,
+        parserVersion: kCurrentParserVersion,
       );
       _sessionTranslationIds.remove(translationId);
 
@@ -118,7 +120,8 @@ extension AppBibleRepositoryNetwork on AppBibleRepository {
   ) async {
     final memoryCached = peekLoadedTranslation(translationId);
     if (memoryCached != null && _sessionTranslationIds.contains(translationId)) {
-      return _rememberLoadedTranslation(translationId, memoryCached);
+      activateLoadedTranslation(translationId);
+      return memoryCached;
     }
 
     final translation = await _getTranslation(
@@ -182,6 +185,8 @@ extension AppBibleRepositoryNetwork on AppBibleRepository {
   // ---------------------------------------------------------------------------
 
   Set<BibleFormat> get _downloadSupportedFormats => <BibleFormat>{
+    BibleFormat.zip,
+    BibleFormat.usfm,
     BibleFormat.usfx,
     BibleFormat.osis,
     BibleFormat.zefania,
@@ -193,7 +198,13 @@ extension AppBibleRepositoryNetwork on AppBibleRepository {
     required BibleTranslationArtifact artifact,
     required List<int> responseBody,
   }) async {
-    switch (artifact.format) {
+    final normalizedFormat = normalizeBibleFormat(
+      declaredFormat: artifact.format,
+      fileName: artifact.fileName,
+      bytes: responseBody,
+    );
+
+    switch (normalizedFormat) {
       case BibleFormat.sqlite:
         final path = await _sqlitePathFor(translationId);
         await writeBinaryFile(path, responseBody);
@@ -208,24 +219,35 @@ extension AppBibleRepositoryNetwork on AppBibleRepository {
       case BibleFormat.usfx:
       case BibleFormat.osis:
       case BibleFormat.zefania:
-        final books = await _parseBibleBytes(responseBody);
+      case BibleFormat.zip:
+      case BibleFormat.usfm:
+        final books = await _parseBibleBytes(
+          responseBody,
+          sourceName: artifact.fileName,
+          hintedFormat: normalizedFormat,
+        );
         final path = await _sqlitePathFor(translationId);
         final translationDb = await _dbManager.open(translationId, path);
         await translationDb.insertBible(books);
         return books;
-      case BibleFormat.usfm:
       case BibleFormat.usfmDirectory:
-      case BibleFormat.zip:
       case BibleFormat.auto:
         throw Exception(
-          'The ${artifact.format.name} download path is not connected yet.',
+          'The ${normalizedFormat.name} download path is not connected yet.',
         );
     }
   }
 
-  Future<List<BibleBook>> _parseBibleBytes(List<int> bytes) async {
-    final content = utf8.decode(bytes);
-    final parsed = await compute(parseBibleToSerializable, content);
-    return parsed.map(mapSerializableBook).toList();
+  Future<List<BibleBook>> _parseBibleBytes(
+    List<int> bytes, {
+    String? sourceName,
+    BibleFormat? hintedFormat,
+  }) async {
+    final parsed = await parseBibleSourceBytes(
+      bytes,
+      sourceName: sourceName ?? 'document',
+      hintedFormat: hintedFormat,
+    );
+    return parsed.books;
   }
 }

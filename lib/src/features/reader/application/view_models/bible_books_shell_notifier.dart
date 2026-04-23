@@ -90,6 +90,13 @@ class BibleBooksShellNotifier
     }
   }
 
+  Future<void> preloadCurrentTranslation() async {
+    if (state.isLoading) return;
+    final books = state.asData?.value;
+    if (books != null && books.isNotEmpty) return;
+    await loadShell();
+  }
+
   // ---------------------------------------------------------------------------
   // Translation switching
   // ---------------------------------------------------------------------------

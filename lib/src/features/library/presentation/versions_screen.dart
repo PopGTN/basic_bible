@@ -53,9 +53,7 @@ class _VersionsScreenState extends ConsumerState<VersionsScreen>
     final loadingIds = ref.watch(translationDownloadsProvider);
 
     return Scaffold(
-      appBar: _isSearching
-          ? _buildSearchBar(t)
-          : _buildNormalBar(t),
+      appBar: _isSearching ? _buildSearchBar(t) : _buildNormalBar(t),
       body: translationsAsync.when(
         data: (translations) =>
             _buildList(context, translations, currentTranslationId, loadingIds),
@@ -117,6 +115,8 @@ class _VersionsScreenState extends ConsumerState<VersionsScreen>
             switch (action) {
               case _MenuAction.importBibleFile:
                 importBibleFile(context);
+              case _MenuAction.clearTranslationCache:
+                clearTranslationCache(context);
             }
           },
           itemBuilder: (context) => [
@@ -127,6 +127,16 @@ class _VersionsScreenState extends ConsumerState<VersionsScreen>
                   const Icon(Icons.upload_file),
                   const SizedBox(width: 8),
                   Text(t.importBibleFileAction),
+                ],
+              ),
+            ),
+            PopupMenuItem(
+              value: _MenuAction.clearTranslationCache,
+              child: Row(
+                children: [
+                  const Icon(Icons.cleaning_services_outlined),
+                  const SizedBox(width: 8),
+                  Text(t.clearTranslationCacheAction),
                 ],
               ),
             ),
@@ -165,24 +175,27 @@ class _VersionsScreenState extends ConsumerState<VersionsScreen>
           .toList();
     }
 
-    final downloaded = filtered
-        .where(
-          (tr) =>
-              tr.availability == BibleTranslationAvailability.bundled ||
-              tr.availability == BibleTranslationAvailability.downloaded ||
-              tr.availability == BibleTranslationAvailability.imported,
-        )
-        .toList()
-      ..sort(_translationComparator);
+    final downloaded =
+        filtered
+            .where(
+              (tr) =>
+                  tr.availability == BibleTranslationAvailability.bundled ||
+                  tr.availability == BibleTranslationAvailability.downloaded ||
+                  tr.availability == BibleTranslationAvailability.imported,
+            )
+            .toList()
+          ..sort(_translationComparator);
 
-    final available = filtered
-        .where(
-          (tr) =>
-              tr.availability == BibleTranslationAvailability.downloadable ||
-              tr.availability == BibleTranslationAvailability.session,
-        )
-        .toList()
-      ..sort(_translationComparator);
+    final available =
+        filtered
+            .where(
+              (tr) =>
+                  tr.availability ==
+                      BibleTranslationAvailability.downloadable ||
+                  tr.availability == BibleTranslationAvailability.session,
+            )
+            .toList()
+          ..sort(_translationComparator);
 
     return ListView(
       children: [
@@ -193,7 +206,9 @@ class _VersionsScreenState extends ConsumerState<VersionsScreen>
             onSelected: (lang) => setState(() => _selectedLanguage = lang),
           ),
         if (downloaded.isNotEmpty) ...[
-          TranslationSectionHeader(label: AppLocalizations.of(context)!.downloadedSectionHeader),
+          TranslationSectionHeader(
+            label: AppLocalizations.of(context)!.downloadedSectionHeader,
+          ),
           for (final tr in downloaded)
             TranslationTile(
               translation: tr,
@@ -228,7 +243,9 @@ class _VersionsScreenState extends ConsumerState<VersionsScreen>
             ),
         ],
         if (available.isNotEmpty) ...[
-          TranslationSectionHeader(label: AppLocalizations.of(context)!.availableSectionHeader),
+          TranslationSectionHeader(
+            label: AppLocalizations.of(context)!.availableSectionHeader,
+          ),
           for (final tr in available)
             TranslationTile(
               translation: tr,
@@ -241,7 +258,10 @@ class _VersionsScreenState extends ConsumerState<VersionsScreen>
                   tr.availability == BibleTranslationAvailability.downloadable
                   ? () => openTranslationForSession(context, tr)
                   : null,
-              onDownload: () => downloadTranslation(context, tr),
+              onDownload:
+                  tr.availability == BibleTranslationAvailability.downloadable
+                  ? () => downloadTranslation(context, tr)
+                  : null,
               onRemoveDownloaded: null,
               onDeleteImported: null,
             ),
@@ -259,7 +279,8 @@ class _VersionsScreenState extends ConsumerState<VersionsScreen>
     final seen = <String>{};
     final result = <String>[];
     for (final t in translations) {
-      if (seen.add(t.effectiveLanguageName)) result.add(t.effectiveLanguageName);
+      if (seen.add(t.effectiveLanguageName))
+        result.add(t.effectiveLanguageName);
     }
     result.sort();
     return result;
@@ -274,4 +295,4 @@ class _VersionsScreenState extends ConsumerState<VersionsScreen>
   }
 }
 
-enum _MenuAction { importBibleFile }
+enum _MenuAction { importBibleFile, clearTranslationCache }

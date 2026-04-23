@@ -1,11 +1,13 @@
 import 'dart:async';
-import 'dart:convert';
-
+import 'dart:collection';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
+import 'package:path/path.dart' as p;
 import 'package:basic_bible/src/features/library/data/bible_import_service.dart';
 import 'package:basic_bible/src/features/library/data/bible_parser_worker.dart';
+import 'package:basic_bible/src/features/library/data/bible_archive_support.dart';
+import 'package:basic_bible/src/features/library/data/bible_source_parser.dart';
 import 'package:basic_bible/src/features/library/data/bible_translation_catalog.dart';
 import 'package:basic_bible/src/features/library/data/remote_translation_catalog_service.dart';
 import 'package:basic_bible/src/models/bible_models.dart';
@@ -31,9 +33,17 @@ class AppBibleRepository {
 
   // In-memory cache: single source of truth for loaded books.
   final Map<String, List<BibleBook>> _memoryCacheByTranslation = {};
+  final LinkedHashMap<String, List<BibleBook>> _fullTranslationLru =
+      LinkedHashMap<String, List<BibleBook>>();
+  final Map<String, LinkedHashMap<String, BibleChapter>> _chapterCacheByTranslation =
+      {};
   final Set<String> _sessionTranslationIds = {};
   String? _currentTranslationId;
   List<BibleBook> _currentBooks = [];
+  // Set to true whenever a file-backed translation is added or removed so that
+  // _reconcileStoredTranslations runs exactly once per structural change rather
+  // than on every getAvailableTranslations() call.
+  bool _storedTranslationsDirty = true;
 
   // In-flight guards: shared Futures prevent concurrent parses/downloads of
   // the same translation racing to write the same SQLite file.
@@ -42,6 +52,8 @@ class AppBibleRepository {
   final Map<String, Future<List<BibleBook>>> _sessionReadInFlight = {};
 
   static const Duration _remoteRequestTimeout = Duration(seconds: 20);
+  static const int _maxFullTranslationCacheCount = 2;
+  static const int _maxChapterCacheEntriesPerTranslation = 12;
 
   /// Delegates to the catalog constant so existing call sites keep working.
   static List<BibleTranslation> get builtInTranslations => kBuiltInTranslations;
@@ -51,7 +63,11 @@ class AppBibleRepository {
   // ---------------------------------------------------------------------------
 
   Future<List<BibleTranslation>> getAvailableTranslations() async {
-    final stored = await _db.getInstalledTranslations();
+    var stored = await _db.getInstalledTranslations();
+    if (_storedTranslationsDirty) {
+      stored = await _reconcileStoredTranslations(stored);
+      _storedTranslationsDirty = false;
+    }
     final remote = await _fetchRemoteTranslationsSafely();
     final builtInIds = builtInTranslations.map((t) => t.id).toSet();
     final remoteById = {for (final t in remote) t.id: t};
@@ -129,31 +145,53 @@ class AppBibleRepository {
 
   Future<void> removeDownloadedTranslation(String translationId) async {
     final stored = await _db.getInstalledTranslations();
-    final translation = stored.firstWhere(
+    final storedTranslation = stored.firstWhere(
       (t) => t.id == translationId,
       orElse: () => throw Exception('Translation $translationId not found.'),
     );
-    if (translation.sourceType != BibleSourceType.download) {
-      throw Exception('Only downloaded translations can be removed.');
+
+    BibleTranslation? catalogTranslation;
+    try {
+      catalogTranslation = await _getTranslation(
+        translationId,
+        includeRemoteCatalog: true,
+      );
+    } catch (_) {
+      catalogTranslation = null;
     }
+
+    final effectiveTranslation = catalogTranslation ?? storedTranslation;
+    if (effectiveTranslation.sourceType == BibleSourceType.import ||
+        storedTranslation.sourceType == BibleSourceType.import) {
+      throw Exception('Imported translations must be deleted, not removed as downloads.');
+    }
+    if (effectiveTranslation.sourceType == BibleSourceType.asset ||
+        effectiveTranslation.bundledByDefault) {
+      throw Exception('Bundled translations cannot be removed.');
+    }
+
     await _invalidateCache(translationId);
+
+    final resetTranslation = BibleTranslation(
+      id: effectiveTranslation.id,
+      name: effectiveTranslation.name,
+      language: effectiveTranslation.language,
+      languageName: effectiveTranslation.languageName,
+      description: effectiveTranslation.description,
+      isLocal: false,
+      githubUrl:
+          effectiveTranslation.githubUrl ?? storedTranslation.githubUrl,
+      format: effectiveTranslation.format,
+      sourceType: BibleSourceType.download,
+      bundledByDefault: effectiveTranslation.bundledByDefault,
+      displayOrder: effectiveTranslation.displayOrder,
+      artifacts: effectiveTranslation.artifacts,
+    );
+
     // Keep the registry row marked as not-local so the Download action shows.
     await _db.upsertInstalledTranslation(
-      translation: BibleTranslation(
-        id: translation.id,
-        name: translation.name,
-        language: translation.language,
-        languageName: translation.languageName,
-        description: translation.description,
-        isLocal: false,
-        githubUrl: translation.githubUrl,
-        format: translation.format,
-        sourceType: BibleSourceType.download,
-        bundledByDefault: translation.bundledByDefault,
-        displayOrder: translation.displayOrder,
-        artifacts: translation.artifacts,
-      ),
-      sourceLocation: translation.githubUrl,
+      translation: resetTranslation,
+      sourceLocation: resetTranslation.githubUrl,
       sourceTypeOverride: BibleSourceType.download,
     );
     _evictFromCache(translationId);
@@ -219,6 +257,7 @@ class AppBibleRepository {
   void activateLoadedTranslation(String translationId) {
     final books = _memoryCacheByTranslation[translationId];
     if (books != null && books.isNotEmpty) {
+      _touchLoadedTranslation(translationId);
       _currentTranslationId = translationId;
       _currentBooks = books;
     }
@@ -288,9 +327,38 @@ class AppBibleRepository {
     await _dbManager.closeAll();
     await _db.deleteAllInstalledTranslations();
     _memoryCacheByTranslation.clear();
+    _fullTranslationLru.clear();
+    _chapterCacheByTranslation.clear();
     _sessionTranslationIds.clear();
     _currentTranslationId = null;
     _currentBooks = const [];
+    _storedTranslationsDirty = true;
+  }
+
+  Future<List<BibleTranslation>> _reconcileStoredTranslations(
+    List<BibleTranslation> stored,
+  ) async {
+    final reconciled = <BibleTranslation>[];
+    for (final translation in stored) {
+      if (translation.sourceType == BibleSourceType.download &&
+          translation.isLocal &&
+          !await _isCacheValid(translation.id)) {
+        final staleDownload = translation.copyWith(
+          isLocal: false,
+          sourceType: BibleSourceType.download,
+        );
+        await _db.upsertInstalledTranslation(
+          translation: staleDownload,
+          sourceLocation: translation.githubUrl,
+          sourceTypeOverride: BibleSourceType.download,
+        );
+        _evictFromCache(translation.id);
+        reconciled.add(staleDownload);
+        continue;
+      }
+      reconciled.add(translation);
+    }
+    return reconciled;
   }
 
   // ---------------------------------------------------------------------------
@@ -321,11 +389,14 @@ class AppBibleRepository {
 
   void _evictFromCache(String translationId) {
     _memoryCacheByTranslation.remove(translationId);
+    _fullTranslationLru.remove(translationId);
+    _chapterCacheByTranslation.remove(translationId);
     _sessionTranslationIds.remove(translationId);
     if (_currentTranslationId == translationId) {
       _currentTranslationId = null;
       _currentBooks = const [];
     }
+    _storedTranslationsDirty = true;
   }
 
   List<BibleBook> _rememberLoadedTranslation(
@@ -333,9 +404,71 @@ class AppBibleRepository {
     List<BibleBook> books,
   ) {
     _memoryCacheByTranslation[translationId] = books;
+    _fullTranslationLru.remove(translationId);
+    _fullTranslationLru[translationId] = books;
+    _trimFullTranslationCache();
     _currentTranslationId = translationId;
     _currentBooks = books;
     return books;
+  }
+
+  void _touchLoadedTranslation(String translationId) {
+    final books = _fullTranslationLru.remove(translationId);
+    if (books != null) {
+      _fullTranslationLru[translationId] = books;
+    }
+  }
+
+  void _trimFullTranslationCache() {
+    while (_fullTranslationLru.length > _maxFullTranslationCacheCount) {
+      final oldestTranslationId = _fullTranslationLru.keys.first;
+      if (oldestTranslationId == _currentTranslationId) {
+        final currentBooks = _fullTranslationLru.remove(oldestTranslationId);
+        if (currentBooks != null) {
+          _fullTranslationLru[oldestTranslationId] = currentBooks;
+        }
+        if (_fullTranslationLru.length <= _maxFullTranslationCacheCount) {
+          break;
+        }
+        continue;
+      }
+      _memoryCacheByTranslation.remove(oldestTranslationId);
+      _fullTranslationLru.remove(oldestTranslationId);
+      _chapterCacheByTranslation.remove(oldestTranslationId);
+    }
+  }
+
+  BibleChapter? _lookupCachedChapter(
+    String translationId,
+    String bookId,
+    int chapterNumber,
+  ) {
+    final translationCache = _chapterCacheByTranslation[translationId];
+    if (translationCache == null) return null;
+    final cacheKey = '$bookId:$chapterNumber';
+    final chapter = translationCache.remove(cacheKey);
+    if (chapter != null) {
+      translationCache[cacheKey] = chapter;
+    }
+    return chapter;
+  }
+
+  BibleChapter _rememberHydratedChapter(
+    String translationId,
+    String bookId,
+    BibleChapter chapter,
+  ) {
+    final translationCache = _chapterCacheByTranslation.putIfAbsent(
+      translationId,
+      () => LinkedHashMap<String, BibleChapter>(),
+    );
+    final cacheKey = '$bookId:${chapter.number}';
+    translationCache.remove(cacheKey);
+    translationCache[cacheKey] = chapter;
+    while (translationCache.length > _maxChapterCacheEntriesPerTranslation) {
+      translationCache.remove(translationCache.keys.first);
+    }
+    return chapter;
   }
 
   // ---------------------------------------------------------------------------
@@ -346,11 +479,9 @@ class AppBibleRepository {
     String translationId, {
     bool includeRemoteCatalog = false,
   }) async {
-    final stored = await _db.getInstalledTranslations();
     final builtIn =
         builtInTranslations.where((t) => t.id == translationId).firstOrNull;
-    final storedMatch =
-        stored.where((t) => t.id == translationId).firstOrNull;
+    final storedMatch = await _db.getInstalledTranslationModel(translationId);
     final remote = includeRemoteCatalog
         ? (await _fetchRemoteTranslationsSafely())
               .where((t) => t.id == translationId)

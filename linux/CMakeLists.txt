@@ -57,6 +57,16 @@ pkg_check_modules(GTK REQUIRED IMPORTED_TARGET gtk+-3.0)
 # Application build; see runner/CMakeLists.txt.
 add_subdirectory("runner")
 
+find_program(CARGO_EXECUTABLE cargo)
+if(CARGO_EXECUTABLE)
+  add_custom_target(build_usfm_parser ALL
+    COMMAND ${CARGO_EXECUTABLE} build --manifest-path ${CMAKE_CURRENT_SOURCE_DIR}/../native/usfm_parser/Cargo.toml
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/..
+    COMMENT "Building native USFM parser"
+  )
+  add_dependencies(${BINARY_NAME} build_usfm_parser)
+endif()
+
 # Run the Flutter tool portions of the build. This must not be removed.
 add_dependencies(${BINARY_NAME} flutter_assemble)
 
@@ -105,6 +115,18 @@ foreach(bundled_library ${PLUGIN_BUNDLED_LIBRARIES})
     DESTINATION "${INSTALL_BUNDLE_LIB_DIR}"
     COMPONENT Runtime)
 endforeach(bundled_library)
+
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../native/usfm_parser/target/debug/libbasic_bible_usfm_parser.so")
+  install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/../native/usfm_parser/target/debug/libbasic_bible_usfm_parser.so"
+    DESTINATION "${INSTALL_BUNDLE_LIB_DIR}"
+    COMPONENT Runtime)
+endif()
+
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../native/usfm_parser/target/release/libbasic_bible_usfm_parser.so")
+  install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/../native/usfm_parser/target/release/libbasic_bible_usfm_parser.so"
+    DESTINATION "${INSTALL_BUNDLE_LIB_DIR}"
+    COMPONENT Runtime)
+endif()
 
 # Copy the native assets provided by the build.dart from all packages.
 set(NATIVE_ASSETS_DIR "${PROJECT_BUILD_DIR}native_assets/linux/")

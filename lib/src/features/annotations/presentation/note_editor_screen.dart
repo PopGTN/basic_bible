@@ -1,6 +1,7 @@
 import 'package:basic_bible/src/features/annotations/application/view_models/annotation_data_view_models.dart';
 import 'package:basic_bible/src/features/annotations/models/user_annotations.dart';
 import 'package:basic_bible/src/features/annotations/presentation/annotation_theme.dart';
+import 'package:basic_bible/src/features/annotations/presentation/linked_verses_section.dart';
 import 'package:basic_bible/src/features/reader/application/view_models/bible_library_view_models.dart';
 import 'package:basic_bible/src/features/reader/presentation/reference_picker/reference_picker_screen.dart';
 import 'package:basic_bible/src/models/bible_models.dart';
@@ -165,6 +166,7 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
 
   Future<void> _save(BuildContext context) async {
     if (_isSaving) return;
+    FocusScope.of(context).unfocus();
     setState(() => _isSaving = true);
 
     final annotation = draftToAnnotation(_draft);
@@ -185,7 +187,10 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
     }
 
     if (!mounted || !context.mounted) return;
-    Navigator.of(context).pop(true);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !context.mounted) return;
+      Navigator.of(context).pop(true);
+    });
   }
 
   // ---------------------------------------------------------------------------
@@ -245,13 +250,40 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
                 ? _removePrimaryVerse
                 : null,
           ),
-          for (final link in _draft.linkedVerses) ...[
+          if (_draft.linkedVerses.isNotEmpty) ...[
             const SizedBox(height: 10),
-            _LinkedVerseCard(
-              title: 'Linked Verse',
-              link: link,
+            LinkedVersesSection(
               books: booksAsync.value ?? const [],
-              onRemove: () => _removeLinkedVerse(link),
+              links: _draft.linkedVerses,
+              maxVisible: 20,
+              emptyMessage: null,
+              onPreviewLinkedVerse: (link) async {
+                if (!mounted) return;
+                final allBooks = booksAsync.value ?? const <BibleBook>[];
+                final shouldRemove = await showDialog<bool>(
+                  context: context,
+                  builder: (dialogContext) => AlertDialog(
+                    title: const Text('Linked Verse'),
+                    content: Text(
+                      '${displayBookNameForReference(allBooks, link.bookId)} '
+                      '${link.chapter}:${link.verse}',
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.of(dialogContext).pop(false),
+                        child: const Text('Close'),
+                      ),
+                      TextButton(
+                        onPressed: () => Navigator.of(dialogContext).pop(true),
+                        child: const Text('Remove'),
+                      ),
+                    ],
+                  ),
+                );
+                if (shouldRemove == true && mounted) {
+                  _removeLinkedVerse(link);
+                }
+              },
             ),
           ],
           const SizedBox(height: 10),

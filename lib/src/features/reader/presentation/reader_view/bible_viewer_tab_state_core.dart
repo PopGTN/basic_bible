@@ -1,6 +1,9 @@
 part of 'bible_viewer_tab.dart';
 
 extension _BibleTextViewStateCore on _BibleTextViewState {
+  String _continuousChapterKey(String bookId, int chapterNumber) =>
+      '$bookId:$chapterNumber';
+
   void _exitSelectionMode() {
     _selectionAnchorReference = null;
     ref.read(selectedVersesProvider.notifier).clear();
@@ -45,18 +48,42 @@ extension _BibleTextViewStateCore on _BibleTextViewState {
       final targetIndex = _continuousSectionIndexFor(widget.reference);
       if (targetIndex == null) return;
 
-      final targetContext = _chapterSectionKey(
-        widget.reference.bookId,
-        widget.reference.chapter,
-      ).currentContext;
-      if (targetContext != null) {
-        Scrollable.ensureVisible(
-          targetContext,
-          duration: const Duration(milliseconds: 280),
-          curve: Curves.easeInOut,
-          alignment: 0.02,
+      // Determine how far the jump is from the current visible position.
+      // ScrollablePositionedList estimates scroll offsets for unhydrated items
+      // using placeholder heights. Over large distances (hundreds of chapters)
+      // that estimation error compounds and scrollTo() can land far off target.
+      // For jumps > 20 chapters we reset the SPL widget with a new key and
+      // initialScrollIndex so it renders at the exact target position immediately.
+      // _hydratedContinuousChapters is preserved — already-loaded chapters
+      // stay in cache.
+      final positions = _continuousItemPositionsListener.itemPositions.value;
+      final currentIndex = positions.isEmpty
+          ? _scrollableListInitialIndex
+          : positions.reduce(
+              (current, candidate) =>
+                  current.itemLeadingEdge <= candidate.itemLeadingEdge
+                  ? current
+                  : candidate,
+            ).index;
+      final jumpDistance = (targetIndex - currentIndex).abs();
+
+      if (jumpDistance > 20) {
+        // Reset: rebuild the SPL widget at the target chapter.
+        _resetScrollableListAt(targetIndex);
+        // Prefetch again from the new center so surrounding chapters load.
+        _prefetchContinuousChapterWindow(widget.reference, radius: 5);
+        // The key reset repositions the list immediately but fires no
+        // ScrollUpdateNotification, so _syncVisibleChapterFromViewport won't
+        // update the chapter bar until the user scrolls. Notify directly.
+        final targetSection = _continuousSections[targetIndex];
+        widget.onVisibleReferenceChanged(
+          BibleReference(
+            bookId: targetSection.book.id,
+            chapter: targetSection.chapter.number,
+          ),
         );
       } else if (_continuousItemScrollController.isAttached) {
+        // Short hop: animated scroll is accurate enough.
         _continuousItemScrollController.scrollTo(
           index: targetIndex,
           duration: const Duration(milliseconds: 280),
@@ -76,6 +103,56 @@ extension _BibleTextViewStateCore on _BibleTextViewState {
     return index >= 0 ? index : null;
   }
 
+  BibleChapter? _hydratedContinuousChapter(
+    String bookId,
+    int chapterNumber,
+  ) => _hydratedContinuousChapters[_continuousChapterKey(bookId, chapterNumber)];
+
+  Future<BibleChapter?> _continuousChapterFuture(
+    _ContinuousChapterSection section,
+  ) {
+    final key = _continuousChapterKey(section.book.id, section.chapter.number);
+    return _continuousChapterFutures.putIfAbsent(key, () async {
+      final repository = ref.read(bibleRepositoryProvider);
+      final hydrated = await repository.loadChapterVerses(
+        widget.translationId,
+        section.book.id,
+        section.chapter.number,
+      );
+      final resolved = hydrated ?? section.chapter;
+      if (resolved.verses.isNotEmpty) {
+        _storeHydratedContinuousChapter(key, resolved);
+        // If this is the chapter the reader is currently pointing at and a
+        // specific verse was requested, retry verse focus now that real verse
+        // widgets are about to be built. The initial _scheduleVerseFocus in
+        // initState/didUpdateWidget fires before hydration completes, so verse
+        // keys don't exist yet and the scroll silently does nothing.
+        if (section.book.id == widget.reference.bookId &&
+            section.chapter.number == widget.reference.chapter &&
+            widget.reference.verse != null) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) _scheduleVerseFocus();
+          });
+        }
+      }
+      return resolved;
+    });
+  }
+
+  void _prefetchContinuousChapterWindow(
+    BibleReference reference, {
+    int radius = 2,
+  }) {
+    if (!widget.continuousScrolling || _continuousSections.isEmpty) return;
+    final centerIndex = _continuousSectionIndexFor(reference);
+    if (centerIndex == null) return;
+    final start = (centerIndex - radius).clamp(0, _continuousSections.length - 1);
+    final end = (centerIndex + radius).clamp(0, _continuousSections.length - 1);
+    for (var index = start; index <= end; index++) {
+      _continuousChapterFuture(_continuousSections[index]);
+    }
+  }
+
   bool get _hasActiveVerseFocus =>
       _showSelectedVerseFocus && widget.reference.verse != null;
 
@@ -89,11 +166,6 @@ extension _BibleTextViewStateCore on _BibleTextViewState {
   GlobalKey _verseKey(String bookId, int chapterNumber, int verseNumber) {
     final key = '$bookId:$chapterNumber:$verseNumber';
     return _verseKeys.putIfAbsent(key, GlobalKey.new);
-  }
-
-  GlobalKey _chapterSectionKey(String bookId, int chapterNumber) {
-    final key = '$bookId:$chapterNumber';
-    return _chapterSectionKeys.putIfAbsent(key, GlobalKey.new);
   }
 
   TapGestureRecognizer _verseTapRecognizer(
@@ -159,18 +231,16 @@ extension _BibleTextViewStateCore on _BibleTextViewState {
         .toList();
   }
 
-  bool _hasPersonalNotes(List<UserAnnotation> verseAnnotations) {
-    return verseAnnotations.any((annotation) => annotation.hasNoteText);
+  bool _hasSavedAnnotations(List<UserAnnotation> verseAnnotations) {
+    return verseAnnotations.isNotEmpty;
   }
 
-  List<UserAnnotation> _personalNoteAnnotations(
+  List<UserAnnotation> _savedVerseAnnotations(
     List<UserAnnotation> verseAnnotations,
   ) {
-    final notes = verseAnnotations
-        .where((annotation) => annotation.hasNoteText)
-        .toList();
-    notes.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
-    return notes;
+    final annotations = [...verseAnnotations];
+    annotations.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+    return annotations;
   }
 
   Color? _highlightColorForVerse(
@@ -211,15 +281,6 @@ extension _BibleTextViewStateCore on _BibleTextViewState {
     return blendedColor;
   }
 
-  // Convenience wrappers used inside collection-literal for-loops (paragraph
-  // and poetry document sections) where Dart does not allow intermediate local
-  // variable declarations. Each wrapper calls _annotationsForVerse once.
-  bool _docVerseHasPersonalNotes(
-    String bookId,
-    int chapterNumber,
-    BibleVerse verse,
-  ) => _hasPersonalNotes(_annotationsForVerse(bookId, chapterNumber, verse));
-
   Color? _docVerseHighlightColor(
     BuildContext context,
     String bookId,
@@ -234,6 +295,8 @@ extension _BibleTextViewStateCore on _BibleTextViewState {
   );
 
   BibleChapter? _chapterForReference(String bookId, int chapterNumber) {
+    final hydrated = _hydratedContinuousChapter(bookId, chapterNumber);
+    if (hydrated != null) return hydrated;
     for (final book in widget.books) {
       if (book.id != bookId) continue;
       for (final chapter in book.chapters) {
@@ -325,12 +388,16 @@ extension _BibleTextViewStateCore on _BibleTextViewState {
   List<BibleReference> _orderedSelectableReferences() {
     if (widget.continuousScrolling) {
       return [
-        for (final book in widget.books)
-          for (final chapter in book.chapters)
-            for (final verse in chapter.verses)
+        for (final section in _continuousSections)
+          for (final verse
+              in _hydratedContinuousChapter(
+                    section.book.id,
+                    section.chapter.number,
+                  )?.verses ??
+                  const <BibleVerse>[])
               BibleReference(
-                bookId: book.id,
-                chapter: chapter.number,
+                bookId: section.book.id,
+                chapter: section.chapter.number,
                 verse: verse.number,
               ),
       ];
@@ -405,109 +472,277 @@ extension _BibleTextViewStateCore on _BibleTextViewState {
     required BibleVerse verse,
     required List<UserAnnotation> verseAnnotations,
   }) async {
-    final noteAnnotations = _personalNoteAnnotations(verseAnnotations);
-    if (noteAnnotations.isEmpty) return;
+    final reference = _verseReference(bookId, chapterNumber, verse);
+    final translationId = ref.read(currentTranslationProvider);
+    final initialAnnotations = _savedVerseAnnotations(verseAnnotations);
+    if (initialAnnotations.isEmpty) return;
+
+    Future<List<UserAnnotation>> reloadVerseAnnotations() async {
+      final annotations = await ref
+          .read(userAnnotationRepositoryProvider)
+          .getAnnotations();
+      final filtered = annotations
+          .where(
+            (annotation) => annotation.touchesReference(
+              reference,
+              translationId: translationId,
+            ),
+          )
+          .toList();
+      filtered.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+      return filtered;
+    }
 
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       showDragHandle: true,
       builder: (sheetContext) {
-        return _PersonalNotesSheet(
-          referenceLabel:
-              '${displayBookNameForReference(widget.books, bookId)} '
-              '$chapterNumber:${verse.number}',
-          verseText: verse.text,
-          books: widget.books,
-          annotations: noteAnnotations,
-          onPreviewLinkedVerse: (link) {
-            return showModalBottomSheet<void>(
-              context: sheetContext,
-              isScrollControlled: true,
-              showDragHandle: true,
-              builder: (previewContext) {
-                return ReferencePreviewSheet(
-                  referenceLabel:
-                      '${displayBookNameForReference(widget.books, link.bookId)} '
-                      '${link.chapter}:${link.verse}',
-                  reference: link.reference,
-                  preferredTranslationId: link.translationId,
-                  preferredTranslationName: link.translationName,
-                  fallbackTranslationId: ref.read(currentTranslationProvider),
-                  fallbackTranslationName:
-                      ref
-                          .read(availableTranslationsProvider)
-                          .asData
-                          ?.value
-                          .where(
-                            (translation) =>
-                                translation.id ==
-                                ref.read(currentTranslationProvider),
-                          )
-                          .firstOrNull
-                          ?.name ??
-                      'Current translation',
-                  books: widget.books,
-                  returnLabel: 'Back to Note',
-                  onOpenInBible: (previewSheetContext, preview) async {
-                    await ref
-                        .read(currentTranslationProvider.notifier)
-                        .setTranslation(preview.translationId);
-                    await ref
-                        .read(currentReferenceProvider.notifier)
-                        .setReference(preview.reference);
-                    if (previewSheetContext.mounted) {
-                      Navigator.of(previewSheetContext).pop();
-                    }
-                    if (sheetContext.mounted) {
-                      Navigator.of(sheetContext).pop();
-                    }
+        final annotationsNotifier = ValueNotifier<List<UserAnnotation>>(
+          initialAnnotations,
+        );
+        Future<void> refreshSheetAnnotations() async {
+          final latest = await reloadVerseAnnotations();
+          annotationsNotifier.value = latest;
+          if (latest.isEmpty && sheetContext.mounted) {
+            Navigator.of(sheetContext).pop();
+          }
+        }
+
+        return ValueListenableBuilder<List<UserAnnotation>>(
+          valueListenable: annotationsNotifier,
+          builder: (context, annotations, _) {
+            return _PersonalNotesSheet(
+              referenceLabel:
+                  '${displayBookNameForReference(widget.books, bookId)} '
+                  '$chapterNumber:${verse.number}',
+              verseText: verse.text,
+              books: widget.books,
+              annotations: annotations,
+              onCreate: () async {
+                final translation = await resolveCurrentTranslation(ref);
+                if (translation == null || !sheetContext.mounted) return;
+                await Navigator.of(sheetContext).push(
+                  MaterialPageRoute(
+                    builder: (context) => NoteEditorScreen(
+                      primaryVerse: buildAnnotationVerseLink(
+                        reference: reference,
+                        translation: translation,
+                      ),
+                    ),
+                  ),
+                );
+                await refreshSheetAnnotations();
+              },
+              onPreviewLinkedVerse: (link) {
+                return showModalBottomSheet<void>(
+                  context: sheetContext,
+                  isScrollControlled: true,
+                  showDragHandle: true,
+                  builder: (previewContext) {
+                    return ReferencePreviewSheet(
+                      referenceLabel:
+                          '${displayBookNameForReference(widget.books, link.bookId)} '
+                          '${link.chapter}:${link.verse}',
+                      reference: link.reference,
+                      preferredTranslationId: link.translationId,
+                      preferredTranslationName: link.translationName,
+                      fallbackTranslationId: ref.read(currentTranslationProvider),
+                      fallbackTranslationName:
+                          ref
+                              .read(availableTranslationsProvider)
+                              .asData
+                              ?.value
+                              .where(
+                                (translation) =>
+                                    translation.id ==
+                                    ref.read(currentTranslationProvider),
+                              )
+                              .firstOrNull
+                              ?.name ??
+                          'Current translation',
+                      books: widget.books,
+                      returnLabel: 'Back to Note',
+                      onOpenInBible: (previewSheetContext, preview) async {
+                        await ref
+                            .read(currentTranslationProvider.notifier)
+                            .setTranslation(preview.translationId);
+                        await ref
+                            .read(currentReferenceProvider.notifier)
+                            .setReference(preview.reference);
+                        if (previewSheetContext.mounted) {
+                          Navigator.of(previewSheetContext).pop();
+                        }
+                        if (sheetContext.mounted) {
+                          Navigator.of(sheetContext).pop();
+                        }
+                      },
+                    );
                   },
                 );
               },
-            );
-          },
-          onOpenReference: (annotation) async {
-            if (!sheetContext.mounted) return;
-            final translationId = annotation.primaryVerse.translationId;
-            final available = await ref.read(
-              availableTranslationsProvider.future,
-            );
-            if (!sheetContext.mounted) return;
-            final exists = available.any((t) => t.id == translationId);
-            if (exists) {
-              await ref
-                  .read(currentTranslationProvider.notifier)
-                  .setTranslation(translationId);
-            }
-            if (!sheetContext.mounted) return;
-            await ref
-                .read(currentReferenceProvider.notifier)
-                .setReference(annotation.primaryVerse.reference);
-            if (sheetContext.mounted) Navigator.of(sheetContext).pop();
-          },
-          onEdit: (annotation) async {
-            if (!sheetContext.mounted) return;
-            final translationId = annotation.primaryVerse.translationId;
-            final available = await ref.read(
-              availableTranslationsProvider.future,
-            );
-            if (!sheetContext.mounted) return;
-            final exists = available.any((t) => t.id == translationId);
-            if (exists) {
-              await ref
-                  .read(currentTranslationProvider.notifier)
-                  .setTranslation(translationId);
-            }
-            if (!sheetContext.mounted) return;
-            Navigator.of(sheetContext).pop();
-            await Navigator.of(sheetContext).push(
-              MaterialPageRoute(
-                builder: (context) => NoteEditorScreen(
-                  primaryVerse: annotation.primaryVerse,
-                  existingAnnotation: annotation,
-                ),
-              ),
+              onOpenReference: (annotation) async {
+                if (!sheetContext.mounted) return;
+                final translationId = annotation.primaryVerse.translationId;
+                final available = await ref.read(
+                  availableTranslationsProvider.future,
+                );
+                if (!sheetContext.mounted) return;
+                final exists = available.any((t) => t.id == translationId);
+                if (exists) {
+                  await ref
+                      .read(currentTranslationProvider.notifier)
+                      .setTranslation(translationId);
+                }
+                if (!sheetContext.mounted) return;
+                await ref
+                    .read(currentReferenceProvider.notifier)
+                    .setReference(annotation.primaryVerse.reference);
+                if (sheetContext.mounted) Navigator.of(sheetContext).pop();
+              },
+              onViewDetails: (annotation) async {
+                if (!sheetContext.mounted) return;
+                await Navigator.of(sheetContext).push(
+                  MaterialPageRoute(
+                    builder: (context) => AnnotationDetailScreen(
+                      annotation: annotation,
+                      books: widget.books,
+                      onPreviewLinkedVerse: (link) => showModalBottomSheet<void>(
+                        context: context,
+                        isScrollControlled: true,
+                        showDragHandle: true,
+                        builder: (previewContext) => ReferencePreviewSheet(
+                          referenceLabel:
+                              '${displayBookNameForReference(widget.books, link.bookId)} '
+                              '${link.chapter}:${link.verse}',
+                          reference: link.reference,
+                          preferredTranslationId: link.translationId,
+                          preferredTranslationName: link.translationName,
+                          fallbackTranslationId:
+                              ref.read(currentTranslationProvider),
+                          fallbackTranslationName:
+                              ref
+                                  .read(availableTranslationsProvider)
+                                  .asData
+                                  ?.value
+                                  .where(
+                                    (translation) =>
+                                        translation.id ==
+                                        ref.read(currentTranslationProvider),
+                                  )
+                                  .firstOrNull
+                                  ?.name ??
+                              'Current translation',
+                          books: widget.books,
+                          returnLabel: 'Back to Note',
+                          onOpenInBible: (previewSheetContext, preview) async {
+                            await ref
+                                .read(currentTranslationProvider.notifier)
+                                .setTranslation(preview.translationId);
+                            await ref
+                                .read(currentReferenceProvider.notifier)
+                                .setReference(preview.reference);
+                            if (previewSheetContext.mounted) {
+                              Navigator.of(previewSheetContext).pop();
+                            }
+                            if (sheetContext.mounted) {
+                              Navigator.of(sheetContext).pop();
+                            }
+                          },
+                        ),
+                      ),
+                      onOpenReference: () async {
+                        await ref
+                            .read(currentReferenceProvider.notifier)
+                            .setReference(annotation.primaryVerse.reference);
+                        if (context.mounted) Navigator.of(context).pop();
+                        if (sheetContext.mounted) Navigator.of(sheetContext).pop();
+                      },
+                      onEdit: () async {
+                        if (context.mounted) Navigator.of(context).pop();
+                        await Navigator.of(sheetContext).push(
+                          MaterialPageRoute(
+                            builder: (context) => NoteEditorScreen(
+                              primaryVerse: annotation.primaryVerse,
+                              existingAnnotation: annotation,
+                            ),
+                          ),
+                        );
+                        await refreshSheetAnnotations();
+                      },
+                      onDelete: () async {
+                        final id = annotation.id;
+                        if (id == null || !context.mounted) return;
+                        final confirmed = await showDialog<bool>(
+                          context: context,
+                          builder: (ctx) => AlertDialog(
+                            title: const Text('Delete?'),
+                            content: const Text(
+                              'This note or highlight will be permanently removed.',
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.of(ctx).pop(false),
+                                child: const Text('Cancel'),
+                              ),
+                              TextButton(
+                                onPressed: () => Navigator.of(ctx).pop(true),
+                                child: const Text('Delete'),
+                              ),
+                            ],
+                          ),
+                        );
+                        if (confirmed != true) return;
+                        await ref
+                            .read(userAnnotationRepositoryProvider)
+                            .deleteAnnotation(id);
+                        if (context.mounted) Navigator.of(context).pop();
+                        await refreshSheetAnnotations();
+                      },
+                    ),
+                  ),
+                );
+              },
+              onEdit: (annotation) async {
+                if (!sheetContext.mounted) return;
+                await Navigator.of(sheetContext).push(
+                  MaterialPageRoute(
+                    builder: (context) => NoteEditorScreen(
+                      primaryVerse: annotation.primaryVerse,
+                      existingAnnotation: annotation,
+                    ),
+                  ),
+                );
+                await refreshSheetAnnotations();
+              },
+              onDelete: (annotation) async {
+                final id = annotation.id;
+                if (id == null || !sheetContext.mounted) return;
+                final confirmed = await showDialog<bool>(
+                  context: sheetContext,
+                  builder: (ctx) => AlertDialog(
+                    title: const Text('Delete?'),
+                    content: const Text(
+                      'This note or highlight will be permanently removed.',
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.of(ctx).pop(false),
+                        child: const Text('Cancel'),
+                      ),
+                      TextButton(
+                        onPressed: () => Navigator.of(ctx).pop(true),
+                        child: const Text('Delete'),
+                      ),
+                    ],
+                  ),
+                );
+                if (confirmed != true) return;
+                await ref
+                    .read(userAnnotationRepositoryProvider)
+                    .deleteAnnotation(id);
+                await refreshSheetAnnotations();
+              },
             );
           },
         );

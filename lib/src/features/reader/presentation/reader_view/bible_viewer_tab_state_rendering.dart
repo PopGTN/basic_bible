@@ -28,19 +28,25 @@ extension _BibleTextViewStateRendering on _BibleTextViewState {
         _buildDocumentReadingView(context),
     ];
 
-    return Padding(
-      padding: EdgeInsets.only(
-        left: 16,
-        right: 16,
-        top: 16,
-        // Keep the last verses and chapter blocks clear of the floating
-        // bottom reference bar on every layout size, not only on phones.
-        bottom: widget.bottomOverlayPadding,
-      ),
-      child: ListView.builder(
-        controller: widget.controller,
-        itemCount: contentWidgets.length,
-        itemBuilder: (context, index) => contentWidgets[index],
+    return NotificationListener<ScrollNotification>(
+      onNotification: (notification) {
+        widget.onScrollNotification(notification);
+        return false;
+      },
+      child: Padding(
+        padding: EdgeInsets.only(
+          left: 16,
+          right: 16,
+          top: 16,
+          // Keep the last verses and chapter blocks clear of the floating
+          // bottom reference bar on every layout size, not only on phones.
+          bottom: widget.bottomOverlayPadding,
+        ),
+        child: ListView.builder(
+          controller: _scrollController,
+          itemCount: contentWidgets.length,
+          itemBuilder: (context, index) => contentWidgets[index],
+        ),
       ),
     );
   }
@@ -106,59 +112,89 @@ extension _BibleTextViewStateRendering on _BibleTextViewState {
     // Continuous mode reuses the same chapter-section widget shape for every
     // chapter so the reader can switch between verse-list and document layouts
     // without maintaining two separate "whole Bible" rendering trees.
+    //
+    // _scrollableListKey is a UniqueKey() on large jumps, which forces SPL to
+    // rebuild at initialScrollIndex instead of animating from the old position.
+    // This avoids the position estimation error that compounds over hundreds of
+    // unhydrated placeholder sections.
     return ScrollablePositionedList.builder(
-      itemScrollController: _continuousItemScrollController,
-      itemPositionsListener: _continuousItemPositionsListener,
-      padding: EdgeInsets.only(
-        left: 16,
-        right: 16,
-        top: 16,
-        bottom: widget.bottomOverlayPadding,
-      ),
-      itemCount: _continuousSections.length,
-      itemBuilder: (context, index) {
-        final section = _continuousSections[index];
-        return Padding(
-          key: _chapterSectionKey(section.book.id, section.chapter.number),
-          padding: const EdgeInsets.only(bottom: 28),
-          child: _ChapterSectionView(
-            book: section.book,
-            chapter: section.chapter,
-            reference: widget.reference,
-            fontSize: widget.fontSize,
-            layoutMode: widget.layoutMode,
-            buildChapterBlocks: (chapter) =>
-                _buildChapterBlocksFor(context, chapter),
-            buildVerse: (verse) => _buildVerseForChapter(
-              context,
-              section.book.id,
-              section.chapter.number,
-              verse,
+        key: _scrollableListKey,
+        initialScrollIndex: _scrollableListInitialIndex,
+        initialAlignment: 0.02,
+        itemScrollController: _continuousItemScrollController,
+        itemPositionsListener: _continuousItemPositionsListener,
+        padding: EdgeInsets.only(
+          left: 16,
+          right: 16,
+          top: 16,
+          bottom: widget.bottomOverlayPadding,
+        ),
+        itemCount: _continuousSections.length,
+        itemBuilder: (context, index) {
+          final section = _continuousSections[index];
+          final chapterFuture = _continuousChapterFuture(section);
+          return Padding(
+            // No GlobalKey on the item root. ScrollablePositionedList builds
+            // the anchor item in two internal viewports simultaneously during
+            // scroll positioning; a GlobalKey here would be claimed by both
+            // trees at once, causing "Multiple widgets used the same GlobalKey"
+            // and the render-tree corruption cascade that follows.
+            // Chapter scroll-to is handled via _continuousItemScrollController
+            // which uses the item index, not a key context.
+            padding: const EdgeInsets.only(bottom: 28),
+            child: FutureBuilder<BibleChapter?>(
+              future: chapterFuture,
+              initialData: _hydratedContinuousChapter(
+                section.book.id,
+                section.chapter.number,
+              ),
+              builder: (context, snapshot) {
+                final hydratedChapter = snapshot.data;
+                final chapter = hydratedChapter ?? section.chapter;
+                final hasVerses = chapter.verses.isNotEmpty;
+                return _ChapterSectionView(
+                  book: section.book,
+                  chapter: chapter,
+                  reference: widget.reference,
+                  fontSize: widget.fontSize,
+                  layoutMode: widget.layoutMode,
+                  buildChapterBlocks: (chapter) =>
+                      _buildChapterBlocksFor(context, chapter),
+                  buildVerse: (verse) => _buildVerseForChapter(
+                    context,
+                    section.book.id,
+                    section.chapter.number,
+                    verse,
+                  ),
+                  buildDocumentView: () => _buildDocumentReadingViewForChapter(
+                    context,
+                    section.book.id,
+                    chapter,
+                  ),
+                  buildInlineHeading: (block) =>
+                      _buildInlineSectionHeading(context, block),
+                  introBuilder: section.chapter.number == 1
+                      ? () => Column(
+                          children: _buildBookIntroductionBlocksForBook(
+                            context,
+                            section.book,
+                            showForCurrentSection: true,
+                          ),
+                        )
+                      : null,
+                  headerBuilder: () => _buildChapterHeaderForChapter(
+                    context,
+                    section.book,
+                    section.chapter.number,
+                  ),
+                  fallbackBody: !hasVerses
+                      ? _buildContinuousChapterPlaceholder(context)
+                      : null,
+                );
+              },
             ),
-            buildDocumentView: () => _buildDocumentReadingViewForChapter(
-              context,
-              section.book.id,
-              section.chapter,
-            ),
-            buildInlineHeading: (block) =>
-                _buildInlineSectionHeading(context, block),
-            introBuilder: section.chapter.number == 1
-                ? () => Column(
-                    children: _buildBookIntroductionBlocksForBook(
-                      context,
-                      section.book,
-                      showForCurrentSection: true,
-                    ),
-                  )
-                : null,
-            headerBuilder: () => _buildChapterHeaderForChapter(
-              context,
-              section.book,
-              section.chapter.number,
-            ),
-          ),
-        );
-      },
+          );
+        },
     );
   }
 
@@ -235,15 +271,14 @@ extension _BibleTextViewStateRendering on _BibleTextViewState {
     final sectionIndex = targetPosition.index;
     if (sectionIndex < 0 || sectionIndex >= _continuousSections.length) return;
 
-    final section = _continuousSections[sectionIndex];
     final visibleReference = BibleReference(
-      bookId: section.book.id,
-      chapter: section.chapter.number,
+      bookId: _continuousSections[sectionIndex].book.id,
+      chapter: _continuousSections[sectionIndex].chapter.number,
     );
+    _prefetchContinuousChapterWindow(visibleReference);
 
     if (visibleReference == widget.displayReference) return;
 
-    _suppressNextChapterAutoScroll = true;
     widget.onVisibleReferenceChanged(visibleReference);
   }
 
@@ -339,8 +374,7 @@ extension _BibleTextViewStateRendering on _BibleTextViewState {
       verse,
     );
     final verseAnnotations = _annotationsForVerse(bookId, chapterNumber, verse);
-    final hasPersonalNotes = _hasPersonalNotes(verseAnnotations);
-    final noteAnnotations = _personalNoteAnnotations(verseAnnotations);
+    final hasSavedAnnotations = _hasSavedAnnotations(verseAnnotations);
     final highlightColor = _highlightColorForVerse(
       context,
       verseAnnotations,
@@ -356,7 +390,12 @@ extension _BibleTextViewStateRendering on _BibleTextViewState {
     );
 
     return Padding(
-      key: verseKey,
+      // In continuous mode, omit the GlobalKey. SPL builds the anchor chapter
+      // in two viewports simultaneously; verse keys inside that chapter would
+      // each be claimed by both render trees, causing "Multiple widgets used
+      // the same GlobalKey". Single-chapter mode is unaffected because it uses
+      // a plain ListView where no item is ever built twice.
+      key: widget.continuousScrolling ? null : verseKey,
       padding: const EdgeInsets.only(bottom: 8.0),
       child: InkWell(
         onTap: () => _handleVerseTap(bookId, chapterNumber, verse),
@@ -410,7 +449,7 @@ extension _BibleTextViewStateRendering on _BibleTextViewState {
                   ),
                 ),
               ),
-              if (hasPersonalNotes)
+              if (hasSavedAnnotations)
                 Padding(
                   padding: const EdgeInsets.only(left: 8, top: 2),
                   child: _VerseNoteButton(
@@ -419,7 +458,7 @@ extension _BibleTextViewStateRendering on _BibleTextViewState {
                       bookId: bookId,
                       chapterNumber: chapterNumber,
                       verse: verse,
-                      verseAnnotations: noteAnnotations,
+                      verseAnnotations: verseAnnotations,
                     ),
                   ),
                 ),
@@ -458,6 +497,41 @@ extension _BibleTextViewStateRendering on _BibleTextViewState {
         block: block,
         fontSize: widget.fontSize,
         isEmphasized: true,
+      ),
+    );
+  }
+
+  Widget _buildContinuousChapterPlaceholder(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    // Height is scaled to the current font size so that unhydrated chapter
+    // slots approximate their real rendered size. The previous fixed ~72 px
+    // placeholder was 20–40× smaller than actual chapters, which caused
+    // ScrollablePositionedList to accumulate position errors of 100 000+ px
+    // across unhydrated sections — large enough to trigger the RenderViewport
+    // layout-cycle overflow when scrolling or dragging the scrollbar.
+    // At the default font size of 18, this gives ~1350 px (≈ an average chapter).
+    // Clamping prevents extremes from making short books feel padded or
+    // long chapters from pushing the scroll range into the millions.
+    final estimatedHeight = (widget.fontSize * 75).clamp(600.0, 4000.0);
+    return SizedBox(
+      height: estimatedHeight,
+      child: Padding(
+        padding: const EdgeInsets.only(top: 8, bottom: 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            for (var index = 0; index < 3; index++)
+              Container(
+                height: 14,
+                width: index == 2 ? 180 : double.infinity,
+                margin: const EdgeInsets.only(bottom: 10),
+                decoration: BoxDecoration(
+                  color: colors.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(6),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }

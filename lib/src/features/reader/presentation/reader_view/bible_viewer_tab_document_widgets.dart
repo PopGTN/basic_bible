@@ -18,7 +18,7 @@ class _DocumentBlockView extends StatelessWidget {
     final isIntro = block.kind == BibleDocumentBlockKind.introduction;
 
     // Level 1 = major section heading (ms), 2 = standard section (s),
-    // 3+ = sub-section (s2, s3). Default to 2 when no level is stored.
+    // 3+ = sub-section (s2, s3). The parser library owns heading hierarchy.
     final headingLevel = isHeading ? (block.level ?? 2) : 0;
 
     final style = switch (block.kind) {

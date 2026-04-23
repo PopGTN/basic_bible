@@ -8,11 +8,12 @@
 //   2 = book IDs normalized to uppercase
 //   3 = per-translation SQLite split (forces rebuild into new file layout)
 //   4 = section headings carry `beforeVerse` metadata for inline rendering
+//   5 = heading levels normalized across OSIS and Zefania sources
 
 import 'package:bible_parser_flutter/bible_parser_flutter.dart';
 import 'package:basic_bible/src/models/bible_models.dart';
 
-const int kCurrentParserVersion = 4;
+const int kCurrentParserVersion = 5;
 
 // =============================================================================
 // Entry point — called via compute()

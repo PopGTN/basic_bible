@@ -224,6 +224,13 @@ class BibleBooksNotifier extends StateNotifier<AsyncValue<List<BibleBook>>> {
       state = const AsyncValue.loading();
     }
   }
+
+  Future<void> clearAllTranslationCache() async {
+    await repository.clearAllCache();
+    if (mounted) {
+      state = const AsyncValue.loading();
+    }
+  }
 }
 
 /// Returns a synchronous initial state if the translation is already in memory,

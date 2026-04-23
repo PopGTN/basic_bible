@@ -14,6 +14,10 @@ final currentReferenceProvider =
       return ReferenceNotifier(ref.read(sharedPreferencesProvider));
     });
 
+final visibleReaderReferenceProvider = StateProvider<BibleReference?>(
+  (ref) => null,
+);
+
 class TranslationNotifier extends StateNotifier<String> {
   TranslationNotifier(this._prefs)
     // KJV remains the built-in default translation so the app has a guaranteed
@@ -27,10 +31,10 @@ class TranslationNotifier extends StateNotifier<String> {
     String translationId, {
     bool persist = true,
   }) async {
+    state = translationId;
     if (persist) {
       await _prefs.setString('bible_translation', translationId);
     }
-    state = translationId;
   }
 }
 
@@ -48,14 +52,19 @@ class ReferenceNotifier extends StateNotifier<BibleReference> {
   final SharedPreferences _prefs;
 
   Future<void> setReference(BibleReference reference) async {
-    await _prefs.setString('bible_book', reference.bookId);
-    await _prefs.setInt('bible_chapter', reference.chapter);
-    if (reference.verse != null) {
-      await _prefs.setInt('bible_verse', reference.verse!);
-    } else {
-      await _prefs.remove('bible_verse');
-    }
+    // Update in-memory state first so Riverpod listeners (and the reader's
+    // didUpdateWidget) see the new reference immediately — in the same
+    // event-loop turn as this call. SharedPreferences writes are persistence
+    // only; the UI must not wait for disk I/O before navigating.
     state = reference;
+    // Persist all three fields in parallel rather than sequentially.
+    await Future.wait<bool>([
+      _prefs.setString('bible_book', reference.bookId),
+      _prefs.setInt('bible_chapter', reference.chapter),
+      reference.verse != null
+          ? _prefs.setInt('bible_verse', reference.verse!)
+          : _prefs.remove('bible_verse'),
+    ]);
   }
 
   void goToNextChapter(List<BibleBook> books) {

@@ -13,6 +13,7 @@ import 'package:basic_bible/src/features/reader/application/view_models/reader_p
 import 'package:basic_bible/src/features/reader/application/view_models/reader_session_view_models.dart';
 import 'package:basic_bible/src/features/reader/presentation/reader_view/bible_viewer_tab.dart';
 import 'package:basic_bible/src/features/settings/application/view_models/theme_view_model.dart';
+import 'package:basic_bible/src/models/bible_models.dart';
 import 'package:basic_bible/src/services/font_size_service.dart';
 
 import 'home_tab.dart';
@@ -64,9 +65,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     _appBarController = _createController();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      // Warm the current translation from the shell so Home/Menu tabs can
-      // hide the initial Bible load instead of waiting for the reader tab.
-      ref.read(bibleBooksProvider.notifier).preloadCurrentTranslation();
+      // Warm the current translation metadata from the shell provider so
+      // navigation and chapter pickers are ready without hydrating all verses.
+      ref.read(bibleBooksShellProvider.notifier).preloadCurrentTranslation();
     });
   }
 
@@ -92,6 +93,24 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   void showAppBar() => _appBarController.forward();
 
   void hideAppBar() => _appBarController.reverse();
+
+  Future<void> _anchorVisibleContinuousReferenceIfNeeded(WidgetRef ref) async {
+    if (!ref.read(continuousScrollingProvider)) return;
+
+    final visibleReference = ref.read(visibleReaderReferenceProvider);
+    if (visibleReference == null) return;
+
+    final currentReference = ref.read(currentReferenceProvider);
+    await ref
+        .read(currentReferenceProvider.notifier)
+        .setReference(
+          BibleReference(
+            bookId: visibleReference.bookId,
+            chapter: visibleReference.chapter,
+            verse: currentReference.verse,
+          ),
+        );
+  }
 
   void _showBibleViewerSettings(BuildContext context, WidgetRef ref) {
     showModalBottomSheet<void>(
@@ -126,10 +145,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               onThemeSelected: (mode) {
                 ref.read(themeProvider.notifier).setTheme(mode);
               },
-              onLayoutSelected: (mode) {
+              onLayoutSelected: (mode) async {
+                await _anchorVisibleContinuousReferenceIfNeeded(ref);
                 ref.read(readerLayoutModeProvider.notifier).setLayoutMode(mode);
               },
               onContinuousScrollingChanged: (value) {
+                if (!value) {
+                  _anchorVisibleContinuousReferenceIfNeeded(ref);
+                }
                 ref
                     .read(continuousScrollingProvider.notifier)
                     .setEnabled(value);

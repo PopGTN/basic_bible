@@ -1,5 +1,6 @@
 import 'package:basic_bible/src/features/annotations/application/view_models/annotation_data_view_models.dart';
 import 'package:basic_bible/src/features/annotations/models/user_annotations.dart';
+import 'package:basic_bible/src/features/annotations/presentation/linked_verses_section.dart';
 import 'package:basic_bible/src/features/annotations/presentation/annotation_theme.dart';
 import 'package:basic_bible/src/features/annotations/presentation/note_editor_screen.dart';
 import 'package:basic_bible/src/features/home/application/view_models/home_navigation_view_model.dart';
@@ -328,21 +329,15 @@ class _AnnotationListCard extends StatelessWidget {
                 ? annotation.noteText!.trim()
                 : 'Saved highlight',
             style: theme.textTheme.bodyLarge,
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
           ),
           if (annotation.linkedVerses.isNotEmpty) ...[
             const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                for (final link in annotation.linkedVerses)
-                  ActionChip(
-                    onPressed: () => onPreviewLinkedVerse(link),
-                    label: Text(
-                      '${displayBookNameForReference(books, link.bookId)} ${link.chapter}:${link.verse}',
-                    ),
-                  ),
-              ],
+            LinkedVersesSection(
+              books: books,
+              links: annotation.linkedVerses,
+              onPreviewLinkedVerse: onPreviewLinkedVerse,
             ),
           ],
           if (annotation.labels.isNotEmpty) ...[

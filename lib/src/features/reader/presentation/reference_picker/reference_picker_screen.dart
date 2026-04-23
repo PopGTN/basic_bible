@@ -123,6 +123,15 @@ class _ReferencePickerScreenState extends ConsumerState<ReferencePickerScreen> {
     Navigator.of(context).pop(reference);
   }
 
+  Future<void> _clearReferenceHistory() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('reference_history');
+    if (!mounted) return;
+    setState(() {
+      _history = const [];
+    });
+  }
+
   Future<void> _openHistorySheet() async {
     if (_history.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -133,22 +142,58 @@ class _ReferencePickerScreenState extends ConsumerState<ReferencePickerScreen> {
 
     await showModalBottomSheet<void>(
       context: context,
-      builder: (context) {
-        return SafeArea(
-          child: ListView(
-            shrinkWrap: true,
-            children: [
-              const ListTile(title: Text('Recent References')),
-              for (final reference in _history)
-                ListTile(
-                  title: Text(_referenceLabel(reference)),
-                  onTap: () {
-                    Navigator.of(context).pop();
-                    _selectReference(reference);
-                  },
-                ),
-            ],
-          ),
+      builder: (sheetContext) {
+        return StatefulBuilder(
+          builder: (sheetContext, setSheetState) {
+            return SafeArea(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 4, 8, 0),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            'Recent References',
+                            style: Theme.of(sheetContext).textTheme.titleMedium
+                                ?.copyWith(fontWeight: FontWeight.w700),
+                          ),
+                        ),
+                        TextButton.icon(
+                          onPressed: () async {
+                            await _clearReferenceHistory();
+                            if (sheetContext.mounted) {
+                              Navigator.of(sheetContext).pop();
+                            }
+                          },
+                          icon: const Icon(Icons.delete_sweep_outlined,
+                              size: 18),
+                          label: const Text('Clear'),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Divider(height: 1),
+                  Flexible(
+                    child: ListView(
+                      shrinkWrap: true,
+                      children: [
+                        for (final reference in _history)
+                          ListTile(
+                            title: Text(_referenceLabel(reference)),
+                            onTap: () {
+                              Navigator.of(sheetContext).pop();
+                              _selectReference(reference);
+                            },
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
         );
       },
     );

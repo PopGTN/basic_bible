@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
+
 import 'package:basic_bible/src/models/bible_models.dart';
 
 // =============================================================================
@@ -14,19 +16,21 @@ final List<BibleTranslation> kBuiltInTranslations = [
     languageName: 'English',
     description: 'The classic English Bible translation',
     isLocal: true,
-    filePath: 'assets/bible/eng-kjv2006_usfx.xml',
+    filePath: kIsWeb
+        ? 'assets/bible/eng-kjv2006_usfx.xml'
+        : 'assets/bible/kjv.sqlite',
     githubUrl:
         'https://raw.githubusercontent.com/PopGTN/bible-data/main/English/kjv/eng-kjv2006_usfx.xml',
-    format: BibleFormat.usfx,
+    format: kIsWeb ? BibleFormat.usfx : BibleFormat.sqlite,
     sourceType: BibleSourceType.asset,
     bundledByDefault: true,
     displayOrder: 10,
     artifacts: [
       BibleTranslationArtifact(
-        format: BibleFormat.usfx,
+        format: kIsWeb ? BibleFormat.usfx : BibleFormat.sqlite,
         downloadUrl:
             'https://raw.githubusercontent.com/PopGTN/bible-data/main/English/kjv/eng-kjv2006_usfx.xml',
-        fileName: 'eng-kjv2006_usfx.xml',
+        fileName: kIsWeb ? 'eng-kjv2006_usfx.xml' : 'kjv.sqlite',
         isPreferred: true,
       ),
     ],
