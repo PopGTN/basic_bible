@@ -4,7 +4,6 @@ class _ReaderShellStateSnapshot {
   const _ReaderShellStateSnapshot({
     required this.layoutMode,
     required this.continuousScrolling,
-    required this.booksAsync,
     required this.shellBooksAsync,
     required this.currentReference,
     required this.chapterAsync,
@@ -18,10 +17,9 @@ class _ReaderShellStateSnapshot {
 
   final ReaderLayoutMode layoutMode;
   final bool continuousScrolling;
-  /// Full books with verses — used for content rendering only.
-  final AsyncValue<List<BibleBook>> booksAsync;
   /// Shell books (metadata only, no verses) — always loads quickly.
-  /// Used for the reference bar and reference picker regardless of scroll mode.
+  /// Used for both the reference bar/picker and content rendering.
+  /// Verse data is loaded lazily per-chapter inside [_BibleTextViewState].
   final AsyncValue<List<BibleBook>> shellBooksAsync;
   final BibleReference currentReference;
   final AsyncValue<BibleChapter?> chapterAsync;

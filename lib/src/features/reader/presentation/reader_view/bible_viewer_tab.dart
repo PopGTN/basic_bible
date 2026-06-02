@@ -1,6 +1,7 @@
 import 'package:basic_bible/l10n/app_localizations.dart';
 import 'package:basic_bible/src/features/annotations/application/view_models/annotation_data_view_models.dart';
 import 'package:basic_bible/src/features/annotations/application/view_models/annotation_selection_view_models.dart';
+import 'package:basic_bible/src/features/annotations/data/user_annotation_repository.dart';
 import 'package:basic_bible/src/features/annotations/models/user_annotations.dart';
 import 'package:basic_bible/src/features/annotations/presentation/annotation_detail_screen.dart';
 import 'package:basic_bible/src/features/annotations/presentation/linked_verses_section.dart';
@@ -78,18 +79,27 @@ class _BibleViewerTabState extends ConsumerState<BibleViewerTab> {
   static const _chapterTransitionDuration = Duration(milliseconds: 140);
 
   BibleReference? _continuousVisibleReference;
-  // Removed local constants; layout spacing is handled by widgets directly.
-  //TODO: Make The Text Size Changeable through Settings
-  // Font size is now provided by FontSizeService; listen to changes in build
+
+  // Cached flat list of every chapter reference across all books.
+  // Rebuilt only when the books list reference changes, so prev/next taps
+  // don't allocate ~1189-entry lists on every press.
+  List<BibleBook>? _chapterRefCacheSource;
+  List<BibleReference> _chapterRefs = const [];
+
+  List<BibleReference> _flatChapterRefs(List<BibleBook> books) {
+    if (identical(_chapterRefCacheSource, books)) return _chapterRefs;
+    _chapterRefCacheSource = books;
+    _chapterRefs = [
+      for (final book in books)
+        for (final chapter in book.chapters)
+          BibleReference(bookId: book.id, chapter: chapter.number),
+    ];
+    return _chapterRefs;
+  }
 
   double? _lastScroll;
   bool _isHiding = false;
   bool _selectionActionInFlight = false;
-
-  @override
-  void initState() {
-    super.initState();
-  }
 
   void _handleScrollNotification(ScrollNotification notification) {
     final current = notification.metrics.pixels;
@@ -131,11 +141,6 @@ class _BibleViewerTabState extends ConsumerState<BibleViewerTab> {
   }
 
   @override
-  void dispose() {
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     final readerState = _watchReaderShellState();
     final contentBottomPadding = _contentBottomPadding(
@@ -152,7 +157,7 @@ class _BibleViewerTabState extends ConsumerState<BibleViewerTab> {
     // of whether the full verse data has finished loading in continuous mode.
     final navBooks = readerState.shellBooksAsync.value ?? const [];
     final canOpenReferencePicker =
-        !readerState.booksAsync.isLoading &&
+        !readerState.shellBooksAsync.isLoading &&
         !readerState.chapterAsync.isLoading &&
         navBooks.isNotEmpty;
 
@@ -202,7 +207,6 @@ class _BibleViewerTabState extends ConsumerState<BibleViewerTab> {
     return _ReaderShellStateSnapshot(
       layoutMode: ref.watch(readerLayoutModeProvider),
       continuousScrolling: continuousScrolling,
-      booksAsync: shellBooksAsync,
       shellBooksAsync: shellBooksAsync,
       currentReference: ref.watch(currentReferenceProvider),
       chapterAsync: ref.watch(currentChapterProvider),
@@ -253,7 +257,8 @@ class _BibleViewerTabState extends ConsumerState<BibleViewerTab> {
     return ValueListenableBuilder<double>(
       valueListenable: FontSizeService.instance.notifier,
       builder: (context, size, child) {
-        return readerState.booksAsync.when(
+        final translationId = ref.read(currentTranslationProvider);
+        return readerState.shellBooksAsync.when(
           data: (books) => readerState.chapterAsync.when(
             skipLoadingOnReload: true,
             skipLoadingOnRefresh: true,
@@ -286,7 +291,7 @@ class _BibleViewerTabState extends ConsumerState<BibleViewerTab> {
                     child: _BibleTextView(
                       key: ValueKey(
                         [
-                          ref.read(currentTranslationProvider),
+                          translationId,
                           // In continuous mode the reference changes as the user
                           // scrolls — don't include book/chapter in the key or
                           // _BibleTextViewState is destroyed (losing all hydrated
@@ -302,7 +307,7 @@ class _BibleViewerTabState extends ConsumerState<BibleViewerTab> {
                       ),
                       onScrollNotification: _handleScrollNotification,
                       books: books,
-                      translationId: ref.read(currentTranslationProvider),
+                      translationId: translationId,
                       book: _resolveCurrentBook(
                         books,
                         readerState.currentReference.bookId,
@@ -333,8 +338,7 @@ class _BibleViewerTabState extends ConsumerState<BibleViewerTab> {
             error: (error, stack) => _ErrorView(message: 'Error: $error'),
           ),
           loading: () => const _LoadingView(),
-          error: (error, stack) =>
-              _ErrorView(message: 'Failed to load Bible: $error'),
+          error: (error, stack) => _ErrorView(message: 'Failed to load Bible: $error'),
         );
       },
     );
@@ -346,11 +350,7 @@ class _BibleViewerTabState extends ConsumerState<BibleViewerTab> {
     BibleReference baseReference, {
     required int direction,
   }) {
-    final chapterReferences = <BibleReference>[
-      for (final book in books)
-        for (final chapter in book.chapters)
-          BibleReference(bookId: book.id, chapter: chapter.number),
-    ];
+    final chapterReferences = _flatChapterRefs(books);
     if (chapterReferences.isEmpty) return;
 
     final currentIndex = chapterReferences.indexWhere(
@@ -371,7 +371,7 @@ class _BibleViewerTabState extends ConsumerState<BibleViewerTab> {
     ref.read(currentReferenceProvider.notifier).setReference(targetReference);
   }
 
-  void _clearSelectionUi(WidgetRef ref) {
+  void _clearSelectionUi() {
     ref.read(selectedVersesProvider.notifier).clear();
     ref.read(highlightPaletteExpandedProvider.notifier).state = false;
   }
@@ -421,7 +421,7 @@ class _BibleViewerTabState extends ConsumerState<BibleViewerTab> {
     BibleReference reference, {
     required bool continuousScrolling,
   }) {
-    _clearSelectionUi(ref);
+    _clearSelectionUi();
     if (continuousScrolling) {
       setState(() {
         _continuousVisibleReference = reference;
@@ -437,7 +437,7 @@ class _BibleViewerTabState extends ConsumerState<BibleViewerTab> {
     required bool continuousScrolling,
     required int direction,
   }) {
-    _clearSelectionUi(ref);
+    _clearSelectionUi();
     if (books.isEmpty) return;
 
     // Continuous mode navigates by jumping to the next mounted chapter section.
@@ -482,7 +482,7 @@ class _BibleViewerTabState extends ConsumerState<BibleViewerTab> {
             isBusy: _selectionActionInFlight,
             onDismiss: () {
               if (_selectionActionInFlight) return;
-              _clearSelectionUi(ref);
+              _clearSelectionUi();
             },
             onHighlightPressed: _toggleHighlightPalette,
             onHighlightSelected: _handleHighlightColorSelected,

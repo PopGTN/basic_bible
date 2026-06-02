@@ -3,11 +3,15 @@ part of 'bible_viewer_tab.dart';
 /// Bible text display widget — renders a single chapter or the full continuous
 /// scroll stream depending on [continuousScrolling].
 ///
-/// All extension methods living on [_BibleTextViewState] are split across:
-///   - bible_viewer_tab_state_core.dart      (selection, focus, lookup helpers)
-///   - bible_viewer_tab_state_rendering.dart  (verse-list + continuous view)
-///   - bible_viewer_tab_state_document.dart   (document-mode rendering)
-///   - bible_viewer_tab_state_annotations.dart (parser-note sheets + spans)
+/// [_BibleTextViewState] extension methods are split across:
+///   - bible_viewer_tab_state_core.dart        (selection, focus, lookup helpers)
+///   - bible_viewer_tab_state_rendering.dart    (verse-list + continuous view)
+///   - bible_viewer_tab_state_document.dart     (document-mode rendering)
+///   - bible_viewer_tab_state_annotations.dart  (parser-note sheets + spans)
+///
+/// Note: bible_viewer_tab_state_selection.dart extends [_BibleViewerTabState]
+/// (the outer shell), not this widget — it owns the copy/share/highlight/note
+/// action handlers that run from the selection tray.
 class _BibleTextView extends ConsumerStatefulWidget {
   const _BibleTextView({
     super.key,

@@ -173,7 +173,9 @@ extension _BibleTextViewStateDocument on _BibleTextViewState {
       children: [
         for (final verse in section.verses)
           SizedBox(
-            key: _verseKey(bookId, chapterNumber, verse.number),
+            key: widget.continuousScrolling
+                ? null
+                : _verseKey(bookId, chapterNumber, verse.number),
             height: 0,
           ),
         RichText(
@@ -263,7 +265,9 @@ extension _BibleTextViewStateDocument on _BibleTextViewState {
       children: [
         for (final verse in section.verses)
           Padding(
-            key: _verseKey(bookId, chapterNumber, verse.number),
+            key: widget.continuousScrolling
+                ? null
+                : _verseKey(bookId, chapterNumber, verse.number),
             padding: EdgeInsets.only(
               bottom: _joinsHighlightedRunWithNext(bookId, chapterNumber, verse)
                   ? 0

@@ -30,7 +30,19 @@ extension _BibleViewerTabStateSelection on _BibleViewerTabState {
     return matchedById.values.toList();
   }
 
-  Future<void> _handleHighlightColorSelected(Color color) async {
+  // Shared preamble for _handleHighlightColorSelected and
+  // _handleClearHighlightPressed: resolves the translation, gathers overlapping
+  // standalone-highlight annotations, then delegates to [body].
+  // The in-flight flag is managed here so callers do not need to touch it.
+  Future<void> _executeHighlightAction(
+    Future<void> Function(
+      List<BibleReference> references,
+      BibleTranslation translation,
+      List<UserAnnotation> highlightAnnotations,
+      UserAnnotationRepository repository,
+      ScaffoldMessengerState messenger,
+    ) body,
+  ) async {
     if (_selectionActionInFlight) return;
     final selectedReferences = [...ref.read(selectedVersesProvider)];
     if (selectedReferences.isEmpty) return;
@@ -49,100 +61,100 @@ extension _BibleViewerTabStateSelection on _BibleViewerTabState {
         return;
       }
 
-      final repository = ref.read(userAnnotationRepositoryProvider);
-
-      // Find all standalone highlight annotations that overlap the selection.
       final highlightAnnotations = _standaloneHighlightAnnotationsForSelection(
         annotations: existingAnnotations,
         references: selectedReferences,
         translationId: translation.id,
       );
 
-      // Remove the selected verses from every overlapping annotation.
-      // Processing each annotation ID once prevents redundant saves when multiple
-      // selected verses belong to the same multi-verse annotation.
-      // This also handles the "recolour a subset" case correctly: if an annotation
-      // covers verses 1–5 and only verse 3 is selected, the annotation is trimmed
-      // to 1–2, 4–5 (preserving the original colour there) before the new
-      // per-verse annotation is created for verse 3 below.
-      final processedIds = <int?>{};
-      for (final annotation in highlightAnnotations) {
-        final annotationId = annotation.id;
-        if (processedIds.contains(annotationId)) continue;
-        processedIds.add(annotationId);
-
-        final trimmed = removeReferencesFromStandaloneHighlight(
-          annotation,
-          selectedReferences,
-          translationId: translation.id,
-        );
-        if (trimmed == null) {
-          if (annotationId != null) {
-            await repository.deleteAnnotation(annotationId);
-          }
-        } else {
-          await repository.saveAnnotation(trimmed);
-        }
-      }
-
-      // Create one fresh per-verse annotation with the chosen colour for every
-      // selected reference. We never update an existing multi-verse annotation
-      // in-place because that would silently recolour unselected verses too.
-      for (final reference in selectedReferences) {
-        await repository.saveAnnotation(
-          UserAnnotation(
-            type: UserAnnotationType.highlight,
-            primaryVerse: buildAnnotationVerseLink(
-              reference: reference,
-              translation: translation,
-            ),
-            highlightColorValue: color.toARGB32(),
-            createdAt: DateTime.now(),
-            updatedAt: DateTime.now(),
-          ),
-        );
-      }
-
-      if (!mounted) return;
-      ref.read(highlightPaletteExpandedProvider.notifier).state = false;
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text(
-            selectedReferences.length == 1
-                ? 'Highlight saved.'
-                : 'Highlights saved for ${selectedReferences.length} verses.',
-          ),
-        ),
+      await body(
+        selectedReferences,
+        translation,
+        highlightAnnotations,
+        ref.read(userAnnotationRepositoryProvider),
+        messenger,
       );
     } finally {
       _setSelectionActionInFlight(false);
     }
   }
 
-  Future<void> _handleClearHighlightPressed() async {
-    if (_selectionActionInFlight) return;
-    final selectedReferences = [...ref.read(selectedVersesProvider)];
-    if (selectedReferences.isEmpty) return;
+  // Trims [selectedReferences] from [annotation] and writes the result.
+  // If the trimmed result is null the annotation is fully covered and is deleted.
+  Future<void> _trimOrDeleteAnnotation(
+    UserAnnotation annotation,
+    List<BibleReference> selectedReferences,
+    String translationId,
+    UserAnnotationRepository repository,
+  ) async {
+    final trimmed = removeReferencesFromStandaloneHighlight(
+      annotation,
+      selectedReferences,
+      translationId: translationId,
+    );
+    if (trimmed == null) {
+      final id = annotation.id;
+      if (id != null) await repository.deleteAnnotation(id);
+    } else {
+      await repository.saveAnnotation(trimmed);
+    }
+  }
 
-    final messenger = ScaffoldMessenger.of(context);
-    final existingAnnotations = [...ref.read(selectedVerseAnnotationsProvider)];
-    _setSelectionActionInFlight(true);
-
-    try {
-      final translation = await resolveCurrentTranslation(ref);
-      if (!mounted) return;
-      if (translation == null) {
-        messenger.showSnackBar(
-          const SnackBar(content: Text('Translation not available.')),
+  Future<void> _handleHighlightColorSelected(Color color) =>
+      _executeHighlightAction(
+        (references, translation, highlightAnnotations, repository, messenger) async {
+      // Remove the selected verses from every overlapping annotation.
+      // _standaloneHighlightAnnotationsForSelection already deduplicates by id,
+      // but processedIds guards against any future path that could produce
+      // duplicates without risking a double-delete.
+      // This also handles the "recolour a subset" case: an annotation covering
+      // verses 1–5 is trimmed to 1–2, 4–5 before the new per-verse annotation
+      // is created for verse 3, preserving the original colour on the remainder.
+      final processedIds = <int?>{};
+      final trimFutures = <Future<void>>[];
+      for (final annotation in highlightAnnotations) {
+        if (!processedIds.add(annotation.id)) continue;
+        trimFutures.add(
+          _trimOrDeleteAnnotation(annotation, references, translation.id, repository),
         );
-        return;
       }
+      await Future.wait(trimFutures);
 
-      final highlightAnnotations = _standaloneHighlightAnnotationsForSelection(
-        annotations: existingAnnotations,
-        references: selectedReferences,
-        translationId: translation.id,
+      // Create one fresh per-verse annotation with the chosen colour.
+      // We never update an existing multi-verse annotation in-place because
+      // that would silently recolour unselected verses too.
+      await Future.wait([
+        for (final reference in references)
+          repository.saveAnnotation(
+            UserAnnotation(
+              type: UserAnnotationType.highlight,
+              primaryVerse: buildAnnotationVerseLink(
+                reference: reference,
+                translation: translation,
+              ),
+              highlightColorValue: color.toARGB32(),
+              createdAt: DateTime.now(),
+              updatedAt: DateTime.now(),
+            ),
+          ),
+      ]);
+
+      if (!mounted) return;
+      ref.read(highlightPaletteExpandedProvider.notifier).state = false;
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            references.length == 1
+                ? 'Highlight saved.'
+                : 'Highlights saved for ${references.length} verses.',
+          ),
+        ),
       );
+    });
+
+  Future<void> _handleClearHighlightPressed() =>
+      _executeHighlightAction(
+        (references, translation, highlightAnnotations, repository, messenger) async {
       if (highlightAnnotations.isEmpty) {
         ref.read(highlightPaletteExpandedProvider.notifier).state = false;
         messenger.showSnackBar(
@@ -155,22 +167,10 @@ extension _BibleViewerTabStateSelection on _BibleViewerTabState {
         return;
       }
 
-      final repository = ref.read(userAnnotationRepositoryProvider);
-      for (final annotation in highlightAnnotations) {
-        final nextAnnotation = removeReferencesFromStandaloneHighlight(
-          annotation,
-          selectedReferences,
-          translationId: translation.id,
-        );
-        if (nextAnnotation == null) {
-          final annotationId = annotation.id;
-          if (annotationId != null) {
-            await repository.deleteAnnotation(annotationId);
-          }
-        } else {
-          await repository.saveAnnotation(nextAnnotation);
-        }
-      }
+      await Future.wait([
+        for (final annotation in highlightAnnotations)
+          _trimOrDeleteAnnotation(annotation, references, translation.id, repository),
+      ]);
 
       if (!mounted) return;
       ref.read(highlightPaletteExpandedProvider.notifier).state = false;
@@ -183,10 +183,7 @@ extension _BibleViewerTabStateSelection on _BibleViewerTabState {
           ),
         ),
       );
-    } finally {
-      _setSelectionActionInFlight(false);
-    }
-  }
+    });
 
   Future<void> _handleNotePressed() async {
     if (_selectionActionInFlight) return;
@@ -239,10 +236,15 @@ extension _BibleViewerTabStateSelection on _BibleViewerTabState {
       if (saved == true && mounted) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!mounted) return;
-          _clearSelectionUi(ref);
+          _clearSelectionUi();
         });
       }
     } finally {
+      // Defer the in-flight reset to the next frame so the busy state persists
+      // through the route-push animation. Clearing it synchronously (like the
+      // highlight handlers do) would cause the tray to briefly re-enable
+      // mid-transition, producing a visible flicker. Any new action that pushes
+      // a route should use the same deferred pattern here.
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
         _setSelectionActionInFlight(false);

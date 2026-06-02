@@ -474,6 +474,14 @@ extension _BibleTextViewStateCore on _BibleTextViewState {
   }) async {
     final reference = _verseReference(bookId, chapterNumber, verse);
     final translationId = ref.read(currentTranslationProvider);
+    final fallbackTranslationName = ref
+            .read(availableTranslationsProvider)
+            .asData
+            ?.value
+            .where((t) => t.id == translationId)
+            .firstOrNull
+            ?.name ??
+        'Current translation';
     final initialAnnotations = _savedVerseAnnotations(verseAnnotations);
     if (initialAnnotations.isEmpty) return;
 
@@ -547,20 +555,8 @@ extension _BibleTextViewStateCore on _BibleTextViewState {
                       reference: link.reference,
                       preferredTranslationId: link.translationId,
                       preferredTranslationName: link.translationName,
-                      fallbackTranslationId: ref.read(currentTranslationProvider),
-                      fallbackTranslationName:
-                          ref
-                              .read(availableTranslationsProvider)
-                              .asData
-                              ?.value
-                              .where(
-                                (translation) =>
-                                    translation.id ==
-                                    ref.read(currentTranslationProvider),
-                              )
-                              .firstOrNull
-                              ?.name ??
-                          'Current translation',
+                      fallbackTranslationId: translationId,
+                      fallbackTranslationName: fallbackTranslationName,
                       books: widget.books,
                       returnLabel: 'Back to Note',
                       onOpenInBible: (previewSheetContext, preview) async {
@@ -618,21 +614,8 @@ extension _BibleTextViewStateCore on _BibleTextViewState {
                           reference: link.reference,
                           preferredTranslationId: link.translationId,
                           preferredTranslationName: link.translationName,
-                          fallbackTranslationId:
-                              ref.read(currentTranslationProvider),
-                          fallbackTranslationName:
-                              ref
-                                  .read(availableTranslationsProvider)
-                                  .asData
-                                  ?.value
-                                  .where(
-                                    (translation) =>
-                                        translation.id ==
-                                        ref.read(currentTranslationProvider),
-                                  )
-                                  .firstOrNull
-                                  ?.name ??
-                              'Current translation',
+                          fallbackTranslationId: translationId,
+                          fallbackTranslationName: fallbackTranslationName,
                           books: widget.books,
                           returnLabel: 'Back to Note',
                           onOpenInBible: (previewSheetContext, preview) async {
