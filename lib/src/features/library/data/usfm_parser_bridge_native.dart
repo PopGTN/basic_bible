@@ -3,6 +3,7 @@ import 'dart:ffi' as ffi;
 import 'dart:io';
 
 import 'package:ffi/ffi.dart';
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:path/path.dart' as p;
 
 import 'usfm_bundle_support.dart';
@@ -56,6 +57,9 @@ Future<List<Map<String, dynamic>>> parseUsfmBundleToSerializable(
   ffi.Pointer<Utf8> responsePtr = ffi.nullptr;
   try {
     responsePtr = _parseUsfmBundle!(requestPtr);
+    if (responsePtr == ffi.nullptr) {
+      throw Exception('The native USFM parser returned no response.');
+    }
     final responseJson = responsePtr.toDartString();
     final decoded = jsonDecode(responseJson) as Map<String, dynamic>;
     if (decoded['ok'] != true) {
@@ -88,27 +92,32 @@ ffi.DynamicLibrary? _tryOpenUsfmLibrary() {
 Iterable<String> _libraryCandidates() sync* {
   final executableDir = File(Platform.resolvedExecutable).parent.path;
   final executableParentDir = Directory(executableDir).parent.path;
-  final cwd = Directory.current.path;
-  final releaseDir = p.join(cwd, 'native', 'usfm_parser', 'target', 'release');
-  final debugDir = p.join(cwd, 'native', 'usfm_parser', 'target', 'debug');
 
   if (Platform.isLinux) {
     yield p.join(executableDir, 'libbasic_bible_usfm_parser.so');
     yield p.join(executableDir, 'lib', 'libbasic_bible_usfm_parser.so');
     yield p.join(executableParentDir, 'lib', 'libbasic_bible_usfm_parser.so');
-    yield p.join(releaseDir, 'libbasic_bible_usfm_parser.so');
-    yield p.join(debugDir, 'libbasic_bible_usfm_parser.so');
   } else if (Platform.isMacOS) {
     yield p.join(executableDir, 'libbasic_bible_usfm_parser.dylib');
     yield p.join(executableDir, 'lib', 'libbasic_bible_usfm_parser.dylib');
     yield p.join(executableParentDir, 'Frameworks', 'libbasic_bible_usfm_parser.dylib');
-    yield p.join(releaseDir, 'libbasic_bible_usfm_parser.dylib');
-    yield p.join(debugDir, 'libbasic_bible_usfm_parser.dylib');
   } else if (Platform.isWindows) {
     yield p.join(executableDir, 'basic_bible_usfm_parser.dll');
     yield p.join(executableDir, 'data', 'basic_bible_usfm_parser.dll');
-    yield p.join(releaseDir, 'basic_bible_usfm_parser.dll');
-    yield p.join(debugDir, 'basic_bible_usfm_parser.dll');
+  }
+
+  // Cargo build output relative to the *current working directory* is only a
+  // dev convenience (flutter run from the project root). Loading libraries
+  // from the CWD in release builds would let a writable launch directory
+  // plant a substitute library, so these paths are debug-only.
+  if (kDebugMode) {
+    final cwd = Directory.current.path;
+    final releaseDir =
+        p.join(cwd, 'native', 'usfm_parser', 'target', 'release');
+    final debugDir = p.join(cwd, 'native', 'usfm_parser', 'target', 'debug');
+    final fileName = _libraryFileNameForPlatform();
+    yield p.join(releaseDir, fileName);
+    yield p.join(debugDir, fileName);
   }
 }
 

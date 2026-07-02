@@ -60,8 +60,12 @@ class _AdvancedSettingsScreenState
     if (uri == null || !uri.hasScheme || !uri.hasAuthority) {
       return 'Enter a full URL like https://example.com/catalog.json';
     }
-    if (uri.scheme != 'https' && uri.scheme != 'http') {
-      return 'Only http:// and https:// catalog URLs are supported.';
+    // Plain http would let anyone on the same network swap the catalog (and
+    // with it every download URL), so it is only allowed for local testing.
+    final isLoopback =
+        uri.host == 'localhost' || uri.host == '127.0.0.1' || uri.host == '::1';
+    if (uri.scheme != 'https' && !(uri.scheme == 'http' && isLoopback)) {
+      return 'Catalog URLs must use https:// (http:// is only allowed for localhost).';
     }
     return null;
   }

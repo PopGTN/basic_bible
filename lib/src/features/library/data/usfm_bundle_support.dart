@@ -30,27 +30,29 @@ UsfmSourceBundle? tryExtractUsfmBundle(
 }) {
   if (looksLikeZipBytes(bytes)) {
     final archive = ZipDecoder().decodeBytes(bytes);
-    final files = archive.files
-        .where((file) => file.isFile)
-        .where(
-          (file) =>
-              file.name.toLowerCase().endsWith('.usfm') ||
-              file.name.toLowerCase().endsWith('.sfm'),
-        )
-        .map((file) {
-          final Object rawContent = file.content;
-          if (rawContent is! List<int>) return null;
-          try {
-            return UsfmSourceFile(
-              name: file.name,
-              content: utf8.decode(rawContent),
-            );
-          } on FormatException {
-            return null;
-          }
-        })
-        .whereType<UsfmSourceFile>()
-        .toList(growable: false);
+    final files = <UsfmSourceFile>[];
+    var totalDecodedBytes = 0;
+    for (final file in archive.files) {
+      if (!file.isFile) continue;
+      final lowerName = file.name.toLowerCase();
+      if (!lowerName.endsWith('.usfm') && !lowerName.endsWith('.sfm')) {
+        continue;
+      }
+      ensureArchiveEntryWithinLimits(
+        declaredSize: file.size,
+        totalSoFar: totalDecodedBytes,
+      );
+      final Object rawContent = file.content;
+      if (rawContent is! List<int>) continue;
+      totalDecodedBytes += rawContent.length;
+      try {
+        files.add(
+          UsfmSourceFile(name: file.name, content: utf8.decode(rawContent)),
+        );
+      } on FormatException {
+        continue;
+      }
+    }
     if (files.isEmpty) return null;
     return UsfmSourceBundle(sourceName: sourceName, files: files);
   }

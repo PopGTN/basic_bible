@@ -36,6 +36,26 @@ class BibleArchiveText {
   final bool wasArchived;
 }
 
+/// Caps on uncompressed ZIP entry sizes, guarding against "zip bombs" —
+/// tiny archives that declare gigabytes of expanded data and crash the app.
+/// The largest legitimate Bible XML files are tens of megabytes.
+const int kMaxArchiveEntryBytes = 100 * 1024 * 1024;
+const int kMaxArchiveTotalBytes = 300 * 1024 * 1024;
+
+/// Throws if [declaredSize] (or the running [totalSoFar]) exceeds the caps.
+/// Call before touching an entry's `content`, which triggers decompression.
+void ensureArchiveEntryWithinLimits({
+  required int declaredSize,
+  required int totalSoFar,
+}) {
+  if (declaredSize > kMaxArchiveEntryBytes ||
+      totalSoFar + declaredSize > kMaxArchiveTotalBytes) {
+    throw const InvalidBibleArchiveException(
+      'This ZIP file declares more uncompressed data than the app allows and was rejected.',
+    );
+  }
+}
+
 BibleArchiveText decodeBibleArchiveText(
   List<int> bytes, {
   String? sourceName,
@@ -97,6 +117,7 @@ BibleArchiveText _decodeBibleZip(
   }
   final xmlCandidates = <BibleArchiveText>[];
   var sawUsfm = false;
+  var totalDecodedBytes = 0;
 
   for (final file in archive.files) {
     if (!file.isFile) continue;
@@ -112,9 +133,15 @@ BibleArchiveText _decodeBibleZip(
       continue;
     }
 
+    ensureArchiveEntryWithinLimits(
+      declaredSize: file.size,
+      totalSoFar: totalDecodedBytes,
+    );
+
     // archive 4.x: content is Uint8List? — skip entries that failed to decode.
     final Object rawEntryBytes = file.content;
     if (rawEntryBytes is! List<int>) continue;
+    totalDecodedBytes += rawEntryBytes.length;
 
     try {
       final content = utf8.decode(rawEntryBytes);

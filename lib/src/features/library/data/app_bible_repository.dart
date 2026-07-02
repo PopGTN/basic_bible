@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'dart:collection';
+import 'dart:typed_data';
+import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
@@ -54,6 +56,10 @@ class AppBibleRepository {
   static const Duration _remoteRequestTimeout = Duration(seconds: 20);
   static const int _maxFullTranslationCacheCount = 2;
   static const int _maxChapterCacheEntriesPerTranslation = 12;
+
+  // Shared client so downloads reuse connections instead of opening a fresh
+  // one per request (top-level http.get creates a new client every call).
+  static final http.Client _httpClient = http.Client();
 
   /// Delegates to the catalog constant so existing call sites keep working.
   static List<BibleTranslation> get builtInTranslations => kBuiltInTranslations;
