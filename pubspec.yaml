@@ -24,6 +24,7 @@ dependencies:
   shared_preferences: ^2.5.3
   font_awesome_flutter: ^10.10.0
   http: ^1.5.0
+  crypto: ^3.0.6
   archive: ^4.0.7
   ffi: ^2.1.4
   shimmer: ^3.0.0
@@ -31,6 +32,8 @@ dependencies:
     git:
       url: https://github.com/google/flutter-desktop-embedding.git
       path: plugins/window_size
+      # Pinned commit so upstream changes can't silently alter what we ship.
+      ref: eb3964990cf19629c89ff8cb4a37640c7b3d5601
   bible_parser_flutter:
     path: ../bible_parser_flutter
   equatable: ^2.0.7

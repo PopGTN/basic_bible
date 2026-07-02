@@ -1,4 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Required for downloading translations; debug builds inject this
+         automatically but release builds do not. -->
+    <uses-permission android:name="android.permission.INTERNET"/>
     <application
         android:label="Basic Bible App"
         android:name="${applicationName}"
