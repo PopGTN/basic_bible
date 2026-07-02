@@ -3,6 +3,7 @@ import 'package:basic_bible/src/features/library/data/remote_translation_catalog
 import 'package:basic_bible/src/models/bible_models.dart';
 import 'package:basic_bible/src/features/settings/application/view_models/advanced_preferences_view_models.dart';
 import 'package:basic_bible/src/services/app_database.dart';
+import 'package:basic_bible/src/services/shared_preferences_provider.dart';
 import 'package:basic_bible/src/services/translation_database_manager.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
@@ -50,6 +51,7 @@ final remoteTranslationCatalogServiceProvider =
     Provider<RemoteTranslationCatalogService>((ref) {
       return RemoteTranslationCatalogService(
         catalogUrlOverride: ref.watch(translationCatalogUrlOverrideProvider),
+        prefs: ref.read(sharedPreferencesProvider),
       );
     });
 

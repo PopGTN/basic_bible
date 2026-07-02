@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:basic_bible/src/models/bible_models.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// Signature for a function that extracts a raw translation list from a
 /// successfully decoded JSON body. Throws if the body shape is unexpected.
@@ -32,7 +33,9 @@ class RemoteTranslationCatalogService {
   RemoteTranslationCatalogService({
     http.Client? client,
     this.catalogUrlOverride,
-  }) : _client = client ?? http.Client();
+    SharedPreferences? prefs,
+  }) : _client = client ?? http.Client(),
+       _prefs = prefs;
 
   static const String defaultCatalogUrl = String.fromEnvironment(
     'BIBLE_DATA_CATALOG_URL',
@@ -63,12 +66,21 @@ class RemoteTranslationCatalogService {
 
   final http.Client _client;
   final String? catalogUrlOverride;
+  final SharedPreferences? _prefs;
   Future<List<BibleTranslation>>? _catalogFuture;
   DateTime? _cachedAt;
 
+  // Last-good catalog persisted across restarts, so the library screen works
+  // offline and skips the network round-trip on a fresh launch.
+  static const String _cachedBodyPrefKey = 'translation_catalog_cache_body';
+  static const String _cachedUrlPrefKey = 'translation_catalog_cache_url';
+  static const String _cachedAtPrefKey = 'translation_catalog_cache_at';
+
   List<({String url, _CatalogParser parser})> get _catalogEndpoints {
     final overrideUrl = catalogUrlOverride?.trim();
-    if (overrideUrl == null || overrideUrl.isEmpty) {
+    if (overrideUrl == null ||
+        overrideUrl.isEmpty ||
+        !_isAllowedCatalogUrl(overrideUrl)) {
       return _fallbackCatalogEndpoints;
     }
     return [
@@ -77,6 +89,19 @@ class RemoteTranslationCatalogService {
         (endpoint) => endpoint.url != overrideUrl,
       ),
     ];
+  }
+
+  /// The settings screen validates this too, but an override saved before the
+  /// https-only rule existed could still be sitting in preferences — so the
+  /// service ignores anything that isn't https (or http to localhost).
+  static bool _isAllowedCatalogUrl(String url) {
+    final uri = Uri.tryParse(url);
+    if (uri == null || !uri.hasAuthority) return false;
+    if (uri.scheme == 'https') return true;
+    return uri.scheme == 'http' &&
+        (uri.host == 'localhost' ||
+            uri.host == '127.0.0.1' ||
+            uri.host == '::1');
   }
 
   Future<List<BibleTranslation>> fetchTranslations({
@@ -95,8 +120,19 @@ class RemoteTranslationCatalogService {
 
   Future<List<BibleTranslation>> _fetchTranslations() async {
     final errors = <String>[];
+    final endpoints = _catalogEndpoints;
 
-    for (final endpoint in _catalogEndpoints) {
+    // A recent persisted copy of the primary endpoint saves the network
+    // round-trip on a cold start.
+    final persisted = _readPersistedCatalog();
+    if (persisted != null &&
+        persisted.url == endpoints.first.url &&
+        DateTime.now().difference(persisted.fetchedAt) <= _cacheTtl) {
+      final cached = _tryParseCatalogBody(persisted.body, persisted.url);
+      if (cached != null) return cached;
+    }
+
+    for (final endpoint in endpoints) {
       try {
         final response = await _client
             .get(Uri.parse(endpoint.url))
@@ -107,27 +143,80 @@ class RemoteTranslationCatalogService {
           continue;
         }
 
-        final decoded = jsonDecode(utf8.decode(response.bodyBytes));
+        final body = utf8.decode(response.bodyBytes);
+        final decoded = jsonDecode(body);
         if (decoded is! Map<String, dynamic>) {
           errors.add('Non-object JSON body at ${endpoint.url}');
           continue;
         }
 
-        final rawList = endpoint.parser(decoded);
-        return rawList
-            .map(_translationFromJson)
-            .where((t) => t != null)
-            .cast<BibleTranslation>()
-            .toList(growable: false);
+        final translations = _translationsFromRawList(endpoint.parser(decoded));
+        _persistCatalog(url: endpoint.url, body: body);
+        return translations;
       } catch (e) {
         errors.add('${endpoint.url}: $e');
       }
+    }
+
+    // Every endpoint failed (probably offline) — fall back to the last
+    // successful catalog regardless of age so the library keeps working.
+    if (persisted != null) {
+      final stale = _tryParseCatalogBody(persisted.body, persisted.url);
+      if (stale != null) return stale;
     }
 
     throw Exception(
       'Failed to fetch translation catalog after ${errors.length} attempt(s):\n'
       '${errors.join('\n')}',
     );
+  }
+
+  List<BibleTranslation> _translationsFromRawList(
+    List<Map<String, dynamic>> rawList,
+  ) {
+    return rawList
+        .map(_translationFromJson)
+        .where((t) => t != null)
+        .cast<BibleTranslation>()
+        .toList(growable: false);
+  }
+
+  ({String url, String body, DateTime fetchedAt})? _readPersistedCatalog() {
+    final prefs = _prefs;
+    if (prefs == null) return null;
+    final body = prefs.getString(_cachedBodyPrefKey);
+    final url = prefs.getString(_cachedUrlPrefKey);
+    final fetchedAtMs = prefs.getInt(_cachedAtPrefKey);
+    if (body == null || url == null || fetchedAtMs == null) return null;
+    return (
+      url: url,
+      body: body,
+      fetchedAt: DateTime.fromMillisecondsSinceEpoch(fetchedAtMs),
+    );
+  }
+
+  void _persistCatalog({required String url, required String body}) {
+    final prefs = _prefs;
+    if (prefs == null) return;
+    // Fire-and-forget: failing to persist must never fail the fetch itself.
+    prefs.setString(_cachedBodyPrefKey, body);
+    prefs.setString(_cachedUrlPrefKey, url);
+    prefs.setInt(_cachedAtPrefKey, DateTime.now().millisecondsSinceEpoch);
+  }
+
+  List<BibleTranslation>? _tryParseCatalogBody(String body, String url) {
+    try {
+      final decoded = jsonDecode(body);
+      if (decoded is! Map<String, dynamic>) return null;
+      final parser = _catalogEndpoints
+          .where((endpoint) => endpoint.url == url)
+          .map((endpoint) => endpoint.parser)
+          .firstOrNull ??
+          _parseTranslationsEnvelope;
+      return _translationsFromRawList(parser(decoded));
+    } catch (_) {
+      return null;
+    }
   }
 
   BibleTranslation? _translationFromJson(Map<String, dynamic> json) {
