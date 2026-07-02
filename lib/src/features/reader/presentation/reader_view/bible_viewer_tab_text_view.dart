@@ -78,6 +78,12 @@ class _BibleTextViewState extends ConsumerState<_BibleTextView> {
   Key _scrollableListKey = const ValueKey('continuous_list');
   int _scrollableListInitialIndex = 0;
 
+  // Upper bound on chapters kept hydrated in memory. Big enough that the
+  // prefetch window (±5) plus everything near the viewport always stays
+  // cached, small enough that reading straight through the Bible doesn't
+  // accumulate all 1,189 chapters.
+  static const int _maxHydratedContinuousChapters = 48;
+
   void _storeHydratedContinuousChapter(String key, BibleChapter chapter) {
     if (!mounted) return;
     // Defer to the next frame. Chapter futures can complete while
@@ -87,7 +93,18 @@ class _BibleTextViewState extends ConsumerState<_BibleTextView> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       setState(() {
+        // Remove-then-insert keeps the map ordered least→most recently used
+        // (Dart maps preserve insertion order).
+        _hydratedContinuousChapters.remove(key);
         _hydratedContinuousChapters[key] = chapter;
+        while (_hydratedContinuousChapters.length >
+            _maxHydratedContinuousChapters) {
+          final oldestKey = _hydratedContinuousChapters.keys.first;
+          _hydratedContinuousChapters.remove(oldestKey);
+          // The memoized future holds the same chapter data, so it must be
+          // evicted too or the memory is never actually released.
+          _continuousChapterFutures.remove(oldestKey);
+        }
       });
     });
   }

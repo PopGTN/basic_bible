@@ -103,10 +103,15 @@ extension _BibleTextViewStateCore on _BibleTextViewState {
     return index >= 0 ? index : null;
   }
 
-  BibleChapter? _hydratedContinuousChapter(
-    String bookId,
-    int chapterNumber,
-  ) => _hydratedContinuousChapters[_continuousChapterKey(bookId, chapterNumber)];
+  BibleChapter? _hydratedContinuousChapter(String bookId, int chapterNumber) {
+    final key = _continuousChapterKey(bookId, chapterNumber);
+    final chapter = _hydratedContinuousChapters.remove(key);
+    if (chapter == null) return null;
+    // Re-insert so chapters still being rendered count as recently used and
+    // aren't evicted while visible.
+    _hydratedContinuousChapters[key] = chapter;
+    return chapter;
+  }
 
   Future<BibleChapter?> _continuousChapterFuture(
     _ContinuousChapterSection section,
@@ -219,7 +224,14 @@ extension _BibleTextViewStateCore on _BibleTextViewState {
     BibleVerse verse,
   ) {
     final translationId = ref.watch(currentTranslationProvider);
-    final annotations = ref.watch(visibleChapterAnnotationsProvider);
+    // In continuous mode, currentReferenceProvider reflects the chapter that
+    // was navigated to, not the chapter currently scrolled into view.
+    // visibleChapterAnnotationsProvider therefore hides annotations on every
+    // chapter except the original navigation target, so we fall back to the
+    // full annotation stream and let touchesReference do the filtering.
+    final annotations = widget.continuousScrolling
+        ? ref.watch(userAnnotationsProvider).value ?? const []
+        : ref.watch(visibleChapterAnnotationsProvider);
     final reference = _verseReference(bookId, chapterNumber, verse);
     return annotations
         .where(
@@ -232,7 +244,11 @@ extension _BibleTextViewStateCore on _BibleTextViewState {
   }
 
   bool _hasSavedAnnotations(List<UserAnnotation> verseAnnotations) {
-    return verseAnnotations.isNotEmpty;
+    // Only show the note button when the verse has an annotation with actual
+    // written text. Standalone highlights are already visible via the verse
+    // background color — showing the note icon for them confuses users into
+    // thinking their note was deleted when only the highlight was cleared.
+    return verseAnnotations.any((annotation) => annotation.hasNoteText);
   }
 
   List<UserAnnotation> _savedVerseAnnotations(
@@ -319,7 +335,9 @@ extension _BibleTextViewStateCore on _BibleTextViewState {
     if (!_chapterHasVerse(chapter, otherVerseNumber)) return false;
 
     final translationId = ref.watch(currentTranslationProvider);
-    final annotations = ref.watch(visibleChapterAnnotationsProvider);
+    final annotations = widget.continuousScrolling
+        ? ref.watch(userAnnotationsProvider).value ?? const []
+        : ref.watch(visibleChapterAnnotationsProvider);
     final currentReference = _verseReference(bookId, chapterNumber, verse);
     final otherReference = BibleReference(
       bookId: bookId,

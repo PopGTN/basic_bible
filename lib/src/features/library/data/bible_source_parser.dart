@@ -12,12 +12,46 @@ class ParsedBibleSource {
   final List<BibleBook> books;
 }
 
+/// Message for the worker isolate. Must hold only sendable values.
+class _ParseSourceRequest {
+  const _ParseSourceRequest({
+    required this.bytes,
+    required this.sourceName,
+    required this.hintedFormat,
+  });
+
+  final Uint8List bytes;
+  final String sourceName;
+  final BibleFormat? hintedFormat;
+}
+
+/// Parses raw Bible source bytes (XML, ZIP, or USFM) into app models.
+///
+/// The entire pipeline — ZIP inflation, UTF-8 decode, parsing (including the
+/// native USFM parser), and mapping to model objects — runs inside a single
+/// `compute()` worker isolate so multi-megabyte files never freeze the UI.
 Future<ParsedBibleSource> parseBibleSourceBytes(
   List<int> bytes, {
   required String sourceName,
   BibleFormat? hintedFormat,
-}) async {
-  final usfmBundle = tryExtractUsfmBundle(bytes, sourceName: sourceName);
+}) {
+  return compute(
+    _parseBibleSourceWorker,
+    _ParseSourceRequest(
+      bytes: bytes is Uint8List ? bytes : Uint8List.fromList(bytes),
+      sourceName: sourceName,
+      hintedFormat: hintedFormat,
+    ),
+  );
+}
+
+Future<ParsedBibleSource> _parseBibleSourceWorker(
+  _ParseSourceRequest request,
+) async {
+  final usfmBundle = tryExtractUsfmBundle(
+    request.bytes,
+    sourceName: request.sourceName,
+  );
   if (usfmBundle != null) {
     if (!supportsNativeUsfmParsing) {
       throw UnsupportedError(nativeUsfmParsingUnavailabilityReason);
@@ -30,13 +64,10 @@ Future<ParsedBibleSource> parseBibleSourceBytes(
   }
 
   final document = decodeBibleArchiveText(
-    bytes,
-    sourceName: sourceName,
-    hintedFormat: hintedFormat,
+    request.bytes,
+    sourceName: request.sourceName,
+    hintedFormat: request.hintedFormat,
   );
-  final parsed = await compute(parseBibleToSerializable, document.content);
-  return ParsedBibleSource(
-    format: document.format,
-    books: parsed.map(mapSerializableBook).toList(growable: false),
-  );
+  final books = await parseBibleContentToBooks(document.content);
+  return ParsedBibleSource(format: document.format, books: books);
 }

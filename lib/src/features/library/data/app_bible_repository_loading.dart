@@ -119,8 +119,8 @@ extension AppBibleRepositoryLoading on AppBibleRepository {
       }
 
       final content = await _loadLocalContent(translation);
-      final parsed = await compute(parseBibleToSerializable, content);
-      final books = parsed.map(mapSerializableBook).toList();
+      // parse + model mapping both happen inside the worker isolate.
+      final books = await compute(parseBibleContentToBooks, content);
 
       final path = await _sqlitePathFor(translationId);
       final translationDb = await _dbManager.open(translationId, path);

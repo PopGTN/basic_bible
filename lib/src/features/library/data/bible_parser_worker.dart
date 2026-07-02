@@ -16,8 +16,16 @@ import 'package:basic_bible/src/models/bible_models.dart';
 const int kCurrentParserVersion = 5;
 
 // =============================================================================
-// Entry point — called via compute()
+// Entry points — called via compute()
 // =============================================================================
+
+/// Parses XML Bible [content] and maps it straight to app models, so both the
+/// parse and the (surprisingly expensive) map→model conversion happen inside
+/// the worker isolate instead of janking the UI thread.
+Future<List<BibleBook>> parseBibleContentToBooks(String content) async {
+  final parsed = await parseBibleToSerializable(content);
+  return parsed.map(mapSerializableBook).toList(growable: false);
+}
 
 Future<List<Map<String, dynamic>>> parseBibleToSerializable(
   String content,
