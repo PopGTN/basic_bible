@@ -62,8 +62,10 @@ flutter:
   generate: true
   assets:
     - "assets/icon/"
-    - "assets/bible/eng-kjv2006_usfx.xml"
-    - "assets/bible/kjv.sqlite"
+    # Bundled KJV, gzipped: 8 MB shipped instead of 62 MB raw. The loaders
+    # decompress on first use (see app_bible_repository_loading.dart).
+    - "assets/bible/eng-kjv2006_usfx.xml.gz"
+    - "assets/bible/kjv.sqlite.gz"
 
 flutter_launcher_icons:
   android: "launcher_icon"
