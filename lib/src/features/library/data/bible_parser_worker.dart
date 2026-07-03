@@ -9,6 +9,12 @@
 //   3 = per-translation SQLite split (forces rebuild into new file layout)
 //   4 = section headings carry `beforeVerse` metadata for inline rendering
 //   5 = heading levels normalized across OSIS and Zefania sources
+//
+// Since the model deduplication, the parser's rich-content classes ARE the
+// app's classes (see models/bible_models/verse_span.dart), so the XML path
+// builds app models directly with no JSON round-trip. The serializable-map
+// path below ([mapSerializableBook]) remains for the native USFM parser,
+// which hands its results across the FFI boundary as JSON.
 
 import 'package:bible_parser_flutter/bible_parser_flutter.dart';
 import 'package:basic_bible/src/models/bible_models.dart';
@@ -16,62 +22,51 @@ import 'package:basic_bible/src/models/bible_models.dart';
 const int kCurrentParserVersion = 5;
 
 // =============================================================================
-// Entry points — called via compute()
+// Entry point — called via compute()
 // =============================================================================
 
-/// Parses XML Bible [content] and maps it straight to app models, so both the
-/// parse and the (surprisingly expensive) map→model conversion happen inside
-/// the worker isolate instead of janking the UI thread.
+/// Parses XML Bible [content] straight into app models inside the worker
+/// isolate. Spans, footnotes, cross-references, blocks, and TOC labels are
+/// shared types now, so the parser's objects are used as-is.
 Future<List<BibleBook>> parseBibleContentToBooks(String content) async {
-  final parsed = await parseBibleToSerializable(content);
-  return parsed.map(mapSerializableBook).toList(growable: false);
-}
-
-Future<List<Map<String, dynamic>>> parseBibleToSerializable(
-  String content,
-) async {
   final parser = BibleParser.fromString(content);
-  final List<Map<String, dynamic>> books = [];
+  final books = <BibleBook>[];
   await for (final book in parser.books) {
-    final List<Map<String, dynamic>> chapters = [];
-    for (final chapter in book.chapters) {
-      final verses = chapter.verses
-          .map(
-            (v) => {
-              'number': v.num,
-              'text': v.text,
-              'notes': v.notes,
-              'references': v.references,
-              'spans': v.spans.map(_serializeVerseSpan).toList(),
-              'footnotes': v.footnotes.map(_serializeFootnote).toList(),
-              'crossReferences': v.crossReferences
-                  .map(_serializeCrossReference)
-                  .toList(),
-            },
-          )
-          .toList();
-      chapters.add({
-        'number': chapter.num,
-        'verses': verses,
-        'blocks': chapter.blocks.map(_serializeDocumentBlock).toList(),
-      });
-    }
-    books.add({
-      'id': book.id,
-      'title': book.title,
-      'num': book.num,
-      'tocLabels': book.tocLabels.map(_serializeTocLabel).toList(),
-      'introductionBlocks': book.introductionBlocks
-          .map(_serializeDocumentBlock)
-          .toList(),
-      'chapters': chapters,
-    });
+    books.add(
+      BibleBook(
+        id: book.id.toUpperCase(),
+        name: book.title,
+        shortName: book.id.toUpperCase(),
+        bookNumber: book.num,
+        tocLabels: book.tocLabels,
+        introductionBlocks: book.introductionBlocks,
+        chapters: [
+          for (final chapter in book.chapters)
+            BibleChapter(
+              number: chapter.num,
+              blocks: chapter.blocks,
+              verses: [
+                for (final verse in chapter.verses)
+                  BibleVerse(
+                    number: verse.num,
+                    text: verse.text,
+                    notes: verse.notes,
+                    references: verse.references,
+                    spans: verse.spans,
+                    footnotes: verse.footnotes,
+                    crossReferences: verse.crossReferences,
+                  ),
+              ],
+            ),
+        ],
+      ),
+    );
   }
   return books;
 }
 
 // =============================================================================
-// Deserialization — maps raw maps back to model objects
+// Deserialization — maps raw JSON maps (from the native USFM parser) to models
 // =============================================================================
 
 BibleBook mapSerializableBook(Map<String, dynamic> book) {
@@ -129,45 +124,3 @@ BibleVerse _mapSerializableVerse(Map<String, dynamic> verse) {
         .toList(),
   );
 }
-
-// =============================================================================
-// Serializers — maps model objects to raw maps
-// =============================================================================
-
-Map<String, dynamic> _serializeVerseSpan(VerseSpan span) => {
-  'text': span.text,
-  'kind': span.kind.index,
-  'metadata': span.metadata,
-};
-
-Map<String, dynamic> _serializeCrossReference(CrossReference r) => {
-  'label': r.label,
-  'target': r.target,
-  'marker': r.marker,
-  'originRef': r.originRef,
-  'spanIndex': r.spanIndex,
-  'charOffset': r.charOffset,
-};
-
-Map<String, dynamic> _serializeFootnote(Footnote f) => {
-  'text': f.text,
-  'marker': f.marker,
-  'label': f.label,
-  'bodyText': f.bodyText,
-  'quotedText': f.quotedText,
-  'references': f.references.map(_serializeCrossReference).toList(),
-  'spanIndex': f.spanIndex,
-  'charOffset': f.charOffset,
-};
-
-Map<String, dynamic> _serializeDocumentBlock(DocumentBlock b) => {
-  'kind': b.kind.index,
-  'text': b.text,
-  'level': b.level,
-  'metadata': b.metadata,
-};
-
-Map<String, dynamic> _serializeTocLabel(TocLabel l) => {
-  'text': l.text,
-  'level': l.level,
-};
