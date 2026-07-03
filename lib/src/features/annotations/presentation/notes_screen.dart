@@ -2,6 +2,7 @@ import 'package:basic_bible/src/features/annotations/application/view_models/ann
 import 'package:basic_bible/src/features/annotations/models/user_annotations.dart';
 import 'package:basic_bible/src/features/annotations/presentation/linked_verses_section.dart';
 import 'package:basic_bible/src/features/annotations/presentation/annotation_theme.dart';
+import 'package:basic_bible/src/features/annotations/presentation/annotation_detail_screen.dart';
 import 'package:basic_bible/src/features/annotations/presentation/note_editor_screen.dart';
 import 'package:basic_bible/src/features/home/application/view_models/home_navigation_view_model.dart';
 import 'package:basic_bible/src/features/reader/application/view_models/bible_library_view_models.dart';
@@ -154,9 +155,84 @@ class NotesScreen extends ConsumerWidget {
             separatorBuilder: (_, index) => const SizedBox(height: 12),
             itemBuilder: (context, index) {
               final annotation = annotations[index];
+              Future<void> openDetails() => Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => AnnotationDetailScreen(
+                    annotation: annotation,
+                    books: books,
+                    onPreviewLinkedVerse: (link) => _showLinkedVersePreview(
+                      context,
+                      ref,
+                      link: link,
+                      books: books,
+                    ),
+                    onOpenReference: () async {
+                      await _openReferenceInReader(
+                        context,
+                        ref,
+                        reference: annotation.primaryVerse.reference,
+                        preferredTranslationId:
+                            annotation.primaryVerse.translationId,
+                        preferredTranslationName:
+                            annotation.primaryVerse.translationName,
+                      );
+                    },
+                    onEdit: () async {
+                      Navigator.of(context).pop();
+                      await Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => NoteEditorScreen(
+                            primaryVerse: annotation.primaryVerse,
+                            existingAnnotation: annotation,
+                          ),
+                        ),
+                      );
+                    },
+                    onDelete: () async {
+                      final id = annotation.id;
+                      if (id == null) return;
+                      final confirmed = await showDialog<bool>(
+                        context: context,
+                        builder: (ctx) => AlertDialog(
+                          title: const Text('Delete?'),
+                          content: const Text(
+                            'This note and all its linked verses will be permanently removed.',
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.of(ctx).pop(false),
+                              child: const Text('Cancel'),
+                            ),
+                            TextButton(
+                              onPressed: () => Navigator.of(ctx).pop(true),
+                              child: const Text('Delete'),
+                            ),
+                          ],
+                        ),
+                      );
+                      if (confirmed != true) return;
+                      try {
+                        await ref
+                            .read(userAnnotationRepositoryProvider)
+                            .deleteAnnotation(id);
+                        if (context.mounted) Navigator.of(context).pop();
+                      } catch (_) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Failed to delete note.'),
+                            ),
+                          );
+                        }
+                      }
+                    },
+                  ),
+                ),
+              );
               return _AnnotationListCard(
                 annotation: annotation,
                 books: books,
+                onViewDetails: openDetails,
                 onOpenReference: () async {
                   await _openReferenceInReader(
                     context,
@@ -235,6 +311,7 @@ class _AnnotationListCard extends StatelessWidget {
   const _AnnotationListCard({
     required this.annotation,
     required this.books,
+    required this.onViewDetails,
     required this.onOpenReference,
     required this.onEdit,
     required this.onDelete,
@@ -243,6 +320,7 @@ class _AnnotationListCard extends StatelessWidget {
 
   final UserAnnotation annotation;
   final List<BibleBook> books;
+  final Future<void> Function() onViewDetails;
   final Future<void> Function() onOpenReference;
   final Future<void> Function() onEdit;
   final Future<void> Function() onDelete;
@@ -261,7 +339,10 @@ class _AnnotationListCard extends StatelessWidget {
         '${displayBookNameForReference(books, annotation.primaryVerse.bookId)} '
         '${annotation.primaryVerse.chapter}:${annotation.primaryVerse.verse}';
 
-    return Container(
+    return InkWell(
+      onTap: onViewDetails,
+      borderRadius: BorderRadius.circular(18),
+      child: Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerHigh,
@@ -324,13 +405,27 @@ class _AnnotationListCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 4),
-          Text(
-            annotation.noteText?.trim().isNotEmpty == true
-                ? annotation.noteText!.trim()
-                : 'Saved highlight',
-            style: theme.textTheme.bodyLarge,
-            maxLines: 3,
-            overflow: TextOverflow.ellipsis,
+          InkWell(
+            onTap: annotation.hasNoteText ? () async => onViewDetails() : null,
+            borderRadius: BorderRadius.circular(12),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: annotation.hasNoteText
+                    ? theme.colorScheme.surfaceContainerHighest
+                    : Colors.transparent,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                annotation.noteText?.trim().isNotEmpty == true
+                    ? annotation.noteText!.trim()
+                    : 'Saved highlight',
+                style: theme.textTheme.bodyLarge,
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
           ),
           if (annotation.linkedVerses.isNotEmpty) ...[
             const SizedBox(height: 12),
@@ -368,6 +463,7 @@ class _AnnotationListCard extends StatelessWidget {
           ),
         ],
       ),
+    ),
     );
   }
 }

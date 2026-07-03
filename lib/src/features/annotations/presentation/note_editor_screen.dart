@@ -1,4 +1,5 @@
 import 'package:basic_bible/src/features/annotations/application/view_models/annotation_data_view_models.dart';
+import 'package:basic_bible/src/features/annotations/application/view_models/annotation_preferences_view_models.dart';
 import 'package:basic_bible/src/features/annotations/models/user_annotations.dart';
 import 'package:basic_bible/src/features/annotations/presentation/annotation_theme.dart';
 import 'package:basic_bible/src/features/annotations/presentation/linked_verses_section.dart';
@@ -257,32 +258,34 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
               links: _draft.linkedVerses,
               maxVisible: 20,
               emptyMessage: null,
-              onPreviewLinkedVerse: (link) async {
-                if (!mounted) return;
-                final allBooks = booksAsync.value ?? const <BibleBook>[];
-                final shouldRemove = await showDialog<bool>(
-                  context: context,
-                  builder: (dialogContext) => AlertDialog(
-                    title: const Text('Linked Verse'),
-                    content: Text(
-                      '${displayBookNameForReference(allBooks, link.bookId)} '
-                      '${link.chapter}:${link.verse}',
+              onPreviewLinkedVerse: (link) async {},
+              onDeleteLink: (link) async {
+                final confirm = ref.read(confirmRemoveLinkedVerseProvider);
+                if (confirm) {
+                  final allBooks = booksAsync.value ?? const <BibleBook>[];
+                  final ok = await showDialog<bool>(
+                    context: context,
+                    builder: (ctx) => AlertDialog(
+                      title: const Text('Remove verse?'),
+                      content: Text(
+                        '${displayBookNameForReference(allBooks, link.bookId)} '
+                        '${link.chapter}:${link.verse} will be unlinked from this note.',
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.of(ctx).pop(false),
+                          child: const Text('Cancel'),
+                        ),
+                        TextButton(
+                          onPressed: () => Navigator.of(ctx).pop(true),
+                          child: const Text('Remove'),
+                        ),
+                      ],
                     ),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.of(dialogContext).pop(false),
-                        child: const Text('Close'),
-                      ),
-                      TextButton(
-                        onPressed: () => Navigator.of(dialogContext).pop(true),
-                        child: const Text('Remove'),
-                      ),
-                    ],
-                  ),
-                );
-                if (shouldRemove == true && mounted) {
-                  _removeLinkedVerse(link);
+                  );
+                  if (ok != true || !mounted) return;
                 }
+                _removeLinkedVerse(link);
               },
             ),
           ],

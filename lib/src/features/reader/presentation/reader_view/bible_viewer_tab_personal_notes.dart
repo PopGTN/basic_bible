@@ -188,11 +188,27 @@ class _PersonalNoteCard extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 10),
-              Text(
-                annotation.noteText?.trim().isNotEmpty == true
-                    ? annotation.noteText!.trim()
-                    : 'Saved highlight',
-                style: theme.textTheme.bodyLarge?.copyWith(height: 1.5),
+              InkWell(
+                onTap: annotation.hasNoteText ? () => onViewDetails() : null,
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: annotation.hasNoteText
+                        ? theme.colorScheme.surfaceContainerHighest
+                        : Colors.transparent,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    annotation.noteText?.trim().isNotEmpty == true
+                        ? annotation.noteText!.trim()
+                        : 'Saved highlight',
+                    style: theme.textTheme.bodyLarge?.copyWith(height: 1.5),
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
               ),
               if (annotation.linkedVerses.isNotEmpty) ...[
                 const SizedBox(height: 12),
@@ -200,6 +216,7 @@ class _PersonalNoteCard extends StatelessWidget {
                   books: books,
                   links: annotation.linkedVerses,
                   onPreviewLinkedVerse: onPreviewLinkedVerse,
+                  maxVisible: 3,
                 ),
               ],
               const SizedBox(height: 12),

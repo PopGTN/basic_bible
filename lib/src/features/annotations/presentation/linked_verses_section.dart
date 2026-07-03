@@ -9,6 +9,7 @@ class LinkedVersesSection extends StatelessWidget {
     required this.books,
     required this.links,
     required this.onPreviewLinkedVerse,
+    this.onDeleteLink,
     this.title = 'Linked Verses',
     this.maxVisible = 24,
     this.emptyMessage,
@@ -17,6 +18,9 @@ class LinkedVersesSection extends StatelessWidget {
   final List<BibleBook> books;
   final List<AnnotationVerseLink> links;
   final Future<void> Function(AnnotationVerseLink link) onPreviewLinkedVerse;
+  /// When provided, each chip shows a delete icon. Tapping it calls this
+  /// callback — the caller decides whether to confirm before removing.
+  final void Function(AnnotationVerseLink link)? onDeleteLink;
   final String title;
   final int maxVisible;
   final String? emptyMessage;
@@ -31,6 +35,7 @@ class LinkedVersesSection extends StatelessWidget {
     final theme = Theme.of(context);
     final visibleLinks = links.take(maxVisible).toList(growable: false);
     final hiddenCount = links.length - visibleLinks.length;
+    final canDelete = onDeleteLink != null;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -47,14 +52,27 @@ class LinkedVersesSection extends StatelessWidget {
           runSpacing: 8,
           children: [
             for (final link in visibleLinks)
-              ActionChip(
-                onPressed: () => onPreviewLinkedVerse(link),
-                avatar: const Icon(Icons.visibility_outlined, size: 16),
-                label: Text(
-                  '${displayBookNameForReference(books, link.bookId)} '
-                  '${link.chapter}:${link.verse}',
+              if (canDelete)
+                InputChip(
+                  onPressed: () => onPreviewLinkedVerse(link),
+                  avatar: const Icon(Icons.visibility_outlined, size: 16),
+                  label: Text(
+                    '${displayBookNameForReference(books, link.bookId)} '
+                    '${link.chapter}:${link.verse}',
+                  ),
+                  onDeleted: () => onDeleteLink!(link),
+                  deleteIcon: const Icon(Icons.close, size: 16),
+                  deleteButtonTooltipMessage: 'Remove',
+                )
+              else
+                ActionChip(
+                  onPressed: () => onPreviewLinkedVerse(link),
+                  avatar: const Icon(Icons.visibility_outlined, size: 16),
+                  label: Text(
+                    '${displayBookNameForReference(books, link.bookId)} '
+                    '${link.chapter}:${link.verse}',
+                  ),
                 ),
-              ),
             if (hiddenCount > 0)
               Chip(
                 label: Text('+$hiddenCount more'),

@@ -1,4 +1,5 @@
 import 'package:basic_bible/l10n/app_localizations.dart';
+import 'package:basic_bible/src/features/annotations/application/view_models/annotation_preferences_view_models.dart';
 import 'package:basic_bible/src/features/reader/application/view_models/reader_preferences_view_models.dart';
 import 'package:basic_bible/src/features/settings/application/view_models/app_launch_preferences_view_models.dart';
 import 'package:basic_bible/src/features/settings/application/view_models/reader_display_preferences_view_models.dart';
@@ -18,6 +19,7 @@ class SettingsScreen extends ConsumerWidget {
     final selectedLanguage = ref.watch(languageProvider);
     final showBookIntroductions = ref.watch(showBookIntroductionsProvider);
     final showVerseSelector = ref.watch(showVerseSelectorProvider);
+    final confirmRemoveLinkedVerse = ref.watch(confirmRemoveLinkedVerseProvider);
     final boldDivineName = ref.watch(boldDivineNameProvider);
     final underlineProperNames = ref.watch(underlineProperNamesProvider);
     final underlineWordMetadata = ref.watch(underlineWordMetadataProvider);
@@ -223,6 +225,26 @@ class SettingsScreen extends ConsumerWidget {
               value: showVerseSelector,
               onChanged: (value) {
                 ref.read(showVerseSelectorProvider.notifier).setEnabled(value);
+              },
+            ),
+            const SizedBox(height: 20),
+
+            Text(
+              'Notes',
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 10),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Confirm Before Removing Linked Verses'),
+              subtitle: const Text(
+                'Show a confirmation dialog before unlinking a verse from a note.',
+              ),
+              value: confirmRemoveLinkedVerse,
+              onChanged: (value) {
+                ref
+                    .read(confirmRemoveLinkedVerseProvider.notifier)
+                    .setEnabled(value);
               },
             ),
             const SizedBox(height: 20),

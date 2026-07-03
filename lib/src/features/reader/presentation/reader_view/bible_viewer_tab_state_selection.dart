@@ -140,7 +140,7 @@ extension _BibleViewerTabStateSelection on _BibleViewerTabState {
       ]);
 
       if (!mounted) return;
-      ref.read(highlightPaletteExpandedProvider.notifier).state = false;
+      _clearSelectionUi();
       messenger.showSnackBar(
         SnackBar(
           content: Text(
@@ -173,7 +173,7 @@ extension _BibleViewerTabStateSelection on _BibleViewerTabState {
       ]);
 
       if (!mounted) return;
-      ref.read(highlightPaletteExpandedProvider.notifier).state = false;
+      _clearSelectionUi();
       messenger.showSnackBar(
         SnackBar(
           content: Text(

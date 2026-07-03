@@ -356,25 +356,92 @@ class AppDatabase extends _$AppDatabase {
   // User annotations
   // ===========================================================================
 
+  // O(1) type resolution — avoids firstWhere scan on every mapped row.
+  static final _annotationTypeByName = {
+    for (final t in UserAnnotationType.values) t.name: t,
+  };
+
+  JoinedSelectStatement<HasResultSet, dynamic> _annotationJoinQuery() {
+    return select(userAnnotations).join([
+      leftOuterJoin(
+        annotationVerses,
+        annotationVerses.annotationId.equalsExp(userAnnotations.id),
+      ),
+    ]);
+  }
+
+  List<UserAnnotation> _mapJoinRows(List<TypedResult> rows) {
+    // LinkedHashMap preserves insertion order, which matches the query's
+    // ORDER BY updatedAt DESC — so the returned list is already sorted.
+    final annotationEntries = <int, UserAnnotationEntry>{};
+    final versesByAnnotation = <int, List<AnnotationVerseLink>>{};
+
+    for (final row in rows) {
+      final a = row.readTable(userAnnotations);
+      annotationEntries.putIfAbsent(a.id, () => a);
+      final v = row.readTableOrNull(annotationVerses);
+      if (v != null) {
+        versesByAnnotation.putIfAbsent(v.annotationId, () => []).add(
+          AnnotationVerseLink(
+            id: v.id,
+            bookId: v.bookId,
+            chapter: v.chapter,
+            verse: v.verse,
+            translationId: v.translationId,
+            translationName: v.translationName,
+            sortOrder: v.sortOrder,
+          ),
+        );
+      }
+    }
+
+    return [
+      for (final a in annotationEntries.values)
+        UserAnnotation(
+          id: a.id,
+          type: _annotationTypeByName[a.type] ?? UserAnnotationType.note,
+          primaryVerse: AnnotationVerseLink(
+            bookId: a.primaryBookId,
+            chapter: a.primaryChapter,
+            verse: a.primaryVerse,
+            translationId: a.primaryTranslationId,
+            translationName: a.primaryTranslationName,
+          ),
+          noteText: a.noteText,
+          highlightColorValue: a.highlightColorValue,
+          labels: a.labels,
+          linkedVerses: versesByAnnotation[a.id] ?? const [],
+          createdAt: a.createdAt,
+          updatedAt: a.updatedAt,
+        ),
+    ];
+  }
+
   Stream<List<UserAnnotation>> watchAllUserAnnotations() {
-    final query = select(userAnnotations)
-      ..orderBy([(t) => OrderingTerm.desc(t.updatedAt)]);
-    return query.watch().asyncMap(_mapUserAnnotations);
+    final query = _annotationJoinQuery()
+      ..orderBy([
+        OrderingTerm.desc(userAnnotations.updatedAt),
+        OrderingTerm.desc(userAnnotations.id),
+        OrderingTerm(expression: annotationVerses.sortOrder),
+      ]);
+    return query.watch().map(_mapJoinRows);
   }
 
   Future<List<UserAnnotation>> getAllUserAnnotations() async {
-    final rows = await (select(
-      userAnnotations,
-    )..orderBy([(t) => OrderingTerm.desc(t.updatedAt)])).get();
-    return _mapUserAnnotations(rows);
+    final query = _annotationJoinQuery()
+      ..orderBy([
+        OrderingTerm.desc(userAnnotations.updatedAt),
+        OrderingTerm.desc(userAnnotations.id),
+        OrderingTerm(expression: annotationVerses.sortOrder),
+      ]);
+    return _mapJoinRows(await query.get());
   }
 
   Future<UserAnnotation?> getUserAnnotationById(int id) async {
-    final row = await (select(
-      userAnnotations,
-    )..where((t) => t.id.equals(id))).getSingleOrNull();
-    if (row == null) return null;
-    final mapped = await _mapUserAnnotations([row]);
+    final query = _annotationJoinQuery()
+      ..where(userAnnotations.id.equals(id));
+    final rows = await query.get();
+    final mapped = _mapJoinRows(rows);
     return mapped.isEmpty ? null : mapped.first;
   }
 
@@ -442,61 +509,6 @@ class AppDatabase extends _$AppDatabase {
     });
   }
 
-  Future<List<UserAnnotation>> _mapUserAnnotations(
-    List<UserAnnotationEntry> rows,
-  ) async {
-    if (rows.isEmpty) return const [];
-    final ids = rows.map((r) => r.id).toList();
-    final verseRows =
-        await (select(annotationVerses)
-              ..where((t) => t.annotationId.isIn(ids))
-              ..orderBy([
-                (t) => OrderingTerm(expression: t.annotationId),
-                (t) => OrderingTerm(expression: t.sortOrder),
-              ]))
-            .get();
-
-    final linkedByAnnotationId = <int, List<AnnotationVerseLink>>{};
-    for (final row in verseRows) {
-      linkedByAnnotationId
-          .putIfAbsent(row.annotationId, () => [])
-          .add(
-            AnnotationVerseLink(
-              id: row.id,
-              bookId: row.bookId,
-              chapter: row.chapter,
-              verse: row.verse,
-              translationId: row.translationId,
-              translationName: row.translationName,
-              sortOrder: row.sortOrder,
-            ),
-          );
-    }
-
-    return [
-      for (final row in rows)
-        UserAnnotation(
-          id: row.id,
-          type: UserAnnotationType.values.firstWhere(
-            (v) => v.name == row.type,
-            orElse: () => UserAnnotationType.note,
-          ),
-          primaryVerse: AnnotationVerseLink(
-            bookId: row.primaryBookId,
-            chapter: row.primaryChapter,
-            verse: row.primaryVerse,
-            translationId: row.primaryTranslationId,
-            translationName: row.primaryTranslationName,
-          ),
-          noteText: row.noteText,
-          highlightColorValue: row.highlightColorValue,
-          labels: row.labels,
-          linkedVerses: linkedByAnnotationId[row.id] ?? const [],
-          createdAt: row.createdAt,
-          updatedAt: row.updatedAt,
-        ),
-    ];
-  }
 }
 
 // =============================================================================

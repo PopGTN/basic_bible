@@ -118,8 +118,6 @@ class AnnotationDetailScreen extends StatelessWidget {
                           ? annotation.noteText!.trim()
                           : 'Saved highlight',
                       style: theme.textTheme.bodyLarge?.copyWith(height: 1.5),
-                      maxLines: 3,
-                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                 ),

@@ -52,7 +52,12 @@ final selectedVerseAnnotationsProvider = Provider<List<UserAnnotation>>((ref) {
   final selectedVerses = ref.watch(selectedVersesProvider);
   if (selectedVerses.isEmpty) return const [];
   final translationId = ref.watch(currentTranslationProvider);
-  final annotations = ref.watch(visibleChapterAnnotationsProvider);
+  // Use the full annotation stream instead of the chapter-filtered one.
+  // visibleChapterAnnotationsProvider is filtered by currentReferenceProvider,
+  // which does not update when the user scrolls in continuous mode — only when
+  // they explicitly navigate. Selected verses can live in any visible chapter,
+  // so the tray would otherwise show no annotations for scrolled-to chapters.
+  final annotations = ref.watch(userAnnotationsProvider).value ?? const [];
   return annotations.where((annotation) {
     return selectedVerses.any(
       (reference) =>
