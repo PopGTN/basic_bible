@@ -8,6 +8,7 @@ import 'package:basic_bible/src/features/annotations/presentation/linked_verses_
 import 'package:basic_bible/src/features/annotations/presentation/annotation_theme.dart';
 import 'package:basic_bible/src/features/annotations/presentation/note_editor_screen.dart';
 import 'package:basic_bible/src/features/library/data/app_bible_repository.dart';
+import 'package:basic_bible/src/features/reader/application/continuous_reader_controller.dart';
 import 'package:basic_bible/src/features/reader/application/view_models/bible_library_view_models.dart';
 import 'package:basic_bible/src/features/reader/application/view_models/current_chapter_view_model.dart';
 import 'package:basic_bible/src/features/reader/application/view_models/reader_preferences_view_models.dart';
@@ -108,6 +109,12 @@ class _BibleViewerTabState extends ConsumerState<BibleViewerTab> {
     _lastScroll = current;
 
     if (delta.abs() < 1) return;
+
+    // A large single-notification jump is a programmatic reposition (chapter
+    // navigation, continuous-list key reset), not the user scrolling. Only
+    // rebaseline — toggling the bars here would hide them when the user taps
+    // next/previous chapter.
+    if (delta.abs() > 400) return;
 
     // Always show bars when at the bottom.
     if (current >= max) {

@@ -1,25 +1,14 @@
 part of 'bible_viewer_tab.dart';
 
 extension _BibleTextViewStateCore on _BibleTextViewState {
-  String _continuousChapterKey(String bookId, int chapterNumber) =>
-      '$bookId:$chapterNumber';
-
   void _exitSelectionMode() {
     _selectionAnchorReference = null;
     ref.read(selectedVersesProvider.notifier).clear();
     ref.read(highlightPaletteExpandedProvider.notifier).state = false;
   }
 
-  void _rebuildContinuousSections() {
-    // Continuous mode renders a flat chapter stream so the viewport can reason
-    // about "which chapter is visible now?" without walking the nested book
-    // structure every time.
-    _continuousSections = <_ContinuousChapterSection>[
-      for (final book in widget.books)
-        for (final chapter in book.chapters)
-          _ContinuousChapterSection(book: book, chapter: chapter),
-    ];
-  }
+  void _rebuildContinuousSections() =>
+      _continuousController.rebuildSections(widget.books);
 
   void _scheduleVerseFocus() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -83,79 +72,38 @@ extension _BibleTextViewStateCore on _BibleTextViewState {
           ),
         );
       } else if (_continuousItemScrollController.isAttached) {
-        // Short hop: animated scroll is accurate enough.
-        _continuousItemScrollController.scrollTo(
-          index: targetIndex,
-          duration: const Duration(milliseconds: 280),
-          curve: Curves.easeInOut,
-          alignment: 0.02,
-        );
+        // Short hop: animated scroll is accurate enough. Suppress the bar
+        // auto-hide while the animation runs — this is navigation, not the
+        // user scrolling away.
+        _suppressChromeScrollEvents = true;
+        _continuousItemScrollController
+            .scrollTo(
+              index: targetIndex,
+              duration: const Duration(milliseconds: 280),
+              curve: Curves.easeInOut,
+              alignment: 0.02,
+            )
+            .whenComplete(() => _suppressChromeScrollEvents = false);
       }
     });
   }
 
-  int? _continuousSectionIndexFor(BibleReference reference) {
-    final index = _continuousSections.indexWhere(
-      (section) =>
-          section.book.id == reference.bookId &&
-          section.chapter.number == reference.chapter,
-    );
-    return index >= 0 ? index : null;
-  }
+  int? _continuousSectionIndexFor(BibleReference reference) =>
+      _continuousController.sectionIndexFor(reference);
 
-  BibleChapter? _hydratedContinuousChapter(String bookId, int chapterNumber) {
-    final key = _continuousChapterKey(bookId, chapterNumber);
-    final chapter = _hydratedContinuousChapters.remove(key);
-    if (chapter == null) return null;
-    // Re-insert so chapters still being rendered count as recently used and
-    // aren't evicted while visible.
-    _hydratedContinuousChapters[key] = chapter;
-    return chapter;
-  }
+  BibleChapter? _hydratedContinuousChapter(String bookId, int chapterNumber) =>
+      _continuousController.hydratedChapter(bookId, chapterNumber);
 
   Future<BibleChapter?> _continuousChapterFuture(
-    _ContinuousChapterSection section,
-  ) {
-    final key = _continuousChapterKey(section.book.id, section.chapter.number);
-    return _continuousChapterFutures.putIfAbsent(key, () async {
-      final repository = ref.read(bibleRepositoryProvider);
-      final hydrated = await repository.loadChapterVerses(
-        widget.translationId,
-        section.book.id,
-        section.chapter.number,
-      );
-      final resolved = hydrated ?? section.chapter;
-      if (resolved.verses.isNotEmpty) {
-        _storeHydratedContinuousChapter(key, resolved);
-        // If this is the chapter the reader is currently pointing at and a
-        // specific verse was requested, retry verse focus now that real verse
-        // widgets are about to be built. The initial _scheduleVerseFocus in
-        // initState/didUpdateWidget fires before hydration completes, so verse
-        // keys don't exist yet and the scroll silently does nothing.
-        if (section.book.id == widget.reference.bookId &&
-            section.chapter.number == widget.reference.chapter &&
-            widget.reference.verse != null) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted) _scheduleVerseFocus();
-          });
-        }
-      }
-      return resolved;
-    });
-  }
+    ContinuousChapterSection section,
+  ) => _continuousController.chapterFuture(section);
 
   void _prefetchContinuousChapterWindow(
     BibleReference reference, {
     int radius = 2,
   }) {
-    if (!widget.continuousScrolling || _continuousSections.isEmpty) return;
-    final centerIndex = _continuousSectionIndexFor(reference);
-    if (centerIndex == null) return;
-    final start = (centerIndex - radius).clamp(0, _continuousSections.length - 1);
-    final end = (centerIndex + radius).clamp(0, _continuousSections.length - 1);
-    for (var index = start; index <= end; index++) {
-      _continuousChapterFuture(_continuousSections[index]);
-    }
+    if (!widget.continuousScrolling) return;
+    _continuousController.prefetchWindow(reference, radius: radius);
   }
 
   bool get _hasActiveVerseFocus =>

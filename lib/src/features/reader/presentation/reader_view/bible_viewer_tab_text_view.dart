@@ -62,15 +62,20 @@ class _BibleTextViewState extends ConsumerState<_BibleTextView> {
       ItemScrollController();
   final ItemPositionsListener _continuousItemPositionsListener =
       ItemPositionsListener.create();
-  List<_ContinuousChapterSection> _continuousSections =
-      <_ContinuousChapterSection>[];
-  final Map<String, Future<BibleChapter?>> _continuousChapterFutures =
-      <String, Future<BibleChapter?>>{};
-  final Map<String, BibleChapter> _hydratedContinuousChapters =
-      <String, BibleChapter>{};
+  // Owns the continuous-mode section list, chapter hydration futures, LRU
+  // cache, and prefetch policy. Kept out of the widget State so the logic is
+  // unit-testable (see continuous_reader_controller.dart).
+  late final ContinuousReaderController _continuousController;
+  List<ContinuousChapterSection> get _continuousSections =>
+      _continuousController.sections;
   BibleReference? _selectionAnchorReference;
   bool _showSelectedVerseFocus = true;
   bool _visibleSyncQueued = false;
+  // True while an animated programmatic scroll (chapter navigation) is
+  // running. Scroll notifications are not forwarded to the bar auto-hide
+  // handler during that window, so tapping next/previous chapter doesn't
+  // hide the top bar as if the user had scrolled down.
+  bool _suppressChromeScrollEvents = false;
   // Key for the ScrollablePositionedList widget. Assigning a new UniqueKey()
   // forces a full SPL rebuild, which lets us position at initialScrollIndex
   // exactly — bypassing the position estimation that accumulates error over
@@ -78,40 +83,34 @@ class _BibleTextViewState extends ConsumerState<_BibleTextView> {
   Key _scrollableListKey = const ValueKey('continuous_list');
   int _scrollableListInitialIndex = 0;
 
-  // Upper bound on chapters kept hydrated in memory. Big enough that the
-  // prefetch window (±5) plus everything near the viewport always stays
-  // cached, small enough that reading straight through the Bible doesn't
-  // accumulate all 1,189 chapters.
-  static const int _maxHydratedContinuousChapters = 48;
+  void _onContinuousControllerChanged() {
+    // Safe to setState directly: the controller defers notifications to the
+    // next frame, so this never fires while SPL is mid-layout.
+    if (mounted) setState(() {});
+  }
 
-  void _storeHydratedContinuousChapter(String key, BibleChapter chapter) {
+  void _onContinuousChapterHydrated(String bookId, int chapterNumber) {
     if (!mounted) return;
-    // Defer to the next frame. Chapter futures can complete while
-    // ScrollablePositionedList is mid-layout; a synchronous setState at that
-    // point mutates the render tree and triggers the assertion:
-    // "RenderIndexedSemantics was mutated in RenderSliverList.performLayout".
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      setState(() {
-        // Remove-then-insert keeps the map ordered least→most recently used
-        // (Dart maps preserve insertion order).
-        _hydratedContinuousChapters.remove(key);
-        _hydratedContinuousChapters[key] = chapter;
-        while (_hydratedContinuousChapters.length >
-            _maxHydratedContinuousChapters) {
-          final oldestKey = _hydratedContinuousChapters.keys.first;
-          _hydratedContinuousChapters.remove(oldestKey);
-          // The memoized future holds the same chapter data, so it must be
-          // evicted too or the memory is never actually released.
-          _continuousChapterFutures.remove(oldestKey);
-        }
-      });
-    });
+    // Retry verse focus for deep links that landed before the target chapter
+    // was hydrated: the initial _scheduleVerseFocus fires before verse
+    // widgets exist, so the scroll silently does nothing until now.
+    if (bookId == widget.reference.bookId &&
+        chapterNumber == widget.reference.chapter &&
+        widget.reference.verse != null) {
+      _scheduleVerseFocus();
+    }
   }
 
   @override
   void initState() {
     super.initState();
+    _continuousController = ContinuousReaderController(
+      loadChapter: (bookId, chapterNumber) => ref
+          .read(bibleRepositoryProvider)
+          .loadChapterVerses(widget.translationId, bookId, chapterNumber),
+    )
+      ..onChapterHydrated = _onContinuousChapterHydrated
+      ..addListener(_onContinuousControllerChanged);
     _rebuildContinuousSections();
     final initialReference =
         widget.continuousScrolling &&
@@ -134,8 +133,7 @@ class _BibleTextViewState extends ConsumerState<_BibleTextView> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.translationId != widget.translationId ||
         oldWidget.books != widget.books) {
-      _continuousChapterFutures.clear();
-      _hydratedContinuousChapters.clear();
+      _continuousController.reset();
       _rebuildContinuousSections();
       final targetReference =
           widget.continuousScrolling &&
@@ -194,6 +192,9 @@ class _BibleTextViewState extends ConsumerState<_BibleTextView> {
 
   @override
   void dispose() {
+    _continuousController
+      ..removeListener(_onContinuousControllerChanged)
+      ..dispose();
     _scrollController.dispose();
     _resetVerseTapRecognizers();
     super.dispose();
@@ -225,9 +226,17 @@ class _BibleTextViewState extends ConsumerState<_BibleTextView> {
           return false;
         },
         child: widget.continuousScrolling
-            ? NotificationListener<ScrollUpdateNotification>(
+            ? NotificationListener<ScrollNotification>(
                 onNotification: (notification) {
-                  _queueVisibleChapterSync(context);
+                  // Forward to the shell so the top bar and tab bar auto-hide
+                  // on scroll here too — previously only single-chapter mode
+                  // forwarded these, so continuous mode never hid the bars.
+                  if (!_suppressChromeScrollEvents) {
+                    widget.onScrollNotification(notification);
+                  }
+                  if (notification is ScrollUpdateNotification) {
+                    _queueVisibleChapterSync(context);
+                  }
                   return false;
                 },
                 child: _buildContinuousReadingView(context),

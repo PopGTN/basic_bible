@@ -7,13 +7,6 @@ class _ParagraphSection {
   final List<BibleVerse> verses;
 }
 
-class _ContinuousChapterSection {
-  const _ContinuousChapterSection({required this.book, required this.chapter});
-
-  final BibleBook book;
-  final BibleChapter chapter;
-}
-
 /// Interleaves inline section headings between the verse widgets they precede.
 ///
 /// Scans [chapter.blocks] for heading blocks that carry a `beforeVerse` key,
