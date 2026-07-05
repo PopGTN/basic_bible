@@ -220,26 +220,25 @@ class _PersonalNoteCard extends StatelessWidget {
                 ),
               ],
               const SizedBox(height: 12),
-              Row(
+              Wrap(
+                spacing: 8,
+                runSpacing: 4,
                 children: [
                   TextButton.icon(
                     onPressed: onOpenReference,
                     icon: const Icon(Icons.menu_book_outlined),
                     label: Text(l10n.openAction),
                   ),
-                  const SizedBox(width: 8),
                   TextButton.icon(
                     onPressed: onViewDetails,
                     icon: const Icon(Icons.visibility_outlined),
                     label: const Text('View'),
                   ),
-                  const SizedBox(width: 8),
                   TextButton.icon(
                     onPressed: onEdit,
                     icon: const Icon(Icons.edit_outlined),
                     label: Text(l10n.editAction),
                   ),
-                  const SizedBox(width: 8),
                   TextButton.icon(
                     onPressed: onDelete,
                     icon: const Icon(Icons.delete_outline),
