@@ -100,9 +100,73 @@ extension _BibleViewerTabStateSelection on _BibleViewerTabState {
     }
   }
 
+  // Advanced Mode > Partial Highlights: if a drag-to-select gesture left a
+  // pending draft for the single verse currently selected, save it as a
+  // partial-range highlight instead of running the normal whole-verse flow.
+  // Returns true when it handled the save (caller should stop there).
+  Future<bool> _saveDraftPartialHighlightIfPending(
+    List<BibleReference> references,
+    Color color,
+  ) async {
+    final draft = ref.read(partialHighlightDraftProvider);
+    if (draft == null || references.length != 1) return false;
+    final reference = references.first;
+    if (!draft.matchesVerse(
+      reference.bookId,
+      reference.chapter,
+      reference.verse ?? -1,
+    )) {
+      return false;
+    }
+
+    // anchorText is computed and stored on the draft when the drag ends
+    // (bible_viewer_tab_state_partial_highlight.dart owns the verse's display
+    // spans; this class doesn't), so by the time a palette color is tapped
+    // it's always present.
+    final anchorText = draft.anchorText;
+    if (anchorText == null || anchorText.isEmpty) return true;
+
+    final available = await ref.read(availableTranslationsProvider.future);
+    final translation = available
+        .where((t) => t.id == draft.translationId)
+        .firstOrNull;
+    if (translation == null || !mounted) return true;
+
+    await ref
+        .read(userAnnotationRepositoryProvider)
+        .saveAnnotation(
+          UserAnnotation(
+            type: UserAnnotationType.highlight,
+            primaryVerse: buildAnnotationVerseLink(
+              reference: reference,
+              translation: translation,
+            ).copyWith(
+              highlightSpanStart: draft.rangeStart,
+              highlightSpanEnd: draft.rangeEnd,
+              highlightAnchorText: anchorText,
+            ),
+            highlightColorValue: color.toARGB32(),
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          ),
+        );
+
+    ref.read(partialHighlightDraftProvider.notifier).state = null;
+    if (mounted) {
+      _clearSelectionUi();
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Highlight saved.')));
+    }
+    return true;
+  }
+
   Future<void> _handleHighlightColorSelected(Color color) =>
       _executeHighlightAction(
         (references, translation, highlightAnnotations, repository, messenger) async {
+      if (await _saveDraftPartialHighlightIfPending(references, color)) {
+        return;
+      }
       // Remove the selected verses from every overlapping annotation.
       // _standaloneHighlightAnnotationsForSelection already deduplicates by id,
       // but processedIds guards against any future path that could produce

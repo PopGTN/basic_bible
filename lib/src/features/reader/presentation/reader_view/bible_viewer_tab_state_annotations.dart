@@ -200,6 +200,11 @@ extension _BibleTextViewStateAnnotations on _BibleTextViewState {
     Color? backgroundColor,
     bool applySelectionTint = true,
     TapGestureRecognizer? recognizer,
+    // Advanced Mode > Partial Highlights: background color to use for
+    // individual display-span indices, overriding/blending with
+    // [backgroundColor] for just those spans. Null or empty preserves
+    // today's whole-verse-only highlighting exactly.
+    Map<int, Color>? perSpanHighlightColors,
   }) {
     final spans = _displaySpans(verse);
     final effectiveBackgroundColor = applySelectionTint
@@ -234,7 +239,14 @@ extension _BibleTextViewStateAnnotations on _BibleTextViewState {
 
     final inlineSpans = <InlineSpan>[];
 
-    for (final span in spans) {
+    for (var spanIndex = 0; spanIndex < spans.length; spanIndex++) {
+      final span = spans[spanIndex];
+      final spanHighlight = perSpanHighlightColors?[spanIndex];
+      final spanBackgroundColor = spanHighlight == null
+          ? effectiveBackgroundColor
+          : (effectiveBackgroundColor == null
+                ? spanHighlight
+                : Color.alphaBlend(spanHighlight, effectiveBackgroundColor));
       inlineSpans.add(
         TextSpan(
           text: _spanText(
@@ -255,7 +267,7 @@ extension _BibleTextViewStateAnnotations on _BibleTextViewState {
               underlineProperNames: underlineProperNames,
               underlineWordMetadata: underlineWordMetadata,
             ),
-            backgroundColor: effectiveBackgroundColor,
+            backgroundColor: spanBackgroundColor,
           ),
         ),
       );

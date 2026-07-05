@@ -58,6 +58,12 @@ class _BibleTextViewState extends ConsumerState<_BibleTextView> {
   final Map<String, GlobalKey> _verseKeys = <String, GlobalKey>{};
   final Map<String, TapGestureRecognizer> _verseTapRecognizers =
       <String, TapGestureRecognizer>{};
+  // Advanced Mode > Partial Highlights: one RichText GlobalKey + verse-offset
+  // ledger per document-mode paragraph/poetry section, rebuilt on every build
+  // of that section. See bible_viewer_tab_state_partial_highlight.dart.
+  final Map<String, GlobalKey> _paragraphSectionKeys = <String, GlobalKey>{};
+  final Map<String, List<_ParagraphVerseOffset>> _paragraphSectionLedgers =
+      <String, List<_ParagraphVerseOffset>>{};
   final ItemScrollController _continuousItemScrollController =
       ItemScrollController();
   final ItemPositionsListener _continuousItemPositionsListener =

@@ -5,6 +5,7 @@ extension _BibleTextViewStateCore on _BibleTextViewState {
     _selectionAnchorReference = null;
     ref.read(selectedVersesProvider.notifier).clear();
     ref.read(highlightPaletteExpandedProvider.notifier).state = false;
+    ref.read(partialHighlightDraftProvider.notifier).state = null;
   }
 
   void _rebuildContinuousSections() =>

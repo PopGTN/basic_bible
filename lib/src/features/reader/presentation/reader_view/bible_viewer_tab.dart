@@ -1,5 +1,6 @@
 import 'package:basic_bible/l10n/app_localizations.dart';
 import 'package:basic_bible/src/features/annotations/application/view_models/annotation_data_view_models.dart';
+import 'package:basic_bible/src/features/annotations/application/view_models/annotation_preferences_view_models.dart';
 import 'package:basic_bible/src/features/annotations/application/view_models/annotation_selection_view_models.dart';
 import 'package:basic_bible/src/features/annotations/data/user_annotation_repository.dart';
 import 'package:basic_bible/src/features/annotations/models/user_annotations.dart';
@@ -36,6 +37,8 @@ import 'package:shimmer/shimmer.dart';
 // - *_state_rendering.dart:     verse-list + continuous rendering flow
 // - *_state_document.dart:      document-mode rendering details
 // - *_state_annotations.dart:   parser-note sheets + inline span helpers
+// - *_state_partial_highlight.dart: Advanced Mode partial-highlight span
+//                                resolution + drag-to-select gesture
 // - *_sections.dart:            support types and shared layout helpers
 part 'bible_viewer_tab_sections.dart';
 part 'bible_viewer_tab_shell_snapshot.dart';
@@ -49,6 +52,7 @@ part 'bible_viewer_tab_state_core.dart';
 part 'bible_viewer_tab_state_rendering.dart';
 part 'bible_viewer_tab_state_document.dart';
 part 'bible_viewer_tab_state_annotations.dart';
+part 'bible_viewer_tab_state_partial_highlight.dart';
 
 class BibleViewerTab extends ConsumerStatefulWidget {
   final VoidCallback showBottomNav;
@@ -381,6 +385,7 @@ class _BibleViewerTabState extends ConsumerState<BibleViewerTab> {
   void _clearSelectionUi() {
     ref.read(selectedVersesProvider.notifier).clear();
     ref.read(highlightPaletteExpandedProvider.notifier).state = false;
+    ref.read(partialHighlightDraftProvider.notifier).state = null;
   }
 
   Widget _buildChapterNavigationBar({

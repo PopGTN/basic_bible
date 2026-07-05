@@ -142,6 +142,11 @@ class UserAnnotations extends Table {
   TextColumn get primaryTranslationName => text()();
   TextColumn get noteText => text().nullable()();
   IntColumn get highlightColorValue => integer().nullable()();
+  // Partial-highlight range on the primary verse. Null for a whole-verse
+  // highlight (the default) — see AnnotationVerseLink's doc comment.
+  IntColumn get highlightSpanStart => integer().nullable()();
+  IntColumn get highlightSpanEnd => integer().nullable()();
+  TextColumn get highlightAnchorText => text().nullable()();
   TextColumn get labels => text()
       .map(const JsonStringListConverter())
       .withDefault(const Constant(''))();
@@ -159,6 +164,11 @@ class AnnotationVerses extends Table {
   IntColumn get verse => integer()();
   TextColumn get translationId => text()();
   TextColumn get translationName => text()();
+  // Partial-highlight range on this linked verse. See AnnotationVerseLink's
+  // doc comment for how these are interpreted.
+  IntColumn get highlightSpanStart => integer().nullable()();
+  IntColumn get highlightSpanEnd => integer().nullable()();
+  TextColumn get highlightAnchorText => text().nullable()();
 
   @override
   List<Set<Column<Object>>> get uniqueKeys => [
@@ -177,7 +187,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase(super.e);
 
   @override
-  int get schemaVersion => 7;
+  int get schemaVersion => 8;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -242,6 +252,29 @@ class AppDatabase extends _$AppDatabase {
         await customStatement('DROP TABLE IF EXISTS chapters');
         await customStatement('DROP TABLE IF EXISTS books');
         await customStatement('DROP TABLE IF EXISTS translations');
+      }
+      if (from < 8) {
+        // Partial-highlight range columns (Advanced Mode > Partial
+        // Highlights). Nullable and additive — existing rows are unaffected
+        // and continue to render as whole-verse highlights.
+        await customStatement(
+          'ALTER TABLE user_annotations ADD COLUMN highlight_span_start INTEGER',
+        );
+        await customStatement(
+          'ALTER TABLE user_annotations ADD COLUMN highlight_span_end INTEGER',
+        );
+        await customStatement(
+          'ALTER TABLE user_annotations ADD COLUMN highlight_anchor_text TEXT',
+        );
+        await customStatement(
+          'ALTER TABLE annotation_verses ADD COLUMN highlight_span_start INTEGER',
+        );
+        await customStatement(
+          'ALTER TABLE annotation_verses ADD COLUMN highlight_span_end INTEGER',
+        );
+        await customStatement(
+          'ALTER TABLE annotation_verses ADD COLUMN highlight_anchor_text TEXT',
+        );
       }
     },
     onCreate: (m) => m.createAll(),
@@ -390,6 +423,9 @@ class AppDatabase extends _$AppDatabase {
             translationId: v.translationId,
             translationName: v.translationName,
             sortOrder: v.sortOrder,
+            highlightSpanStart: v.highlightSpanStart,
+            highlightSpanEnd: v.highlightSpanEnd,
+            highlightAnchorText: v.highlightAnchorText,
           ),
         );
       }
@@ -406,6 +442,9 @@ class AppDatabase extends _$AppDatabase {
             verse: a.primaryVerse,
             translationId: a.primaryTranslationId,
             translationName: a.primaryTranslationName,
+            highlightSpanStart: a.highlightSpanStart,
+            highlightSpanEnd: a.highlightSpanEnd,
+            highlightAnchorText: a.highlightAnchorText,
           ),
           noteText: a.noteText,
           highlightColorValue: a.highlightColorValue,
@@ -459,6 +498,11 @@ class AppDatabase extends _$AppDatabase {
           annotation.hasNoteText ? annotation.noteText!.trim() : null,
         ),
         highlightColorValue: Value(annotation.highlightColorValue),
+        highlightSpanStart: Value(annotation.primaryVerse.highlightSpanStart),
+        highlightSpanEnd: Value(annotation.primaryVerse.highlightSpanEnd),
+        highlightAnchorText: Value(
+          annotation.primaryVerse.highlightAnchorText,
+        ),
         labels: Value(annotation.labels),
         updatedAt: Value(now),
         createdAt: annotation.id == null ? Value(now) : const Value.absent(),
@@ -489,6 +533,15 @@ class AppDatabase extends _$AppDatabase {
                 verse: annotation.linkedVerses[i].verse,
                 translationId: annotation.linkedVerses[i].translationId,
                 translationName: annotation.linkedVerses[i].translationName,
+                highlightSpanStart: Value(
+                  annotation.linkedVerses[i].highlightSpanStart,
+                ),
+                highlightSpanEnd: Value(
+                  annotation.linkedVerses[i].highlightSpanEnd,
+                ),
+                highlightAnchorText: Value(
+                  annotation.linkedVerses[i].highlightAnchorText,
+                ),
               ),
           ]);
         });

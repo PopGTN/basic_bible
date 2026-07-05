@@ -12,6 +12,9 @@ class AnnotationVerseLink extends Equatable {
     required this.translationId,
     required this.translationName,
     this.sortOrder = 0,
+    this.highlightSpanStart,
+    this.highlightSpanEnd,
+    this.highlightAnchorText,
   });
 
   final int? id;
@@ -22,8 +25,28 @@ class AnnotationVerseLink extends Equatable {
   final String translationName;
   final int sortOrder;
 
+  // Partial-highlight range (Advanced Mode > Partial Highlights). All three
+  // are null for a whole-verse highlight, which remains the default. When
+  // set, [highlightSpanStart]/[highlightSpanEnd] index into the verse's
+  // display-span list *as it existed on the translation the highlight was
+  // created on* — a fast path for re-rendering on that same translation.
+  // [highlightAnchorText] is the canonical joined text of that span range and
+  // is the authoritative anchor: it's what's used to re-locate the highlight
+  // by search (on this translation if the spans changed, or on a different
+  // translation when cross-translation display is enabled), falling back to
+  // a whole-verse highlight when it can't be found.
+  final int? highlightSpanStart;
+  final int? highlightSpanEnd;
+  final String? highlightAnchorText;
+
   BibleReference get reference =>
       BibleReference(bookId: bookId, chapter: chapter, verse: verse);
+
+  bool get hasPartialHighlight =>
+      highlightSpanStart != null &&
+      highlightSpanEnd != null &&
+      highlightAnchorText != null &&
+      highlightAnchorText!.isNotEmpty;
 
   AnnotationVerseLink copyWith({
     int? id,
@@ -33,6 +56,10 @@ class AnnotationVerseLink extends Equatable {
     String? translationId,
     String? translationName,
     int? sortOrder,
+    int? highlightSpanStart,
+    int? highlightSpanEnd,
+    String? highlightAnchorText,
+    bool clearHighlightRange = false,
   }) {
     return AnnotationVerseLink(
       id: id ?? this.id,
@@ -42,6 +69,15 @@ class AnnotationVerseLink extends Equatable {
       translationId: translationId ?? this.translationId,
       translationName: translationName ?? this.translationName,
       sortOrder: sortOrder ?? this.sortOrder,
+      highlightSpanStart: clearHighlightRange
+          ? null
+          : (highlightSpanStart ?? this.highlightSpanStart),
+      highlightSpanEnd: clearHighlightRange
+          ? null
+          : (highlightSpanEnd ?? this.highlightSpanEnd),
+      highlightAnchorText: clearHighlightRange
+          ? null
+          : (highlightAnchorText ?? this.highlightAnchorText),
     );
   }
 
@@ -54,6 +90,9 @@ class AnnotationVerseLink extends Equatable {
     translationId,
     translationName,
     sortOrder,
+    highlightSpanStart,
+    highlightSpanEnd,
+    highlightAnchorText,
   ];
 }
 

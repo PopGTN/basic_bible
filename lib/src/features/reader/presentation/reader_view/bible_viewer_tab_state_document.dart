@@ -163,6 +163,106 @@ extension _BibleTextViewStateDocument on _BibleTextViewState {
     int chapterNumber,
     _ParagraphSection section,
   ) {
+    final sectionId = _paragraphSectionId(
+      bookId,
+      chapterNumber,
+      section.verses.first.number,
+    );
+    final children = <InlineSpan>[];
+    final ledger = <_ParagraphVerseOffset>[];
+    var cursor = 0;
+
+    children.add(
+      const WidgetSpan(
+        child: SizedBox(width: 18),
+        alignment: PlaceholderAlignment.middle,
+      ),
+    );
+    cursor += 1;
+
+    for (final verse in section.verses) {
+      children.add(
+        WidgetSpan(
+          alignment: PlaceholderAlignment.middle,
+          child: Padding(
+            padding: const EdgeInsets.only(right: 4),
+            child: _buildDocumentInlineVerseSelector(
+              context,
+              bookId,
+              chapterNumber,
+              verse,
+            ),
+          ),
+        ),
+      );
+      cursor += 1;
+
+      final verseSpans = _buildDocumentVerseTextSpans(
+        context,
+        bookId,
+        chapterNumber,
+        verse,
+      );
+      final verseLength = _inlineSpanListLength(verseSpans);
+      ledger.add(
+        _ParagraphVerseOffset(
+          verse: verse,
+          start: cursor,
+          end: cursor + verseLength,
+        ),
+      );
+      children.addAll(verseSpans);
+      cursor += verseLength;
+
+      if (_hasSavedAnnotations(_annotationsForVerse(bookId, chapterNumber, verse))) {
+        children.add(
+          WidgetSpan(
+            alignment: PlaceholderAlignment.middle,
+            child: Padding(
+              padding: const EdgeInsets.only(left: 6, right: 2),
+              child: _VerseNoteButton(
+                compact: true,
+                onPressed: () => _showPersonalNotesSheet(
+                  context,
+                  bookId: bookId,
+                  chapterNumber: chapterNumber,
+                  verse: verse,
+                  verseAnnotations: _annotationsForVerse(
+                    bookId,
+                    chapterNumber,
+                    verse,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+        cursor += 1;
+      }
+      if (_hasParserNotes(verse)) {
+        children.add(
+          WidgetSpan(
+            alignment: PlaceholderAlignment.middle,
+            child: Padding(
+              padding: const EdgeInsets.only(left: 6, right: 2),
+              child: _VerseAnnotationButton(
+                compact: true,
+                onPressed: () =>
+                    _showVerseDetailsSheet(context, chapterNumber, verse),
+              ),
+            ),
+          ),
+        );
+        cursor += 1;
+      }
+      children.add(const TextSpan(text: ' '));
+      cursor += 1;
+    }
+    children.add(const TextSpan(text: ' '));
+    cursor += 1;
+
+    _paragraphSectionLedgers[sectionId] = ledger;
+
     // Verse anchors live OUTSIDE the RichText as zero-height SizedBoxes.
     // A GlobalKey inside a WidgetSpan creates a _RenderScaledInlineWidget that
     // gets mutated when ScrollablePositionedList retakes the element during
@@ -178,76 +278,23 @@ extension _BibleTextViewStateDocument on _BibleTextViewState {
                 : _verseKey(bookId, chapterNumber, verse.number),
             height: 0,
           ),
-        RichText(
-          text: TextSpan(
-            style: TextStyle(
-              fontSize: widget.fontSize,
-              color: Theme.of(context).textTheme.bodyLarge?.color,
-              height: 1.7,
-            ),
-            children: [
-              const WidgetSpan(
-                child: SizedBox(width: 18),
-                alignment: PlaceholderAlignment.middle,
+        _wrapWithPartialHighlightGesture(
+          context: context,
+          bookId: bookId,
+          chapterNumber: chapterNumber,
+          sectionId: sectionId,
+          child: RichText(
+            key: widget.continuousScrolling
+                ? null
+                : _paragraphSectionKey(sectionId),
+            text: TextSpan(
+              style: TextStyle(
+                fontSize: widget.fontSize,
+                color: Theme.of(context).textTheme.bodyLarge?.color,
+                height: 1.7,
               ),
-              for (final verse in section.verses) ...[
-                WidgetSpan(
-                  alignment: PlaceholderAlignment.middle,
-                  child: Padding(
-                    padding: const EdgeInsets.only(right: 4),
-                    child: _buildDocumentInlineVerseSelector(
-                      context,
-                      bookId,
-                      chapterNumber,
-                      verse,
-                    ),
-                  ),
-                ),
-                ..._buildDocumentVerseTextSpans(
-                  context,
-                  bookId,
-                  chapterNumber,
-                  verse,
-                ),
-                if (_hasSavedAnnotations(
-                  _annotationsForVerse(bookId, chapterNumber, verse),
-                ))
-                  WidgetSpan(
-                    alignment: PlaceholderAlignment.middle,
-                    child: Padding(
-                      padding: const EdgeInsets.only(left: 6, right: 2),
-                      child: _VerseNoteButton(
-                        compact: true,
-                        onPressed: () => _showPersonalNotesSheet(
-                          context,
-                          bookId: bookId,
-                          chapterNumber: chapterNumber,
-                          verse: verse,
-                          verseAnnotations: _annotationsForVerse(
-                            bookId,
-                            chapterNumber,
-                            verse,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                if (_hasParserNotes(verse))
-                  WidgetSpan(
-                    alignment: PlaceholderAlignment.middle,
-                    child: Padding(
-                      padding: const EdgeInsets.only(left: 6, right: 2),
-                      child: _VerseAnnotationButton(
-                        compact: true,
-                        onPressed: () =>
-                            _showVerseDetailsSheet(context, chapterNumber, verse),
-                      ),
-                    ),
-                  ),
-                const TextSpan(text: ' '),
-              ],
-              const TextSpan(text: ' '),
-            ],
+              children: children,
+            ),
           ),
         ),
       ],
@@ -278,77 +325,104 @@ extension _BibleTextViewStateDocument on _BibleTextViewState {
               onTap: () => _handleVerseTap(bookId, chapterNumber, verse),
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-                child: RichText(
-                  text: TextSpan(
-                    style: TextStyle(
-                      fontSize: widget.fontSize,
-                      color: Theme.of(context).textTheme.bodyLarge?.color,
-                      height: 1.7,
-                    ),
-                    children: [
-                      WidgetSpan(
-                        alignment: PlaceholderAlignment.middle,
-                        child: Padding(
-                          padding: const EdgeInsets.only(right: 4),
-                          child: _buildDocumentInlineVerseSelector(
-                            context,
-                            bookId,
-                            chapterNumber,
-                            verse,
-                          ),
-                        ),
-                      ),
-                      ..._buildDocumentVerseTextSpans(
-                        context,
-                        bookId,
-                        chapterNumber,
-                        verse,
-                      ),
-                      if (_hasSavedAnnotations(
-                        _annotationsForVerse(bookId, chapterNumber, verse),
-                      ))
-                        WidgetSpan(
-                          alignment: PlaceholderAlignment.middle,
-                          child: Padding(
-                            padding: const EdgeInsets.only(left: 6),
-                            child: _VerseNoteButton(
-                              compact: true,
-                              onPressed: () => _showPersonalNotesSheet(
-                                context,
-                                bookId: bookId,
-                                chapterNumber: chapterNumber,
-                                verse: verse,
-                                verseAnnotations: _annotationsForVerse(
-                                  bookId,
-                                  chapterNumber,
-                                  verse,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      if (_hasParserNotes(verse))
-                        WidgetSpan(
-                          alignment: PlaceholderAlignment.middle,
-                          child: Padding(
-                            padding: const EdgeInsets.only(left: 6),
-                            child: _VerseAnnotationButton(
-                              compact: true,
-                              onPressed: () => _showVerseDetailsSheet(
-                                context,
-                                chapterNumber,
-                                verse,
-                              ),
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
+                child: _buildPoetryVerseRichText(
+                  context,
+                  bookId,
+                  chapterNumber,
+                  verse,
                 ),
               ),
             ),
           ),
       ],
+    );
+  }
+
+  // Poetry mode gives each verse its own RichText (unlike paragraph mode,
+  // where several verses share one), so the ledger is trivially this one
+  // verse spanning the whole rendered range — no cross-verse offset
+  // bookkeeping needed.
+  Widget _buildPoetryVerseRichText(
+    BuildContext context,
+    String bookId,
+    int chapterNumber,
+    BibleVerse verse,
+  ) {
+    final sectionId = _paragraphSectionId(bookId, chapterNumber, verse.number);
+    final verseSelectorSpan = WidgetSpan(
+      alignment: PlaceholderAlignment.middle,
+      child: Padding(
+        padding: const EdgeInsets.only(right: 4),
+        child: _buildDocumentInlineVerseSelector(
+          context,
+          bookId,
+          chapterNumber,
+          verse,
+        ),
+      ),
+    );
+    final verseSpans = _buildDocumentVerseTextSpans(
+      context,
+      bookId,
+      chapterNumber,
+      verse,
+    );
+    _paragraphSectionLedgers[sectionId] = [
+      _ParagraphVerseOffset(verse: verse, start: 1, end: 1 + _inlineSpanListLength(verseSpans)),
+    ];
+
+    return _wrapWithPartialHighlightGesture(
+      context: context,
+      bookId: bookId,
+      chapterNumber: chapterNumber,
+      sectionId: sectionId,
+      child: RichText(
+        key: widget.continuousScrolling ? null : _paragraphSectionKey(sectionId),
+        text: TextSpan(
+          style: TextStyle(
+            fontSize: widget.fontSize,
+            color: Theme.of(context).textTheme.bodyLarge?.color,
+            height: 1.7,
+          ),
+          children: [
+            verseSelectorSpan,
+            ...verseSpans,
+            if (_hasSavedAnnotations(_annotationsForVerse(bookId, chapterNumber, verse)))
+              WidgetSpan(
+                alignment: PlaceholderAlignment.middle,
+                child: Padding(
+                  padding: const EdgeInsets.only(left: 6),
+                  child: _VerseNoteButton(
+                    compact: true,
+                    onPressed: () => _showPersonalNotesSheet(
+                      context,
+                      bookId: bookId,
+                      chapterNumber: chapterNumber,
+                      verse: verse,
+                      verseAnnotations: _annotationsForVerse(
+                        bookId,
+                        chapterNumber,
+                        verse,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            if (_hasParserNotes(verse))
+              WidgetSpan(
+                alignment: PlaceholderAlignment.middle,
+                child: Padding(
+                  padding: const EdgeInsets.only(left: 6),
+                  child: _VerseAnnotationButton(
+                    compact: true,
+                    onPressed: () =>
+                        _showVerseDetailsSheet(context, chapterNumber, verse),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -408,6 +482,14 @@ extension _BibleTextViewStateDocument on _BibleTextViewState {
       backgroundColor: state.inlineBackground,
       applySelectionTint: false,
       recognizer: _verseTapRecognizer(bookId, chapterNumber, verse),
+      perSpanHighlightColors: _partialHighlightSpanColors(
+        context,
+        _annotationsForVerse(bookId, chapterNumber, verse),
+        _displaySpans(verse),
+        bookId,
+        chapterNumber,
+        verse,
+      ),
     );
   }
 

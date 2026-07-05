@@ -132,6 +132,27 @@ void main() {
     ''');
   }
 
+  /// installed_translations + user_annotations/annotation_verses exactly as
+  /// they existed at v7, before the v8 migration added the nullable
+  /// partial-highlight range columns.
+  void createV7Tables(raw.Database db) {
+    db.execute('''
+      CREATE TABLE installed_translations (
+        id TEXT NOT NULL PRIMARY KEY,
+        name TEXT NOT NULL,
+        language TEXT NOT NULL,
+        description TEXT NOT NULL,
+        format TEXT NOT NULL,
+        source_type TEXT NOT NULL,
+        source_location TEXT,
+        is_local INTEGER NOT NULL DEFAULT 0,
+        imported_at INTEGER NOT NULL DEFAULT (strftime('%s','now')),
+        parser_version INTEGER NOT NULL DEFAULT 0
+      )
+    ''');
+    createV6AnnotationTables(db);
+  }
+
   Future<Set<String>> tableNames(AppDatabase db) async {
     final rows = await db
         .customSelect(
@@ -206,6 +227,50 @@ void main() {
     expect(tables, isNot(contains('books')));
     expect(tables, isNot(contains('chapters')));
     expect(tables, isNot(contains('verses')));
+
+    final version = await db
+        .customSelect('PRAGMA user_version')
+        .getSingle();
+    expect(version.read<int>('user_version'), db.schemaVersion);
+  });
+
+  test(
+      'v7 database upgrades to current schema, adding null partial-highlight columns',
+      () async {
+    final path = fixturePath('app_v7.sqlite');
+    final fixture = raw.sqlite3.open(path);
+    createV7Tables(fixture);
+    fixture.execute(
+      "INSERT INTO installed_translations "
+      "(id, name, language, description, format, source_type, "
+      " source_location, is_local, imported_at, parser_version) VALUES "
+      "('kjv', 'King James Version', 'en', 'Bundled', 'usfx', "
+      " 'asset', 'assets/bible/eng-kjv2006_usfx.xml', 1, 1700000000, 3)",
+    );
+    fixture.execute(
+      "INSERT INTO user_annotations "
+      "(type, primary_book_id, primary_chapter, primary_verse, "
+      " primary_translation_id, primary_translation_name, note_text, "
+      " highlight_color_value, labels, created_at, updated_at) VALUES "
+      "('highlight', 'JHN', 3, 16, 'kjv', 'King James Version', "
+      " NULL, 4294951175, '[]', 1700000000, 1700000000)",
+    );
+    fixture.execute('PRAGMA user_version = 7');
+    fixture.dispose();
+
+    final db = AppDatabase(NativeDatabase(File(path)));
+    addTearDown(db.close);
+
+    final annotations = await db.getAllUserAnnotations();
+    expect(annotations, hasLength(1));
+    final highlight = annotations.single;
+    expect(highlight.highlightColorValue, 4294951175);
+    // Pre-v8 rows have no partial-highlight range recorded, so they keep
+    // rendering as whole-verse highlights after the upgrade.
+    expect(highlight.primaryVerse.hasPartialHighlight, isFalse);
+    expect(highlight.primaryVerse.highlightSpanStart, isNull);
+    expect(highlight.primaryVerse.highlightSpanEnd, isNull);
+    expect(highlight.primaryVerse.highlightAnchorText, isNull);
 
     final version = await db
         .customSelect('PRAGMA user_version')

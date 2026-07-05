@@ -1,6 +1,7 @@
 import 'package:basic_bible/l10n/app_localizations.dart';
 import 'package:basic_bible/src/features/annotations/application/view_models/annotation_preferences_view_models.dart';
 import 'package:basic_bible/src/features/reader/application/view_models/reader_preferences_view_models.dart';
+import 'package:basic_bible/src/features/settings/application/view_models/advanced_preferences_view_models.dart';
 import 'package:basic_bible/src/features/settings/application/view_models/app_launch_preferences_view_models.dart';
 import 'package:basic_bible/src/features/settings/application/view_models/reader_display_preferences_view_models.dart';
 import 'package:basic_bible/src/widgets/app_back_button.dart';
@@ -22,6 +23,10 @@ class SettingsScreen extends ConsumerWidget {
     final confirmRemoveLinkedVerse = ref.watch(confirmRemoveLinkedVerseProvider);
     final showNotesAcrossTranslations = ref.watch(
       showNotesAcrossTranslationsProvider,
+    );
+    final advancedModeEnabled = ref.watch(advancedModeEnabledProvider);
+    final partialHighlightsEnabled = ref.watch(
+      partialHighlightsEnabledProvider,
     );
     final boldDivineName = ref.watch(boldDivineNameProvider);
     final underlineProperNames = ref.watch(underlineProperNamesProvider);
@@ -263,6 +268,41 @@ class SettingsScreen extends ConsumerWidget {
                     .read(showNotesAcrossTranslationsProvider.notifier)
                     .setEnabled(value);
               },
+            ),
+            const SizedBox(height: 20),
+
+            Text(
+              'Advanced Mode',
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 10),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Advanced Mode'),
+              subtitle: const Text(
+                'Turn on experimental, in-progress reader features below. Off by default.',
+              ),
+              value: advancedModeEnabled,
+              onChanged: (value) {
+                ref.read(advancedModeEnabledProvider.notifier).setEnabled(value);
+              },
+            ),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Partial Highlights'),
+              subtitle: Text(
+                advancedModeEnabled
+                    ? 'Hold and drag across a verse to highlight only the words you drag over, instead of the whole verse.'
+                    : 'Requires Advanced Mode to be turned on above.',
+              ),
+              value: advancedModeEnabled && partialHighlightsEnabled,
+              onChanged: advancedModeEnabled
+                  ? (value) {
+                      ref
+                          .read(partialHighlightsEnabledProvider.notifier)
+                          .setEnabled(value);
+                    }
+                  : null,
             ),
             const SizedBox(height: 20),
 
