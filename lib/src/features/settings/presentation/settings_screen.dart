@@ -20,6 +20,9 @@ class SettingsScreen extends ConsumerWidget {
     final showBookIntroductions = ref.watch(showBookIntroductionsProvider);
     final showVerseSelector = ref.watch(showVerseSelectorProvider);
     final confirmRemoveLinkedVerse = ref.watch(confirmRemoveLinkedVerseProvider);
+    final showNotesAcrossTranslations = ref.watch(
+      showNotesAcrossTranslationsProvider,
+    );
     final boldDivineName = ref.watch(boldDivineNameProvider);
     final underlineProperNames = ref.watch(underlineProperNamesProvider);
     final underlineWordMetadata = ref.watch(underlineWordMetadataProvider);
@@ -244,6 +247,20 @@ class SettingsScreen extends ConsumerWidget {
               onChanged: (value) {
                 ref
                     .read(confirmRemoveLinkedVerseProvider.notifier)
+                    .setEnabled(value);
+              },
+            ),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Show Notes On Other Translations'),
+              subtitle: const Text(
+                'Show notes and highlights on a verse even if they were saved '
+                'while reading a different translation. Off by default.',
+              ),
+              value: showNotesAcrossTranslations,
+              onChanged: (value) {
+                ref
+                    .read(showNotesAcrossTranslationsProvider.notifier)
                     .setEnabled(value);
               },
             ),

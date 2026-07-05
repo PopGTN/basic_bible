@@ -171,7 +171,7 @@ extension _BibleTextViewStateCore on _BibleTextViewState {
     int chapterNumber,
     BibleVerse verse,
   ) {
-    final translationId = ref.watch(currentTranslationProvider);
+    final translationFilter = ref.watch(annotationTranslationFilterProvider);
     // In continuous mode, currentReferenceProvider reflects the chapter that
     // was navigated to, not the chapter currently scrolled into view.
     // visibleChapterAnnotationsProvider therefore hides annotations on every
@@ -185,7 +185,7 @@ extension _BibleTextViewStateCore on _BibleTextViewState {
         .where(
           (annotation) => annotation.touchesReference(
             reference,
-            translationId: translationId,
+            translationId: translationFilter,
           ),
         )
         .toList();
@@ -220,7 +220,7 @@ extension _BibleTextViewStateCore on _BibleTextViewState {
               annotation.highlightColorValue != null &&
               annotation.touchesReference(
                 _verseReference(bookId, chapterNumber, verse),
-                translationId: ref.watch(currentTranslationProvider),
+                translationId: ref.watch(annotationTranslationFilterProvider),
               ),
         )
         .toList();
@@ -282,7 +282,7 @@ extension _BibleTextViewStateCore on _BibleTextViewState {
     final chapter = _chapterForReference(bookId, chapterNumber);
     if (!_chapterHasVerse(chapter, otherVerseNumber)) return false;
 
-    final translationId = ref.watch(currentTranslationProvider);
+    final translationFilter = ref.watch(annotationTranslationFilterProvider);
     final annotations = widget.continuousScrolling
         ? ref.watch(userAnnotationsProvider).value ?? const []
         : ref.watch(visibleChapterAnnotationsProvider);
@@ -298,11 +298,11 @@ extension _BibleTextViewStateCore on _BibleTextViewState {
           annotation.highlightColorValue != null &&
           annotation.touchesReference(
             currentReference,
-            translationId: translationId,
+            translationId: translationFilter,
           ) &&
           annotation.touchesReference(
             otherReference,
-            translationId: translationId,
+            translationId: translationFilter,
           ),
     );
   }
@@ -440,6 +440,7 @@ extension _BibleTextViewStateCore on _BibleTextViewState {
   }) async {
     final reference = _verseReference(bookId, chapterNumber, verse);
     final translationId = ref.read(currentTranslationProvider);
+    final translationFilter = ref.read(annotationTranslationFilterProvider);
     final fallbackTranslationName = ref
             .read(availableTranslationsProvider)
             .asData
@@ -459,7 +460,7 @@ extension _BibleTextViewStateCore on _BibleTextViewState {
           .where(
             (annotation) => annotation.touchesReference(
               reference,
-              translationId: translationId,
+              translationId: translationFilter,
             ),
           )
           .toList();

@@ -1,3 +1,4 @@
+import 'package:basic_bible/src/features/annotations/application/view_models/annotation_preferences_view_models.dart';
 import 'package:basic_bible/src/features/annotations/data/user_annotation_repository.dart';
 import 'package:basic_bible/src/features/annotations/models/user_annotations.dart';
 import 'package:basic_bible/src/features/reader/application/view_models/bible_library_view_models.dart';
@@ -16,21 +17,34 @@ final userAnnotationsProvider = StreamProvider<List<UserAnnotation>>((ref) {
   return ref.watch(userAnnotationRepositoryProvider).watchAnnotations();
 });
 
+/// The translation id annotation lookups should be restricted to, or `null`
+/// when [showNotesAcrossTranslationsProvider] is enabled and matches should
+/// ignore translation entirely (book/chapter/verse only).
+final annotationTranslationFilterProvider = Provider<String?>((ref) {
+  final showAcrossTranslations = ref.watch(
+    showNotesAcrossTranslationsProvider,
+  );
+  if (showAcrossTranslations) return null;
+  return ref.watch(currentTranslationProvider);
+});
+
 /// Exposes only the annotations relevant to the chapter currently visible
 /// in the reader so presentation code can stay chapter-focused.
 final visibleChapterAnnotationsProvider = Provider<List<UserAnnotation>>((ref) {
   final annotations = ref.watch(userAnnotationsProvider).value ?? const [];
   final currentReference = ref.watch(currentReferenceProvider);
-  final translationId = ref.watch(currentTranslationProvider);
+  final translationFilter = ref.watch(annotationTranslationFilterProvider);
 
   return annotations.where((annotation) {
     final primaryMatches =
-        annotation.primaryVerse.translationId == translationId &&
+        (translationFilter == null ||
+            annotation.primaryVerse.translationId == translationFilter) &&
         annotation.primaryVerse.bookId == currentReference.bookId &&
         annotation.primaryVerse.chapter == currentReference.chapter;
     final linkedMatches = annotation.linkedVerses.any(
       (link) =>
-          link.translationId == translationId &&
+          (translationFilter == null ||
+              link.translationId == translationFilter) &&
           link.bookId == currentReference.bookId &&
           link.chapter == currentReference.chapter,
     );
