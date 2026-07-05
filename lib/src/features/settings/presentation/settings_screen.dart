@@ -5,6 +5,7 @@ import 'package:basic_bible/src/features/settings/application/view_models/advanc
 import 'package:basic_bible/src/features/settings/application/view_models/app_launch_preferences_view_models.dart';
 import 'package:basic_bible/src/features/settings/application/view_models/reader_display_preferences_view_models.dart';
 import 'package:basic_bible/src/widgets/app_back_button.dart';
+import 'package:basic_bible/src/widgets/theme_preview_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:basic_bible/src/features/settings/application/view_models/language_view_model.dart';
@@ -63,19 +64,24 @@ class SettingsScreen extends ConsumerWidget {
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 10),
-            Wrap(
-              spacing: 12,
-              children: AppThemeMode.values.map((themeMode) {
-                final isSelected = currentTheme == themeMode;
-                return _SettingsChoiceChip(
-                  label: _themeModeToString(themeMode),
-                  isSelected: isSelected,
-                  colors: colors,
-                  onSelected: () {
-                    ref.read(themeProvider.notifier).setTheme(themeMode);
-                  },
-                );
-              }).toList(),
+            SizedBox(
+              height: 146,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                children: [
+                  for (final themeMode in AppThemeMode.values)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 12),
+                      child: ThemePreviewCard(
+                        mode: themeMode,
+                        selected: currentTheme == themeMode,
+                        onTap: () {
+                          ref.read(themeProvider.notifier).setTheme(themeMode);
+                        },
+                      ),
+                    ),
+                ],
+              ),
             ),
             const SizedBox(height: 20),
 
@@ -321,27 +327,6 @@ class SettingsScreen extends ConsumerWidget {
         ),
       ),
     );
-  }
-
-  String _themeModeToString(AppThemeMode mode) {
-    switch (mode) {
-      case AppThemeMode.system:
-        return "System";
-      case AppThemeMode.light:
-        return "Light";
-      case AppThemeMode.dark:
-        return "Dark";
-      case AppThemeMode.softDark:
-        return "Soft Dark";
-      case AppThemeMode.black:
-        return "Pure Black";
-      case AppThemeMode.white:
-        return "Pure White";
-      case AppThemeMode.blue:
-        return "Blue Theme";
-      case AppThemeMode.red:
-        return "Red Theme";
-    }
   }
 }
 
