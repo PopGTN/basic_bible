@@ -82,6 +82,15 @@ class _BibleTextViewState extends ConsumerState<_BibleTextView> {
   // hundreds of unhydrated chapters on large jumps.
   Key _scrollableListKey = const ValueKey('continuous_list');
   int _scrollableListInitialIndex = 0;
+  // The one continuous section (chapter) currently allowed to attach real
+  // verse GlobalKeys, or null if none. SPL briefly renders whichever section
+  // is the target of scrollTo()/initialScrollIndex in two internal viewports
+  // to resolve its position — a GlobalKey present in both at once crashes
+  // with "Multiple widgets used the same GlobalKey" (see _verseKeySuppressed
+  // in bible_viewer_tab_state_core.dart). Verse keys for a section are only
+  // enabled once that positioning has fully settled, so precise verse-level
+  // scrolling works in continuous mode without hitting that crash.
+  int? _armedVerseSectionIndex;
 
   void _onContinuousControllerChanged() {
     // Safe to setState directly: the controller defers notifications to the
@@ -97,7 +106,8 @@ class _BibleTextViewState extends ConsumerState<_BibleTextView> {
     if (bookId == widget.reference.bookId &&
         chapterNumber == widget.reference.chapter &&
         widget.reference.verse != null) {
-      _scheduleVerseFocus();
+      final index = _continuousSectionIndexFor(widget.reference);
+      if (index != null) _armVerseSectionAfterSettle(index);
     }
   }
 
@@ -126,6 +136,9 @@ class _BibleTextViewState extends ConsumerState<_BibleTextView> {
     // before the user starts scrolling.
     _prefetchContinuousChapterWindow(initialReference, radius: 5);
     _scheduleVerseFocus();
+    if (widget.continuousScrolling && widget.reference.verse != null) {
+      _armVerseSectionAfterSettle(_scrollableListInitialIndex);
+    }
   }
 
   @override
@@ -187,6 +200,13 @@ class _BibleTextViewState extends ConsumerState<_BibleTextView> {
     if (!mounted || _showSelectedVerseFocus == value) return;
     setState(() {
       _showSelectedVerseFocus = value;
+    });
+  }
+
+  void _setArmedVerseSectionIndex(int? value) {
+    if (!mounted || _armedVerseSectionIndex == value) return;
+    setState(() {
+      _armedVerseSectionIndex = value;
     });
   }
 

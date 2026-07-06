@@ -45,8 +45,9 @@ extension _BibleTextViewStateDocument on _BibleTextViewState {
   Widget _buildDocumentReadingViewForChapter(
     BuildContext context,
     String bookId,
-    BibleChapter chapter,
-  ) {
+    BibleChapter chapter, {
+    int? sectionIndex,
+  }) {
     final sections = _buildParagraphSectionsForChapter(chapter);
 
     return Padding(
@@ -72,12 +73,14 @@ extension _BibleTextViewStateDocument on _BibleTextViewState {
                           bookId,
                           chapter.number,
                           section,
+                          sectionIndex: sectionIndex,
                         )
                       : _buildDocumentParagraphSection(
                           context,
                           bookId,
                           chapter.number,
                           section,
+                          sectionIndex: sectionIndex,
                         ),
                 ],
               ),
@@ -161,16 +164,18 @@ extension _BibleTextViewStateDocument on _BibleTextViewState {
     BuildContext context,
     String bookId,
     int chapterNumber,
-    _ParagraphSection section,
-  ) {
+    _ParagraphSection section, {
+    int? sectionIndex,
+  }) {
     // Each verse's anchor is its own zero-size WidgetSpan placed immediately
     // before that verse's content, so it tracks the verse's real wrapped-line
     // position instead of collapsing every verse in the paragraph to the same
     // point. A GlobalKey inside a WidgetSpan creates a _RenderScaledInlineWidget
     // that gets mutated when ScrollablePositionedList retakes the element during
     // RenderSliverList.performLayout, causing a fatal Flutter assertion — so the
-    // key is only attached outside continuous mode, matching the verse-list card
-    // anchors in bible_viewer_tab_state_rendering.dart.
+    // key is only attached for the one "armed" continuous section (see
+    // _verseKeySuppressed in bible_viewer_tab_state_core.dart), matching the
+    // verse-list card anchors in bible_viewer_tab_state_rendering.dart.
     return RichText(
       text: TextSpan(
         style: TextStyle(
@@ -187,7 +192,7 @@ extension _BibleTextViewStateDocument on _BibleTextViewState {
             WidgetSpan(
               alignment: PlaceholderAlignment.middle,
               child: SizedBox(
-                key: widget.continuousScrolling
+                key: _verseKeySuppressed(sectionIndex)
                     ? null
                     : _verseKey(bookId, chapterNumber, verse.number),
                 width: 0,
@@ -259,14 +264,15 @@ extension _BibleTextViewStateDocument on _BibleTextViewState {
     BuildContext context,
     String bookId,
     int chapterNumber,
-    _ParagraphSection section,
-  ) {
+    _ParagraphSection section, {
+    int? sectionIndex,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         for (final verse in section.verses)
           Padding(
-            key: widget.continuousScrolling
+            key: _verseKeySuppressed(sectionIndex)
                 ? null
                 : _verseKey(bookId, chapterNumber, verse.number),
             padding: EdgeInsets.only(
