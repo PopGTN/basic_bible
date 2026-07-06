@@ -10,6 +10,7 @@ import 'package:basic_bible/src/features/reader/application/view_models/reader_s
 import 'package:basic_bible/src/features/reader/presentation/reference_picker/reference_preview_sheet.dart';
 import 'package:basic_bible/src/models/bible_models.dart';
 import 'package:basic_bible/src/utils/reference_utils.dart';
+import 'package:basic_bible/src/widgets/horizontal_mouse_scroll_list.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -578,39 +579,50 @@ class _NotesFilterBar extends StatelessWidget {
   // 'noteWithHighlight': has note text and also carries a highlight color.
   static const _typeOptions = [
     MapEntry('highlightOnly', 'Highlight only'),
-    MapEntry('noteWithHighlight', 'Note + highlight'),
+    MapEntry('noteWithHighlight', 'Note'),
   ];
 
   @override
   Widget build(BuildContext context) {
-    return Wrap(
-      spacing: 12,
-      runSpacing: 8,
-      crossAxisAlignment: WrapCrossAlignment.center,
-      children: [
+    final dropdowns = [
+      _MultiSelectDropdown(
+        label: 'Type',
+        options: _typeOptions,
+        selectedValues: selectedTypes,
+        onToggled: onTypeToggled,
+      ),
+      if (translationOptions.isNotEmpty)
         _MultiSelectDropdown(
-          label: 'Type',
-          options: _typeOptions,
-          selectedValues: selectedTypes,
-          onToggled: onTypeToggled,
+          label: 'Translation',
+          options: translationOptions,
+          selectedValues: selectedTranslationIds,
+          onToggled: onTranslationToggled,
         ),
-        if (translationOptions.length > 1)
-          _MultiSelectDropdown(
-            label: 'Translation',
-            options: translationOptions,
-            selectedValues: selectedTranslationIds,
-            onToggled: onTranslationToggled,
+      if (tagOptions.isNotEmpty)
+        _MultiSelectDropdown(
+          label: 'Tags',
+          options: [for (final tag in tagOptions) MapEntry(tag, tag)],
+          selectedValues: selectedTags,
+          onToggled: onTagToggled,
+        ),
+    ];
+
+    return SizedBox(
+      height: 44,
+      child: Row(
+        children: [
+          Expanded(
+            child: HorizontalMouseScrollList(
+              children: [
+                for (final dropdown in dropdowns)
+                  Padding(padding: const EdgeInsets.only(right: 8), child: dropdown),
+              ],
+            ),
           ),
-        if (tagOptions.isNotEmpty)
-          _MultiSelectDropdown(
-            label: 'Tags',
-            options: [for (final tag in tagOptions) MapEntry(tag, tag)],
-            selectedValues: selectedTags,
-            onToggled: onTagToggled,
-          ),
-        if (onClearAll != null)
-          TextButton(onPressed: onClearAll, child: const Text('Clear filters')),
-      ],
+          if (onClearAll != null)
+            TextButton(onPressed: onClearAll, child: const Text('Clear filters')),
+        ],
+      ),
     );
   }
 }
