@@ -4,6 +4,7 @@ import 'package:basic_bible/src/features/reader/application/view_models/reader_p
 import 'package:basic_bible/src/features/settings/application/view_models/app_launch_preferences_view_models.dart';
 import 'package:basic_bible/src/features/settings/application/view_models/reader_display_preferences_view_models.dart';
 import 'package:basic_bible/src/widgets/app_back_button.dart';
+import 'package:basic_bible/src/widgets/horizontal_mouse_scroll_list.dart';
 import 'package:basic_bible/src/widgets/theme_preview_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -61,8 +62,7 @@ class SettingsScreen extends ConsumerWidget {
             const SizedBox(height: 10),
             SizedBox(
               height: 146,
-              child: ListView(
-                scrollDirection: Axis.horizontal,
+              child: HorizontalMouseScrollList(
                 children: [
                   for (final themeMode in AppThemeMode.values)
                     Padding(

@@ -24,13 +24,36 @@ class NotesScreen extends ConsumerStatefulWidget {
 class _NotesScreenState extends ConsumerState<NotesScreen> {
   final _searchController = TextEditingController();
   String _searchQuery = '';
+  bool _isSearching = false;
   final Set<String> _selectedTags = {};
   final Set<String> _selectedTranslationIds = {};
+  // 'highlightOnly': highlighted with no note text.
+  // 'noteWithHighlight': has note text and also carries a highlight color.
+  final Set<String> _selectedTypes = {};
 
   @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
+  }
+
+  // Matches the search pattern in VersionsScreen (the translation selector):
+  // the whole app bar swaps to a search bar, with the field itself as the
+  // title, rather than a search row appearing below a static app bar.
+  void _startSearch() {
+    setState(() {
+      _isSearching = true;
+      _searchQuery = '';
+      _searchController.clear();
+    });
+  }
+
+  void _stopSearch() {
+    setState(() {
+      _isSearching = false;
+      _searchQuery = '';
+      _searchController.clear();
+    });
   }
 
   void _clearAllFilters() {
@@ -39,6 +62,7 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
       _searchQuery = '';
       _selectedTags.clear();
       _selectedTranslationIds.clear();
+      _selectedTypes.clear();
     });
   }
 
@@ -155,7 +179,7 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
     final booksAsync = ref.watch(bibleBooksShellProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Notes')),
+      appBar: _isSearching ? _buildSearchAppBar() : _buildNormalAppBar(),
       body: annotationsAsync.when(
         data: (annotations) {
           if (annotations.isEmpty) {
@@ -176,7 +200,8 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
           final hasActiveFilters =
               _searchQuery.isNotEmpty ||
               _selectedTags.isNotEmpty ||
-              _selectedTranslationIds.isNotEmpty;
+              _selectedTranslationIds.isNotEmpty ||
+              _selectedTypes.isNotEmpty;
 
           final filteredAnnotations = annotations.where((annotation) {
             final matchesQuery =
@@ -190,49 +215,51 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
                 _selectedTranslationIds.contains(
                   annotation.primaryVerse.translationId,
                 );
-            return matchesQuery && matchesTags && matchesTranslation;
+            final matchesType =
+                _selectedTypes.isEmpty ||
+                (_selectedTypes.contains('highlightOnly') &&
+                    annotation.hasHighlight &&
+                    !annotation.hasNoteText) ||
+                (_selectedTypes.contains('noteWithHighlight') &&
+                    annotation.hasNoteText &&
+                    annotation.hasHighlight);
+            return matchesQuery && matchesTags && matchesTranslation && matchesType;
           }).toList();
 
           return Column(
             children: [
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                child: _NotesSearchField(
-                  controller: _searchController,
-                  onChanged: (value) =>
-                      setState(() => _searchQuery = value.trim()),
-                  onClear: () =>
-                      setState(() {
-                        _searchController.clear();
-                        _searchQuery = '';
-                      }),
+                child: _NotesFilterBar(
+                  translationOptions: translationOptions,
+                  selectedTranslationIds: _selectedTranslationIds,
+                  onTranslationToggled: (id, selected) => setState(() {
+                    if (selected) {
+                      _selectedTranslationIds.add(id);
+                    } else {
+                      _selectedTranslationIds.remove(id);
+                    }
+                  }),
+                  tagOptions: tagOptions,
+                  selectedTags: _selectedTags,
+                  onTagToggled: (tag, selected) => setState(() {
+                    if (selected) {
+                      _selectedTags.add(tag);
+                    } else {
+                      _selectedTags.remove(tag);
+                    }
+                  }),
+                  selectedTypes: _selectedTypes,
+                  onTypeToggled: (type, selected) => setState(() {
+                    if (selected) {
+                      _selectedTypes.add(type);
+                    } else {
+                      _selectedTypes.remove(type);
+                    }
+                  }),
+                  onClearAll: hasActiveFilters ? _clearAllFilters : null,
                 ),
               ),
-              if (translationOptions.length > 1 || tagOptions.isNotEmpty)
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                  child: _NotesFilterBar(
-                    translationOptions: translationOptions,
-                    selectedTranslationIds: _selectedTranslationIds,
-                    onTranslationToggled: (id, selected) => setState(() {
-                      if (selected) {
-                        _selectedTranslationIds.add(id);
-                      } else {
-                        _selectedTranslationIds.remove(id);
-                      }
-                    }),
-                    tagOptions: tagOptions,
-                    selectedTags: _selectedTags,
-                    onTagToggled: (tag, selected) => setState(() {
-                      if (selected) {
-                        _selectedTags.add(tag);
-                      } else {
-                        _selectedTags.remove(tag);
-                      }
-                    }),
-                    onClearAll: hasActiveFilters ? _clearAllFilters : null,
-                  ),
-                ),
               Expanded(
                 child: filteredAnnotations.isEmpty
                     ? Center(
@@ -432,6 +459,47 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
       ),
     );
   }
+
+  AppBar _buildNormalAppBar() {
+    return AppBar(
+      title: const Text('Notes'),
+      actions: [
+        IconButton(
+          onPressed: _startSearch,
+          icon: const Icon(Icons.search),
+          tooltip: 'Search notes',
+        ),
+      ],
+    );
+  }
+
+  AppBar _buildSearchAppBar() {
+    return AppBar(
+      leading: IconButton(
+        icon: const Icon(Icons.arrow_back),
+        onPressed: _stopSearch,
+      ),
+      title: TextField(
+        controller: _searchController,
+        autofocus: true,
+        decoration: const InputDecoration(
+          hintText: 'Search notes, tags, or a verse like John 3:16',
+          border: InputBorder.none,
+        ),
+        onChanged: (value) => setState(() => _searchQuery = value.trim()),
+      ),
+      actions: [
+        if (_searchQuery.isNotEmpty)
+          IconButton(
+            icon: const Icon(Icons.clear),
+            onPressed: () {
+              _searchController.clear();
+              setState(() => _searchQuery = '');
+            },
+          ),
+      ],
+    );
+  }
 }
 
 /// Distinct labels used across all notes, sorted case-insensitively for the
@@ -483,40 +551,6 @@ bool _annotationMatchesQuery(
   return buffer.toString().toLowerCase().contains(query.toLowerCase());
 }
 
-class _NotesSearchField extends StatelessWidget {
-  const _NotesSearchField({
-    required this.controller,
-    required this.onChanged,
-    required this.onClear,
-  });
-
-  final TextEditingController controller;
-  final ValueChanged<String> onChanged;
-  final VoidCallback onClear;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    return TextField(
-      controller: controller,
-      decoration: InputDecoration(
-        hintText: 'Search notes, tags, or a verse like John 3:16',
-        prefixIcon: const Icon(Icons.search),
-        filled: true,
-        fillColor: colors.surfaceContainerHighest,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(18),
-          borderSide: BorderSide.none,
-        ),
-        suffixIcon: controller.text.isNotEmpty
-            ? IconButton(icon: const Icon(Icons.clear), onPressed: onClear)
-            : null,
-      ),
-      onChanged: onChanged,
-    );
-  }
-}
-
 class _NotesFilterBar extends StatelessWidget {
   const _NotesFilterBar({
     required this.translationOptions,
@@ -525,6 +559,8 @@ class _NotesFilterBar extends StatelessWidget {
     required this.tagOptions,
     required this.selectedTags,
     required this.onTagToggled,
+    required this.selectedTypes,
+    required this.onTypeToggled,
     this.onClearAll,
   });
 
@@ -534,89 +570,110 @@ class _NotesFilterBar extends StatelessWidget {
   final List<String> tagOptions;
   final Set<String> selectedTags;
   final void Function(String tag, bool selected) onTagToggled;
+  final Set<String> selectedTypes;
+  final void Function(String type, bool selected) onTypeToggled;
   final VoidCallback? onClearAll;
+
+  // 'highlightOnly': highlighted with no note text.
+  // 'noteWithHighlight': has note text and also carries a highlight color.
+  static const _typeOptions = [
+    MapEntry('highlightOnly', 'Highlight only'),
+    MapEntry('noteWithHighlight', 'Note + highlight'),
+  ];
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return Wrap(
+      spacing: 12,
+      runSpacing: 8,
+      crossAxisAlignment: WrapCrossAlignment.center,
       children: [
-        if (translationOptions.length > 1) ...[
-          Text('Translation', style: theme.textTheme.labelMedium),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              for (final entry in translationOptions)
-                _FilterChoiceChip(
-                  label: entry.value,
-                  isSelected: selectedTranslationIds.contains(entry.key),
-                  onSelected: (selected) =>
-                      onTranslationToggled(entry.key, selected),
-                ),
-            ],
+        _MultiSelectDropdown(
+          label: 'Type',
+          options: _typeOptions,
+          selectedValues: selectedTypes,
+          onToggled: onTypeToggled,
+        ),
+        if (translationOptions.length > 1)
+          _MultiSelectDropdown(
+            label: 'Translation',
+            options: translationOptions,
+            selectedValues: selectedTranslationIds,
+            onToggled: onTranslationToggled,
           ),
-          if (tagOptions.isNotEmpty) const SizedBox(height: 12),
-        ],
-        if (tagOptions.isNotEmpty) ...[
-          Text('Tags', style: theme.textTheme.labelMedium),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              for (final tag in tagOptions)
-                _FilterChoiceChip(
-                  label: tag,
-                  isSelected: selectedTags.contains(tag),
-                  onSelected: (selected) => onTagToggled(tag, selected),
-                ),
-            ],
+        if (tagOptions.isNotEmpty)
+          _MultiSelectDropdown(
+            label: 'Tags',
+            options: [for (final tag in tagOptions) MapEntry(tag, tag)],
+            selectedValues: selectedTags,
+            onToggled: onTagToggled,
           ),
-        ],
         if (onClearAll != null)
-          Align(
-            alignment: Alignment.centerLeft,
-            child: TextButton(
-              onPressed: onClearAll,
-              child: const Text('Clear filters'),
-            ),
-          ),
+          TextButton(onPressed: onClearAll, child: const Text('Clear filters')),
       ],
     );
   }
 }
 
-class _FilterChoiceChip extends StatelessWidget {
-  const _FilterChoiceChip({
+/// Dropdown that stays open across taps ([MenuItemButton.closeOnActivate] set
+/// to false) so several options can be checked/unchecked in one interaction,
+/// matching the multi-select behavior the filter chips used to offer.
+class _MultiSelectDropdown extends StatelessWidget {
+  const _MultiSelectDropdown({
     required this.label,
-    required this.isSelected,
-    required this.onSelected,
+    required this.options,
+    required this.selectedValues,
+    required this.onToggled,
   });
 
   final String label;
-  final bool isSelected;
-  final ValueChanged<bool> onSelected;
+  final List<MapEntry<String, String>> options;
+  final Set<String> selectedValues;
+  final void Function(String value, bool selected) onToggled;
+
+  String get _buttonLabel {
+    if (selectedValues.isEmpty) return label;
+    if (selectedValues.length == 1) {
+      final id = selectedValues.first;
+      final match = options.where((entry) => entry.key == id).firstOrNull;
+      return match?.value ?? label;
+    }
+    return '$label (${selectedValues.length})';
+  }
 
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
-    return FilterChip(
-      label: Text(label),
-      selected: isSelected,
-      onSelected: onSelected,
-      showCheckmark: false,
-      selectedColor: colors.surfaceContainerHighest,
-      backgroundColor: colors.surfaceContainerLow,
-      side: BorderSide(
-        color: isSelected ? colors.onSurface : colors.outlineVariant,
-      ),
-      labelStyle: TextStyle(
-        color: isSelected ? colors.onSurface : colors.onSurfaceVariant,
-        fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-      ),
+    final hasSelection = selectedValues.isNotEmpty;
+    return MenuAnchor(
+      builder: (context, controller, child) {
+        return OutlinedButton.icon(
+          onPressed: () => controller.isOpen ? controller.close() : controller.open(),
+          icon: const Icon(Icons.arrow_drop_down),
+          label: Text(_buttonLabel, overflow: TextOverflow.ellipsis),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: hasSelection ? colors.onSurface : colors.onSurfaceVariant,
+            backgroundColor: hasSelection ? colors.surfaceContainerHighest : null,
+            side: BorderSide(
+              color: hasSelection ? colors.onSurface : colors.outlineVariant,
+            ),
+          ),
+        );
+      },
+      menuChildren: [
+        for (final entry in options)
+          MenuItemButton(
+            closeOnActivate: false,
+            leadingIcon: Icon(
+              selectedValues.contains(entry.key)
+                  ? Icons.check_box
+                  : Icons.check_box_outline_blank,
+            ),
+            onPressed: () =>
+                onToggled(entry.key, !selectedValues.contains(entry.key)),
+            child: Text(entry.value),
+          ),
+      ],
     );
   }
 }

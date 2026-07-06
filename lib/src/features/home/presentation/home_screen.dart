@@ -1,5 +1,3 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -16,6 +14,7 @@ import 'package:basic_bible/src/features/reader/presentation/reader_view/bible_v
 import 'package:basic_bible/src/features/settings/application/view_models/theme_view_model.dart';
 import 'package:basic_bible/src/models/bible_models.dart';
 import 'package:basic_bible/src/services/font_size_service.dart';
+import 'package:basic_bible/src/widgets/horizontal_mouse_scroll_list.dart';
 import 'package:basic_bible/src/widgets/theme_preview_card.dart';
 
 import 'home_tab.dart';
@@ -611,28 +610,18 @@ class _BibleViewerSettingsSheet extends StatelessWidget {
             const SizedBox(height: 14),
             SizedBox(
               height: 146,
-              child: ScrollConfiguration(
-                behavior: ScrollConfiguration.of(context).copyWith(
-                  dragDevices: {
-                    PointerDeviceKind.touch,
-                    PointerDeviceKind.mouse,
-                    PointerDeviceKind.trackpad,
-                  },
-                ),
-                child: ListView(
-                  scrollDirection: Axis.horizontal,
-                  children: [
-                    for (final mode in AppThemeMode.values)
-                      Padding(
-                        padding: const EdgeInsets.only(right: 12),
-                        child: ThemePreviewCard(
-                          mode: mode,
-                          selected: mode == themeMode,
-                          onTap: () => onThemeSelected(mode),
-                        ),
+              child: HorizontalMouseScrollList(
+                children: [
+                  for (final mode in AppThemeMode.values)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 12),
+                      child: ThemePreviewCard(
+                        mode: mode,
+                        selected: mode == themeMode,
+                        onTap: () => onThemeSelected(mode),
                       ),
-                  ],
-                ),
+                    ),
+                ],
               ),
             ),
             const SizedBox(height: 16),
