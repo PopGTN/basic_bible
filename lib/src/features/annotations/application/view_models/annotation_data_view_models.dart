@@ -28,28 +28,49 @@ final annotationTranslationFilterProvider = Provider<String?>((ref) {
   return ref.watch(currentTranslationProvider);
 });
 
+/// Annotations matching [annotationTranslationFilterProvider] indexed by
+/// `"bookId:chapter"`.
+///
+/// Rebuilt once per annotation change. The reader renders hundreds of verses
+/// per frame in continuous mode; looking each verse up in its chapter bucket
+/// is O(annotations-in-chapter) instead of scanning the entire annotation
+/// list per verse.
+final annotationsByChapterProvider = Provider<Map<String, List<UserAnnotation>>>(
+  (ref) {
+    final annotations = ref.watch(userAnnotationsProvider).value ?? const [];
+    final translationFilter = ref.watch(annotationTranslationFilterProvider);
+    final index = <String, List<UserAnnotation>>{};
+    for (final annotation in annotations) {
+      // A multi-verse annotation can span chapters; register it in each
+      // chapter bucket exactly once.
+      final seenChapters = <String>{};
+      for (final link in annotation.allVerses) {
+        if (translationFilter != null && link.translationId != translationFilter) {
+          continue;
+        }
+        final key = annotationChapterKey(link.bookId, link.chapter);
+        if (seenChapters.add(key)) {
+          index.putIfAbsent(key, () => []).add(annotation);
+        }
+      }
+    }
+    return index;
+  },
+);
+
+/// Key format used by [annotationsByChapterProvider].
+String annotationChapterKey(String bookId, int chapter) => '$bookId:$chapter';
+
 /// Exposes only the annotations relevant to the chapter currently visible
 /// in the reader so presentation code can stay chapter-focused.
 final visibleChapterAnnotationsProvider = Provider<List<UserAnnotation>>((ref) {
-  final annotations = ref.watch(userAnnotationsProvider).value ?? const [];
   final currentReference = ref.watch(currentReferenceProvider);
-  final translationFilter = ref.watch(annotationTranslationFilterProvider);
-
-  return annotations.where((annotation) {
-    final primaryMatches =
-        (translationFilter == null ||
-            annotation.primaryVerse.translationId == translationFilter) &&
-        annotation.primaryVerse.bookId == currentReference.bookId &&
-        annotation.primaryVerse.chapter == currentReference.chapter;
-    final linkedMatches = annotation.linkedVerses.any(
-      (link) =>
-          (translationFilter == null ||
-              link.translationId == translationFilter) &&
-          link.bookId == currentReference.bookId &&
-          link.chapter == currentReference.chapter,
-    );
-    return primaryMatches || linkedMatches;
-  }).toList();
+  final byChapter = ref.watch(annotationsByChapterProvider);
+  return byChapter[annotationChapterKey(
+        currentReference.bookId,
+        currentReference.chapter,
+      )] ??
+      const [];
 });
 
 AnnotationVerseLink buildAnnotationVerseLink({

@@ -90,12 +90,21 @@ class UserAnnotation extends Equatable {
   List<AnnotationVerseLink> get allVerses => [primaryVerse, ...linkedVerses];
 
   bool touchesReference(BibleReference reference, {String? translationId}) {
-    return allVerses.any(
-      (link) =>
-          link.bookId == reference.bookId &&
-          link.chapter == reference.chapter &&
-          link.verse == reference.verse &&
-          (translationId == null || link.translationId == translationId),
+    // Hot path: the reader calls this per annotation per verse per frame,
+    // so check primary + linked directly instead of allocating [allVerses].
+    if (annotationVerseLinkMatchesReference(
+      primaryVerse,
+      reference,
+      translationId: translationId,
+    )) {
+      return true;
+    }
+    return linkedVerses.any(
+      (link) => annotationVerseLinkMatchesReference(
+        link,
+        reference,
+        translationId: translationId,
+      ),
     );
   }
 

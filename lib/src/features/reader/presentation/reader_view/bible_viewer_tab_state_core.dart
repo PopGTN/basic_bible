@@ -166,29 +166,34 @@ extension _BibleTextViewStateCore on _BibleTextViewState {
     );
   }
 
+  /// Annotations touching this exact verse, resolved through the per-chapter
+  /// index so cost scales with the chapter's annotations rather than the
+  /// user's entire annotation history. Works identically in single-chapter
+  /// and continuous mode because the lookup is keyed by the verse's own
+  /// chapter, not by currentReferenceProvider (which does not track scroll
+  /// position in continuous mode).
   List<UserAnnotation> _annotationsForVerse(
     String bookId,
     int chapterNumber,
     BibleVerse verse,
   ) {
+    final chapterAnnotations = _annotationsForChapter(bookId, chapterNumber);
+    if (chapterAnnotations.isEmpty) return const [];
     final translationFilter = ref.watch(annotationTranslationFilterProvider);
-    // In continuous mode, currentReferenceProvider reflects the chapter that
-    // was navigated to, not the chapter currently scrolled into view.
-    // visibleChapterAnnotationsProvider therefore hides annotations on every
-    // chapter except the original navigation target, so we fall back to the
-    // full annotation stream and let touchesReference do the filtering.
-    final annotations = widget.continuousScrolling
-        ? ref.watch(userAnnotationsProvider).value ?? const []
-        : ref.watch(visibleChapterAnnotationsProvider);
     final reference = _verseReference(bookId, chapterNumber, verse);
-    return annotations
-        .where(
-          (annotation) => annotation.touchesReference(
-            reference,
-            translationId: translationFilter,
-          ),
-        )
-        .toList();
+    return [
+      for (final annotation in chapterAnnotations)
+        if (annotation.touchesReference(
+          reference,
+          translationId: translationFilter,
+        ))
+          annotation,
+    ];
+  }
+
+  List<UserAnnotation> _annotationsForChapter(String bookId, int chapterNumber) {
+    final byChapter = ref.watch(annotationsByChapterProvider);
+    return byChapter[annotationChapterKey(bookId, chapterNumber)] ?? const [];
   }
 
   bool _hasSavedAnnotations(List<UserAnnotation> verseAnnotations) {
@@ -210,19 +215,11 @@ extension _BibleTextViewStateCore on _BibleTextViewState {
   Color? _highlightColorForVerse(
     BuildContext context,
     List<UserAnnotation> verseAnnotations,
-    String bookId,
-    int chapterNumber,
-    BibleVerse verse,
   ) {
+    // verseAnnotations already come from _annotationsForVerse, so every entry
+    // touches this verse — only the highlight filter is needed here.
     final matches = verseAnnotations
-        .where(
-          (annotation) =>
-              annotation.highlightColorValue != null &&
-              annotation.touchesReference(
-                _verseReference(bookId, chapterNumber, verse),
-                translationId: ref.watch(annotationTranslationFilterProvider),
-              ),
-        )
+        .where((annotation) => annotation.highlightColorValue != null)
         .toList();
     if (matches.isEmpty) return null;
     matches.sort((a, b) => a.updatedAt.compareTo(b.updatedAt));
@@ -253,9 +250,6 @@ extension _BibleTextViewStateCore on _BibleTextViewState {
   ) => _highlightColorForVerse(
     context,
     _annotationsForVerse(bookId, chapterNumber, verse),
-    bookId,
-    chapterNumber,
-    verse,
   );
 
   BibleChapter? _chapterForReference(String bookId, int chapterNumber) {
@@ -283,9 +277,8 @@ extension _BibleTextViewStateCore on _BibleTextViewState {
     if (!_chapterHasVerse(chapter, otherVerseNumber)) return false;
 
     final translationFilter = ref.watch(annotationTranslationFilterProvider);
-    final annotations = widget.continuousScrolling
-        ? ref.watch(userAnnotationsProvider).value ?? const []
-        : ref.watch(visibleChapterAnnotationsProvider);
+    final annotations = _annotationsForChapter(bookId, chapterNumber);
+    if (annotations.isEmpty) return false;
     final currentReference = _verseReference(bookId, chapterNumber, verse);
     final otherReference = BibleReference(
       bookId: bookId,

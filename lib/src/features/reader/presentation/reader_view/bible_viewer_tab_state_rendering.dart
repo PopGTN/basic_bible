@@ -375,13 +375,7 @@ extension _BibleTextViewStateRendering on _BibleTextViewState {
     );
     final verseAnnotations = _annotationsForVerse(bookId, chapterNumber, verse);
     final hasSavedAnnotations = _hasSavedAnnotations(verseAnnotations);
-    final highlightColor = _highlightColorForVerse(
-      context,
-      verseAnnotations,
-      bookId,
-      chapterNumber,
-      verse,
-    );
+    final highlightColor = _highlightColorForVerse(context, verseAnnotations);
     final isSelected = _isSelectedVerse(bookId, chapterNumber, verse);
     final containerColor = _selectionAwareBackground(
       context,

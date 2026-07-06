@@ -1,5 +1,10 @@
 part of 'bible_viewer_tab.dart';
 
+// Compiled once — _shouldInsertSpace runs per span per verse per frame, and
+// constructing RegExp objects inside it showed up as pure allocation churn.
+final RegExp _leadingNoSpacePattern = RegExp(r"^[.,;:!?)}\]”’]");
+final RegExp _trailingNoSpacePattern = RegExp(r"[(\[{“‘/]$");
+
 extension _BibleTextViewStateAnnotations on _BibleTextViewState {
   void _showVerseDetailsSheet(
     BuildContext context,
@@ -297,8 +302,8 @@ extension _BibleTextViewStateAnnotations on _BibleTextViewState {
 
   bool _shouldInsertSpace(String previousText, String currentText) {
     if (previousText.isEmpty) return false;
-    if (currentText.startsWith(RegExp(r"[.,;:!?)}\]”’]"))) return false;
-    if (RegExp(r"[(\[{“‘/]$").hasMatch(previousText)) return false;
+    if (currentText.startsWith(_leadingNoSpacePattern)) return false;
+    if (_trailingNoSpacePattern.hasMatch(previousText)) return false;
     return true;
   }
 
