@@ -45,8 +45,9 @@ extension _BibleTextViewStateDocument on _BibleTextViewState {
   Widget _buildDocumentReadingViewForChapter(
     BuildContext context,
     String bookId,
-    BibleChapter chapter,
-  ) {
+    BibleChapter chapter, {
+    int? sectionIndex,
+  }) {
     final sections = _buildParagraphSectionsForChapter(chapter);
 
     return Padding(
@@ -72,12 +73,14 @@ extension _BibleTextViewStateDocument on _BibleTextViewState {
                           bookId,
                           chapter.number,
                           section,
+                          sectionIndex: sectionIndex,
                         )
                       : _buildDocumentParagraphSection(
                           context,
                           bookId,
                           chapter.number,
                           section,
+                          sectionIndex: sectionIndex,
                         ),
                 ],
               ),
@@ -161,96 +164,99 @@ extension _BibleTextViewStateDocument on _BibleTextViewState {
     BuildContext context,
     String bookId,
     int chapterNumber,
-    _ParagraphSection section,
-  ) {
-    // Verse anchors live OUTSIDE the RichText as zero-height SizedBoxes.
-    // A GlobalKey inside a WidgetSpan creates a _RenderScaledInlineWidget that
-    // gets mutated when ScrollablePositionedList retakes the element during
-    // RenderSliverList.performLayout, causing a fatal Flutter assertion.
-    // Regular box widgets with GlobalKeys are safe in that context.
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        for (final verse in section.verses)
-          SizedBox(
-            key: widget.continuousScrolling
-                ? null
-                : _verseKey(bookId, chapterNumber, verse.number),
-            height: 0,
+    _ParagraphSection section, {
+    int? sectionIndex,
+  }) {
+    // Each verse's anchor is its own zero-size WidgetSpan placed immediately
+    // before that verse's content, so it tracks the verse's real wrapped-line
+    // position instead of collapsing every verse in the paragraph to the same
+    // point. A GlobalKey inside a WidgetSpan creates a _RenderScaledInlineWidget
+    // that gets mutated when ScrollablePositionedList retakes the element during
+    // RenderSliverList.performLayout, causing a fatal Flutter assertion — so the
+    // key is only attached for the one "armed" continuous section (see
+    // _verseKeySuppressed in bible_viewer_tab_state_core.dart), matching the
+    // verse-list card anchors in bible_viewer_tab_state_rendering.dart.
+    return RichText(
+      text: TextSpan(
+        style: TextStyle(
+          fontSize: widget.fontSize,
+          color: Theme.of(context).textTheme.bodyLarge?.color,
+          height: 1.7,
+        ),
+        children: [
+          const WidgetSpan(
+            child: SizedBox(width: 18),
+            alignment: PlaceholderAlignment.middle,
           ),
-        RichText(
-          text: TextSpan(
-            style: TextStyle(
-              fontSize: widget.fontSize,
-              color: Theme.of(context).textTheme.bodyLarge?.color,
-              height: 1.7,
-            ),
-            children: [
-              const WidgetSpan(
-                child: SizedBox(width: 18),
-                alignment: PlaceholderAlignment.middle,
+          for (final verse in section.verses) ...[
+            WidgetSpan(
+              alignment: PlaceholderAlignment.middle,
+              child: SizedBox(
+                key: _verseKeySuppressed(sectionIndex)
+                    ? null
+                    : _verseKey(bookId, chapterNumber, verse.number),
+                width: 0,
+                height: 0,
               ),
-              for (final verse in section.verses) ...[
-                WidgetSpan(
-                  alignment: PlaceholderAlignment.middle,
-                  child: Padding(
-                    padding: const EdgeInsets.only(right: 4),
-                    child: _buildDocumentInlineVerseSelector(
-                      context,
-                      bookId,
-                      chapterNumber,
-                      verse,
-                    ),
-                  ),
-                ),
-                ..._buildDocumentVerseTextSpans(
+            ),
+            WidgetSpan(
+              alignment: PlaceholderAlignment.middle,
+              child: Padding(
+                padding: const EdgeInsets.only(right: 4),
+                child: _buildDocumentInlineVerseSelector(
                   context,
                   bookId,
                   chapterNumber,
                   verse,
                 ),
-                if (_hasSavedAnnotations(
-                  _annotationsForVerse(bookId, chapterNumber, verse),
-                ))
-                  WidgetSpan(
-                    alignment: PlaceholderAlignment.middle,
-                    child: Padding(
-                      padding: const EdgeInsets.only(left: 6, right: 2),
-                      child: _VerseNoteButton(
-                        compact: true,
-                        onPressed: () => _showPersonalNotesSheet(
-                          context,
-                          bookId: bookId,
-                          chapterNumber: chapterNumber,
-                          verse: verse,
-                          verseAnnotations: _annotationsForVerse(
-                            bookId,
-                            chapterNumber,
-                            verse,
-                          ),
-                        ),
+              ),
+            ),
+            ..._buildDocumentVerseTextSpans(
+              context,
+              bookId,
+              chapterNumber,
+              verse,
+            ),
+            if (_hasSavedAnnotations(
+              _annotationsForVerse(bookId, chapterNumber, verse),
+            ))
+              WidgetSpan(
+                alignment: PlaceholderAlignment.middle,
+                child: Padding(
+                  padding: const EdgeInsets.only(left: 6, right: 2),
+                  child: _VerseNoteButton(
+                    compact: true,
+                    onPressed: () => _showPersonalNotesSheet(
+                      context,
+                      bookId: bookId,
+                      chapterNumber: chapterNumber,
+                      verse: verse,
+                      verseAnnotations: _annotationsForVerse(
+                        bookId,
+                        chapterNumber,
+                        verse,
                       ),
                     ),
                   ),
-                if (_hasParserNotes(verse))
-                  WidgetSpan(
-                    alignment: PlaceholderAlignment.middle,
-                    child: Padding(
-                      padding: const EdgeInsets.only(left: 6, right: 2),
-                      child: _VerseAnnotationButton(
-                        compact: true,
-                        onPressed: () =>
-                            _showVerseDetailsSheet(context, chapterNumber, verse),
-                      ),
-                    ),
+                ),
+              ),
+            if (_hasParserNotes(verse))
+              WidgetSpan(
+                alignment: PlaceholderAlignment.middle,
+                child: Padding(
+                  padding: const EdgeInsets.only(left: 6, right: 2),
+                  child: _VerseAnnotationButton(
+                    compact: true,
+                    onPressed: () =>
+                        _showVerseDetailsSheet(context, chapterNumber, verse),
                   ),
-                const TextSpan(text: ' '),
-              ],
-              const TextSpan(text: ' '),
-            ],
-          ),
-        ),
-      ],
+                ),
+              ),
+            const TextSpan(text: ' '),
+          ],
+          const TextSpan(text: ' '),
+        ],
+      ),
     );
   }
 
@@ -258,14 +264,15 @@ extension _BibleTextViewStateDocument on _BibleTextViewState {
     BuildContext context,
     String bookId,
     int chapterNumber,
-    _ParagraphSection section,
-  ) {
+    _ParagraphSection section, {
+    int? sectionIndex,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         for (final verse in section.verses)
           Padding(
-            key: widget.continuousScrolling
+            key: _verseKeySuppressed(sectionIndex)
                 ? null
                 : _verseKey(bookId, chapterNumber, verse.number),
             padding: EdgeInsets.only(

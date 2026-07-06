@@ -165,11 +165,13 @@ extension _BibleTextViewStateRendering on _BibleTextViewState {
                     section.book.id,
                     section.chapter.number,
                     verse,
+                    sectionIndex: index,
                   ),
                   buildDocumentView: () => _buildDocumentReadingViewForChapter(
                     context,
                     section.book.id,
                     chapter,
+                    sectionIndex: index,
                   ),
                   buildInlineHeading: (block) =>
                       _buildInlineSectionHeading(context, block),
@@ -329,13 +331,15 @@ extension _BibleTextViewStateRendering on _BibleTextViewState {
     BuildContext context,
     String bookId,
     int chapterNumber,
-    BibleVerse verse,
-  ) {
+    BibleVerse verse, {
+    int? sectionIndex,
+  }) {
     return _buildVerseCard(
       context,
       bookId: bookId,
       chapterNumber: chapterNumber,
       verse: verse,
+      sectionIndex: sectionIndex,
     );
   }
 
@@ -360,6 +364,7 @@ extension _BibleTextViewStateRendering on _BibleTextViewState {
     required String bookId,
     required int chapterNumber,
     required BibleVerse verse,
+    int? sectionIndex,
   }) {
     // Single-chapter and continuous verse-list modes now share the exact same
     // verse-card rendering so annotation buttons, selection styling, and
@@ -384,12 +389,11 @@ extension _BibleTextViewStateRendering on _BibleTextViewState {
     );
 
     return Padding(
-      // In continuous mode, omit the GlobalKey. SPL builds the anchor chapter
-      // in two viewports simultaneously; verse keys inside that chapter would
-      // each be claimed by both render trees, causing "Multiple widgets used
-      // the same GlobalKey". Single-chapter mode is unaffected because it uses
-      // a plain ListView where no item is ever built twice.
-      key: widget.continuousScrolling ? null : verseKey,
+      // See _verseKeySuppressed: in continuous mode, only the one "armed"
+      // chapter section may carry real verse GlobalKeys — everywhere else
+      // (and this section mid-reposition) must stay keyless to avoid SPL's
+      // "Multiple widgets used the same GlobalKey" dual-viewport crash.
+      key: _verseKeySuppressed(sectionIndex) ? null : verseKey,
       padding: const EdgeInsets.only(bottom: 8.0),
       child: InkWell(
         onTap: () => _handleVerseTap(bookId, chapterNumber, verse),

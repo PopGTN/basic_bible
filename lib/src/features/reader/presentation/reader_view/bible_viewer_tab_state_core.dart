@@ -34,59 +34,98 @@ extension _BibleTextViewStateCore on _BibleTextViewState {
   void _scheduleChapterFocus() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted || !widget.continuousScrolling) return;
-      final targetIndex = _continuousSectionIndexFor(widget.reference);
-      if (targetIndex == null) return;
-
-      // Determine how far the jump is from the current visible position.
-      // ScrollablePositionedList estimates scroll offsets for unhydrated items
-      // using placeholder heights. Over large distances (hundreds of chapters)
-      // that estimation error compounds and scrollTo() can land far off target.
-      // For jumps > 20 chapters we reset the SPL widget with a new key and
-      // initialScrollIndex so it renders at the exact target position immediately.
-      // _hydratedContinuousChapters is preserved — already-loaded chapters
-      // stay in cache.
-      final positions = _continuousItemPositionsListener.itemPositions.value;
-      final currentIndex = positions.isEmpty
-          ? _scrollableListInitialIndex
-          : positions.reduce(
-              (current, candidate) =>
-                  current.itemLeadingEdge <= candidate.itemLeadingEdge
-                  ? current
-                  : candidate,
-            ).index;
-      final jumpDistance = (targetIndex - currentIndex).abs();
-
-      if (jumpDistance > 20) {
-        // Reset: rebuild the SPL widget at the target chapter.
-        _resetScrollableListAt(targetIndex);
-        // Prefetch again from the new center so surrounding chapters load.
-        _prefetchContinuousChapterWindow(widget.reference, radius: 5);
-        // The key reset repositions the list immediately but fires no
-        // ScrollUpdateNotification, so _syncVisibleChapterFromViewport won't
-        // update the chapter bar until the user scrolls. Notify directly.
-        final targetSection = _continuousSections[targetIndex];
-        widget.onVisibleReferenceChanged(
-          BibleReference(
-            bookId: targetSection.book.id,
-            chapter: targetSection.chapter.number,
-          ),
-        );
-      } else if (_continuousItemScrollController.isAttached) {
-        // Short hop: animated scroll is accurate enough. Suppress the bar
-        // auto-hide while the animation runs — this is navigation, not the
-        // user scrolling away.
-        _suppressChromeScrollEvents = true;
-        _continuousItemScrollController
-            .scrollTo(
-              index: targetIndex,
-              duration: const Duration(milliseconds: 280),
-              curve: Curves.easeInOut,
-              alignment: 0.02,
-            )
-            .whenComplete(() => _suppressChromeScrollEvents = false);
+      if (_armedVerseSectionIndex != null) {
+        // Disarm before repositioning: SPL briefly renders the scroll target
+        // in two internal viewports while resolving scrollTo/initialScrollIndex,
+        // and a GlobalKey present in both trees at once crashes with "Multiple
+        // widgets used the same GlobalKey". Clear it and let that frame settle
+        // before continuing.
+        _setArmedVerseSectionIndex(null);
+        WidgetsBinding.instance.addPostFrameCallback((_) => _performChapterFocus());
+        return;
       }
+      _performChapterFocus();
     });
   }
+
+  void _performChapterFocus() {
+    if (!mounted || !widget.continuousScrolling) return;
+    final targetIndex = _continuousSectionIndexFor(widget.reference);
+    if (targetIndex == null) return;
+
+    // Determine how far the jump is from the current visible position.
+    // ScrollablePositionedList estimates scroll offsets for unhydrated items
+    // using placeholder heights. Over large distances (hundreds of chapters)
+    // that estimation error compounds and scrollTo() can land far off target.
+    // For jumps > 20 chapters we reset the SPL widget with a new key and
+    // initialScrollIndex so it renders at the exact target position immediately.
+    // _hydratedContinuousChapters is preserved — already-loaded chapters
+    // stay in cache.
+    final positions = _continuousItemPositionsListener.itemPositions.value;
+    final currentIndex = positions.isEmpty
+        ? _scrollableListInitialIndex
+        : positions.reduce(
+            (current, candidate) =>
+                current.itemLeadingEdge <= candidate.itemLeadingEdge
+                ? current
+                : candidate,
+          ).index;
+    final jumpDistance = (targetIndex - currentIndex).abs();
+
+    if (jumpDistance > 20) {
+      // Reset: rebuild the SPL widget at the target chapter.
+      _resetScrollableListAt(targetIndex);
+      // Prefetch again from the new center so surrounding chapters load.
+      _prefetchContinuousChapterWindow(widget.reference, radius: 5);
+      // The key reset repositions the list immediately but fires no
+      // ScrollUpdateNotification, so _syncVisibleChapterFromViewport won't
+      // update the chapter bar until the user scrolls. Notify directly.
+      final targetSection = _continuousSections[targetIndex];
+      widget.onVisibleReferenceChanged(
+        BibleReference(
+          bookId: targetSection.book.id,
+          chapter: targetSection.chapter.number,
+        ),
+      );
+      _armVerseSectionAfterSettle(targetIndex);
+    } else if (_continuousItemScrollController.isAttached) {
+      // Short hop: animated scroll is accurate enough. Suppress the bar
+      // auto-hide while the animation runs — this is navigation, not the
+      // user scrolling away.
+      _suppressChromeScrollEvents = true;
+      _continuousItemScrollController
+          .scrollTo(
+            index: targetIndex,
+            duration: const Duration(milliseconds: 280),
+            curve: Curves.easeInOut,
+            alignment: 0.02,
+          )
+          .whenComplete(() {
+            _suppressChromeScrollEvents = false;
+            _armVerseSectionAfterSettle(targetIndex);
+          });
+    }
+  }
+
+  /// Enables real verse GlobalKeys for [targetIndex]'s chapter, then retries
+  /// the verse-level scroll now that the anchor exists. Deferred one more
+  /// frame past the scrollTo/reset completion so SPL's positioning pass is
+  /// fully done before a GlobalKey is attached — see [_armedVerseSectionIndex].
+  void _armVerseSectionAfterSettle(int targetIndex) {
+    if (widget.reference.verse == null) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _setArmedVerseSectionIndex(targetIndex);
+      _scheduleVerseFocus();
+    });
+  }
+
+  /// Whether [sectionIndex]'s verse anchors must omit their GlobalKey this
+  /// build. Only the one armed continuous section may carry real keys — see
+  /// [_armedVerseSectionIndex] for why the rest (and the armed one, mid-reposition)
+  /// stay keyless.
+  bool _verseKeySuppressed(int? sectionIndex) =>
+      widget.continuousScrolling && sectionIndex != _armedVerseSectionIndex;
 
   int? _continuousSectionIndexFor(BibleReference reference) =>
       _continuousController.sectionIndexFor(reference);

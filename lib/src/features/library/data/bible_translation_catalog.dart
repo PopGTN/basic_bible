@@ -9,6 +9,14 @@ import 'package:basic_bible/src/models/bible_models.dart';
 /// The canonical list of translations shipped with the app.
 /// Always appears in the available list even with no network and no DB row.
 final List<BibleTranslation> kBuiltInTranslations = [
+  // Both bundled KJV assets ship gzipped (62 MB raw → 8 MB shipped); the
+  // asset loaders decompress transparently for `.gz` paths.
+  //
+  // IMPORTANT: kjv.sqlite.gz is a pre-parsed snapshot. When
+  // kCurrentParserVersion is bumped, regenerate it (export the re-parsed
+  // kjv.sqlite via Advanced Settings, then `gzip -9`) or shipped KJV will
+  // silently lack the new parser features — the restore path stamps it with
+  // the current version.
   BibleTranslation(
     id: 'kjv',
     name: 'King James Version',
@@ -17,8 +25,8 @@ final List<BibleTranslation> kBuiltInTranslations = [
     description: 'The classic English Bible translation',
     isLocal: true,
     filePath: kIsWeb
-        ? 'assets/bible/eng-kjv2006_usfx.xml'
-        : 'assets/bible/kjv.sqlite',
+        ? 'assets/bible/eng-kjv2006_usfx.xml.gz'
+        : 'assets/bible/kjv.sqlite.gz',
     githubUrl:
         'https://raw.githubusercontent.com/PopGTN/bible-data/main/English/kjv/eng-kjv2006_usfx.xml',
     format: kIsWeb ? BibleFormat.usfx : BibleFormat.sqlite,

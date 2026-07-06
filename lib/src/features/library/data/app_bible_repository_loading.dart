@@ -255,12 +255,26 @@ extension AppBibleRepositoryLoading on AppBibleRepository {
       );
     }
     try {
+      if (assetPath.endsWith('.gz')) {
+        return utf8.decode(_gunzipAssetBytes(await rootBundle.load(assetPath)));
+      }
       return await rootBundle.loadString(assetPath);
     } catch (error) {
       throw Exception(
         'Bundled translation ${translation.id} not found at $assetPath: $error',
       );
     }
+  }
+
+  /// Bundled Bible assets ship gzipped to keep install size down (the raw
+  /// KJV pair is 62 MB; gzipped it is 8 MB). Uses package:archive so the
+  /// same code runs on web.
+  List<int> _gunzipAssetBytes(ByteData byteData) {
+    final compressed = byteData.buffer.asUint8List(
+      byteData.offsetInBytes,
+      byteData.lengthInBytes,
+    );
+    return GZipDecoder().decodeBytes(compressed);
   }
 
   bool _isBuiltInSqliteTranslation(BibleTranslation translation) =>
@@ -277,10 +291,12 @@ extension AppBibleRepositoryLoading on AppBibleRepository {
       );
     }
     final byteData = await rootBundle.load(assetPath);
-    final bytes = byteData.buffer.asUint8List(
-      byteData.offsetInBytes,
-      byteData.lengthInBytes,
-    );
+    final bytes = assetPath.endsWith('.gz')
+        ? _gunzipAssetBytes(byteData)
+        : byteData.buffer.asUint8List(
+            byteData.offsetInBytes,
+            byteData.lengthInBytes,
+          );
     _dbManager.close(translation.id);
     await writeBinaryFile(await _sqlitePathFor(translation.id), bytes);
   }
