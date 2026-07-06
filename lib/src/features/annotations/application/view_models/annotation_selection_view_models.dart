@@ -1,6 +1,5 @@
 import 'package:basic_bible/src/features/annotations/models/user_annotations.dart';
 import 'package:basic_bible/src/features/annotations/application/view_models/annotation_data_view_models.dart';
-import 'package:basic_bible/src/features/reader/application/view_models/reader_session_view_models.dart';
 import 'package:basic_bible/src/models/bible_models.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
@@ -51,7 +50,7 @@ final highlightPaletteExpandedProvider = StateProvider.autoDispose<bool>(
 final selectedVerseAnnotationsProvider = Provider<List<UserAnnotation>>((ref) {
   final selectedVerses = ref.watch(selectedVersesProvider);
   if (selectedVerses.isEmpty) return const [];
-  final translationId = ref.watch(currentTranslationProvider);
+  final translationFilter = ref.watch(annotationTranslationFilterProvider);
   // Use the full annotation stream instead of the chapter-filtered one.
   // visibleChapterAnnotationsProvider is filtered by currentReferenceProvider,
   // which does not update when the user scrolls in continuous mode — only when
@@ -60,8 +59,10 @@ final selectedVerseAnnotationsProvider = Provider<List<UserAnnotation>>((ref) {
   final annotations = ref.watch(userAnnotationsProvider).value ?? const [];
   return annotations.where((annotation) {
     return selectedVerses.any(
-      (reference) =>
-          annotation.touchesReference(reference, translationId: translationId),
+      (reference) => annotation.touchesReference(
+        reference,
+        translationId: translationFilter,
+      ),
     );
   }).toList();
 });

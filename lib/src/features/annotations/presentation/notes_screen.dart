@@ -10,16 +10,65 @@ import 'package:basic_bible/src/features/reader/application/view_models/reader_s
 import 'package:basic_bible/src/features/reader/presentation/reference_picker/reference_preview_sheet.dart';
 import 'package:basic_bible/src/models/bible_models.dart';
 import 'package:basic_bible/src/utils/reference_utils.dart';
+import 'package:basic_bible/src/widgets/horizontal_mouse_scroll_list.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-class NotesScreen extends ConsumerWidget {
+class NotesScreen extends ConsumerStatefulWidget {
   const NotesScreen({super.key});
 
+  @override
+  ConsumerState<NotesScreen> createState() => _NotesScreenState();
+}
+
+class _NotesScreenState extends ConsumerState<NotesScreen> {
+  final _searchController = TextEditingController();
+  String _searchQuery = '';
+  bool _isSearching = false;
+  final Set<String> _selectedTags = {};
+  final Set<String> _selectedTranslationIds = {};
+  // 'highlightOnly': highlighted with no note text.
+  // 'noteWithHighlight': has note text and also carries a highlight color.
+  final Set<String> _selectedTypes = {};
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  // Matches the search pattern in VersionsScreen (the translation selector):
+  // the whole app bar swaps to a search bar, with the field itself as the
+  // title, rather than a search row appearing below a static app bar.
+  void _startSearch() {
+    setState(() {
+      _isSearching = true;
+      _searchQuery = '';
+      _searchController.clear();
+    });
+  }
+
+  void _stopSearch() {
+    setState(() {
+      _isSearching = false;
+      _searchQuery = '';
+      _searchController.clear();
+    });
+  }
+
+  void _clearAllFilters() {
+    setState(() {
+      _searchController.clear();
+      _searchQuery = '';
+      _selectedTags.clear();
+      _selectedTranslationIds.clear();
+      _selectedTypes.clear();
+    });
+  }
+
   Future<void> _openReferenceInReader(
-    BuildContext context,
-    WidgetRef ref, {
+    BuildContext context, {
     required BibleReference reference,
     required String preferredTranslationId,
     required String preferredTranslationName,
@@ -79,8 +128,7 @@ class NotesScreen extends ConsumerWidget {
   }
 
   Future<void> _showLinkedVersePreview(
-    BuildContext context,
-    WidgetRef ref, {
+    BuildContext context, {
     required AnnotationVerseLink link,
     required List<BibleBook> books,
   }) {
@@ -114,7 +162,6 @@ class NotesScreen extends ConsumerWidget {
             Navigator.of(previewContext).pop();
             await _openReferenceInReader(
               context,
-              ref,
               reference: preview.reference,
               preferredTranslationId: preview.translationId,
               preferredTranslationName: preview.translationName,
@@ -128,12 +175,12 @@ class NotesScreen extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final annotationsAsync = ref.watch(userAnnotationsProvider);
     final booksAsync = ref.watch(bibleBooksShellProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Notes')),
+      appBar: _isSearching ? _buildSearchAppBar() : _buildNormalAppBar(),
       body: annotationsAsync.when(
         data: (annotations) {
           if (annotations.isEmpty) {
@@ -149,160 +196,496 @@ class NotesScreen extends ConsumerWidget {
           }
 
           final books = booksAsync.value ?? const <BibleBook>[];
-          return ListView.separated(
-            padding: const EdgeInsets.all(16),
-            itemCount: annotations.length,
-            separatorBuilder: (_, index) => const SizedBox(height: 12),
-            itemBuilder: (context, index) {
-              final annotation = annotations[index];
-              Future<void> openDetails() => Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => AnnotationDetailScreen(
-                    annotation: annotation,
-                    books: books,
-                    onPreviewLinkedVerse: (link) => _showLinkedVersePreview(
-                      context,
-                      ref,
-                      link: link,
-                      books: books,
-                    ),
-                    onOpenReference: () async {
-                      await _openReferenceInReader(
-                        context,
-                        ref,
-                        reference: annotation.primaryVerse.reference,
-                        preferredTranslationId:
-                            annotation.primaryVerse.translationId,
-                        preferredTranslationName:
-                            annotation.primaryVerse.translationName,
-                      );
-                    },
-                    onEdit: () async {
-                      Navigator.of(context).pop();
-                      await Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) => NoteEditorScreen(
-                            primaryVerse: annotation.primaryVerse,
-                            existingAnnotation: annotation,
-                          ),
-                        ),
-                      );
-                    },
-                    onDelete: () async {
-                      final id = annotation.id;
-                      if (id == null) return;
-                      final confirmed = await showDialog<bool>(
-                        context: context,
-                        builder: (ctx) => AlertDialog(
-                          title: const Text('Delete?'),
-                          content: const Text(
-                            'This note and all its linked verses will be permanently removed.',
-                          ),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.of(ctx).pop(false),
-                              child: const Text('Cancel'),
-                            ),
-                            TextButton(
-                              onPressed: () => Navigator.of(ctx).pop(true),
-                              child: const Text('Delete'),
-                            ),
-                          ],
-                        ),
-                      );
-                      if (confirmed != true) return;
-                      try {
-                        await ref
-                            .read(userAnnotationRepositoryProvider)
-                            .deleteAnnotation(id);
-                        if (context.mounted) Navigator.of(context).pop();
-                      } catch (_) {
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Failed to delete note.'),
-                            ),
-                          );
-                        }
-                      }
-                    },
-                  ),
-                ),
-              );
-              return _AnnotationListCard(
-                annotation: annotation,
-                books: books,
-                onViewDetails: openDetails,
-                onOpenReference: () async {
-                  await _openReferenceInReader(
-                    context,
-                    ref,
-                    reference: annotation.primaryVerse.reference,
-                    preferredTranslationId:
-                        annotation.primaryVerse.translationId,
-                    preferredTranslationName:
-                        annotation.primaryVerse.translationName,
-                  );
-                },
-                onEdit: () async {
-                  await Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (context) => NoteEditorScreen(
-                        primaryVerse: annotation.primaryVerse,
-                        existingAnnotation: annotation,
-                      ),
-                    ),
-                  );
-                },
-                onDelete: () async {
-                  final id = annotation.id;
-                  if (id == null) return;
-                  final confirmed = await showDialog<bool>(
-                    context: context,
-                    builder: (ctx) => AlertDialog(
-                      title: const Text('Delete?'),
-                      content: const Text(
-                        'This note and all its linked verses will be permanently removed.',
-                      ),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.of(ctx).pop(false),
-                          child: const Text('Cancel'),
-                        ),
-                        TextButton(
-                          onPressed: () => Navigator.of(ctx).pop(true),
-                          child: const Text('Delete'),
-                        ),
-                      ],
-                    ),
-                  );
-                  if (confirmed != true) return;
-                  try {
-                    await ref
-                        .read(userAnnotationRepositoryProvider)
-                        .deleteAnnotation(id);
-                  } catch (_) {
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Failed to delete note.')),
-                      );
+          final tagOptions = _collectSortedTags(annotations);
+          final translationOptions = _collectSortedTranslations(annotations);
+          final hasActiveFilters =
+              _searchQuery.isNotEmpty ||
+              _selectedTags.isNotEmpty ||
+              _selectedTranslationIds.isNotEmpty ||
+              _selectedTypes.isNotEmpty;
+
+          final filteredAnnotations = annotations.where((annotation) {
+            final matchesQuery =
+                _searchQuery.isEmpty ||
+                _annotationMatchesQuery(annotation, books, _searchQuery);
+            final matchesTags =
+                _selectedTags.isEmpty ||
+                annotation.labels.any(_selectedTags.contains);
+            final matchesTranslation =
+                _selectedTranslationIds.isEmpty ||
+                _selectedTranslationIds.contains(
+                  annotation.primaryVerse.translationId,
+                );
+            final matchesType =
+                _selectedTypes.isEmpty ||
+                (_selectedTypes.contains('highlightOnly') &&
+                    annotation.hasHighlight &&
+                    !annotation.hasNoteText) ||
+                (_selectedTypes.contains('noteWithHighlight') &&
+                    annotation.hasNoteText &&
+                    annotation.hasHighlight);
+            return matchesQuery && matchesTags && matchesTranslation && matchesType;
+          }).toList();
+
+          return Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                child: _NotesFilterBar(
+                  translationOptions: translationOptions,
+                  selectedTranslationIds: _selectedTranslationIds,
+                  onTranslationToggled: (id, selected) => setState(() {
+                    if (selected) {
+                      _selectedTranslationIds.add(id);
+                    } else {
+                      _selectedTranslationIds.remove(id);
                     }
-                  }
-                },
-                onPreviewLinkedVerse: (link) => _showLinkedVersePreview(
-                  context,
-                  ref,
-                  link: link,
-                  books: books,
+                  }),
+                  tagOptions: tagOptions,
+                  selectedTags: _selectedTags,
+                  onTagToggled: (tag, selected) => setState(() {
+                    if (selected) {
+                      _selectedTags.add(tag);
+                    } else {
+                      _selectedTags.remove(tag);
+                    }
+                  }),
+                  selectedTypes: _selectedTypes,
+                  onTypeToggled: (type, selected) => setState(() {
+                    if (selected) {
+                      _selectedTypes.add(type);
+                    } else {
+                      _selectedTypes.remove(type);
+                    }
+                  }),
+                  onClearAll: hasActiveFilters ? _clearAllFilters : null,
                 ),
-              );
-            },
+              ),
+              Expanded(
+                child: filteredAnnotations.isEmpty
+                    ? Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(24),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Text(
+                                'No notes match your search or filters.',
+                                textAlign: TextAlign.center,
+                              ),
+                              const SizedBox(height: 12),
+                              TextButton(
+                                onPressed: _clearAllFilters,
+                                child: const Text('Clear filters'),
+                              ),
+                            ],
+                          ),
+                        ),
+                      )
+                    : ListView.separated(
+                        padding: const EdgeInsets.all(16),
+                        itemCount: filteredAnnotations.length,
+                        separatorBuilder: (_, index) =>
+                            const SizedBox(height: 12),
+                        itemBuilder: (context, index) {
+                          final annotation = filteredAnnotations[index];
+                          Future<void> openDetails() =>
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (context) => AnnotationDetailScreen(
+                                    annotation: annotation,
+                                    books: books,
+                                    onPreviewLinkedVerse: (link) =>
+                                        _showLinkedVersePreview(
+                                          context,
+                                          link: link,
+                                          books: books,
+                                        ),
+                                    onOpenReference: () async {
+                                      await _openReferenceInReader(
+                                        context,
+                                        reference:
+                                            annotation.primaryVerse.reference,
+                                        preferredTranslationId: annotation
+                                            .primaryVerse
+                                            .translationId,
+                                        preferredTranslationName: annotation
+                                            .primaryVerse
+                                            .translationName,
+                                      );
+                                    },
+                                    onEdit: () async {
+                                      Navigator.of(context).pop();
+                                      await Navigator.of(context).push(
+                                        MaterialPageRoute(
+                                          builder: (context) =>
+                                              NoteEditorScreen(
+                                                primaryVerse:
+                                                    annotation.primaryVerse,
+                                                existingAnnotation: annotation,
+                                              ),
+                                        ),
+                                      );
+                                    },
+                                    onDelete: () async {
+                                      final id = annotation.id;
+                                      if (id == null) return;
+                                      final confirmed = await showDialog<bool>(
+                                        context: context,
+                                        builder: (ctx) => AlertDialog(
+                                          title: const Text('Delete?'),
+                                          content: const Text(
+                                            'This note and all its linked verses will be permanently removed.',
+                                          ),
+                                          actions: [
+                                            TextButton(
+                                              onPressed: () =>
+                                                  Navigator.of(ctx).pop(false),
+                                              child: const Text('Cancel'),
+                                            ),
+                                            TextButton(
+                                              onPressed: () =>
+                                                  Navigator.of(ctx).pop(true),
+                                              child: const Text('Delete'),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                      if (confirmed != true) return;
+                                      try {
+                                        await ref
+                                            .read(
+                                              userAnnotationRepositoryProvider,
+                                            )
+                                            .deleteAnnotation(id);
+                                        if (context.mounted) {
+                                          Navigator.of(context).pop();
+                                        }
+                                      } catch (_) {
+                                        if (context.mounted) {
+                                          ScaffoldMessenger.of(
+                                            context,
+                                          ).showSnackBar(
+                                            const SnackBar(
+                                              content: Text(
+                                                'Failed to delete note.',
+                                              ),
+                                            ),
+                                          );
+                                        }
+                                      }
+                                    },
+                                  ),
+                                ),
+                              );
+                          return _AnnotationListCard(
+                            annotation: annotation,
+                            books: books,
+                            onViewDetails: openDetails,
+                            onOpenReference: () async {
+                              await _openReferenceInReader(
+                                context,
+                                reference: annotation.primaryVerse.reference,
+                                preferredTranslationId:
+                                    annotation.primaryVerse.translationId,
+                                preferredTranslationName:
+                                    annotation.primaryVerse.translationName,
+                              );
+                            },
+                            onEdit: () async {
+                              await Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (context) => NoteEditorScreen(
+                                    primaryVerse: annotation.primaryVerse,
+                                    existingAnnotation: annotation,
+                                  ),
+                                ),
+                              );
+                            },
+                            onDelete: () async {
+                              final id = annotation.id;
+                              if (id == null) return;
+                              final confirmed = await showDialog<bool>(
+                                context: context,
+                                builder: (ctx) => AlertDialog(
+                                  title: const Text('Delete?'),
+                                  content: const Text(
+                                    'This note and all its linked verses will be permanently removed.',
+                                  ),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () =>
+                                          Navigator.of(ctx).pop(false),
+                                      child: const Text('Cancel'),
+                                    ),
+                                    TextButton(
+                                      onPressed: () =>
+                                          Navigator.of(ctx).pop(true),
+                                      child: const Text('Delete'),
+                                    ),
+                                  ],
+                                ),
+                              );
+                              if (confirmed != true) return;
+                              try {
+                                await ref
+                                    .read(userAnnotationRepositoryProvider)
+                                    .deleteAnnotation(id);
+                              } catch (_) {
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Failed to delete note.'),
+                                    ),
+                                  );
+                                }
+                              }
+                            },
+                            onPreviewLinkedVerse: (link) =>
+                                _showLinkedVersePreview(
+                                  context,
+                                  link: link,
+                                  books: books,
+                                ),
+                          );
+                        },
+                      ),
+              ),
+            ],
           );
         },
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, stack) =>
             Center(child: Text('Failed to load notes: $error')),
       ),
+    );
+  }
+
+  AppBar _buildNormalAppBar() {
+    return AppBar(
+      title: const Text('Notes'),
+      actions: [
+        IconButton(
+          onPressed: _startSearch,
+          icon: const Icon(Icons.search),
+          tooltip: 'Search notes',
+        ),
+      ],
+    );
+  }
+
+  AppBar _buildSearchAppBar() {
+    return AppBar(
+      leading: IconButton(
+        icon: const Icon(Icons.arrow_back),
+        onPressed: _stopSearch,
+      ),
+      title: TextField(
+        controller: _searchController,
+        autofocus: true,
+        decoration: const InputDecoration(
+          hintText: 'Search notes, tags, or a verse like John 3:16',
+          border: InputBorder.none,
+        ),
+        onChanged: (value) => setState(() => _searchQuery = value.trim()),
+      ),
+      actions: [
+        if (_searchQuery.isNotEmpty)
+          IconButton(
+            icon: const Icon(Icons.clear),
+            onPressed: () {
+              _searchController.clear();
+              setState(() => _searchQuery = '');
+            },
+          ),
+      ],
+    );
+  }
+}
+
+/// Distinct labels used across all notes, sorted case-insensitively for the
+/// tag filter chips.
+List<String> _collectSortedTags(List<UserAnnotation> annotations) {
+  final tags = <String>{};
+  for (final annotation in annotations) {
+    tags.addAll(annotation.labels);
+  }
+  final sorted = tags.toList()
+    ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
+  return sorted;
+}
+
+/// Distinct translations used as a primary verse across all notes, sorted by
+/// display name for the translation filter chips.
+List<MapEntry<String, String>> _collectSortedTranslations(
+  List<UserAnnotation> annotations,
+) {
+  final translations = <String, String>{};
+  for (final annotation in annotations) {
+    translations[annotation.primaryVerse.translationId] =
+        annotation.primaryVerse.translationName;
+  }
+  final entries = translations.entries.toList()
+    ..sort((a, b) => a.value.toLowerCase().compareTo(b.value.toLowerCase()));
+  return entries;
+}
+
+/// Matches free text against note content, tags, translation names, and
+/// verse references (e.g. "John 3:16", "3:16", or a book name/id) across the
+/// primary verse and any linked verses.
+bool _annotationMatchesQuery(
+  UserAnnotation annotation,
+  List<BibleBook> books,
+  String query,
+) {
+  final buffer = StringBuffer()
+    ..writeln(annotation.noteText ?? '')
+    ..writeln(annotation.labels.join(' '));
+  for (final verse in annotation.allVerses) {
+    final bookName = displayBookNameForReference(books, verse.bookId);
+    buffer
+      ..writeln(verse.translationName)
+      ..writeln(bookName)
+      ..writeln(verse.bookId)
+      ..writeln('$bookName ${verse.chapter}:${verse.verse}');
+  }
+  return buffer.toString().toLowerCase().contains(query.toLowerCase());
+}
+
+class _NotesFilterBar extends StatelessWidget {
+  const _NotesFilterBar({
+    required this.translationOptions,
+    required this.selectedTranslationIds,
+    required this.onTranslationToggled,
+    required this.tagOptions,
+    required this.selectedTags,
+    required this.onTagToggled,
+    required this.selectedTypes,
+    required this.onTypeToggled,
+    this.onClearAll,
+  });
+
+  final List<MapEntry<String, String>> translationOptions;
+  final Set<String> selectedTranslationIds;
+  final void Function(String id, bool selected) onTranslationToggled;
+  final List<String> tagOptions;
+  final Set<String> selectedTags;
+  final void Function(String tag, bool selected) onTagToggled;
+  final Set<String> selectedTypes;
+  final void Function(String type, bool selected) onTypeToggled;
+  final VoidCallback? onClearAll;
+
+  // 'highlightOnly': highlighted with no note text.
+  // 'noteWithHighlight': has note text and also carries a highlight color.
+  static const _typeOptions = [
+    MapEntry('highlightOnly', 'Highlight only'),
+    MapEntry('noteWithHighlight', 'Note'),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final dropdowns = [
+      _MultiSelectDropdown(
+        label: 'Type',
+        options: _typeOptions,
+        selectedValues: selectedTypes,
+        onToggled: onTypeToggled,
+      ),
+      if (translationOptions.isNotEmpty)
+        _MultiSelectDropdown(
+          label: 'Translation',
+          options: translationOptions,
+          selectedValues: selectedTranslationIds,
+          onToggled: onTranslationToggled,
+        ),
+      if (tagOptions.isNotEmpty)
+        _MultiSelectDropdown(
+          label: 'Tags',
+          options: [for (final tag in tagOptions) MapEntry(tag, tag)],
+          selectedValues: selectedTags,
+          onToggled: onTagToggled,
+        ),
+    ];
+
+    return SizedBox(
+      height: 44,
+      child: Row(
+        children: [
+          Expanded(
+            child: HorizontalMouseScrollList(
+              children: [
+                for (final dropdown in dropdowns)
+                  Padding(padding: const EdgeInsets.only(right: 8), child: dropdown),
+              ],
+            ),
+          ),
+          if (onClearAll != null)
+            TextButton(onPressed: onClearAll, child: const Text('Clear filters')),
+        ],
+      ),
+    );
+  }
+}
+
+/// Dropdown that stays open across taps ([MenuItemButton.closeOnActivate] set
+/// to false) so several options can be checked/unchecked in one interaction,
+/// matching the multi-select behavior the filter chips used to offer.
+class _MultiSelectDropdown extends StatelessWidget {
+  const _MultiSelectDropdown({
+    required this.label,
+    required this.options,
+    required this.selectedValues,
+    required this.onToggled,
+  });
+
+  final String label;
+  final List<MapEntry<String, String>> options;
+  final Set<String> selectedValues;
+  final void Function(String value, bool selected) onToggled;
+
+  String get _buttonLabel {
+    if (selectedValues.isEmpty) return label;
+    if (selectedValues.length == 1) {
+      final id = selectedValues.first;
+      final match = options.where((entry) => entry.key == id).firstOrNull;
+      return match?.value ?? label;
+    }
+    return '$label (${selectedValues.length})';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final hasSelection = selectedValues.isNotEmpty;
+    return MenuAnchor(
+      builder: (context, controller, child) {
+        return OutlinedButton.icon(
+          onPressed: () => controller.isOpen ? controller.close() : controller.open(),
+          icon: const Icon(Icons.arrow_drop_down),
+          label: Text(_buttonLabel, overflow: TextOverflow.ellipsis),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: hasSelection ? colors.onSurface : colors.onSurfaceVariant,
+            backgroundColor: hasSelection ? colors.surfaceContainerHighest : null,
+            side: BorderSide(
+              color: hasSelection ? colors.onSurface : colors.outlineVariant,
+            ),
+          ),
+        );
+      },
+      menuChildren: [
+        for (final entry in options)
+          MenuItemButton(
+            closeOnActivate: false,
+            leadingIcon: Icon(
+              selectedValues.contains(entry.key)
+                  ? Icons.check_box
+                  : Icons.check_box_outline_blank,
+            ),
+            onPressed: () =>
+                onToggled(entry.key, !selectedValues.contains(entry.key)),
+            child: Text(entry.value),
+          ),
+      ],
     );
   }
 }

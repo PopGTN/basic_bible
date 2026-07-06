@@ -21,22 +21,43 @@ import 'features/settings/application/view_models/theme_view_model.dart'
     hide themeDataMap;
 import 'features/settings/application/view_models/language_view_model.dart';
 
-class MyApp extends ConsumerWidget {
+class MyApp extends ConsumerStatefulWidget {
   const MyApp({super.key});
 
   @override
-  Widget build(BuildContext contexht, WidgetRef ref) {
-    final isLoggedIn = ref.watch(authProvider);
-    final requireDummyLogin = ref.watch(requireDummyLoginProvider);
-    final appTheme = ref.watch(themeProvider);
-    final localelang = ref.watch(languageProvider);
+  ConsumerState<MyApp> createState() => _MyAppState();
+}
 
-    final router = GoRouter(
+class _MyAppState extends ConsumerState<MyApp> {
+  final _routerRefresh = _RouterRefreshNotifier();
+  late final GoRouter _router;
+
+  @override
+  void initState() {
+    super.initState();
+    // Keep the redirect logic reactive to auth/login-requirement changes via
+    // refreshListenable instead of rebuilding the whole GoRouter on every
+    // MyApp rebuild. A previous version built GoRouter inline in build(),
+    // which discarded the entire navigation stack back to initialLocation on
+    // *any* watched-provider change — including a harmless theme or language
+    // switch while sitting on, say, the Settings screen.
+    ref.listenManual(authProvider, (_, _) => _routerRefresh.refresh());
+    ref.listenManual(
+      requireDummyLoginProvider,
+      (_, _) => _routerRefresh.refresh(),
+    );
+
+    final isLoggedIn = ref.read(authProvider);
+    final requireDummyLogin = ref.read(requireDummyLoginProvider);
+
+    _router = GoRouter(
       initialLocation: requireDummyLogin && !isLoggedIn ? '/login' : '/home',
+      refreshListenable: _routerRefresh,
       routes: [
         GoRoute(
           path: '/',
-          builder: (context, state) => requireDummyLogin && !isLoggedIn
+          builder: (context, state) =>
+              ref.read(requireDummyLoginProvider) && !ref.read(authProvider)
               ? const LoginScreen()
               : const HomeScreen(),
         ),
@@ -91,11 +112,23 @@ class MyApp extends ConsumerWidget {
         return null;
       },
     );
+  }
+
+  @override
+  void dispose() {
+    _routerRefresh.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final appTheme = ref.watch(themeProvider);
+    final localelang = ref.watch(languageProvider);
 
     return MaterialApp.router(
       title: 'The Basic Bible App',
       debugShowCheckedModeBanner: false,
-      routerConfig: router,
+      routerConfig: _router,
       //Languages
       locale: Locale(localelang),
 
@@ -112,4 +145,8 @@ class MyApp extends ConsumerWidget {
       themeMode: mapThemeMode(appTheme),
     );
   }
+}
+
+class _RouterRefreshNotifier extends ChangeNotifier {
+  void refresh() => notifyListeners();
 }

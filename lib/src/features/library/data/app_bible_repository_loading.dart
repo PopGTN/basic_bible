@@ -168,7 +168,9 @@ extension AppBibleRepositoryLoading on AppBibleRepository {
     }
 
     final path = await _sqlitePathFor(translationId);
-    if (usesFileBackedStorage && !await pathExists(path)) return null;
+    if (usesFileBackedStorage && !await pathExists(path)) {
+      return null;
+    }
     final translationDb = await _dbManager.open(translationId, path);
     final chapter = await translationDb.getChapter(bookId, chapterNumber);
     if (chapter == null) return null;
