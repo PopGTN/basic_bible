@@ -3,6 +3,7 @@ import 'package:basic_bible/src/features/annotations/application/view_models/ann
 import 'package:basic_bible/src/features/reader/application/view_models/reader_preferences_view_models.dart';
 import 'package:basic_bible/src/features/settings/application/view_models/app_launch_preferences_view_models.dart';
 import 'package:basic_bible/src/features/settings/application/view_models/reader_display_preferences_view_models.dart';
+import 'package:basic_bible/src/features/sync/presentation/notes_backup_tiles.dart';
 import 'package:basic_bible/src/widgets/app_back_button.dart';
 import 'package:basic_bible/src/widgets/horizontal_mouse_scroll_list.dart';
 import 'package:basic_bible/src/widgets/theme_preview_card.dart';
@@ -270,6 +271,7 @@ class SettingsScreen extends ConsumerWidget {
                     .setEnabled(value);
               },
             ),
+            const NotesBackupTiles(),
             const SizedBox(height: 20),
 
             const Divider(),
