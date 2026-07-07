@@ -48,6 +48,12 @@ dependencies:
   scrollable_positioned_list: ^0.3.8
   # Stable per-note identity for sync/export merging.
   uuid: ^4.5.1
+  # Google sign-in on Android/iOS; desktop uses a hand-rolled OAuth loopback
+  # flow (google_sign_in has no Linux/Windows support).
+  google_sign_in: ^7.2.0
+  # Persists desktop OAuth refresh tokens (libsecret on Linux, Credential
+  # Manager on Windows, Keychain on macOS).
+  flutter_secure_storage: ^9.2.4
   # Building/reading standalone notes-backup SQLite files (also used by
   # migration tests to build legacy-schema fixture databases).
   sqlite3: ^2.4.0
