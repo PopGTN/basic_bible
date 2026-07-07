@@ -658,6 +658,15 @@ class $UserAnnotationsTable extends UserAnnotations
       'PRIMARY KEY AUTOINCREMENT',
     ),
   );
+  static const VerificationMeta _uuidMeta = const VerificationMeta('uuid');
+  @override
+  late final GeneratedColumn<String> uuid = GeneratedColumn<String>(
+    'uuid',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _typeMeta = const VerificationMeta('type');
   @override
   late final GeneratedColumn<String> type = GeneratedColumn<String>(
@@ -777,9 +786,21 @@ class $UserAnnotationsTable extends UserAnnotations
     requiredDuringInsert: false,
     defaultValue: currentDateAndTime,
   );
+  static const VerificationMeta _deletedAtMeta = const VerificationMeta(
+    'deletedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> deletedAt = GeneratedColumn<DateTime>(
+    'deleted_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
+    uuid,
     type,
     primaryBookId,
     primaryChapter,
@@ -791,6 +812,7 @@ class $UserAnnotationsTable extends UserAnnotations
     labels,
     createdAt,
     updatedAt,
+    deletedAt,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -806,6 +828,12 @@ class $UserAnnotationsTable extends UserAnnotations
     final data = instance.toColumns(true);
     if (data.containsKey('id')) {
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('uuid')) {
+      context.handle(
+        _uuidMeta,
+        uuid.isAcceptableOrUnknown(data['uuid']!, _uuidMeta),
+      );
     }
     if (data.containsKey('type')) {
       context.handle(
@@ -897,6 +925,12 @@ class $UserAnnotationsTable extends UserAnnotations
         updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
       );
     }
+    if (data.containsKey('deleted_at')) {
+      context.handle(
+        _deletedAtMeta,
+        deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta),
+      );
+    }
     return context;
   }
 
@@ -910,6 +944,10 @@ class $UserAnnotationsTable extends UserAnnotations
         DriftSqlType.int,
         data['${effectivePrefix}id'],
       )!,
+      uuid: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}uuid'],
+      ),
       type: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}type'],
@@ -956,6 +994,10 @@ class $UserAnnotationsTable extends UserAnnotations
         DriftSqlType.dateTime,
         data['${effectivePrefix}updated_at'],
       )!,
+      deletedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}deleted_at'],
+      ),
     );
   }
 
@@ -971,6 +1013,11 @@ class $UserAnnotationsTable extends UserAnnotations
 class UserAnnotationEntry extends DataClass
     implements Insertable<UserAnnotationEntry> {
   final int id;
+
+  /// Globally stable identity used by sync/export merging. Nullable in the
+  /// schema only to keep the v8 ALTER TABLE migration simple; application
+  /// code always populates it on insert/backfill.
+  final String? uuid;
   final String type;
   final String primaryBookId;
   final int primaryChapter;
@@ -982,8 +1029,14 @@ class UserAnnotationEntry extends DataClass
   final List<String> labels;
   final DateTime createdAt;
   final DateTime updatedAt;
+
+  /// Soft-delete tombstone. Deleted notes keep their row (invisible to the
+  /// UI) so other devices/imports see a deterministic deletion instead of a
+  /// silently missing note.
+  final DateTime? deletedAt;
   const UserAnnotationEntry({
     required this.id,
+    this.uuid,
     required this.type,
     required this.primaryBookId,
     required this.primaryChapter,
@@ -995,11 +1048,15 @@ class UserAnnotationEntry extends DataClass
     required this.labels,
     required this.createdAt,
     required this.updatedAt,
+    this.deletedAt,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<int>(id);
+    if (!nullToAbsent || uuid != null) {
+      map['uuid'] = Variable<String>(uuid);
+    }
     map['type'] = Variable<String>(type);
     map['primary_book_id'] = Variable<String>(primaryBookId);
     map['primary_chapter'] = Variable<int>(primaryChapter);
@@ -1019,12 +1076,16 @@ class UserAnnotationEntry extends DataClass
     }
     map['created_at'] = Variable<DateTime>(createdAt);
     map['updated_at'] = Variable<DateTime>(updatedAt);
+    if (!nullToAbsent || deletedAt != null) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt);
+    }
     return map;
   }
 
   UserAnnotationsCompanion toCompanion(bool nullToAbsent) {
     return UserAnnotationsCompanion(
       id: Value(id),
+      uuid: uuid == null && nullToAbsent ? const Value.absent() : Value(uuid),
       type: Value(type),
       primaryBookId: Value(primaryBookId),
       primaryChapter: Value(primaryChapter),
@@ -1040,6 +1101,9 @@ class UserAnnotationEntry extends DataClass
       labels: Value(labels),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
+      deletedAt: deletedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deletedAt),
     );
   }
 
@@ -1050,6 +1114,7 @@ class UserAnnotationEntry extends DataClass
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return UserAnnotationEntry(
       id: serializer.fromJson<int>(json['id']),
+      uuid: serializer.fromJson<String?>(json['uuid']),
       type: serializer.fromJson<String>(json['type']),
       primaryBookId: serializer.fromJson<String>(json['primaryBookId']),
       primaryChapter: serializer.fromJson<int>(json['primaryChapter']),
@@ -1067,6 +1132,7 @@ class UserAnnotationEntry extends DataClass
       labels: serializer.fromJson<List<String>>(json['labels']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      deletedAt: serializer.fromJson<DateTime?>(json['deletedAt']),
     );
   }
   @override
@@ -1074,6 +1140,7 @@ class UserAnnotationEntry extends DataClass
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'id': serializer.toJson<int>(id),
+      'uuid': serializer.toJson<String?>(uuid),
       'type': serializer.toJson<String>(type),
       'primaryBookId': serializer.toJson<String>(primaryBookId),
       'primaryChapter': serializer.toJson<int>(primaryChapter),
@@ -1087,11 +1154,13 @@ class UserAnnotationEntry extends DataClass
       'labels': serializer.toJson<List<String>>(labels),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'deletedAt': serializer.toJson<DateTime?>(deletedAt),
     };
   }
 
   UserAnnotationEntry copyWith({
     int? id,
+    Value<String?> uuid = const Value.absent(),
     String? type,
     String? primaryBookId,
     int? primaryChapter,
@@ -1103,8 +1172,10 @@ class UserAnnotationEntry extends DataClass
     List<String>? labels,
     DateTime? createdAt,
     DateTime? updatedAt,
+    Value<DateTime?> deletedAt = const Value.absent(),
   }) => UserAnnotationEntry(
     id: id ?? this.id,
+    uuid: uuid.present ? uuid.value : this.uuid,
     type: type ?? this.type,
     primaryBookId: primaryBookId ?? this.primaryBookId,
     primaryChapter: primaryChapter ?? this.primaryChapter,
@@ -1119,10 +1190,12 @@ class UserAnnotationEntry extends DataClass
     labels: labels ?? this.labels,
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt ?? this.updatedAt,
+    deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
   );
   UserAnnotationEntry copyWithCompanion(UserAnnotationsCompanion data) {
     return UserAnnotationEntry(
       id: data.id.present ? data.id.value : this.id,
+      uuid: data.uuid.present ? data.uuid.value : this.uuid,
       type: data.type.present ? data.type.value : this.type,
       primaryBookId: data.primaryBookId.present
           ? data.primaryBookId.value
@@ -1146,6 +1219,7 @@ class UserAnnotationEntry extends DataClass
       labels: data.labels.present ? data.labels.value : this.labels,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
     );
   }
 
@@ -1153,6 +1227,7 @@ class UserAnnotationEntry extends DataClass
   String toString() {
     return (StringBuffer('UserAnnotationEntry(')
           ..write('id: $id, ')
+          ..write('uuid: $uuid, ')
           ..write('type: $type, ')
           ..write('primaryBookId: $primaryBookId, ')
           ..write('primaryChapter: $primaryChapter, ')
@@ -1163,7 +1238,8 @@ class UserAnnotationEntry extends DataClass
           ..write('highlightColorValue: $highlightColorValue, ')
           ..write('labels: $labels, ')
           ..write('createdAt: $createdAt, ')
-          ..write('updatedAt: $updatedAt')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deletedAt: $deletedAt')
           ..write(')'))
         .toString();
   }
@@ -1171,6 +1247,7 @@ class UserAnnotationEntry extends DataClass
   @override
   int get hashCode => Object.hash(
     id,
+    uuid,
     type,
     primaryBookId,
     primaryChapter,
@@ -1182,12 +1259,14 @@ class UserAnnotationEntry extends DataClass
     labels,
     createdAt,
     updatedAt,
+    deletedAt,
   );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is UserAnnotationEntry &&
           other.id == this.id &&
+          other.uuid == this.uuid &&
           other.type == this.type &&
           other.primaryBookId == this.primaryBookId &&
           other.primaryChapter == this.primaryChapter &&
@@ -1198,11 +1277,13 @@ class UserAnnotationEntry extends DataClass
           other.highlightColorValue == this.highlightColorValue &&
           other.labels == this.labels &&
           other.createdAt == this.createdAt &&
-          other.updatedAt == this.updatedAt);
+          other.updatedAt == this.updatedAt &&
+          other.deletedAt == this.deletedAt);
 }
 
 class UserAnnotationsCompanion extends UpdateCompanion<UserAnnotationEntry> {
   final Value<int> id;
+  final Value<String?> uuid;
   final Value<String> type;
   final Value<String> primaryBookId;
   final Value<int> primaryChapter;
@@ -1214,8 +1295,10 @@ class UserAnnotationsCompanion extends UpdateCompanion<UserAnnotationEntry> {
   final Value<List<String>> labels;
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
+  final Value<DateTime?> deletedAt;
   const UserAnnotationsCompanion({
     this.id = const Value.absent(),
+    this.uuid = const Value.absent(),
     this.type = const Value.absent(),
     this.primaryBookId = const Value.absent(),
     this.primaryChapter = const Value.absent(),
@@ -1227,9 +1310,11 @@ class UserAnnotationsCompanion extends UpdateCompanion<UserAnnotationEntry> {
     this.labels = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
   });
   UserAnnotationsCompanion.insert({
     this.id = const Value.absent(),
+    this.uuid = const Value.absent(),
     required String type,
     required String primaryBookId,
     required int primaryChapter,
@@ -1241,6 +1326,7 @@ class UserAnnotationsCompanion extends UpdateCompanion<UserAnnotationEntry> {
     this.labels = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
   }) : type = Value(type),
        primaryBookId = Value(primaryBookId),
        primaryChapter = Value(primaryChapter),
@@ -1249,6 +1335,7 @@ class UserAnnotationsCompanion extends UpdateCompanion<UserAnnotationEntry> {
        primaryTranslationName = Value(primaryTranslationName);
   static Insertable<UserAnnotationEntry> custom({
     Expression<int>? id,
+    Expression<String>? uuid,
     Expression<String>? type,
     Expression<String>? primaryBookId,
     Expression<int>? primaryChapter,
@@ -1260,9 +1347,11 @@ class UserAnnotationsCompanion extends UpdateCompanion<UserAnnotationEntry> {
     Expression<String>? labels,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
+    Expression<DateTime>? deletedAt,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
+      if (uuid != null) 'uuid': uuid,
       if (type != null) 'type': type,
       if (primaryBookId != null) 'primary_book_id': primaryBookId,
       if (primaryChapter != null) 'primary_chapter': primaryChapter,
@@ -1277,11 +1366,13 @@ class UserAnnotationsCompanion extends UpdateCompanion<UserAnnotationEntry> {
       if (labels != null) 'labels': labels,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
+      if (deletedAt != null) 'deleted_at': deletedAt,
     });
   }
 
   UserAnnotationsCompanion copyWith({
     Value<int>? id,
+    Value<String?>? uuid,
     Value<String>? type,
     Value<String>? primaryBookId,
     Value<int>? primaryChapter,
@@ -1293,9 +1384,11 @@ class UserAnnotationsCompanion extends UpdateCompanion<UserAnnotationEntry> {
     Value<List<String>>? labels,
     Value<DateTime>? createdAt,
     Value<DateTime>? updatedAt,
+    Value<DateTime?>? deletedAt,
   }) {
     return UserAnnotationsCompanion(
       id: id ?? this.id,
+      uuid: uuid ?? this.uuid,
       type: type ?? this.type,
       primaryBookId: primaryBookId ?? this.primaryBookId,
       primaryChapter: primaryChapter ?? this.primaryChapter,
@@ -1308,6 +1401,7 @@ class UserAnnotationsCompanion extends UpdateCompanion<UserAnnotationEntry> {
       labels: labels ?? this.labels,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      deletedAt: deletedAt ?? this.deletedAt,
     );
   }
 
@@ -1316,6 +1410,9 @@ class UserAnnotationsCompanion extends UpdateCompanion<UserAnnotationEntry> {
     final map = <String, Expression>{};
     if (id.present) {
       map['id'] = Variable<int>(id.value);
+    }
+    if (uuid.present) {
+      map['uuid'] = Variable<String>(uuid.value);
     }
     if (type.present) {
       map['type'] = Variable<String>(type.value);
@@ -1356,6 +1453,9 @@ class UserAnnotationsCompanion extends UpdateCompanion<UserAnnotationEntry> {
     if (updatedAt.present) {
       map['updated_at'] = Variable<DateTime>(updatedAt.value);
     }
+    if (deletedAt.present) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt.value);
+    }
     return map;
   }
 
@@ -1363,6 +1463,7 @@ class UserAnnotationsCompanion extends UpdateCompanion<UserAnnotationEntry> {
   String toString() {
     return (StringBuffer('UserAnnotationsCompanion(')
           ..write('id: $id, ')
+          ..write('uuid: $uuid, ')
           ..write('type: $type, ')
           ..write('primaryBookId: $primaryBookId, ')
           ..write('primaryChapter: $primaryChapter, ')
@@ -1373,7 +1474,8 @@ class UserAnnotationsCompanion extends UpdateCompanion<UserAnnotationEntry> {
           ..write('highlightColorValue: $highlightColorValue, ')
           ..write('labels: $labels, ')
           ..write('createdAt: $createdAt, ')
-          ..write('updatedAt: $updatedAt')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deletedAt: $deletedAt')
           ..write(')'))
         .toString();
   }
@@ -1911,6 +2013,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $AnnotationVersesTable annotationVerses = $AnnotationVersesTable(
     this,
   );
+  late final Index idxUserAnnotationsUuid = Index(
+    'idx_user_annotations_uuid',
+    'CREATE UNIQUE INDEX idx_user_annotations_uuid ON user_annotations (uuid)',
+  );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -1919,6 +2025,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     installedTranslations,
     userAnnotations,
     annotationVerses,
+    idxUserAnnotationsUuid,
   ];
 }
 
@@ -2249,6 +2356,7 @@ typedef $$InstalledTranslationsTableProcessedTableManager =
 typedef $$UserAnnotationsTableCreateCompanionBuilder =
     UserAnnotationsCompanion Function({
       Value<int> id,
+      Value<String?> uuid,
       required String type,
       required String primaryBookId,
       required int primaryChapter,
@@ -2260,10 +2368,12 @@ typedef $$UserAnnotationsTableCreateCompanionBuilder =
       Value<List<String>> labels,
       Value<DateTime> createdAt,
       Value<DateTime> updatedAt,
+      Value<DateTime?> deletedAt,
     });
 typedef $$UserAnnotationsTableUpdateCompanionBuilder =
     UserAnnotationsCompanion Function({
       Value<int> id,
+      Value<String?> uuid,
       Value<String> type,
       Value<String> primaryBookId,
       Value<int> primaryChapter,
@@ -2275,6 +2385,7 @@ typedef $$UserAnnotationsTableUpdateCompanionBuilder =
       Value<List<String>> labels,
       Value<DateTime> createdAt,
       Value<DateTime> updatedAt,
+      Value<DateTime?> deletedAt,
     });
 
 final class $$UserAnnotationsTableReferences
@@ -2325,6 +2436,11 @@ class $$UserAnnotationsTableFilterComposer
   });
   ColumnFilters<int> get id => $composableBuilder(
     column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get uuid => $composableBuilder(
+    column: $table.uuid,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -2384,6 +2500,11 @@ class $$UserAnnotationsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<DateTime> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
   Expression<bool> annotationVersesRefs(
     Expression<bool> Function($$AnnotationVersesTableFilterComposer f) f,
   ) {
@@ -2421,6 +2542,11 @@ class $$UserAnnotationsTableOrderingComposer
   });
   ColumnOrderings<int> get id => $composableBuilder(
     column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get uuid => $composableBuilder(
+    column: $table.uuid,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -2478,6 +2604,11 @@ class $$UserAnnotationsTableOrderingComposer
     column: $table.updatedAt,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<DateTime> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$UserAnnotationsTableAnnotationComposer
@@ -2491,6 +2622,9 @@ class $$UserAnnotationsTableAnnotationComposer
   });
   GeneratedColumn<int> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get uuid =>
+      $composableBuilder(column: $table.uuid, builder: (column) => column);
 
   GeneratedColumn<String> get type =>
       $composableBuilder(column: $table.type, builder: (column) => column);
@@ -2536,6 +2670,9 @@ class $$UserAnnotationsTableAnnotationComposer
 
   GeneratedColumn<DateTime> get updatedAt =>
       $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get deletedAt =>
+      $composableBuilder(column: $table.deletedAt, builder: (column) => column);
 
   Expression<T> annotationVersesRefs<T extends Object>(
     Expression<T> Function($$AnnotationVersesTableAnnotationComposer a) f,
@@ -2594,6 +2731,7 @@ class $$UserAnnotationsTableTableManager
           updateCompanionCallback:
               ({
                 Value<int> id = const Value.absent(),
+                Value<String?> uuid = const Value.absent(),
                 Value<String> type = const Value.absent(),
                 Value<String> primaryBookId = const Value.absent(),
                 Value<int> primaryChapter = const Value.absent(),
@@ -2605,8 +2743,10 @@ class $$UserAnnotationsTableTableManager
                 Value<List<String>> labels = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
+                Value<DateTime?> deletedAt = const Value.absent(),
               }) => UserAnnotationsCompanion(
                 id: id,
+                uuid: uuid,
                 type: type,
                 primaryBookId: primaryBookId,
                 primaryChapter: primaryChapter,
@@ -2618,10 +2758,12 @@ class $$UserAnnotationsTableTableManager
                 labels: labels,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
+                deletedAt: deletedAt,
               ),
           createCompanionCallback:
               ({
                 Value<int> id = const Value.absent(),
+                Value<String?> uuid = const Value.absent(),
                 required String type,
                 required String primaryBookId,
                 required int primaryChapter,
@@ -2633,8 +2775,10 @@ class $$UserAnnotationsTableTableManager
                 Value<List<String>> labels = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
+                Value<DateTime?> deletedAt = const Value.absent(),
               }) => UserAnnotationsCompanion.insert(
                 id: id,
+                uuid: uuid,
                 type: type,
                 primaryBookId: primaryBookId,
                 primaryChapter: primaryChapter,
@@ -2646,6 +2790,7 @@ class $$UserAnnotationsTableTableManager
                 labels: labels,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
+                deletedAt: deletedAt,
               ),
           withReferenceMapper: (p0) => p0
               .map(

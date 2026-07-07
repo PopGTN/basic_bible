@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:drift/drift.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:basic_bible/src/features/annotations/models/user_annotations.dart';
+import 'package:uuid/uuid.dart';
 
 import '../models/bible_models.dart';
 import 'app_database_executor.dart';
@@ -132,8 +133,14 @@ class InstalledTranslations extends Table {
 }
 
 @DataClassName('UserAnnotationEntry')
+@TableIndex(name: 'idx_user_annotations_uuid', columns: {#uuid}, unique: true)
 class UserAnnotations extends Table {
   IntColumn get id => integer().autoIncrement()();
+
+  /// Globally stable identity used by sync/export merging. Nullable in the
+  /// schema only to keep the v8 ALTER TABLE migration simple; application
+  /// code always populates it on insert/backfill.
+  TextColumn get uuid => text().nullable()();
   TextColumn get type => text()();
   TextColumn get primaryBookId => text()();
   IntColumn get primaryChapter => integer()();
@@ -147,6 +154,11 @@ class UserAnnotations extends Table {
       .withDefault(const Constant(''))();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
   DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
+
+  /// Soft-delete tombstone. Deleted notes keep their row (invisible to the
+  /// UI) so other devices/imports see a deterministic deletion instead of a
+  /// silently missing note.
+  DateTimeColumn get deletedAt => dateTime().nullable()();
 }
 
 @DataClassName('AnnotationVerseEntry')
@@ -177,7 +189,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase(super.e);
 
   @override
-  int get schemaVersion => 7;
+  int get schemaVersion => 8;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -242,6 +254,29 @@ class AppDatabase extends _$AppDatabase {
         await customStatement('DROP TABLE IF EXISTS chapters');
         await customStatement('DROP TABLE IF EXISTS books');
         await customStatement('DROP TABLE IF EXISTS translations');
+      }
+      if (from < 8) {
+        // v8: stable sync identity + soft-delete tombstones.
+        await customStatement(
+          'ALTER TABLE user_annotations ADD COLUMN uuid TEXT',
+        );
+        await customStatement(
+          'ALTER TABLE user_annotations ADD COLUMN deleted_at INTEGER',
+        );
+        const uuidGen = Uuid();
+        final rows = await customSelect(
+          'SELECT id FROM user_annotations WHERE uuid IS NULL',
+        ).get();
+        for (final row in rows) {
+          await customStatement(
+            'UPDATE user_annotations SET uuid = ? WHERE id = ?',
+            [uuidGen.v4(), row.read<int>('id')],
+          );
+        }
+        await customStatement(
+          'CREATE UNIQUE INDEX IF NOT EXISTS idx_user_annotations_uuid '
+          'ON user_annotations (uuid)',
+        );
       }
     },
     onCreate: (m) => m.createAll(),
@@ -361,13 +396,19 @@ class AppDatabase extends _$AppDatabase {
     for (final t in UserAnnotationType.values) t.name: t,
   };
 
-  JoinedSelectStatement<HasResultSet, dynamic> _annotationJoinQuery() {
-    return select(userAnnotations).join([
+  JoinedSelectStatement<HasResultSet, dynamic> _annotationJoinQuery({
+    bool includeDeleted = false,
+  }) {
+    final query = select(userAnnotations).join([
       leftOuterJoin(
         annotationVerses,
         annotationVerses.annotationId.equalsExp(userAnnotations.id),
       ),
     ]);
+    if (!includeDeleted) {
+      query.where(userAnnotations.deletedAt.isNull());
+    }
+    return query;
   }
 
   List<UserAnnotation> _mapJoinRows(List<TypedResult> rows) {
@@ -399,6 +440,7 @@ class AppDatabase extends _$AppDatabase {
       for (final a in annotationEntries.values)
         UserAnnotation(
           id: a.id,
+          uuid: a.uuid,
           type: _annotationTypeByName[a.type] ?? UserAnnotationType.note,
           primaryVerse: AnnotationVerseLink(
             bookId: a.primaryBookId,
@@ -413,6 +455,7 @@ class AppDatabase extends _$AppDatabase {
           linkedVerses: versesByAnnotation[a.id] ?? const [],
           createdAt: a.createdAt,
           updatedAt: a.updatedAt,
+          deletedAt: a.deletedAt,
         ),
     ];
   }
@@ -449,6 +492,11 @@ class AppDatabase extends _$AppDatabase {
     return transaction(() async {
       final now = DateTime.now();
       final entry = UserAnnotationsCompanion(
+        // New notes get a fresh sync uuid; updates never touch the column so
+        // the existing uuid is preserved.
+        uuid: annotation.id == null
+            ? Value(annotation.uuid ?? const Uuid().v4())
+            : const Value.absent(),
         type: Value(annotation.type.name),
         primaryBookId: Value(annotation.primaryVerse.bookId),
         primaryChapter: Value(annotation.primaryVerse.chapter),
@@ -498,17 +546,105 @@ class AppDatabase extends _$AppDatabase {
     });
   }
 
+  /// Soft delete: keeps the row as a tombstone (hidden from all UI queries)
+  /// so sync/import can propagate the deletion deterministically. Child
+  /// verse links are hard-deleted; they are not synced independently.
   Future<void> deleteUserAnnotation(int annotationId) async {
     await transaction(() async {
+      final now = DateTime.now();
       await (delete(
         annotationVerses,
       )..where((t) => t.annotationId.equals(annotationId))).go();
-      await (delete(
-        userAnnotations,
-      )..where((t) => t.id.equals(annotationId))).go();
+      await (update(userAnnotations)..where((t) => t.id.equals(annotationId)))
+          .write(
+            UserAnnotationsCompanion(
+              deletedAt: Value(now),
+              updatedAt: Value(now),
+            ),
+          );
     });
   }
 
+  // ===========================================================================
+  // Sync/export support
+  // ===========================================================================
+
+  /// All annotations including tombstones — for sync and export, never UI.
+  Future<List<UserAnnotation>> getAllUserAnnotationsIncludingDeleted() async {
+    final query = _annotationJoinQuery(includeDeleted: true)
+      ..orderBy([
+        OrderingTerm.desc(userAnnotations.updatedAt),
+        OrderingTerm.desc(userAnnotations.id),
+        OrderingTerm(expression: annotationVerses.sortOrder),
+      ]);
+    return _mapJoinRows(await query.get());
+  }
+
+  /// Write path used by Drive sync and file import: upserts by [uuid], never
+  /// by local int id (which differs across devices), and preserves the given
+  /// createdAt/updatedAt/deletedAt verbatim. Re-stamping updatedAt here would
+  /// make every applied remote change look newer than its source and ping-pong
+  /// between devices forever.
+  Future<void> upsertAnnotationFromSync(UserAnnotation annotation) async {
+    final uuid = annotation.uuid;
+    if (uuid == null) {
+      throw ArgumentError('upsertAnnotationFromSync requires a uuid');
+    }
+    await transaction(() async {
+      final existing = await (select(
+        userAnnotations,
+      )..where((t) => t.uuid.equals(uuid))).getSingleOrNull();
+
+      final entry = UserAnnotationsCompanion(
+        uuid: Value(uuid),
+        type: Value(annotation.type.name),
+        primaryBookId: Value(annotation.primaryVerse.bookId),
+        primaryChapter: Value(annotation.primaryVerse.chapter),
+        primaryVerse: Value(annotation.primaryVerse.verse),
+        primaryTranslationId: Value(annotation.primaryVerse.translationId),
+        primaryTranslationName: Value(annotation.primaryVerse.translationName),
+        noteText: Value(
+          annotation.hasNoteText ? annotation.noteText!.trim() : null,
+        ),
+        highlightColorValue: Value(annotation.highlightColorValue),
+        labels: Value(annotation.labels),
+        createdAt: Value(annotation.createdAt),
+        updatedAt: Value(annotation.updatedAt),
+        deletedAt: Value(annotation.deletedAt),
+      );
+
+      final annotationId = existing == null
+          ? await into(userAnnotations).insert(entry)
+          : await () async {
+              await (update(
+                userAnnotations,
+              )..where((t) => t.id.equals(existing.id))).write(entry);
+              return existing.id;
+            }();
+
+      await (delete(
+        annotationVerses,
+      )..where((t) => t.annotationId.equals(annotationId))).go();
+
+      // Tombstones carry no verse links.
+      if (annotation.deletedAt == null && annotation.linkedVerses.isNotEmpty) {
+        await batch((b) {
+          b.insertAll(annotationVerses, [
+            for (var i = 0; i < annotation.linkedVerses.length; i++)
+              AnnotationVersesCompanion.insert(
+                annotationId: annotationId,
+                sortOrder: i,
+                bookId: annotation.linkedVerses[i].bookId,
+                chapter: annotation.linkedVerses[i].chapter,
+                verse: annotation.linkedVerses[i].verse,
+                translationId: annotation.linkedVerses[i].translationId,
+                translationName: annotation.linkedVerses[i].translationName,
+              ),
+          ]);
+        });
+      }
+    });
+  }
 }
 
 // =============================================================================

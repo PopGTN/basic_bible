@@ -10,6 +10,7 @@
 
 import 'dart:io';
 
+import 'package:basic_bible/src/features/annotations/models/user_annotations.dart';
 import 'package:basic_bible/src/models/bible_models.dart';
 import 'package:basic_bible/src/services/app_database.dart';
 import 'package:drift/native.dart';
@@ -249,6 +250,177 @@ void main() {
 
     expect(tables, isNot(contains('translations')));
     expect(tables, isNot(contains('verses')));
+  });
+
+  /// installed_translations exactly as the v7 migration created it.
+  void createV7RegistryTable(raw.Database db) {
+    db.execute('''
+      CREATE TABLE installed_translations (
+        id TEXT NOT NULL PRIMARY KEY,
+        name TEXT NOT NULL,
+        language TEXT NOT NULL,
+        description TEXT NOT NULL,
+        format TEXT NOT NULL,
+        source_type TEXT NOT NULL,
+        source_location TEXT,
+        is_local INTEGER NOT NULL DEFAULT 0,
+        imported_at INTEGER NOT NULL,
+        parser_version INTEGER NOT NULL DEFAULT 0
+      )
+    ''');
+  }
+
+  test('v7 database gains backfilled unique uuids and tombstone column',
+      () async {
+    final path = fixturePath('app_v7.sqlite');
+    final fixture = raw.sqlite3.open(path);
+    createV7RegistryTable(fixture);
+    createV6AnnotationTables(fixture);
+    fixture.execute(
+      "INSERT INTO user_annotations "
+      "(type, primary_book_id, primary_chapter, primary_verse, "
+      " primary_translation_id, primary_translation_name, note_text, "
+      " highlight_color_value, labels, created_at, updated_at) VALUES "
+      "('note', 'JHN', 3, 16, 'kjv', 'King James Version', "
+      " 'God so loved the world', NULL, '', 1700000000, 1700000000), "
+      "('highlight', 'GEN', 1, 1, 'kjv', 'King James Version', NULL, "
+      " 4294901760, '', 1700000100, 1700000100)",
+    );
+    fixture.execute('PRAGMA user_version = 7');
+    fixture.dispose();
+
+    final db = AppDatabase(NativeDatabase(File(path)));
+    addTearDown(db.close);
+
+    final annotations = await db.getAllUserAnnotations();
+    expect(annotations, hasLength(2));
+
+    // Every existing row was backfilled with a distinct non-null uuid and no
+    // tombstone, without touching note content.
+    final uuids = annotations.map((a) => a.uuid).toSet();
+    expect(uuids, isNot(contains(null)));
+    expect(uuids, hasLength(2));
+    expect(annotations.every((a) => a.deletedAt == null), isTrue);
+    expect(
+      annotations.map((a) => a.noteText).toSet(),
+      containsAll(<String?>['God so loved the world', null]),
+    );
+
+    // uuid uniqueness is enforced at the SQL level.
+    final indexes = await db
+        .customSelect(
+          "SELECT name FROM sqlite_master WHERE type = 'index' "
+          "AND tbl_name = 'user_annotations'",
+        )
+        .get();
+    expect(
+      indexes.map((r) => r.read<String>('name')),
+      contains('idx_user_annotations_uuid'),
+    );
+
+    final version = await db.customSelect('PRAGMA user_version').getSingle();
+    expect(version.read<int>('user_version'), db.schemaVersion);
+  });
+
+  test('soft delete hides the annotation but keeps a syncable tombstone',
+      () async {
+    final path = fixturePath('app_soft_delete.sqlite');
+    final db = AppDatabase(NativeDatabase(File(path)));
+    addTearDown(db.close);
+
+    final now = DateTime.now();
+    const verse = AnnotationVerseLink(
+      bookId: 'JHN',
+      chapter: 3,
+      verse: 16,
+      translationId: 'kjv',
+      translationName: 'King James Version',
+    );
+    final keepId = await db.saveUserAnnotation(
+      UserAnnotation(
+        type: UserAnnotationType.note,
+        primaryVerse: verse,
+        noteText: 'keep me',
+        createdAt: now,
+        updatedAt: now,
+      ),
+    );
+    final deleteId = await db.saveUserAnnotation(
+      UserAnnotation(
+        type: UserAnnotationType.note,
+        primaryVerse: verse,
+        noteText: 'delete me',
+        createdAt: now,
+        updatedAt: now,
+      ),
+    );
+
+    await db.deleteUserAnnotation(deleteId);
+
+    // UI queries only see the surviving note, untouched.
+    final visible = await db.getAllUserAnnotations();
+    expect(visible, hasLength(1));
+    expect(visible.single.id, keepId);
+    expect(visible.single.noteText, 'keep me');
+
+    // Sync queries still see the tombstone with its uuid intact.
+    final all = await db.getAllUserAnnotationsIncludingDeleted();
+    expect(all, hasLength(2));
+    final tombstone = all.singleWhere((a) => a.id == deleteId);
+    expect(tombstone.deletedAt, isNotNull);
+    expect(tombstone.uuid, isNotNull);
+  });
+
+  test('upsertAnnotationFromSync preserves timestamps and matches by uuid',
+      () async {
+    final path = fixturePath('app_sync_upsert.sqlite');
+    final db = AppDatabase(NativeDatabase(File(path)));
+    addTearDown(db.close);
+
+    const verse = AnnotationVerseLink(
+      bookId: 'PSA',
+      chapter: 23,
+      verse: 1,
+      translationId: 'kjv',
+      translationName: 'King James Version',
+    );
+    final created = DateTime.fromMillisecondsSinceEpoch(1700000000 * 1000);
+    final updated = DateTime.fromMillisecondsSinceEpoch(1700000500 * 1000);
+
+    await db.upsertAnnotationFromSync(
+      UserAnnotation(
+        uuid: 'remote-uuid-1',
+        type: UserAnnotationType.note,
+        primaryVerse: verse,
+        noteText: 'from another device',
+        createdAt: created,
+        updatedAt: updated,
+      ),
+    );
+
+    final inserted = (await db.getAllUserAnnotations()).single;
+    expect(inserted.uuid, 'remote-uuid-1');
+    expect(inserted.noteText, 'from another device');
+    // Timestamps come through verbatim — re-stamping them would make applied
+    // remote changes ping-pong between devices forever.
+    expect(inserted.updatedAt, updated);
+    expect(inserted.createdAt, created);
+
+    // Same uuid again → update in place, not a duplicate row.
+    await db.upsertAnnotationFromSync(
+      UserAnnotation(
+        uuid: 'remote-uuid-1',
+        type: UserAnnotationType.note,
+        primaryVerse: verse,
+        noteText: 'edited remotely',
+        createdAt: created,
+        updatedAt: updated.add(const Duration(seconds: 5)),
+      ),
+    );
+    final afterUpdate = await db.getAllUserAnnotations();
+    expect(afterUpdate, hasLength(1));
+    expect(afterUpdate.single.id, inserted.id);
+    expect(afterUpdate.single.noteText, 'edited remotely');
   });
 
   test('reopening an already-migrated database is a no-op', () async {
