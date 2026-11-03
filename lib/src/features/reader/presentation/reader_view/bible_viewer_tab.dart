@@ -392,33 +392,39 @@ class _BibleViewerTabState extends ConsumerState<BibleViewerTab> {
     required bool showVerseSelector,
     required bool continuousScrolling,
   }) {
+    // The bar floats with margins around it. Give the whole strip (margins and
+    // the system safe-area inset) a solid background so scrolling text never
+    // shows through beside or under the bar, in continuous mode especially.
     return Align(
       alignment: Alignment.bottomCenter,
-      child: SafeArea(
-        top: false,
-        bottom: true,
-        child: ChapterBar(
-          barHeight: readerBarHeight,
-          isFloating: true,
-          reference: displayReference,
-          books: books,
-          canOpenReferencePicker: canOpenReferencePicker,
-          showVerseSelector: showVerseSelector,
-          onReferenceChanged: (reference) => _handleReferenceChanged(
-            reference,
-            continuousScrolling: continuousScrolling,
-          ),
-          onPreviousChapter: () => _handleAdjacentChapter(
-            books,
-            displayReference,
-            continuousScrolling: continuousScrolling,
-            direction: -1,
-          ),
-          onNextChapter: () => _handleAdjacentChapter(
-            books,
-            displayReference,
-            continuousScrolling: continuousScrolling,
-            direction: 1,
+      child: ColoredBox(
+        color: Theme.of(context).scaffoldBackgroundColor,
+        child: SafeArea(
+          top: false,
+          bottom: true,
+          child: ChapterBar(
+            barHeight: readerBarHeight,
+            isFloating: true,
+            reference: displayReference,
+            books: books,
+            canOpenReferencePicker: canOpenReferencePicker,
+            showVerseSelector: showVerseSelector,
+            onReferenceChanged: (reference) => _handleReferenceChanged(
+              reference,
+              continuousScrolling: continuousScrolling,
+            ),
+            onPreviousChapter: () => _handleAdjacentChapter(
+              books,
+              displayReference,
+              continuousScrolling: continuousScrolling,
+              direction: -1,
+            ),
+            onNextChapter: () => _handleAdjacentChapter(
+              books,
+              displayReference,
+              continuousScrolling: continuousScrolling,
+              direction: 1,
+            ),
           ),
         ),
       ),
