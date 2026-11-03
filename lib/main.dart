@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'src/app.dart';
 import 'src/platform/runtime_support.dart';
+import 'src/services/font_size_service.dart';
 import 'src/services/shared_preferences_provider.dart';
 
 void main() async {
@@ -17,6 +18,7 @@ void main() async {
   // Bootstrap prefs before runApp so startup routing and tab selection can
   // read their persisted values synchronously instead of flashing the wrong UI.
   final prefs = await SharedPreferences.getInstance();
+  FontSizeService.instance.load(prefs);
   await configurePlatformServices();
   setupPlatformWindow();
   runApp(
