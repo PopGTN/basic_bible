@@ -9,6 +9,7 @@
 //   3 = per-translation SQLite split (forces rebuild into new file layout)
 //   4 = section headings carry `beforeVerse` metadata for inline rendering
 //   5 = heading levels normalized across OSIS and Zefania sources
+//   6 = USFX keeps verses/headings without `<ve/>`; OSIS table header rows
 //
 // Since the model deduplication, the parser's rich-content classes ARE the
 // app's classes (see models/bible_models/verse_span.dart), so the XML path
@@ -19,7 +20,7 @@
 import 'package:bible_parser_flutter/bible_parser_flutter.dart';
 import 'package:basic_bible/src/models/bible_models.dart';
 
-const int kCurrentParserVersion = 5;
+const int kCurrentParserVersion = 6;
 
 // =============================================================================
 // Entry point — called via compute()
