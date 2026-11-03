@@ -316,4 +316,89 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get selectLanguageTitle => 'Sprache auswählen';
+
+  @override
+  String get readerFontTitle => 'Schriftart';
+
+  @override
+  String get readerFontSystemDefault => 'Systemstandard';
+
+  @override
+  String get readerFontSectionDefault => 'Standard';
+
+  @override
+  String get readerFontSectionBundled => 'In der App enthalten';
+
+  @override
+  String get readerFontSectionImported => 'Deine Schriftarten';
+
+  @override
+  String get readerFontSectionInstalled => 'Auf diesem Gerät installiert';
+
+  @override
+  String get readerFontImportAction => 'Schriftartdatei importieren';
+
+  @override
+  String get readerFontImportHint => 'Wähle eine .ttf- oder .otf-Datei';
+
+  @override
+  String get readerFontFileTypeLabel => 'Schriftarten';
+
+  @override
+  String get readerFontRemoveTooltip => 'Schriftart entfernen';
+
+  @override
+  String readerFontRemoveTitle(Object fontName) {
+    return '$fontName entfernen?';
+  }
+
+  @override
+  String get readerFontRemoveDescription => 'Die importierte Schriftartdatei wird von diesem Gerät gelöscht.';
+
+  @override
+  String get readerFontSearchHint => 'Installierte Schriftarten durchsuchen';
+
+  @override
+  String get readerFontNoInstalled => 'Keine installierten Schriftarten gefunden.';
+
+  @override
+  String readerFontNoMatches(Object query) {
+    return 'Keine Schriftart passt zu „$query“.';
+  }
+
+  @override
+  String get readerFontScanUnsupported => 'Installierte Schriftarten können auf dieser Plattform nicht aufgelistet werden';
+
+  @override
+  String get readerFontScanUnsupportedHint => 'Importiere stattdessen eine Schriftartdatei.';
+
+  @override
+  String readerFontImported(Object fontName) {
+    return '$fontName importiert.';
+  }
+
+  @override
+  String readerFontLoadFailed(Object fontName) {
+    return '$fontName konnte nicht geladen werden.';
+  }
+
+  @override
+  String get readerFontUnsupportedType => 'Nur .ttf- und .otf-Schriftartdateien können importiert werden.';
+
+  @override
+  String get readerFontNotAFont => 'Diese Datei scheint keine gültige Schriftart zu sein.';
+
+  @override
+  String get readerFontUnloadable => 'Diese Schriftartdatei konnte nicht geladen werden.';
+
+  @override
+  String get readerFontImportFailed => 'Die Schriftart konnte nicht importiert werden.';
+
+  @override
+  String readerFontDeleteFailed(Object fontName) {
+    return '$fontName konnte nicht entfernt werden.';
+  }
+
+  @override
+  String get readerFontPreviewSample => 'Am Anfang schuf Gott Himmel und Erde.';
 }

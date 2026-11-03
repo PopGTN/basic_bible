@@ -316,4 +316,89 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get selectLanguageTitle => 'Sélectionner la langue';
+
+  @override
+  String get readerFontTitle => 'Police';
+
+  @override
+  String get readerFontSystemDefault => 'Par défaut du système';
+
+  @override
+  String get readerFontSectionDefault => 'Par défaut';
+
+  @override
+  String get readerFontSectionBundled => 'Incluses dans l’app';
+
+  @override
+  String get readerFontSectionImported => 'Vos polices';
+
+  @override
+  String get readerFontSectionInstalled => 'Installées sur cet appareil';
+
+  @override
+  String get readerFontImportAction => 'Importer un fichier de police';
+
+  @override
+  String get readerFontImportHint => 'Choisissez un fichier .ttf ou .otf';
+
+  @override
+  String get readerFontFileTypeLabel => 'Polices';
+
+  @override
+  String get readerFontRemoveTooltip => 'Supprimer la police';
+
+  @override
+  String readerFontRemoveTitle(Object fontName) {
+    return 'Supprimer $fontName ?';
+  }
+
+  @override
+  String get readerFontRemoveDescription => 'Le fichier de police importé sera supprimé de cet appareil.';
+
+  @override
+  String get readerFontSearchHint => 'Rechercher parmi les polices installées';
+
+  @override
+  String get readerFontNoInstalled => 'Aucune police installée n’a été trouvée.';
+
+  @override
+  String readerFontNoMatches(Object query) {
+    return 'Aucune police ne correspond à « $query ».';
+  }
+
+  @override
+  String get readerFontScanUnsupported => 'Les polices installées ne peuvent pas être listées sur cette plateforme';
+
+  @override
+  String get readerFontScanUnsupportedHint => 'Importez plutôt un fichier de police.';
+
+  @override
+  String readerFontImported(Object fontName) {
+    return '$fontName importée.';
+  }
+
+  @override
+  String readerFontLoadFailed(Object fontName) {
+    return 'Impossible de charger $fontName.';
+  }
+
+  @override
+  String get readerFontUnsupportedType => 'Seuls les fichiers de police .ttf et .otf peuvent être importés.';
+
+  @override
+  String get readerFontNotAFont => 'Ce fichier ne semble pas être une police valide.';
+
+  @override
+  String get readerFontUnloadable => 'Impossible de charger ce fichier de police.';
+
+  @override
+  String get readerFontImportFailed => 'Impossible d’importer cette police.';
+
+  @override
+  String readerFontDeleteFailed(Object fontName) {
+    return 'Impossible de supprimer $fontName.';
+  }
+
+  @override
+  String get readerFontPreviewSample => 'Au commencement, Dieu créa les cieux et la terre.';
 }

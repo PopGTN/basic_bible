@@ -316,4 +316,89 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get selectLanguageTitle => '选择语言';
+
+  @override
+  String get readerFontTitle => '字体';
+
+  @override
+  String get readerFontSystemDefault => '系统默认';
+
+  @override
+  String get readerFontSectionDefault => '默认';
+
+  @override
+  String get readerFontSectionBundled => '应用自带';
+
+  @override
+  String get readerFontSectionImported => '你的字体';
+
+  @override
+  String get readerFontSectionInstalled => '本设备已安装';
+
+  @override
+  String get readerFontImportAction => '导入字体文件';
+
+  @override
+  String get readerFontImportHint => '选择 .ttf 或 .otf 文件';
+
+  @override
+  String get readerFontFileTypeLabel => '字体';
+
+  @override
+  String get readerFontRemoveTooltip => '移除字体';
+
+  @override
+  String readerFontRemoveTitle(Object fontName) {
+    return '移除 $fontName？';
+  }
+
+  @override
+  String get readerFontRemoveDescription => '导入的字体文件将从本设备中删除。';
+
+  @override
+  String get readerFontSearchHint => '搜索已安装的字体';
+
+  @override
+  String get readerFontNoInstalled => '未找到已安装的字体。';
+
+  @override
+  String readerFontNoMatches(Object query) {
+    return '没有与“$query”匹配的字体。';
+  }
+
+  @override
+  String get readerFontScanUnsupported => '此平台无法列出已安装的字体';
+
+  @override
+  String get readerFontScanUnsupportedHint => '请改为导入字体文件。';
+
+  @override
+  String readerFontImported(Object fontName) {
+    return '已导入 $fontName。';
+  }
+
+  @override
+  String readerFontLoadFailed(Object fontName) {
+    return '无法加载 $fontName。';
+  }
+
+  @override
+  String get readerFontUnsupportedType => '只能导入 .ttf 和 .otf 字体文件。';
+
+  @override
+  String get readerFontNotAFont => '该文件似乎不是有效的字体。';
+
+  @override
+  String get readerFontUnloadable => '无法加载该字体文件。';
+
+  @override
+  String get readerFontImportFailed => '无法导入该字体。';
+
+  @override
+  String readerFontDeleteFailed(Object fontName) {
+    return '无法移除 $fontName。';
+  }
+
+  @override
+  String get readerFontPreviewSample => '起初，神创造天地。';
 }

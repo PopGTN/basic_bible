@@ -316,4 +316,89 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get selectLanguageTitle => 'Seleccionar idioma';
+
+  @override
+  String get readerFontTitle => 'Fuente';
+
+  @override
+  String get readerFontSystemDefault => 'Predeterminada del sistema';
+
+  @override
+  String get readerFontSectionDefault => 'Predeterminada';
+
+  @override
+  String get readerFontSectionBundled => 'Incluidas en la app';
+
+  @override
+  String get readerFontSectionImported => 'Tus fuentes';
+
+  @override
+  String get readerFontSectionInstalled => 'Instaladas en este dispositivo';
+
+  @override
+  String get readerFontImportAction => 'Importar un archivo de fuente';
+
+  @override
+  String get readerFontImportHint => 'Elige un archivo .ttf u .otf';
+
+  @override
+  String get readerFontFileTypeLabel => 'Fuentes';
+
+  @override
+  String get readerFontRemoveTooltip => 'Quitar fuente';
+
+  @override
+  String readerFontRemoveTitle(Object fontName) {
+    return '¿Quitar $fontName?';
+  }
+
+  @override
+  String get readerFontRemoveDescription => 'El archivo de fuente importado se eliminará de este dispositivo.';
+
+  @override
+  String get readerFontSearchHint => 'Buscar fuentes instaladas';
+
+  @override
+  String get readerFontNoInstalled => 'No se encontraron fuentes instaladas.';
+
+  @override
+  String readerFontNoMatches(Object query) {
+    return 'Ninguna fuente coincide con «$query».';
+  }
+
+  @override
+  String get readerFontScanUnsupported => 'Las fuentes instaladas no se pueden listar en esta plataforma';
+
+  @override
+  String get readerFontScanUnsupportedHint => 'Importa un archivo de fuente en su lugar.';
+
+  @override
+  String readerFontImported(Object fontName) {
+    return 'Se importó $fontName.';
+  }
+
+  @override
+  String readerFontLoadFailed(Object fontName) {
+    return 'No se pudo cargar $fontName.';
+  }
+
+  @override
+  String get readerFontUnsupportedType => 'Solo se pueden importar archivos de fuente .ttf y .otf.';
+
+  @override
+  String get readerFontNotAFont => 'Ese archivo no parece ser una fuente válida.';
+
+  @override
+  String get readerFontUnloadable => 'No se pudo cargar ese archivo de fuente.';
+
+  @override
+  String get readerFontImportFailed => 'No se pudo importar esa fuente.';
+
+  @override
+  String readerFontDeleteFailed(Object fontName) {
+    return 'No se pudo quitar $fontName.';
+  }
+
+  @override
+  String get readerFontPreviewSample => 'En el principio creó Dios los cielos y la tierra.';
 }

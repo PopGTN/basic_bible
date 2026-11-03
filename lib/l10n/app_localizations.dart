@@ -646,6 +646,156 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Select language'**
   String get selectLanguageTitle;
+
+  /// No description provided for @readerFontTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Font'**
+  String get readerFontTitle;
+
+  /// No description provided for @readerFontSystemDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'System Default'**
+  String get readerFontSystemDefault;
+
+  /// No description provided for @readerFontSectionDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'Default'**
+  String get readerFontSectionDefault;
+
+  /// No description provided for @readerFontSectionBundled.
+  ///
+  /// In en, this message translates to:
+  /// **'Included with the app'**
+  String get readerFontSectionBundled;
+
+  /// No description provided for @readerFontSectionImported.
+  ///
+  /// In en, this message translates to:
+  /// **'Your fonts'**
+  String get readerFontSectionImported;
+
+  /// No description provided for @readerFontSectionInstalled.
+  ///
+  /// In en, this message translates to:
+  /// **'Installed on this device'**
+  String get readerFontSectionInstalled;
+
+  /// No description provided for @readerFontImportAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Import a font file'**
+  String get readerFontImportAction;
+
+  /// No description provided for @readerFontImportHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a .ttf or .otf file'**
+  String get readerFontImportHint;
+
+  /// No description provided for @readerFontFileTypeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Fonts'**
+  String get readerFontFileTypeLabel;
+
+  /// No description provided for @readerFontRemoveTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove font'**
+  String get readerFontRemoveTooltip;
+
+  /// No description provided for @readerFontRemoveTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove {fontName}?'**
+  String readerFontRemoveTitle(Object fontName);
+
+  /// No description provided for @readerFontRemoveDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'The imported font file will be deleted from this device.'**
+  String get readerFontRemoveDescription;
+
+  /// No description provided for @readerFontSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search installed fonts'**
+  String get readerFontSearchHint;
+
+  /// No description provided for @readerFontNoInstalled.
+  ///
+  /// In en, this message translates to:
+  /// **'No installed fonts were found.'**
+  String get readerFontNoInstalled;
+
+  /// No description provided for @readerFontNoMatches.
+  ///
+  /// In en, this message translates to:
+  /// **'No fonts match “{query}”.'**
+  String readerFontNoMatches(Object query);
+
+  /// No description provided for @readerFontScanUnsupported.
+  ///
+  /// In en, this message translates to:
+  /// **'Installed fonts can’t be listed on this platform'**
+  String get readerFontScanUnsupported;
+
+  /// No description provided for @readerFontScanUnsupportedHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Import a font file instead.'**
+  String get readerFontScanUnsupportedHint;
+
+  /// No description provided for @readerFontImported.
+  ///
+  /// In en, this message translates to:
+  /// **'Imported {fontName}.'**
+  String readerFontImported(Object fontName);
+
+  /// No description provided for @readerFontLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'{fontName} could not be loaded.'**
+  String readerFontLoadFailed(Object fontName);
+
+  /// No description provided for @readerFontUnsupportedType.
+  ///
+  /// In en, this message translates to:
+  /// **'Only .ttf and .otf font files can be imported.'**
+  String get readerFontUnsupportedType;
+
+  /// No description provided for @readerFontNotAFont.
+  ///
+  /// In en, this message translates to:
+  /// **'That file does not look like a valid font.'**
+  String get readerFontNotAFont;
+
+  /// No description provided for @readerFontUnloadable.
+  ///
+  /// In en, this message translates to:
+  /// **'That font file could not be loaded.'**
+  String get readerFontUnloadable;
+
+  /// No description provided for @readerFontImportFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not import that font.'**
+  String get readerFontImportFailed;
+
+  /// No description provided for @readerFontDeleteFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not remove {fontName}.'**
+  String readerFontDeleteFailed(Object fontName);
+
+  /// No description provided for @readerFontPreviewSample.
+  ///
+  /// In en, this message translates to:
+  /// **'In the beginning God created the heaven and the earth.'**
+  String get readerFontPreviewSample;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

@@ -16,6 +16,7 @@ import 'features/settings/application/view_models/app_launch_preferences_view_mo
 import 'views/placeholder/other_screen.dart';
 import 'features/settings/presentation/settings_screen.dart';
 import 'features/settings/presentation/advanced_settings_screen.dart';
+import 'features/settings/presentation/reader_font_screen.dart';
 import 'views/placeholder/coming_soon_screen.dart';
 
 // Providers
@@ -172,6 +173,10 @@ class _MyAppState extends ConsumerState<MyApp> {
             GoRoute(
               path: 'notes',
               builder: (context, state) => const NotesScreen(),
+            ),
+            GoRoute(
+              path: 'font',
+              builder: (context, state) => const ReaderFontScreen(),
             ),
           ],
         ),

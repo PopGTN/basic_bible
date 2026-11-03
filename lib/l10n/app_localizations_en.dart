@@ -316,4 +316,89 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get selectLanguageTitle => 'Select language';
+
+  @override
+  String get readerFontTitle => 'Font';
+
+  @override
+  String get readerFontSystemDefault => 'System Default';
+
+  @override
+  String get readerFontSectionDefault => 'Default';
+
+  @override
+  String get readerFontSectionBundled => 'Included with the app';
+
+  @override
+  String get readerFontSectionImported => 'Your fonts';
+
+  @override
+  String get readerFontSectionInstalled => 'Installed on this device';
+
+  @override
+  String get readerFontImportAction => 'Import a font file';
+
+  @override
+  String get readerFontImportHint => 'Choose a .ttf or .otf file';
+
+  @override
+  String get readerFontFileTypeLabel => 'Fonts';
+
+  @override
+  String get readerFontRemoveTooltip => 'Remove font';
+
+  @override
+  String readerFontRemoveTitle(Object fontName) {
+    return 'Remove $fontName?';
+  }
+
+  @override
+  String get readerFontRemoveDescription => 'The imported font file will be deleted from this device.';
+
+  @override
+  String get readerFontSearchHint => 'Search installed fonts';
+
+  @override
+  String get readerFontNoInstalled => 'No installed fonts were found.';
+
+  @override
+  String readerFontNoMatches(Object query) {
+    return 'No fonts match “$query”.';
+  }
+
+  @override
+  String get readerFontScanUnsupported => 'Installed fonts can’t be listed on this platform';
+
+  @override
+  String get readerFontScanUnsupportedHint => 'Import a font file instead.';
+
+  @override
+  String readerFontImported(Object fontName) {
+    return 'Imported $fontName.';
+  }
+
+  @override
+  String readerFontLoadFailed(Object fontName) {
+    return '$fontName could not be loaded.';
+  }
+
+  @override
+  String get readerFontUnsupportedType => 'Only .ttf and .otf font files can be imported.';
+
+  @override
+  String get readerFontNotAFont => 'That file does not look like a valid font.';
+
+  @override
+  String get readerFontUnloadable => 'That font file could not be loaded.';
+
+  @override
+  String get readerFontImportFailed => 'Could not import that font.';
+
+  @override
+  String readerFontDeleteFailed(Object fontName) {
+    return 'Could not remove $fontName.';
+  }
+
+  @override
+  String get readerFontPreviewSample => 'In the beginning God created the heaven and the earth.';
 }

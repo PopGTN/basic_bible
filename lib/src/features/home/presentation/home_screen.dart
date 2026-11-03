@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:basic_bible/l10n/app_localizations.dart';
 import 'package:basic_bible/src/features/annotations/application/view_models/annotation_preferences_view_models.dart';
+import 'package:basic_bible/src/features/settings/application/view_models/reader_font_view_models.dart';
+import 'package:basic_bible/src/features/settings/presentation/reader_font_screen.dart';
 import 'package:basic_bible/src/features/library/data/app_bible_repository.dart';
 import 'package:basic_bible/src/features/home/application/view_models/home_navigation_view_model.dart';
 import 'package:basic_bible/src/features/menu/presentation/menu_tab.dart';
@@ -164,6 +166,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                 ref
                     .read(showNotesAcrossTranslationsProvider.notifier)
                     .setEnabled(value);
+              },
+              fontName: readerFontDisplayName(
+                ref.watch(readerFontProvider.select((state) => state.selected)),
+                AppLocalizations.of(context)!,
+              ),
+              onOpenFontSettings: () {
+                Navigator.of(sheetContext).pop();
+                context.push('/home/font');
               },
               onOpenAllSettings: () {
                 Navigator.of(sheetContext).pop();
@@ -493,6 +503,8 @@ class _BibleViewerSettingsSheet extends StatelessWidget {
     required this.onLayoutSelected,
     required this.onContinuousScrollingChanged,
     required this.onShowNotesAcrossTranslationsChanged,
+    required this.fontName,
+    required this.onOpenFontSettings,
     required this.onOpenAllSettings,
   });
 
@@ -506,6 +518,8 @@ class _BibleViewerSettingsSheet extends StatelessWidget {
   final ValueChanged<ReaderLayoutMode> onLayoutSelected;
   final ValueChanged<bool> onContinuousScrollingChanged;
   final ValueChanged<bool> onShowNotesAcrossTranslationsChanged;
+  final String fontName;
+  final VoidCallback onOpenFontSettings;
   final VoidCallback onOpenAllSettings;
 
   @override
@@ -563,10 +577,10 @@ class _BibleViewerSettingsSheet extends StatelessWidget {
               child: Column(
                 children: [
                   _SettingsRow(
-                    title: 'Font',
-                    value: 'System Default',
+                    title: AppLocalizations.of(context)!.readerFontTitle,
+                    value: fontName,
                     icon: Icons.chevron_right,
-                    onTap: onOpenAllSettings,
+                    onTap: onOpenFontSettings,
                   ),
                   Divider(
                     height: 1,
@@ -740,4 +754,3 @@ class _ToggleSettingsRow extends StatelessWidget {
     );
   }
 }
-

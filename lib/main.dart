@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'src/app.dart';
+import 'src/features/settings/application/view_models/reader_font_view_models.dart';
+import 'src/features/settings/data/reader_font_repository.dart';
 import 'src/platform/runtime_support.dart';
 import 'src/services/font_size_service.dart';
 import 'src/services/shared_preferences_provider.dart';
@@ -19,11 +21,17 @@ void main() async {
   // read their persisted values synchronously instead of flashing the wrong UI.
   final prefs = await SharedPreferences.getInstance();
   FontSizeService.instance.load(prefs);
+  // Load only the saved reader font (if any) so the first frame uses it.
+  final fontRepository = ReaderFontRepository(prefs);
+  await fontRepository.restore();
   await configurePlatformServices();
   setupPlatformWindow();
   runApp(
     ProviderScope(
-      overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+      overrides: [
+        sharedPreferencesProvider.overrideWithValue(prefs),
+        readerFontRepositoryProvider.overrideWithValue(fontRepository),
+      ],
       child: const MyApp(),
     ),
   );
