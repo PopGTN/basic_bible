@@ -308,3 +308,9 @@ native/usfm_parser/target/debug/incremental/basic_bible_usfm_parser-20dlgr7ecuxj
 native/usfm_parser/target/debug/incremental/basic_bible_usfm_parser-20dlgr7ecuxjl/s-hj316vk3wy-0bn43tj-99j3617uk0fgigknz5ko1wd5w/f0283dqyqsd4xxc0puk21sc61.o
 native/usfm_parser/target/debug/incremental/basic_bible_usfm_parser-20dlgr7ecuxjl/s-hj316vk3wy-0bn43tj-99j3617uk0fgigknz5ko1wd5w/query-cache.bin
 native/usfm_parser/target/debug/incremental/basic_bible_usfm_parser-20dlgr7ecuxjl/s-hj316vk3wy-0bn43tj-99j3617uk0fgigknz5ko1wd5w/work-products.bin
+
+# Local OAuth client ids/secrets (see docs/google_sync_setup.md)
+dart_defines.json
+
+# Stray Flutter screenshots
+flutter_*.png

@@ -118,85 +118,85 @@ extension _BibleTextViewStateRendering on _BibleTextViewState {
     // This avoids the position estimation error that compounds over hundreds of
     // unhydrated placeholder sections.
     return ScrollablePositionedList.builder(
-        key: _scrollableListKey,
-        initialScrollIndex: _scrollableListInitialIndex,
-        initialAlignment: 0.02,
-        itemScrollController: _continuousItemScrollController,
-        itemPositionsListener: _continuousItemPositionsListener,
-        padding: EdgeInsets.only(
-          left: 16,
-          right: 16,
-          top: 16,
-          bottom: widget.bottomOverlayPadding,
-        ),
-        itemCount: _continuousSections.length,
-        itemBuilder: (context, index) {
-          final section = _continuousSections[index];
-          final chapterFuture = _continuousChapterFuture(section);
-          return Padding(
-            // No GlobalKey on the item root. ScrollablePositionedList builds
-            // the anchor item in two internal viewports simultaneously during
-            // scroll positioning; a GlobalKey here would be claimed by both
-            // trees at once, causing "Multiple widgets used the same GlobalKey"
-            // and the render-tree corruption cascade that follows.
-            // Chapter scroll-to is handled via _continuousItemScrollController
-            // which uses the item index, not a key context.
-            padding: const EdgeInsets.only(bottom: 28),
-            child: FutureBuilder<BibleChapter?>(
-              future: chapterFuture,
-              initialData: _hydratedContinuousChapter(
-                section.book.id,
-                section.chapter.number,
-              ),
-              builder: (context, snapshot) {
-                final hydratedChapter = snapshot.data;
-                final chapter = hydratedChapter ?? section.chapter;
-                final hasVerses = chapter.verses.isNotEmpty;
-                return _ChapterSectionView(
-                  book: section.book,
-                  chapter: chapter,
-                  reference: widget.reference,
-                  fontSize: widget.fontSize,
-                  layoutMode: widget.layoutMode,
-                  buildChapterBlocks: (chapter) =>
-                      _buildChapterBlocksFor(context, chapter),
-                  buildVerse: (verse) => _buildVerseForChapter(
-                    context,
-                    section.book.id,
-                    section.chapter.number,
-                    verse,
-                    sectionIndex: index,
-                  ),
-                  buildDocumentView: () => _buildDocumentReadingViewForChapter(
-                    context,
-                    section.book.id,
-                    chapter,
-                    sectionIndex: index,
-                  ),
-                  buildInlineHeading: (block) =>
-                      _buildInlineSectionHeading(context, block),
-                  introBuilder: section.chapter.number == 1
-                      ? () => Column(
-                          children: _buildBookIntroductionBlocksForBook(
-                            context,
-                            section.book,
-                            showForCurrentSection: true,
-                          ),
-                        )
-                      : null,
-                  headerBuilder: () => _buildChapterHeaderForChapter(
-                    context,
-                    section.book,
-                    section.chapter.number,
-                  ),
-                  fallbackBody: !hasVerses
-                      ? _buildContinuousChapterPlaceholder(context)
-                      : null,
-                );
-              },
+      key: _scrollableListKey,
+      initialScrollIndex: _scrollableListInitialIndex,
+      initialAlignment: 0.02,
+      itemScrollController: _continuousItemScrollController,
+      itemPositionsListener: _continuousItemPositionsListener,
+      padding: EdgeInsets.only(
+        left: 16,
+        right: 16,
+        top: 16,
+        bottom: widget.bottomOverlayPadding,
+      ),
+      itemCount: _continuousSections.length,
+      itemBuilder: (context, index) {
+        final section = _continuousSections[index];
+        final chapterFuture = _continuousChapterFuture(section);
+        return Padding(
+          // No GlobalKey on the item root. ScrollablePositionedList builds
+          // the anchor item in two internal viewports simultaneously during
+          // scroll positioning; a GlobalKey here would be claimed by both
+          // trees at once, causing "Multiple widgets used the same GlobalKey"
+          // and the render-tree corruption cascade that follows.
+          // Chapter scroll-to is handled via _continuousItemScrollController
+          // which uses the item index, not a key context.
+          padding: const EdgeInsets.only(bottom: 28),
+          child: FutureBuilder<BibleChapter?>(
+            future: chapterFuture,
+            initialData: _hydratedContinuousChapter(
+              section.book.id,
+              section.chapter.number,
             ),
-          );
-        },
+            builder: (context, snapshot) {
+              final hydratedChapter = snapshot.data;
+              final chapter = hydratedChapter ?? section.chapter;
+              final hasVerses = chapter.verses.isNotEmpty;
+              return _ChapterSectionView(
+                book: section.book,
+                chapter: chapter,
+                reference: widget.reference,
+                fontSize: widget.fontSize,
+                layoutMode: widget.layoutMode,
+                buildChapterBlocks: (chapter) =>
+                    _buildChapterBlocksFor(context, chapter),
+                buildVerse: (verse) => _buildVerseForChapter(
+                  context,
+                  section.book.id,
+                  section.chapter.number,
+                  verse,
+                  sectionIndex: index,
+                ),
+                buildDocumentView: () => _buildDocumentReadingViewForChapter(
+                  context,
+                  section.book.id,
+                  chapter,
+                  sectionIndex: index,
+                ),
+                buildInlineHeading: (block) =>
+                    _buildInlineSectionHeading(context, block),
+                introBuilder: section.chapter.number == 1
+                    ? () => Column(
+                        children: _buildBookIntroductionBlocksForBook(
+                          context,
+                          section.book,
+                          showForCurrentSection: true,
+                        ),
+                      )
+                    : null,
+                headerBuilder: () => _buildChapterHeaderForChapter(
+                  context,
+                  section.book,
+                  section.chapter.number,
+                ),
+                fallbackBody: !hasVerses
+                    ? _buildContinuousChapterPlaceholder(context)
+                    : null,
+              );
+            },
+          ),
+        );
+      },
     );
   }
 

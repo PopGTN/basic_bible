@@ -17,6 +17,7 @@ class _ReaderShellStateSnapshot {
 
   final ReaderLayoutMode layoutMode;
   final bool continuousScrolling;
+
   /// Shell books (metadata only, no verses) — always loads quickly.
   /// Used for both the reference bar/picker and content rendering.
   /// Verse data is loaded lazily per-chapter inside [_BibleTextViewState].
