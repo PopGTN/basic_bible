@@ -70,7 +70,10 @@ NoteMergePlan mergeNotes({
       final localJson = annotationToSyncJsonString(localNote);
       final remoteJson = annotationToSyncJsonString(remoteNote);
       if (localJson == remoteJson) continue; // already in sync
-      final winnerIsLocal = switch ((localNote.isDeleted, remoteNote.isDeleted)) {
+      final winnerIsLocal = switch ((
+        localNote.isDeleted,
+        remoteNote.isDeleted,
+      )) {
         (true, false) => true,
         (false, true) => false,
         _ => localJson.compareTo(remoteJson) > 0,

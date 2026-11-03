@@ -69,7 +69,8 @@ UserAnnotation annotationFromSyncJson(Map<String, dynamic> json) {
   final deletedAtMillis = json['deletedAt'] as int?;
   return UserAnnotation(
     uuid: json['uuid'] as String,
-    type: UserAnnotationType.values.asNameMap()[json['type'] as String?] ??
+    type:
+        UserAnnotationType.values.asNameMap()[json['type'] as String?] ??
         UserAnnotationType.note,
     primaryVerse: _verseLinkFromJson(
       json['primaryVerse'] as Map<String, dynamic>,
@@ -86,7 +87,9 @@ UserAnnotation annotationFromSyncJson(Map<String, dynamic> json) {
     ],
     createdAt: _dateFromMillis(json['createdAt'] as int),
     updatedAt: _dateFromMillis(json['updatedAt'] as int),
-    deletedAt: deletedAtMillis == null ? null : _dateFromMillis(deletedAtMillis),
+    deletedAt: deletedAtMillis == null
+        ? null
+        : _dateFromMillis(deletedAtMillis),
   );
 }
 

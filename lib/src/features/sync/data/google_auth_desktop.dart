@@ -16,11 +16,9 @@ import 'google_oauth_config.dart';
 /// page in the system browser and catch the redirect on a short-lived local
 /// HTTP server. Tokens persist in the OS keyring via flutter_secure_storage.
 class DesktopGoogleAuthService implements GoogleAuthService {
-  DesktopGoogleAuthService({
-    FlutterSecureStorage? storage,
-    http.Client? client,
-  }) : _storage = storage ?? const FlutterSecureStorage(),
-       _client = client ?? http.Client();
+  DesktopGoogleAuthService({FlutterSecureStorage? storage, http.Client? client})
+    : _storage = storage ?? const FlutterSecureStorage(),
+      _client = client ?? http.Client();
 
   final FlutterSecureStorage _storage;
   final http.Client _client;

@@ -29,11 +29,13 @@ class LoginScreen extends ConsumerWidget {
                         final controller = ref.read(
                           syncControllerProvider.notifier,
                         );
+                        final authController = ref.read(authProvider.notifier);
                         await controller.signIn();
+                        if (!context.mounted) return;
                         // Only pass the login gate on success; errors stay
                         // visible on this screen.
                         if (ref.read(syncControllerProvider).isSignedIn) {
-                          await ref.read(authProvider.notifier).login();
+                          await authController.login();
                         }
                       },
               ),
@@ -53,7 +55,9 @@ class LoginScreen extends ConsumerWidget {
             // Original local-only entry, kept as the no-account path.
             ElevatedButton(
               onPressed: () async {
-                await ref.read(authProvider.notifier).login();
+                final authController = ref.read(authProvider.notifier);
+                await authController.login();
+                if (!context.mounted) return;
               },
               child: Text(AppLocalizations.of(context)!.login),
             ),

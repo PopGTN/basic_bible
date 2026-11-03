@@ -41,7 +41,9 @@ extension _BibleTextViewStateCore on _BibleTextViewState {
         // widgets used the same GlobalKey". Clear it and let that frame settle
         // before continuing.
         _setArmedVerseSectionIndex(null);
-        WidgetsBinding.instance.addPostFrameCallback((_) => _performChapterFocus());
+        WidgetsBinding.instance.addPostFrameCallback(
+          (_) => _performChapterFocus(),
+        );
         return;
       }
       _performChapterFocus();
@@ -64,12 +66,14 @@ extension _BibleTextViewStateCore on _BibleTextViewState {
     final positions = _continuousItemPositionsListener.itemPositions.value;
     final currentIndex = positions.isEmpty
         ? _scrollableListInitialIndex
-        : positions.reduce(
-            (current, candidate) =>
-                current.itemLeadingEdge <= candidate.itemLeadingEdge
-                ? current
-                : candidate,
-          ).index;
+        : positions
+              .reduce(
+                (current, candidate) =>
+                    current.itemLeadingEdge <= candidate.itemLeadingEdge
+                    ? current
+                    : candidate,
+              )
+              .index;
     final jumpDistance = (targetIndex - currentIndex).abs();
 
     if (jumpDistance > 20) {
@@ -230,7 +234,10 @@ extension _BibleTextViewStateCore on _BibleTextViewState {
     ];
   }
 
-  List<UserAnnotation> _annotationsForChapter(String bookId, int chapterNumber) {
+  List<UserAnnotation> _annotationsForChapter(
+    String bookId,
+    int chapterNumber,
+  ) {
     final byChapter = ref.watch(annotationsByChapterProvider);
     return byChapter[annotationChapterKey(bookId, chapterNumber)] ?? const [];
   }
@@ -393,11 +400,11 @@ extension _BibleTextViewStateCore on _BibleTextViewState {
                     section.chapter.number,
                   )?.verses ??
                   const <BibleVerse>[])
-              BibleReference(
-                bookId: section.book.id,
-                chapter: section.chapter.number,
-                verse: verse.number,
-              ),
+            BibleReference(
+              bookId: section.book.id,
+              chapter: section.chapter.number,
+              verse: verse.number,
+            ),
       ];
     }
 
@@ -463,6 +470,23 @@ extension _BibleTextViewStateCore on _BibleTextViewState {
     ref.read(highlightPaletteExpandedProvider.notifier).state = false;
   }
 
+  List<UserAnnotation> _filterAnnotationsForReference(
+    List<UserAnnotation> annotations,
+    BibleReference reference, {
+    required String? translationFilter,
+  }) {
+    final filtered = annotations
+        .where(
+          (annotation) => annotation.touchesReference(
+            reference,
+            translationId: translationFilter,
+          ),
+        )
+        .toList();
+    filtered.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+    return filtered;
+  }
+
   Future<void> _showPersonalNotesSheet(
     BuildContext context, {
     required String bookId,
@@ -473,7 +497,8 @@ extension _BibleTextViewStateCore on _BibleTextViewState {
     final reference = _verseReference(bookId, chapterNumber, verse);
     final translationId = ref.read(currentTranslationProvider);
     final translationFilter = ref.read(annotationTranslationFilterProvider);
-    final fallbackTranslationName = ref
+    final fallbackTranslationName =
+        ref
             .read(availableTranslationsProvider)
             .asData
             ?.value
@@ -484,41 +509,31 @@ extension _BibleTextViewStateCore on _BibleTextViewState {
     final initialAnnotations = _savedVerseAnnotations(verseAnnotations);
     if (initialAnnotations.isEmpty) return;
 
-    Future<List<UserAnnotation>> reloadVerseAnnotations() async {
-      final annotations = await ref
-          .read(userAnnotationRepositoryProvider)
-          .getAnnotations();
-      final filtered = annotations
-          .where(
-            (annotation) => annotation.touchesReference(
-              reference,
-              translationId: translationFilter,
-            ),
-          )
-          .toList();
-      filtered.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
-      return filtered;
-    }
-
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       showDragHandle: true,
       builder: (sheetContext) {
-        final annotationsNotifier = ValueNotifier<List<UserAnnotation>>(
-          initialAnnotations,
-        );
-        Future<void> refreshSheetAnnotations() async {
-          final latest = await reloadVerseAnnotations();
-          annotationsNotifier.value = latest;
-          if (latest.isEmpty && sheetContext.mounted) {
-            Navigator.of(sheetContext).pop();
-          }
-        }
+        var isClosing = false;
+        return Consumer(
+          builder: (context, ref, _) {
+            final allAnnotations = ref.watch(userAnnotationsProvider).value;
+            final annotations = allAnnotations == null
+                ? initialAnnotations
+                : _filterAnnotationsForReference(
+                    allAnnotations,
+                    reference,
+                    translationFilter: translationFilter,
+                  );
+            // Last note for this verse was deleted: close instead of
+            // leaving an empty sheet behind.
+            if (allAnnotations != null && annotations.isEmpty && !isClosing) {
+              isClosing = true;
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (sheetContext.mounted) Navigator.of(sheetContext).pop();
+              });
+            }
 
-        return ValueListenableBuilder<List<UserAnnotation>>(
-          valueListenable: annotationsNotifier,
-          builder: (context, annotations, _) {
             return _PersonalNotesSheet(
               referenceLabel:
                   '${displayBookNameForReference(widget.books, bookId)} '
@@ -529,7 +544,7 @@ extension _BibleTextViewStateCore on _BibleTextViewState {
               onCreate: () async {
                 final translation = await resolveCurrentTranslation(ref);
                 if (translation == null || !sheetContext.mounted) return;
-                await Navigator.of(sheetContext).push(
+                await Navigator.of(sheetContext).push<bool>(
                   MaterialPageRoute(
                     builder: (context) => NoteEditorScreen(
                       primaryVerse: buildAnnotationVerseLink(
@@ -539,7 +554,6 @@ extension _BibleTextViewStateCore on _BibleTextViewState {
                     ),
                   ),
                 );
-                await refreshSheetAnnotations();
               },
               onPreviewLinkedVerse: (link) {
                 return showModalBottomSheet<void>(
@@ -638,11 +652,13 @@ extension _BibleTextViewStateCore on _BibleTextViewState {
                             .read(currentReferenceProvider.notifier)
                             .setReference(annotation.primaryVerse.reference);
                         if (context.mounted) Navigator.of(context).pop();
-                        if (sheetContext.mounted) Navigator.of(sheetContext).pop();
+                        if (sheetContext.mounted) {
+                          Navigator.of(sheetContext).pop();
+                        }
                       },
                       onEdit: () async {
                         if (context.mounted) Navigator.of(context).pop();
-                        await Navigator.of(sheetContext).push(
+                        await Navigator.of(sheetContext).push<bool>(
                           MaterialPageRoute(
                             builder: (context) => NoteEditorScreen(
                               primaryVerse: annotation.primaryVerse,
@@ -650,7 +666,6 @@ extension _BibleTextViewStateCore on _BibleTextViewState {
                             ),
                           ),
                         );
-                        await refreshSheetAnnotations();
                       },
                       onDelete: () async {
                         final id = annotation.id;
@@ -679,7 +694,6 @@ extension _BibleTextViewStateCore on _BibleTextViewState {
                             .read(userAnnotationRepositoryProvider)
                             .deleteAnnotation(id);
                         if (context.mounted) Navigator.of(context).pop();
-                        await refreshSheetAnnotations();
                       },
                     ),
                   ),
@@ -687,7 +701,7 @@ extension _BibleTextViewStateCore on _BibleTextViewState {
               },
               onEdit: (annotation) async {
                 if (!sheetContext.mounted) return;
-                await Navigator.of(sheetContext).push(
+                await Navigator.of(sheetContext).push<bool>(
                   MaterialPageRoute(
                     builder: (context) => NoteEditorScreen(
                       primaryVerse: annotation.primaryVerse,
@@ -695,7 +709,6 @@ extension _BibleTextViewStateCore on _BibleTextViewState {
                     ),
                   ),
                 );
-                await refreshSheetAnnotations();
               },
               onDelete: (annotation) async {
                 final id = annotation.id;
@@ -723,7 +736,6 @@ extension _BibleTextViewStateCore on _BibleTextViewState {
                 await ref
                     .read(userAnnotationRepositoryProvider)
                     .deleteAnnotation(id);
-                await refreshSheetAnnotations();
               },
             );
           },

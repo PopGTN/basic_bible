@@ -1,4 +1,3 @@
-import 'package:basic_bible/src/features/annotations/models/user_annotations.dart';
 import 'package:basic_bible/src/services/app_database.dart';
 
 import 'note_merge_engine.dart';
@@ -43,12 +42,7 @@ class NotesBackupService {
     final local = await _db.getAllUserAnnotationsIncludingDeleted();
     final plan = mergeNotes(local: local, remote: imported);
     // toPushRemote is meaningless for a file import and is ignored.
-    for (final UserAnnotation note in plan.toApplyLocally) {
-      await _db.upsertAnnotationFromSync(note);
-    }
-    return NotesImportResult(
-      total: imported.length,
-      applied: plan.toApplyLocally.length,
-    );
+    final applied = await _db.applySyncedAnnotations(plan.toApplyLocally);
+    return NotesImportResult(total: imported.length, applied: applied);
   }
 }

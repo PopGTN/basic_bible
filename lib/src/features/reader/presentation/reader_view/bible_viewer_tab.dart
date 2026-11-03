@@ -345,7 +345,8 @@ class _BibleViewerTabState extends ConsumerState<BibleViewerTab> {
             error: (error, stack) => _ErrorView(message: 'Error: $error'),
           ),
           loading: () => const _LoadingView(),
-          error: (error, stack) => _ErrorView(message: 'Failed to load Bible: $error'),
+          error: (error, stack) =>
+              _ErrorView(message: 'Failed to load Bible: $error'),
         );
       },
     );
@@ -507,7 +508,6 @@ class _BibleViewerTabState extends ConsumerState<BibleViewerTab> {
       ),
     );
   }
-
 }
 
 BibleBook _resolveCurrentBook(List<BibleBook> books, String bookId) {
@@ -530,4 +530,3 @@ BibleVerse? _findVerseInChapter(BibleChapter? chapter, int? verseNumber) {
   }
   return null;
 }
-

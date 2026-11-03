@@ -3,6 +3,7 @@ import 'package:basic_bible/src/features/annotations/data/user_annotation_reposi
 import 'package:basic_bible/src/features/annotations/models/user_annotations.dart';
 import 'package:basic_bible/src/features/reader/application/view_models/bible_library_view_models.dart';
 import 'package:basic_bible/src/features/reader/application/view_models/reader_session_view_models.dart';
+import 'package:basic_bible/src/features/sync/application/view_models/sync_view_models.dart';
 import 'package:basic_bible/src/models/bible_models.dart';
 import 'package:basic_bible/src/services/app_database.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -10,7 +11,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 final userAnnotationRepositoryProvider = Provider<UserAnnotationRepository>((
   ref,
 ) {
-  return UserAnnotationRepository(ref.watch(appDatabaseProvider));
+  return UserAnnotationRepository(
+    ref.watch(appDatabaseProvider),
+    ref.watch(noteChangeSyncTriggerProvider),
+  );
 });
 
 final userAnnotationsProvider = StreamProvider<List<UserAnnotation>>((ref) {

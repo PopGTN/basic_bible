@@ -30,13 +30,19 @@ void main() {
   }
 
   test('local-only note is pushed remote', () {
-    final plan = mergeNotes(local: [note(uuid: 'a')], remote: []);
+    final plan = mergeNotes(
+      local: [note(uuid: 'a')],
+      remote: [],
+    );
     expect(plan.toPushRemote.map((n) => n.uuid), ['a']);
     expect(plan.toApplyLocally, isEmpty);
   });
 
   test('remote-only note is applied locally', () {
-    final plan = mergeNotes(local: [], remote: [note(uuid: 'a')]);
+    final plan = mergeNotes(
+      local: [],
+      remote: [note(uuid: 'a')],
+    );
     expect(plan.toApplyLocally.map((n) => n.uuid), ['a']);
     expect(plan.toPushRemote, isEmpty);
   });
@@ -101,9 +107,7 @@ void main() {
           updatedAt: baseTime.add(const Duration(minutes: 5)),
         ),
       ],
-      remote: [
-        note(uuid: 'a', deletedAt: baseTime, updatedAt: baseTime),
-      ],
+      remote: [note(uuid: 'a', deletedAt: baseTime, updatedAt: baseTime)],
     );
     expect(plan.toPushRemote.single.isDeleted, isFalse);
     expect(plan.toApplyLocally, isEmpty);
@@ -149,8 +153,11 @@ void main() {
   test('merging one note never touches another', () {
     final plan = mergeNotes(
       local: [
-        note(uuid: 'edited', text: 'v2',
-            updatedAt: baseTime.add(const Duration(minutes: 1))),
+        note(
+          uuid: 'edited',
+          text: 'v2',
+          updatedAt: baseTime.add(const Duration(minutes: 1)),
+        ),
         note(uuid: 'untouched-local'),
       ],
       remote: [
@@ -161,13 +168,12 @@ void main() {
 
     // 'edited' produces exactly one push; the unrelated notes only produce
     // their own copy actions and are never rewritten by the edit.
-    expect(plan.toPushRemote.map((n) => n.uuid),
-        containsAll(['edited', 'untouched-local']));
-    expect(plan.toApplyLocally.map((n) => n.uuid), ['untouched-remote']);
     expect(
-      plan.toApplyLocally.every((n) => n.uuid != 'edited'),
-      isTrue,
+      plan.toPushRemote.map((n) => n.uuid),
+      containsAll(['edited', 'untouched-local']),
     );
+    expect(plan.toApplyLocally.map((n) => n.uuid), ['untouched-remote']);
+    expect(plan.toApplyLocally.every((n) => n.uuid != 'edited'), isTrue);
   });
 
   test('notes without uuid are rejected', () {
@@ -183,10 +189,7 @@ void main() {
       createdAt: baseTime,
       updatedAt: baseTime,
     );
-    expect(
-      () => mergeNotes(local: [orphan], remote: []),
-      throwsArgumentError,
-    );
+    expect(() => mergeNotes(local: [orphan], remote: []), throwsArgumentError);
   });
 
   test('codec round-trips a note through JSON without loss', () {

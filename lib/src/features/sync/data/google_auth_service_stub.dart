@@ -1,7 +1,7 @@
 import 'google_auth_service.dart';
 
-/// Web / unknown platforms: Google sync is not available in v1. Notes on web
-/// live in browser storage; use the mobile or desktop app for sync.
+/// Unknown platforms (neither dart:io nor the browser): Google sync is not
+/// available; use the mobile or desktop app for sync.
 class _UnsupportedGoogleAuthService implements GoogleAuthService {
   const _UnsupportedGoogleAuthService();
 

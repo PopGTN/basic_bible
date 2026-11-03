@@ -47,7 +47,10 @@ Create one **OAuth client ID** per platform you ship:
 - Package name: `ca.joshuamc.basic_bible`
 - SHA-1: from the repo's `android/` folder run `./gradlew signingReport`
   and copy the debug (and later, release) SHA-1.
-- No code/config change needed — Google matches the app by package + SHA-1.
+- Also create a **Web application** OAuth client. Copy its **Client ID** and
+  use it as the `serverClientId` in the Google Sign-In initialization. This is
+  required for the mobile Google Sign-In flow and is the missing step behind
+  the "serverClientId must be provided" error.
 
 ### iOS (only if you ship iOS)
 - Type: **iOS**, bundle ID from `ios/Runner.xcodeproj`
@@ -57,21 +60,24 @@ Create one **OAuth client ID** per platform you ship:
 
 ## 4. Run / build with the credentials
 
-Client IDs are injected at build time (see
-`lib/src/features/sync/data/google_oauth_config.dart`):
+Client IDs are injected at build time from a **gitignored** file (see
+`lib/src/features/sync/data/google_oauth_config.dart`). Never commit real
+values: this repository is public.
 
 ```bash
-# Desktop (Linux/Windows/macOS)
-flutter run -d linux \
-  --dart-define=GOOGLE_DESKTOP_CLIENT_ID=xxxxx.apps.googleusercontent.com \
-  --dart-define=GOOGLE_DESKTOP_CLIENT_SECRET=GOCSPX-xxxxx
-
-# Android — nothing to pass; the console registration is enough
-flutter run -d android
-
-# iOS
-flutter run -d ios --dart-define=GOOGLE_IOS_CLIENT_ID=xxxxx.apps.googleusercontent.com
+cp dart_defines.example.json dart_defines.json
+# fill in GOOGLE_DESKTOP_CLIENT_ID / _SECRET, GOOGLE_WEB_CLIENT_ID,
+# GOOGLE_IOS_CLIENT_ID in dart_defines.json, then:
+flutter run -d linux   --dart-define-from-file=dart_defines.json
+flutter run -d android --dart-define-from-file=dart_defines.json
+flutter build apk      --dart-define-from-file=dart_defines.json
 ```
+
+- Desktop needs `GOOGLE_DESKTOP_CLIENT_ID` and `GOOGLE_DESKTOP_CLIENT_SECRET`.
+- Android needs `GOOGLE_WEB_CLIENT_ID` (used as the server client id).
+- iOS needs `GOOGLE_IOS_CLIENT_ID`.
+
+The VS Code launch configurations already pass this flag.
 
 Until the desktop values are provided, the Settings → Sync section shows
 "Google sync is not configured for this build" and everything else in the

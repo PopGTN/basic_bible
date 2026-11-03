@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
 import 'package:basic_bible/l10n/app_localizations.dart';
 import 'package:basic_bible/src/features/annotations/application/view_models/annotation_preferences_view_models.dart';
@@ -298,7 +297,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       _HomeTabDefinition(
         widget: const HomeTab(),
         title: t.home,
-        icon: FontAwesomeIcons.house,
+        icon: Icons.home,
       ),
       _HomeTabDefinition(
         widget: BibleViewerTab(
@@ -310,12 +309,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           isSmallDevice: isSmall,
         ),
         title: t.bible,
-        icon: FontAwesomeIcons.book,
+        icon: Icons.menu_book,
       ),
       _HomeTabDefinition(
         widget: const MenuTab(),
         title: t.menu,
-        icon: FontAwesomeIcons.bars,
+        icon: Icons.menu,
       ),
     ];
   }

@@ -60,23 +60,18 @@ void main() {
     await source.saveUserAnnotation(newNote('second'));
 
     final backupPath = p.join(tempDir.path, 'backup.sqlite');
-    buildNotesBackupDatabase(
-      backupPath,
-      await source.getAllUserAnnotations(),
-    );
+    buildNotesBackupDatabase(backupPath, await source.getAllUserAnnotations());
 
     final target = openDb('target.sqlite');
     await importInto(target, backupPath);
 
     final restored = await target.getAllUserAnnotations();
     expect(restored, hasLength(2));
-    expect(
-      restored.map((n) => n.noteText).toSet(),
-      {'first', 'second'},
-    );
+    expect(restored.map((n) => n.noteText).toSet(), {'first', 'second'});
     // Identity travelled with the notes.
-    final sourceUuids =
-        (await source.getAllUserAnnotations()).map((n) => n.uuid).toSet();
+    final sourceUuids = (await source.getAllUserAnnotations())
+        .map((n) => n.uuid)
+        .toSet();
     expect(restored.map((n) => n.uuid).toSet(), sourceUuids);
 
     // Importing the same backup again changes nothing.

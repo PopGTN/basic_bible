@@ -21,7 +21,9 @@ class SyncSettingsSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final auth = ref.watch(googleAuthServiceProvider);
     final sync = ref.watch(syncControllerProvider);
+    final syncMode = ref.watch(syncModeProvider);
     final controller = ref.read(syncControllerProvider.notifier);
+    final syncModeController = ref.read(syncModeProvider.notifier);
 
     final children = <Widget>[
       Text(
@@ -68,6 +70,33 @@ class SyncSettingsSection extends ConsumerWidget {
       );
     } else {
       children.addAll([
+        ListTile(
+          contentPadding: EdgeInsets.zero,
+          title: const Text('Sync mode'),
+          subtitle: const Text(
+            'Automatic syncs after note changes and on app resume. Manual sync only runs when you tap Sync now.',
+          ),
+        ),
+        SegmentedButton<SyncMode>(
+          segments: const [
+            ButtonSegment(
+              value: SyncMode.automatic,
+              icon: Icon(Icons.auto_awesome_motion_outlined),
+              label: Text('Automatic'),
+            ),
+            ButtonSegment(
+              value: SyncMode.manual,
+              icon: Icon(Icons.touch_app_outlined),
+              label: Text('Manual'),
+            ),
+          ],
+          selected: {syncMode},
+          onSelectionChanged: (selection) {
+            if (selection.isEmpty) return;
+            syncModeController.setMode(selection.first);
+          },
+        ),
+        const SizedBox(height: 12),
         ListTile(
           contentPadding: EdgeInsets.zero,
           leading: const Icon(Icons.cloud_done_outlined),

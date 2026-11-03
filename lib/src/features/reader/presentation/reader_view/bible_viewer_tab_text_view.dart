@@ -114,13 +114,14 @@ class _BibleTextViewState extends ConsumerState<_BibleTextView> {
   @override
   void initState() {
     super.initState();
-    _continuousController = ContinuousReaderController(
-      loadChapter: (bookId, chapterNumber) => ref
-          .read(bibleRepositoryProvider)
-          .loadChapterVerses(widget.translationId, bookId, chapterNumber),
-    )
-      ..onChapterHydrated = _onContinuousChapterHydrated
-      ..addListener(_onContinuousControllerChanged);
+    _continuousController =
+        ContinuousReaderController(
+            loadChapter: (bookId, chapterNumber) => ref
+                .read(bibleRepositoryProvider)
+                .loadChapterVerses(widget.translationId, bookId, chapterNumber),
+          )
+          ..onChapterHydrated = _onContinuousChapterHydrated
+          ..addListener(_onContinuousControllerChanged);
     _rebuildContinuousSections();
     final initialReference =
         widget.continuousScrolling &&

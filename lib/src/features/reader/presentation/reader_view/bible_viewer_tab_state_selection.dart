@@ -41,7 +41,8 @@ extension _BibleViewerTabStateSelection on _BibleViewerTabState {
       List<UserAnnotation> highlightAnnotations,
       UserAnnotationRepository repository,
       ScaffoldMessengerState messenger,
-    ) body,
+    )
+    body,
   ) async {
     if (_selectionActionInFlight) return;
     final selectedReferences = [...ref.read(selectedVersesProvider)];
@@ -100,90 +101,110 @@ extension _BibleViewerTabStateSelection on _BibleViewerTabState {
     }
   }
 
-  Future<void> _handleHighlightColorSelected(Color color) =>
-      _executeHighlightAction(
-        (references, translation, highlightAnnotations, repository, messenger) async {
-      // Remove the selected verses from every overlapping annotation.
-      // _standaloneHighlightAnnotationsForSelection already deduplicates by id,
-      // but processedIds guards against any future path that could produce
-      // duplicates without risking a double-delete.
-      // This also handles the "recolour a subset" case: an annotation covering
-      // verses 1–5 is trimmed to 1–2, 4–5 before the new per-verse annotation
-      // is created for verse 3, preserving the original colour on the remainder.
-      final processedIds = <int?>{};
-      final trimFutures = <Future<void>>[];
-      for (final annotation in highlightAnnotations) {
-        if (!processedIds.add(annotation.id)) continue;
-        trimFutures.add(
-          _trimOrDeleteAnnotation(annotation, references, translation.id, repository),
-        );
-      }
-      await Future.wait(trimFutures);
+  Future<void> _handleHighlightColorSelected(
+    Color color,
+  ) => _executeHighlightAction((
+    references,
+    translation,
+    highlightAnnotations,
+    repository,
+    messenger,
+  ) async {
+    // Remove the selected verses from every overlapping annotation.
+    // _standaloneHighlightAnnotationsForSelection already deduplicates by id,
+    // but processedIds guards against any future path that could produce
+    // duplicates without risking a double-delete.
+    // This also handles the "recolour a subset" case: an annotation covering
+    // verses 1–5 is trimmed to 1–2, 4–5 before the new per-verse annotation
+    // is created for verse 3, preserving the original colour on the remainder.
+    final processedIds = <int?>{};
+    final trimFutures = <Future<void>>[];
+    for (final annotation in highlightAnnotations) {
+      if (!processedIds.add(annotation.id)) continue;
+      trimFutures.add(
+        _trimOrDeleteAnnotation(
+          annotation,
+          references,
+          translation.id,
+          repository,
+        ),
+      );
+    }
+    await Future.wait(trimFutures);
 
-      // Create one fresh per-verse annotation with the chosen colour.
-      // We never update an existing multi-verse annotation in-place because
-      // that would silently recolour unselected verses too.
-      await Future.wait([
-        for (final reference in references)
-          repository.saveAnnotation(
-            UserAnnotation(
-              type: UserAnnotationType.highlight,
-              primaryVerse: buildAnnotationVerseLink(
-                reference: reference,
-                translation: translation,
-              ),
-              highlightColorValue: color.toARGB32(),
-              createdAt: DateTime.now(),
-              updatedAt: DateTime.now(),
+    // Create one fresh per-verse annotation with the chosen colour.
+    // We never update an existing multi-verse annotation in-place because
+    // that would silently recolour unselected verses too.
+    await Future.wait([
+      for (final reference in references)
+        repository.saveAnnotation(
+          UserAnnotation(
+            type: UserAnnotationType.highlight,
+            primaryVerse: buildAnnotationVerseLink(
+              reference: reference,
+              translation: translation,
             ),
+            highlightColorValue: color.toARGB32(),
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
           ),
-      ]);
+        ),
+    ]);
 
-      if (!mounted) return;
-      _clearSelectionUi();
+    if (!mounted) return;
+    _clearSelectionUi();
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(
+          references.length == 1
+              ? 'Highlight saved.'
+              : 'Highlights saved for ${references.length} verses.',
+        ),
+      ),
+    );
+  });
+
+  Future<void> _handleClearHighlightPressed() => _executeHighlightAction((
+    references,
+    translation,
+    highlightAnnotations,
+    repository,
+    messenger,
+  ) async {
+    if (highlightAnnotations.isEmpty) {
+      ref.read(highlightPaletteExpandedProvider.notifier).state = false;
       messenger.showSnackBar(
-        SnackBar(
+        const SnackBar(
           content: Text(
-            references.length == 1
-                ? 'Highlight saved.'
-                : 'Highlights saved for ${references.length} verses.',
+            'Only standalone highlights can be removed here. Edit a note to change its highlight.',
           ),
         ),
       );
-    });
+      return;
+    }
 
-  Future<void> _handleClearHighlightPressed() =>
-      _executeHighlightAction(
-        (references, translation, highlightAnnotations, repository, messenger) async {
-      if (highlightAnnotations.isEmpty) {
-        ref.read(highlightPaletteExpandedProvider.notifier).state = false;
-        messenger.showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Only standalone highlights can be removed here. Edit a note to change its highlight.',
-            ),
-          ),
-        );
-        return;
-      }
-
-      await Future.wait([
-        for (final annotation in highlightAnnotations)
-          _trimOrDeleteAnnotation(annotation, references, translation.id, repository),
-      ]);
-
-      if (!mounted) return;
-      _clearSelectionUi();
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text(
-            highlightAnnotations.length == 1
-                ? 'Highlight removed.'
-                : 'Highlights removed.',
-          ),
+    await Future.wait([
+      for (final annotation in highlightAnnotations)
+        _trimOrDeleteAnnotation(
+          annotation,
+          references,
+          translation.id,
+          repository,
         ),
-      );
-    });
+    ]);
+
+    if (!mounted) return;
+    _clearSelectionUi();
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(
+          highlightAnnotations.length == 1
+              ? 'Highlight removed.'
+              : 'Highlights removed.',
+        ),
+      ),
+    );
+  });
 
   Future<void> _handleNotePressed() async {
     if (_selectionActionInFlight) return;

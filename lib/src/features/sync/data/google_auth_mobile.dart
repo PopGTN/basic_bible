@@ -16,10 +16,13 @@ class MobileGoogleAuthService implements api.GoogleAuthService {
   Future<void> _ensureInitialized() async {
     if (_initialized) return;
     await GoogleSignIn.instance.initialize(
-      // Android resolves its client by package name + SHA-1; iOS can also be
-      // configured via Info.plist, in which case this stays empty.
+      // Android requires the Web OAuth client as the serverClientId for
+      // google_sign_in; iOS can use the iOS client ID via Info.plist.
       clientId: Platform.isIOS && googleIosClientId.isNotEmpty
           ? googleIosClientId
+          : null,
+      serverClientId: Platform.isAndroid && googleWebClientId.isNotEmpty
+          ? googleWebClientId
           : null,
     );
     _initialized = true;
@@ -59,17 +62,25 @@ class MobileGoogleAuthService implements api.GoogleAuthService {
   @override
   Future<String> getAccessToken() async {
     await _ensureInitialized();
-    final account = _account ??
+    final account =
+        _account ??
         await (GoogleSignIn.instance.attemptLightweightAuthentication() ??
             Future<GoogleSignInAccount?>.value());
     if (account == null) {
       throw const api.GoogleSignInRequiredException();
     }
     _account = account;
+    // Never fall back to interactive authorizeScopes() here: this runs from
+    // automatic background syncs, which must not pop a consent dialog the
+    // user didn't ask for. Interactive consent happens only in signIn().
     try {
-      final authorization =
-          await account.authorizationClient.authorizationForScopes(_scopes) ??
-          await account.authorizationClient.authorizeScopes(_scopes);
+      final authorization = await account.authorizationClient
+          .authorizationForScopes(_scopes);
+      if (authorization == null) {
+        throw const api.GoogleSignInRequiredException(
+          'Google Drive access needs to be approved again. Please sign in.',
+        );
+      }
       return authorization.accessToken;
     } on GoogleSignInException catch (e) {
       throw api.GoogleSignInRequiredException(

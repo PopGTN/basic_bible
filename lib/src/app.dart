@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -20,6 +23,9 @@ import 'features/auth/application/view_models/auth_view_model.dart';
 import 'features/settings/application/view_models/theme_view_model.dart'
     hide themeDataMap;
 import 'features/settings/application/view_models/language_view_model.dart';
+import 'features/sync/application/view_models/sync_view_models.dart';
+import 'services/app_database.dart';
+import 'services/shared_preferences_provider.dart';
 
 class MyApp extends ConsumerStatefulWidget {
   const MyApp({super.key});
@@ -31,10 +37,69 @@ class MyApp extends ConsumerStatefulWidget {
 class _MyAppState extends ConsumerState<MyApp> {
   final _routerRefresh = _RouterRefreshNotifier();
   late final GoRouter _router;
+  late final AppLifecycleListener _appLifecycleListener;
+  StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
+  bool? _hadNetwork;
+
+  static const _retentionLastRunKey = 'notesRetentionLastRunAt';
+  static const _retentionInterval = Duration(hours: 24);
+
+  /// Purges old tombstones at most once a day. Runs on startup/resume only —
+  /// a timer would be pointless (suspended apps don't tick) and wasteful.
+  Future<void> _runRetentionCleanupIfDue() async {
+    try {
+      final prefs = ref.read(sharedPreferencesProvider);
+      final lastRaw = prefs.getString(_retentionLastRunKey);
+      final last = lastRaw == null ? null : DateTime.tryParse(lastRaw);
+      final now = DateTime.now();
+      if (last != null && now.difference(last) < _retentionInterval) return;
+      await prefs.setString(_retentionLastRunKey, now.toIso8601String());
+      await ref.read(appDatabaseProvider).runLocalRetentionCleanup();
+    } catch (_) {
+      // Local cleanup is best-effort; it should never block the app.
+    }
+  }
+
+  void _scheduleAutoSync() {
+    if (ref.read(syncModeProvider) == SyncMode.manual) return;
+    if (!ref.read(syncControllerProvider).isSignedIn) return;
+    // Throttling/backoff is applied by SyncController.requestAutoSync.
+    ref.read(autoSyncSchedulerProvider).schedule();
+  }
+
+  /// Only listens while the app is in the foreground, and only reacts to an
+  /// offline → online transition (not Wi-Fi ↔ cellular handoffs, and not the
+  /// initial status some platforms emit on subscribe).
+  void _startConnectivityListener() {
+    if (_connectivitySubscription != null) return;
+    _hadNetwork = null;
+    _connectivitySubscription = Connectivity().onConnectivityChanged.listen((
+      results,
+    ) {
+      final hasNetwork = results.any((r) => r != ConnectivityResult.none);
+      final restored = _hadNetwork == false && hasNetwork;
+      _hadNetwork = hasNetwork;
+      if (restored) _scheduleAutoSync();
+    });
+  }
+
+  void _stopConnectivityListener() {
+    _connectivitySubscription?.cancel();
+    _connectivitySubscription = null;
+  }
 
   @override
   void initState() {
     super.initState();
+    _startConnectivityListener();
+    _appLifecycleListener = AppLifecycleListener(
+      onResume: () {
+        _startConnectivityListener();
+        _runRetentionCleanupIfDue();
+        _scheduleAutoSync();
+      },
+      onHide: _stopConnectivityListener,
+    );
     // Keep the redirect logic reactive to auth/login-requirement changes via
     // refreshListenable instead of rebuilding the whole GoRouter on every
     // MyApp rebuild. A previous version built GoRouter inline in build(),
@@ -46,8 +111,17 @@ class _MyAppState extends ConsumerState<MyApp> {
       requireDummyLoginProvider,
       (_, _) => _routerRefresh.refresh(),
     );
+    // Only sign-in changes affect routing; sync phase changes must not
+    // re-run redirects on every sync.
+    ref.listenManual(
+      syncControllerProvider.select((s) => s.isSignedIn),
+      (_, _) => _routerRefresh.refresh(),
+    );
 
-    final isLoggedIn = ref.read(authProvider);
+    final isLoggedIn = isAppAuthenticated(
+      localLoggedIn: ref.read(authProvider),
+      syncState: ref.read(syncControllerProvider),
+    );
     final requireDummyLogin = ref.read(requireDummyLoginProvider);
 
     _router = GoRouter(
@@ -56,10 +130,15 @@ class _MyAppState extends ConsumerState<MyApp> {
       routes: [
         GoRoute(
           path: '/',
-          builder: (context, state) =>
-              ref.read(requireDummyLoginProvider) && !ref.read(authProvider)
-              ? const LoginScreen()
-              : const HomeScreen(),
+          builder: (context, state) {
+            final isLoggedIn = isAppAuthenticated(
+              localLoggedIn: ref.read(authProvider),
+              syncState: ref.read(syncControllerProvider),
+            );
+            return ref.read(requireDummyLoginProvider) && !isLoggedIn
+                ? const LoginScreen()
+                : const HomeScreen();
+          },
         ),
         GoRoute(
           path: '/login',
@@ -98,7 +177,10 @@ class _MyAppState extends ConsumerState<MyApp> {
         ),
       ],
       redirect: (context, state) {
-        final loggedIn = ref.read(authProvider);
+        final loggedIn = isAppAuthenticated(
+          localLoggedIn: ref.read(authProvider),
+          syncState: ref.read(syncControllerProvider),
+        );
         final requireLogin = ref.read(requireDummyLoginProvider);
         final goingToLogin = state.uri.toString() == '/login';
 
@@ -112,10 +194,13 @@ class _MyAppState extends ConsumerState<MyApp> {
         return null;
       },
     );
+    Future.microtask(_runRetentionCleanupIfDue);
   }
 
   @override
   void dispose() {
+    _stopConnectivityListener();
+    _appLifecycleListener.dispose();
     _routerRefresh.dispose();
     super.dispose();
   }

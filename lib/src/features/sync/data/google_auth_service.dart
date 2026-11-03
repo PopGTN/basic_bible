@@ -1,4 +1,5 @@
 import 'google_auth_service_stub.dart'
+    if (dart.library.js_interop) 'google_auth_service_web.dart'
     if (dart.library.io) 'google_auth_service_native.dart'
     as impl;
 
@@ -24,7 +25,7 @@ class GoogleSignInRequiredException implements Exception {
 ///
 /// Android/iOS use the google_sign_in plugin; Linux/Windows/macOS use a
 /// hand-rolled OAuth loopback flow (google_sign_in has no Linux/Windows
-/// support); web reports unsupported in v1.
+/// support); web reports unsupported until a GIS button flow exists.
 abstract class GoogleAuthService {
   /// Whether Google sync can work on this platform at all.
   bool get isSupported;

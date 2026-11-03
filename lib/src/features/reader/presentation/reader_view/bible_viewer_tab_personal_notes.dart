@@ -47,6 +47,10 @@ class _PersonalNotesSheet extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
             child: ListView(
               controller: controller,
+              physics: const BouncingScrollPhysics(
+                parent: AlwaysScrollableScrollPhysics(),
+              ),
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
               children: [
                 Text(
                   referenceLabel,
@@ -153,7 +157,9 @@ class _PersonalNoteCard extends StatelessWidget {
           decoration: BoxDecoration(
             border: Border(
               left: BorderSide(
-                color: (highlightColor ?? colors.secondary).withValues(alpha: 0.7),
+                color: (highlightColor ?? colors.secondary).withValues(
+                  alpha: 0.7,
+                ),
                 width: 3,
               ),
               bottom: BorderSide(
@@ -220,26 +226,25 @@ class _PersonalNoteCard extends StatelessWidget {
                 ),
               ],
               const SizedBox(height: 12),
-              Row(
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
                 children: [
                   TextButton.icon(
                     onPressed: onOpenReference,
                     icon: const Icon(Icons.menu_book_outlined),
                     label: Text(l10n.openAction),
                   ),
-                  const SizedBox(width: 8),
                   TextButton.icon(
                     onPressed: onViewDetails,
                     icon: const Icon(Icons.visibility_outlined),
                     label: const Text('View'),
                   ),
-                  const SizedBox(width: 8),
                   TextButton.icon(
                     onPressed: onEdit,
                     icon: const Icon(Icons.edit_outlined),
                     label: Text(l10n.editAction),
                   ),
-                  const SizedBox(width: 8),
                   TextButton.icon(
                     onPressed: onDelete,
                     icon: const Icon(Icons.delete_outline),
