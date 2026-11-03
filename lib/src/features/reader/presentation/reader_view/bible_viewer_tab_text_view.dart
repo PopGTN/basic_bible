@@ -28,6 +28,7 @@ class _BibleTextView extends ConsumerStatefulWidget {
     required this.showBookIntroductions,
     required this.isSmallDevice,
     required this.bottomOverlayPadding,
+    required this.barOverlayPadding,
     required this.onVisibleReferenceChanged,
   });
 
@@ -43,7 +44,15 @@ class _BibleTextView extends ConsumerStatefulWidget {
   final bool continuousScrolling;
   final bool showBookIntroductions;
   final bool isSmallDevice;
+
+  /// Space reserved under the content for every bottom overlay (the reader
+  /// bar plus the verse-selection tray when it's showing). Changes with
+  /// selection state.
   final double bottomOverlayPadding;
+
+  /// The part of [bottomOverlayPadding] taken by the reader bar alone.
+  /// Constant, so it's safe to use for sizing the viewport.
+  final double barOverlayPadding;
   final ValueChanged<BibleReference> onVisibleReferenceChanged;
 
   @override
@@ -51,6 +60,11 @@ class _BibleTextView extends ConsumerStatefulWidget {
 }
 
 class _BibleTextViewState extends ConsumerState<_BibleTextView> {
+  /// The user's chosen reader font, or null for the app default. Used by the
+  /// RichText verse widgets, which don't inherit the theme's font.
+  String? _readerFontFamily(BuildContext context) =>
+      ref.read(readerFontProvider).selected.family;
+
   // Owned here so each _BibleTextView instance has exactly one ScrollPosition.
   // Previously it was passed from the parent, causing a brief double-attach
   // when the widget key changed and old/new instances overlapped during disposal.
@@ -223,6 +237,10 @@ class _BibleTextViewState extends ConsumerState<_BibleTextView> {
 
   @override
   Widget build(BuildContext context) {
+    // Rebuild the text when the reader font changes. Verse text is drawn with
+    // RichText, which ignores the inherited theme/default text style, so the
+    // family has to be passed into each span explicitly (_readerFontFamily).
+    ref.watch(readerFontProvider.select((state) => state.selected.family));
     // Listener catches mouse-wheel scroll (PointerScrollEvent) on desktop,
     // which does not set dragDetails on ScrollStartNotification.
     return Listener(

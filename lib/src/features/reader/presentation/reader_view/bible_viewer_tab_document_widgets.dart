@@ -14,6 +14,11 @@ class _DocumentBlockView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    // Theme text styles carry fixed sizes (24/22/16/14). Scale them by the
+    // user's reader size relative to the 16 default so headings, intros and
+    // poetry follow the size setting, not just the verse text. At the default
+    // size the result is identical to before.
+    final scale = fontSize / FontSizeService.defaultSize;
     final isHeading = block.kind == BibleDocumentBlockKind.heading;
     final isIntro = block.kind == BibleDocumentBlockKind.introduction;
 
@@ -56,7 +61,9 @@ class _DocumentBlockView extends StatelessWidget {
       child: Text(
         block.text,
         style: style?.copyWith(
-          fontSize: (style.fontSize ?? fontSize) + (isEmphasized ? 1 : 0),
+          fontSize:
+              (style.fontSize ?? FontSizeService.defaultSize) * scale +
+              (isEmphasized ? 1 : 0),
           color: isEmphasized ? theme.colorScheme.secondary : style.color,
           height: 1.5,
         ),
@@ -92,6 +99,9 @@ class _DocumentBlockSection extends StatelessWidget {
               Text(
                 eyebrow!,
                 style: theme.textTheme.labelMedium?.copyWith(
+                  fontSize:
+                      (theme.textTheme.labelMedium?.fontSize ?? 12) *
+                      (fontSize / FontSizeService.defaultSize),
                   color: colors.secondary,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 0.8,

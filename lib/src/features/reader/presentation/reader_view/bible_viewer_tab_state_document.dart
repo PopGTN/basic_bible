@@ -179,6 +179,7 @@ extension _BibleTextViewStateDocument on _BibleTextViewState {
     return RichText(
       text: TextSpan(
         style: TextStyle(
+          fontFamily: _readerFontFamily(context),
           fontSize: widget.fontSize,
           color: Theme.of(context).textTheme.bodyLarge?.color,
           height: 1.7,
@@ -288,6 +289,7 @@ extension _BibleTextViewStateDocument on _BibleTextViewState {
                 child: RichText(
                   text: TextSpan(
                     style: TextStyle(
+                      fontFamily: _readerFontFamily(context),
                       fontSize: widget.fontSize,
                       color: Theme.of(context).textTheme.bodyLarge?.color,
                       height: 1.7,

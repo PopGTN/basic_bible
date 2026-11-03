@@ -16,6 +16,7 @@ import 'package:basic_bible/src/features/reader/application/view_models/reader_s
 import 'package:basic_bible/src/features/reader/presentation/reference_picker/chapter_bar.dart';
 import 'package:basic_bible/src/features/reader/presentation/reference_picker/reference_preview_sheet.dart';
 import 'package:basic_bible/src/features/settings/application/view_models/reader_display_preferences_view_models.dart';
+import 'package:basic_bible/src/features/settings/application/view_models/reader_font_view_models.dart';
 import 'package:basic_bible/src/models/bible_models.dart';
 import 'package:basic_bible/src/platform/runtime_support.dart';
 import 'package:basic_bible/src/services/font_size_service.dart';
@@ -171,10 +172,12 @@ class _BibleViewerTabState extends ConsumerState<BibleViewerTab> {
     return Stack(
       children: [
         // Main Bible content layer.
-        _buildReaderContentLayer(
-          readerState,
-          displayReference,
-          contentBottomPadding,
+        _ReaderFontScope(
+          child: _buildReaderContentLayer(
+            readerState,
+            displayReference,
+            contentBottomPadding,
+          ),
         ),
 
         // Floating chapter/reference controls.
@@ -328,6 +331,7 @@ class _BibleViewerTabState extends ConsumerState<BibleViewerTab> {
                       showBookIntroductions: readerState.showBookIntroductions,
                       isSmallDevice: widget.isSmallDevice,
                       bottomOverlayPadding: contentBottomPadding,
+                      barOverlayPadding: _readerBarBottomPadding,
                       onVisibleReferenceChanged: (reference) {
                         if (_continuousVisibleReference == reference) return;
                         setState(() {
@@ -392,39 +396,33 @@ class _BibleViewerTabState extends ConsumerState<BibleViewerTab> {
     required bool showVerseSelector,
     required bool continuousScrolling,
   }) {
-    // The bar floats with margins around it. Give the whole strip (margins and
-    // the system safe-area inset) a solid background so scrolling text never
-    // shows through beside or under the bar, in continuous mode especially.
     return Align(
       alignment: Alignment.bottomCenter,
-      child: ColoredBox(
-        color: Theme.of(context).scaffoldBackgroundColor,
-        child: SafeArea(
-          top: false,
-          bottom: true,
-          child: ChapterBar(
-            barHeight: readerBarHeight,
-            isFloating: true,
-            reference: displayReference,
-            books: books,
-            canOpenReferencePicker: canOpenReferencePicker,
-            showVerseSelector: showVerseSelector,
-            onReferenceChanged: (reference) => _handleReferenceChanged(
-              reference,
-              continuousScrolling: continuousScrolling,
-            ),
-            onPreviousChapter: () => _handleAdjacentChapter(
-              books,
-              displayReference,
-              continuousScrolling: continuousScrolling,
-              direction: -1,
-            ),
-            onNextChapter: () => _handleAdjacentChapter(
-              books,
-              displayReference,
-              continuousScrolling: continuousScrolling,
-              direction: 1,
-            ),
+      child: SafeArea(
+        top: false,
+        bottom: true,
+        child: ChapterBar(
+          barHeight: readerBarHeight,
+          isFloating: true,
+          reference: displayReference,
+          books: books,
+          canOpenReferencePicker: canOpenReferencePicker,
+          showVerseSelector: showVerseSelector,
+          onReferenceChanged: (reference) => _handleReferenceChanged(
+            reference,
+            continuousScrolling: continuousScrolling,
+          ),
+          onPreviousChapter: () => _handleAdjacentChapter(
+            books,
+            displayReference,
+            continuousScrolling: continuousScrolling,
+            direction: -1,
+          ),
+          onNextChapter: () => _handleAdjacentChapter(
+            books,
+            displayReference,
+            continuousScrolling: continuousScrolling,
+            direction: 1,
           ),
         ),
       ),
@@ -535,4 +533,36 @@ BibleVerse? _findVerseInChapter(BibleChapter? chapter, int? verseNumber) {
     if (verse.number == verseNumber) return verse;
   }
   return null;
+}
+
+/// Applies the user's chosen reader font to the Bible text only (not the bar
+/// or overlays). Overriding the text theme covers styles derived from
+/// `Theme.of(context).textTheme`; the DefaultTextStyle merge covers bare
+/// `Text` widgets. A null family leaves everything untouched.
+///
+/// Its own widget, watching only the family, so font-picker state changes
+/// (busy/error) never rebuild the reader, and a font change rebuilds only the
+/// text that depends on the theme.
+class _ReaderFontScope extends ConsumerWidget {
+  const _ReaderFontScope({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final family = ref.watch(
+      readerFontProvider.select((state) => state.selected.family),
+    );
+    if (family == null) return child;
+    final theme = Theme.of(context);
+    return Theme(
+      data: theme.copyWith(
+        textTheme: theme.textTheme.apply(fontFamily: family),
+      ),
+      child: DefaultTextStyle.merge(
+        style: TextStyle(fontFamily: family),
+        child: child,
+      ),
+    );
+  }
 }

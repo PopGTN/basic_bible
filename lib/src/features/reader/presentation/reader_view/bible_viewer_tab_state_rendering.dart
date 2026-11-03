@@ -117,86 +117,99 @@ extension _BibleTextViewStateRendering on _BibleTextViewState {
     // rebuild at initialScrollIndex instead of animating from the old position.
     // This avoids the position estimation error that compounds over hundreds of
     // unhydrated placeholder sections.
-    return ScrollablePositionedList.builder(
-      key: _scrollableListKey,
-      initialScrollIndex: _scrollableListInitialIndex,
-      initialAlignment: 0.02,
-      itemScrollController: _continuousItemScrollController,
-      itemPositionsListener: _continuousItemPositionsListener,
-      padding: EdgeInsets.only(
-        left: 16,
-        right: 16,
-        top: 16,
-        bottom: widget.bottomOverlayPadding,
-      ),
-      itemCount: _continuousSections.length,
-      itemBuilder: (context, index) {
-        final section = _continuousSections[index];
-        final chapterFuture = _continuousChapterFuture(section);
-        return Padding(
-          // No GlobalKey on the item root. ScrollablePositionedList builds
-          // the anchor item in two internal viewports simultaneously during
-          // scroll positioning; a GlobalKey here would be claimed by both
-          // trees at once, causing "Multiple widgets used the same GlobalKey"
-          // and the render-tree corruption cascade that follows.
-          // Chapter scroll-to is handled via _continuousItemScrollController
-          // which uses the item index, not a key context.
-          padding: const EdgeInsets.only(bottom: 28),
-          child: FutureBuilder<BibleChapter?>(
-            future: chapterFuture,
-            initialData: _hydratedContinuousChapter(
-              section.book.id,
-              section.chapter.number,
+    // End the list above the floating reference bar instead of letting text
+    // scroll underneath it (same as the non-continuous view). Nothing is drawn
+    // behind the bar, so there is no see-through strip or seam, and a gap
+    // separates the bar from the text.
+    //
+    // Only the bar's constant height shrinks the viewport. The selection
+    // tray's extra space goes in the list's own padding (scroll extent), so
+    // selecting a verse never resizes the viewport — resizing it relayouts
+    // both of ScrollablePositionedList's internal viewports and can trigger
+    // "RenderViewport exceeded its maximum number of layout cycles".
+    return Padding(
+      padding: EdgeInsets.only(bottom: widget.barOverlayPadding),
+      child: ScrollablePositionedList.builder(
+        key: _scrollableListKey,
+        initialScrollIndex: _scrollableListInitialIndex,
+        initialAlignment: 0.02,
+        itemScrollController: _continuousItemScrollController,
+        itemPositionsListener: _continuousItemPositionsListener,
+        padding: EdgeInsets.only(
+          left: 16,
+          right: 16,
+          top: 16,
+          bottom: widget.bottomOverlayPadding - widget.barOverlayPadding,
+        ),
+        itemCount: _continuousSections.length,
+        itemBuilder: (context, index) {
+          final section = _continuousSections[index];
+          final chapterFuture = _continuousChapterFuture(section);
+          return Padding(
+            // No GlobalKey on the item root. ScrollablePositionedList builds
+            // the anchor item in two internal viewports simultaneously during
+            // scroll positioning; a GlobalKey here would be claimed by both
+            // trees at once, causing "Multiple widgets used the same GlobalKey"
+            // and the render-tree corruption cascade that follows.
+            // Chapter scroll-to is handled via _continuousItemScrollController
+            // which uses the item index, not a key context.
+            padding: const EdgeInsets.only(bottom: 28),
+            child: FutureBuilder<BibleChapter?>(
+              future: chapterFuture,
+              initialData: _hydratedContinuousChapter(
+                section.book.id,
+                section.chapter.number,
+              ),
+              builder: (context, snapshot) {
+                final hydratedChapter = snapshot.data;
+                final chapter = hydratedChapter ?? section.chapter;
+                final hasVerses = chapter.verses.isNotEmpty;
+                return _ChapterSectionView(
+                  book: section.book,
+                  chapter: chapter,
+                  reference: widget.reference,
+                  fontSize: widget.fontSize,
+                  layoutMode: widget.layoutMode,
+                  buildChapterBlocks: (chapter) =>
+                      _buildChapterBlocksFor(context, chapter),
+                  buildVerse: (verse) => _buildVerseForChapter(
+                    context,
+                    section.book.id,
+                    section.chapter.number,
+                    verse,
+                    sectionIndex: index,
+                  ),
+                  buildDocumentView: () => _buildDocumentReadingViewForChapter(
+                    context,
+                    section.book.id,
+                    chapter,
+                    sectionIndex: index,
+                  ),
+                  buildInlineHeading: (block) =>
+                      _buildInlineSectionHeading(context, block),
+                  introBuilder: section.chapter.number == 1
+                      ? () => Column(
+                          children: _buildBookIntroductionBlocksForBook(
+                            context,
+                            section.book,
+                            showForCurrentSection: true,
+                          ),
+                        )
+                      : null,
+                  headerBuilder: () => _buildChapterHeaderForChapter(
+                    context,
+                    section.book,
+                    section.chapter.number,
+                  ),
+                  fallbackBody: !hasVerses
+                      ? _buildContinuousChapterPlaceholder(context)
+                      : null,
+                );
+              },
             ),
-            builder: (context, snapshot) {
-              final hydratedChapter = snapshot.data;
-              final chapter = hydratedChapter ?? section.chapter;
-              final hasVerses = chapter.verses.isNotEmpty;
-              return _ChapterSectionView(
-                book: section.book,
-                chapter: chapter,
-                reference: widget.reference,
-                fontSize: widget.fontSize,
-                layoutMode: widget.layoutMode,
-                buildChapterBlocks: (chapter) =>
-                    _buildChapterBlocksFor(context, chapter),
-                buildVerse: (verse) => _buildVerseForChapter(
-                  context,
-                  section.book.id,
-                  section.chapter.number,
-                  verse,
-                  sectionIndex: index,
-                ),
-                buildDocumentView: () => _buildDocumentReadingViewForChapter(
-                  context,
-                  section.book.id,
-                  chapter,
-                  sectionIndex: index,
-                ),
-                buildInlineHeading: (block) =>
-                    _buildInlineSectionHeading(context, block),
-                introBuilder: section.chapter.number == 1
-                    ? () => Column(
-                        children: _buildBookIntroductionBlocksForBook(
-                          context,
-                          section.book,
-                          showForCurrentSection: true,
-                        ),
-                      )
-                    : null,
-                headerBuilder: () => _buildChapterHeaderForChapter(
-                  context,
-                  section.book,
-                  section.chapter.number,
-                ),
-                fallbackBody: !hasVerses
-                    ? _buildContinuousChapterPlaceholder(context)
-                    : null,
-              );
-            },
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 
@@ -228,6 +241,7 @@ extension _BibleTextViewStateRendering on _BibleTextViewState {
               Text(
                 bookName,
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontSize: widget.fontSize,
                   color: Theme.of(context).colorScheme.secondary,
                   letterSpacing: 0.6,
                 ),
@@ -420,6 +434,7 @@ extension _BibleTextViewStateRendering on _BibleTextViewState {
                 child: RichText(
                   text: TextSpan(
                     style: TextStyle(
+                      fontFamily: _readerFontFamily(context),
                       fontSize: widget.fontSize,
                       color: bodyColor,
                       height: 1.5,
