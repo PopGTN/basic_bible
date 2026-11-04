@@ -297,8 +297,10 @@ extension AppBibleRepositoryLoading on AppBibleRepository {
             byteData.offsetInBytes,
             byteData.lengthInBytes,
           );
-    _dbManager.close(translation.id);
-    await writeBinaryFile(await _sqlitePathFor(translation.id), bytes);
+    final path = await _sqlitePathFor(translation.id);
+    await _dbManager.close(translation.id);
+    await deleteSqliteDatabaseFiles(path);
+    await writeBinaryFile(path, bytes);
   }
 
   bool _isImportedSqliteTranslation(BibleTranslation translation) =>
@@ -317,7 +319,9 @@ extension AppBibleRepositoryLoading on AppBibleRepository {
     if (!await pathExists(sourcePath)) {
       throw Exception('Imported translation file was not found: $sourcePath');
     }
-    _dbManager.close(translation.id);
-    await copyFile(sourcePath, await _sqlitePathFor(translation.id));
+    final path = await _sqlitePathFor(translation.id);
+    await _dbManager.close(translation.id);
+    await deleteSqliteDatabaseFiles(path);
+    await copyFile(sourcePath, path);
   }
 }

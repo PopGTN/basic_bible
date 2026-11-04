@@ -384,15 +384,15 @@ class AppBibleRepository {
   }
 
   Future<void> _invalidateCache(String translationId) async {
-    _dbManager.close(translationId);
+    await _dbManager.close(translationId);
     if (!usesFileBackedStorage) {
       final path = await _sqlitePathFor(translationId);
       final db = await _dbManager.open(translationId, path);
       await db.clearBible();
-      _dbManager.close(translationId);
+      await _dbManager.close(translationId);
       return;
     }
-    await deleteFileIfExists(await _sqlitePathFor(translationId));
+    await deleteSqliteDatabaseFiles(await _sqlitePathFor(translationId));
   }
 
   void _evictFromCache(String translationId) {

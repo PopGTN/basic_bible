@@ -26,9 +26,12 @@ class TranslationDatabaseManager {
   }
 
   /// Closes and removes the connection for [translationId].
-  /// Call this before deleting the underlying file.
-  void close(String translationId) {
-    _cache.remove(translationId)?.close();
+  ///
+  /// Await this before deleting or overwriting the underlying file: until the
+  /// close completes, the old connection still owns the `-wal`/`-shm` files,
+  /// and a new connection opened on the same path would share them.
+  Future<void> close(String translationId) async {
+    await _cache.remove(translationId)?.close();
   }
 
   /// Closes all open connections.
