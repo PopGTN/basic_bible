@@ -558,9 +558,14 @@ class _BibleViewerSettingsSheet extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            ValueListenableBuilder<double>(
-              valueListenable: FontSizeService.instance.notifier,
-              builder: (context, size, child) {
+            ListenableBuilder(
+              listenable: Listenable.merge([
+                FontSizeService.instance.notifier,
+                LineSpacingService.instance.notifier,
+              ]),
+              builder: (context, child) {
+                final size = FontSizeService.instance.size;
+                final spacing = LineSpacingService.instance.spacing;
                 return Container(
                   decoration: BoxDecoration(
                     color: colors.surfaceContainerHigh,
@@ -583,24 +588,6 @@ class _BibleViewerSettingsSheet extends StatelessWidget {
                         height: 54,
                         color: colors.outlineVariant.withValues(alpha: 0.5),
                       ),
-                      // Live readout so each step is visible even when the
-                      // reader text behind the sheet is small.
-                      SizedBox(
-                        width: 56,
-                        child: Text(
-                          '${size.round()}',
-                          semanticsLabel: l10n.readerTextSizeLabel(
-                            size.round(),
-                          ),
-                          textAlign: TextAlign.center,
-                          style: Theme.of(context).textTheme.titleMedium,
-                        ),
-                      ),
-                      Container(
-                        width: 1,
-                        height: 54,
-                        color: colors.outlineVariant.withValues(alpha: 0.5),
-                      ),
                       Expanded(
                         child: _FontAdjustButton(
                           label: 'A',
@@ -611,38 +598,21 @@ class _BibleViewerSettingsSheet extends StatelessWidget {
                               : null,
                         ),
                       ),
-                    ],
-                  ),
-                );
-              },
-            ),
-            const SizedBox(height: 18),
-            Text(
-              l10n.readerLineSpacingTitle,
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: 10),
-            ValueListenableBuilder<LineSpacing>(
-              valueListenable: LineSpacingService.instance.notifier,
-              builder: (context, spacing, child) {
-                return SizedBox(
-                  width: double.infinity,
-                  child: SegmentedButton<LineSpacing>(
-                    showSelectedIcon: false,
-                    segments: [
-                      for (final option in LineSpacing.values)
-                        ButtonSegment(
-                          value: option,
-                          label: Text(
-                            _lineSpacingLabel(l10n, option),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
+                      Container(
+                        width: 1,
+                        height: 54,
+                        color: colors.outlineVariant.withValues(alpha: 0.5),
+                      ),
+                      _LineSpacingButton(
+                        spacing: spacing,
+                        title: l10n.readerLineSpacingTitle,
+                        valueLabel: _lineSpacingLabel(l10n, spacing),
+                        onPressed: () => onLineSpacingSelected(
+                          LineSpacing.values[(spacing.index + 1) %
+                              LineSpacing.values.length],
                         ),
+                      ),
                     ],
-                    selected: {spacing},
-                    onSelectionChanged: (selection) =>
-                        onLineSpacingSelected(selection.single),
                   ),
                 );
               },
@@ -741,6 +711,97 @@ String _lineSpacingLabel(AppLocalizations l10n, LineSpacing spacing) {
   };
 }
 
+/// Cycles the reader line spacing. The icon is a few "text lines" whose gaps
+/// match the current spacing, so each tap shows the change at a glance.
+class _LineSpacingButton extends StatelessWidget {
+  const _LineSpacingButton({
+    required this.spacing,
+    required this.title,
+    required this.valueLabel,
+    required this.onPressed,
+  });
+
+  final LineSpacing spacing;
+  final String title;
+  final String valueLabel;
+  final VoidCallback onPressed;
+
+  /// Gap between the icon's lines for each preset, in logical pixels.
+  static double _gapFor(LineSpacing spacing) => switch (spacing) {
+    LineSpacing.compact => 2.5,
+    LineSpacing.normal => 4.5,
+    LineSpacing.relaxed => 6.5,
+    LineSpacing.loose => 8.5,
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    final color = Theme.of(context).colorScheme.onSurface;
+    return Tooltip(
+      message: '$title: $valueLabel',
+      excludeFromSemantics: true,
+      child: Semantics(
+        button: true,
+        label: title,
+        value: valueLabel,
+        onTap: onPressed,
+        excludeSemantics: true,
+        child: InkWell(
+          onTap: onPressed,
+          borderRadius: BorderRadius.circular(28),
+          child: SizedBox(
+            width: 76,
+            height: 56,
+            child: Center(
+              child: TweenAnimationBuilder<double>(
+                tween: Tween(end: _gapFor(spacing)),
+                duration: const Duration(milliseconds: 180),
+                curve: Curves.easeOut,
+                builder: (context, gap, _) => CustomPaint(
+                  size: const Size(26, 34),
+                  painter: _SpacingLinesPainter(gap: gap, color: color),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Four rounded lines, vertically centred, [gap] apart; the last one is
+/// shorter, like the end of a paragraph.
+class _SpacingLinesPainter extends CustomPainter {
+  const _SpacingLinesPainter({required this.gap, required this.color});
+
+  final double gap;
+  final Color color;
+
+  static const _lineCount = 4;
+  static const _stroke = 2.4;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = _stroke
+      ..strokeCap = StrokeCap.round;
+    const half = _stroke / 2;
+    final blockHeight = (_lineCount - 1) * (gap + _stroke);
+    var y = (size.height - blockHeight) / 2;
+    for (var i = 0; i < _lineCount; i++) {
+      final end = i == _lineCount - 1 ? size.width * 0.6 : size.width;
+      canvas.drawLine(Offset(half, y), Offset(end - half, y), paint);
+      y += gap + _stroke;
+    }
+  }
+
+  @override
+  bool shouldRepaint(_SpacingLinesPainter old) =>
+      old.gap != gap || old.color != color;
+}
+
 class _FontAdjustButton extends StatelessWidget {
   const _FontAdjustButton({
     required this.label,
@@ -766,6 +827,7 @@ class _FontAdjustButton extends StatelessWidget {
       button: true,
       enabled: onPressed != null,
       label: semanticLabel,
+      onTap: onPressed,
       excludeSemantics: true,
       child: InkWell(
         onTap: onPressed,

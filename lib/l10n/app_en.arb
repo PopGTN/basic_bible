@@ -233,20 +233,55 @@
     }
   },
   "readerFontPreviewSample": "In the beginning God created the heaven and the earth.",
-  "readerTextSizeLabel": "Text size {size}",
-  "@readerTextSizeLabel": {
-    "description": "Shows the current reader font size in points.",
-    "placeholders": {
-      "size": {
-        "type": "int"
-      }
-    }
-  },
   "readerDecreaseTextSize": "Decrease text size",
   "readerIncreaseTextSize": "Increase text size",
   "readerLineSpacingTitle": "Line spacing",
   "readerLineSpacingCompact": "Compact",
   "readerLineSpacingNormal": "Normal",
   "readerLineSpacingRelaxed": "Relaxed",
-  "readerLineSpacingLoose": "Loose"
+  "readerLineSpacingLoose": "Loose",
+  "translationAboutAction": "About this translation",
+  "@translationAboutAction": {
+    "description": "Translation copyright/license sheet in the Bible versions library."
+  },
+  "translationRightsLicenseLabel": "License",
+  "@translationRightsLicenseLabel": {
+    "description": "Translation copyright/license sheet in the Bible versions library."
+  },
+  "translationRightsNoticeLabel": "Copyright notice",
+  "@translationRightsNoticeLabel": {
+    "description": "Translation copyright/license sheet in the Bible versions library."
+  },
+  "translationRightsPermissionsLabel": "Permissions",
+  "@translationRightsPermissionsLabel": {
+    "description": "Translation copyright/license sheet in the Bible versions library."
+  },
+  "translationRightsPublicDomain": "Public domain",
+  "@translationRightsPublicDomain": {
+    "description": "Translation copyright/license sheet in the Bible versions library."
+  },
+  "translationRightsViewLicense": "View license",
+  "@translationRightsViewLicense": {
+    "description": "Translation copyright/license sheet in the Bible versions library."
+  },
+  "translationRightsSourceLabel": "Official source",
+  "@translationRightsSourceLabel": {
+    "description": "Translation copyright/license sheet in the Bible versions library."
+  },
+  "translationRightsNotesAction": "Full license notes",
+  "@translationRightsNotesAction": {
+    "description": "Translation copyright/license sheet in the Bible versions library."
+  },
+  "translationRightsDownloadNotPermitted": "The rights holder does not permit downloading this translation in the app.",
+  "@translationRightsDownloadNotPermitted": {
+    "description": "Translation copyright/license sheet in the Bible versions library."
+  },
+  "translationRightsUnknown": "No copyright or license information is available for this translation.",
+  "@translationRightsUnknown": {
+    "description": "Translation copyright/license sheet in the Bible versions library."
+  },
+  "translationRightsUnknownImported": "You imported this translation from a file, so the app has no copyright or license information for it. Make sure you have the right to use it.",
+  "@translationRightsUnknownImported": {
+    "description": "Translation copyright/license sheet in the Bible versions library."
+  }
 }

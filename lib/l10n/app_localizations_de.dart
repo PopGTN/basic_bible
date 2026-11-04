@@ -403,11 +403,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get readerFontPreviewSample => 'Am Anfang schuf Gott Himmel und Erde.';
 
   @override
-  String readerTextSizeLabel(int size) {
-    return 'Textgröße $size';
-  }
-
-  @override
   String get readerDecreaseTextSize => 'Text verkleinern';
 
   @override
@@ -427,4 +422,37 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get readerLineSpacingLoose => 'Weit';
+
+  @override
+  String get translationAboutAction => 'Über diese Übersetzung';
+
+  @override
+  String get translationRightsLicenseLabel => 'Lizenz';
+
+  @override
+  String get translationRightsNoticeLabel => 'Urheberrechtshinweis';
+
+  @override
+  String get translationRightsPermissionsLabel => 'Berechtigungen';
+
+  @override
+  String get translationRightsPublicDomain => 'Gemeinfrei';
+
+  @override
+  String get translationRightsViewLicense => 'Lizenz ansehen';
+
+  @override
+  String get translationRightsSourceLabel => 'Offizielle Quelle';
+
+  @override
+  String get translationRightsNotesAction => 'Vollständige Lizenzhinweise';
+
+  @override
+  String get translationRightsDownloadNotPermitted => 'Der Rechteinhaber erlaubt nicht, diese Übersetzung in der App herunterzuladen.';
+
+  @override
+  String get translationRightsUnknown => 'Für diese Übersetzung sind keine Urheberrechts- oder Lizenzangaben verfügbar.';
+
+  @override
+  String get translationRightsUnknownImported => 'Sie haben diese Übersetzung aus einer Datei importiert, daher hat die App keine Urheberrechts- oder Lizenzangaben dazu. Stellen Sie sicher, dass Sie sie verwenden dürfen.';
 }

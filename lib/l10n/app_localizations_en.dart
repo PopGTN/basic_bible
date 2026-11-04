@@ -403,11 +403,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get readerFontPreviewSample => 'In the beginning God created the heaven and the earth.';
 
   @override
-  String readerTextSizeLabel(int size) {
-    return 'Text size $size';
-  }
-
-  @override
   String get readerDecreaseTextSize => 'Decrease text size';
 
   @override
@@ -427,4 +422,37 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get readerLineSpacingLoose => 'Loose';
+
+  @override
+  String get translationAboutAction => 'About this translation';
+
+  @override
+  String get translationRightsLicenseLabel => 'License';
+
+  @override
+  String get translationRightsNoticeLabel => 'Copyright notice';
+
+  @override
+  String get translationRightsPermissionsLabel => 'Permissions';
+
+  @override
+  String get translationRightsPublicDomain => 'Public domain';
+
+  @override
+  String get translationRightsViewLicense => 'View license';
+
+  @override
+  String get translationRightsSourceLabel => 'Official source';
+
+  @override
+  String get translationRightsNotesAction => 'Full license notes';
+
+  @override
+  String get translationRightsDownloadNotPermitted => 'The rights holder does not permit downloading this translation in the app.';
+
+  @override
+  String get translationRightsUnknown => 'No copyright or license information is available for this translation.';
+
+  @override
+  String get translationRightsUnknownImported => 'You imported this translation from a file, so the app has no copyright or license information for it. Make sure you have the right to use it.';
 }

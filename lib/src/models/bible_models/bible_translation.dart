@@ -46,6 +46,55 @@ class BibleTranslationArtifact extends Equatable {
   ];
 }
 
+/// Copyright and license facts for a translation, from the remote catalog
+/// (`license`, `copyrightNotice`, …) or the built-in fallbacks.
+class BibleTranslationRights extends Equatable {
+  const BibleTranslationRights({
+    this.status = '',
+    this.license = '',
+    this.licenseUrl,
+    this.copyrightNotice = '',
+    this.sourceUrl,
+    this.notesUrl,
+    this.allowDownload = true,
+    this.allowBundling = false,
+  });
+
+  /// Machine-readable status, e.g. `public_domain`.
+  final String status;
+
+  /// Human-readable license name, e.g. "Public Domain".
+  final String license;
+  final String? licenseUrl;
+
+  /// The rights holder's statement, shown verbatim.
+  final String copyrightNotice;
+
+  /// Where the text was obtained from.
+  final String? sourceUrl;
+
+  /// Full rights review notes (a web page).
+  final String? notesUrl;
+
+  /// False when the rights holder doesn't permit in-app download.
+  final bool allowDownload;
+  final bool allowBundling;
+
+  bool get isPublicDomain => status == 'public_domain';
+
+  @override
+  List<Object?> get props => [
+    status,
+    license,
+    licenseUrl,
+    copyrightNotice,
+    sourceUrl,
+    notesUrl,
+    allowDownload,
+    allowBundling,
+  ];
+}
+
 class BibleTranslation extends Equatable {
   final String id;
   final String name;
@@ -61,6 +110,9 @@ class BibleTranslation extends Equatable {
   final int displayOrder;
   final List<BibleTranslationArtifact> artifacts;
 
+  /// Null when unknown, e.g. for a user-imported file.
+  final BibleTranslationRights? rights;
+
   const BibleTranslation({
     required this.id,
     required this.name,
@@ -75,6 +127,7 @@ class BibleTranslation extends Equatable {
     this.bundledByDefault = false,
     this.displayOrder = 0,
     this.artifacts = const [],
+    this.rights,
   });
 
   BibleTranslation copyWith({
@@ -91,6 +144,7 @@ class BibleTranslation extends Equatable {
     bool? bundledByDefault,
     int? displayOrder,
     List<BibleTranslationArtifact>? artifacts,
+    BibleTranslationRights? rights,
   }) {
     return BibleTranslation(
       id: id ?? this.id,
@@ -106,6 +160,7 @@ class BibleTranslation extends Equatable {
       bundledByDefault: bundledByDefault ?? this.bundledByDefault,
       displayOrder: displayOrder ?? this.displayOrder,
       artifacts: artifacts ?? this.artifacts,
+      rights: rights ?? this.rights,
     );
   }
 
@@ -143,5 +198,6 @@ class BibleTranslation extends Equatable {
     bundledByDefault,
     displayOrder,
     artifacts,
+    rights,
   ];
 }

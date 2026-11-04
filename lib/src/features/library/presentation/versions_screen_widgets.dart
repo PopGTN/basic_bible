@@ -120,7 +120,12 @@ class TranslationSectionHeader extends StatelessWidget {
 // Translation list tile
 // =============================================================================
 
-enum TranslationTileAction { removeDownloaded, deleteImported, openForSession }
+enum TranslationTileAction {
+  about,
+  removeDownloaded,
+  deleteImported,
+  openForSession,
+}
 
 class TranslationTile extends StatelessWidget {
   const TranslationTile({
@@ -133,6 +138,7 @@ class TranslationTile extends StatelessWidget {
     this.onDownload,
     this.onRemoveDownloaded,
     this.onDeleteImported,
+    this.onShowInfo,
   });
 
   final BibleTranslation translation;
@@ -144,6 +150,9 @@ class TranslationTile extends StatelessWidget {
   final VoidCallback? onRemoveDownloaded;
   final VoidCallback? onDeleteImported;
 
+  /// Opens the translation's copyright/license sheet.
+  final VoidCallback? onShowInfo;
+
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
@@ -151,7 +160,8 @@ class TranslationTile extends StatelessWidget {
     final t = AppLocalizations.of(context)!;
 
     final hasMenu = onRemoveDownloaded != null || onDeleteImported != null;
-    final hasSecondaryActions = hasMenu || onOpenForSession != null;
+    final hasSecondaryActions =
+        hasMenu || onOpenForSession != null || onShowInfo != null;
     final isStoredLocally =
         translation.availability == BibleTranslationAvailability.bundled ||
         translation.availability == BibleTranslationAvailability.downloaded ||
@@ -186,6 +196,8 @@ class TranslationTile extends StatelessWidget {
             icon: const Icon(Icons.more_vert),
             onSelected: (action) {
               switch (action) {
+                case TranslationTileAction.about:
+                  onShowInfo?.call();
                 case TranslationTileAction.removeDownloaded:
                   onRemoveDownloaded?.call();
                 case TranslationTileAction.deleteImported:
@@ -195,6 +207,11 @@ class TranslationTile extends StatelessWidget {
               }
             },
             itemBuilder: (context) => [
+              if (onShowInfo != null)
+                PopupMenuItem(
+                  value: TranslationTileAction.about,
+                  child: Text(t.translationAboutAction),
+                ),
               if (onOpenForSession != null)
                 PopupMenuItem(
                   value: TranslationTileAction.openForSession,

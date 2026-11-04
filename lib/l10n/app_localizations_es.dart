@@ -403,11 +403,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get readerFontPreviewSample => 'En el principio creó Dios los cielos y la tierra.';
 
   @override
-  String readerTextSizeLabel(int size) {
-    return 'Tamaño del texto $size';
-  }
-
-  @override
   String get readerDecreaseTextSize => 'Reducir texto';
 
   @override
@@ -427,4 +422,37 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get readerLineSpacingLoose => 'Extra';
+
+  @override
+  String get translationAboutAction => 'Acerca de esta traducción';
+
+  @override
+  String get translationRightsLicenseLabel => 'Licencia';
+
+  @override
+  String get translationRightsNoticeLabel => 'Aviso de derechos de autor';
+
+  @override
+  String get translationRightsPermissionsLabel => 'Permisos';
+
+  @override
+  String get translationRightsPublicDomain => 'Dominio público';
+
+  @override
+  String get translationRightsViewLicense => 'Ver licencia';
+
+  @override
+  String get translationRightsSourceLabel => 'Fuente oficial';
+
+  @override
+  String get translationRightsNotesAction => 'Notas de licencia completas';
+
+  @override
+  String get translationRightsDownloadNotPermitted => 'El titular de los derechos no permite descargar esta traducción en la aplicación.';
+
+  @override
+  String get translationRightsUnknown => 'No hay información de derechos de autor ni de licencia para esta traducción.';
+
+  @override
+  String get translationRightsUnknownImported => 'Importaste esta traducción desde un archivo, por lo que la aplicación no tiene información de derechos de autor ni de licencia. Asegúrate de tener derecho a usarla.';
 }

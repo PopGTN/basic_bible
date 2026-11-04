@@ -403,11 +403,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get readerFontPreviewSample => '起初，神创造天地。';
 
   @override
-  String readerTextSizeLabel(int size) {
-    return '文字大小 $size';
-  }
-
-  @override
   String get readerDecreaseTextSize => '减小文字';
 
   @override
@@ -427,4 +422,37 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get readerLineSpacingLoose => '很宽';
+
+  @override
+  String get translationAboutAction => '关于此译本';
+
+  @override
+  String get translationRightsLicenseLabel => '许可';
+
+  @override
+  String get translationRightsNoticeLabel => '版权声明';
+
+  @override
+  String get translationRightsPermissionsLabel => '权限';
+
+  @override
+  String get translationRightsPublicDomain => '公有领域';
+
+  @override
+  String get translationRightsViewLicense => '查看许可';
+
+  @override
+  String get translationRightsSourceLabel => '官方来源';
+
+  @override
+  String get translationRightsNotesAction => '完整许可说明';
+
+  @override
+  String get translationRightsDownloadNotPermitted => '版权方不允许在应用内下载此译本。';
+
+  @override
+  String get translationRightsUnknown => '此译本没有可用的版权或许可信息。';
+
+  @override
+  String get translationRightsUnknownImported => '此译本是您从文件导入的，应用没有它的版权或许可信息。请确认您有权使用它。';
 }

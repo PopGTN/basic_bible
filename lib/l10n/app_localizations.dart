@@ -797,12 +797,6 @@ abstract class AppLocalizations {
   /// **'In the beginning God created the heaven and the earth.'**
   String get readerFontPreviewSample;
 
-  /// Shows the current reader font size in points.
-  ///
-  /// In en, this message translates to:
-  /// **'Text size {size}'**
-  String readerTextSizeLabel(int size);
-
   /// No description provided for @readerDecreaseTextSize.
   ///
   /// In en, this message translates to:
@@ -844,6 +838,72 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Loose'**
   String get readerLineSpacingLoose;
+
+  /// Translation copyright/license sheet in the Bible versions library.
+  ///
+  /// In en, this message translates to:
+  /// **'About this translation'**
+  String get translationAboutAction;
+
+  /// Translation copyright/license sheet in the Bible versions library.
+  ///
+  /// In en, this message translates to:
+  /// **'License'**
+  String get translationRightsLicenseLabel;
+
+  /// Translation copyright/license sheet in the Bible versions library.
+  ///
+  /// In en, this message translates to:
+  /// **'Copyright notice'**
+  String get translationRightsNoticeLabel;
+
+  /// Translation copyright/license sheet in the Bible versions library.
+  ///
+  /// In en, this message translates to:
+  /// **'Permissions'**
+  String get translationRightsPermissionsLabel;
+
+  /// Translation copyright/license sheet in the Bible versions library.
+  ///
+  /// In en, this message translates to:
+  /// **'Public domain'**
+  String get translationRightsPublicDomain;
+
+  /// Translation copyright/license sheet in the Bible versions library.
+  ///
+  /// In en, this message translates to:
+  /// **'View license'**
+  String get translationRightsViewLicense;
+
+  /// Translation copyright/license sheet in the Bible versions library.
+  ///
+  /// In en, this message translates to:
+  /// **'Official source'**
+  String get translationRightsSourceLabel;
+
+  /// Translation copyright/license sheet in the Bible versions library.
+  ///
+  /// In en, this message translates to:
+  /// **'Full license notes'**
+  String get translationRightsNotesAction;
+
+  /// Translation copyright/license sheet in the Bible versions library.
+  ///
+  /// In en, this message translates to:
+  /// **'The rights holder does not permit downloading this translation in the app.'**
+  String get translationRightsDownloadNotPermitted;
+
+  /// Translation copyright/license sheet in the Bible versions library.
+  ///
+  /// In en, this message translates to:
+  /// **'No copyright or license information is available for this translation.'**
+  String get translationRightsUnknown;
+
+  /// Translation copyright/license sheet in the Bible versions library.
+  ///
+  /// In en, this message translates to:
+  /// **'You imported this translation from a file, so the app has no copyright or license information for it. Make sure you have the right to use it.'**
+  String get translationRightsUnknownImported;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

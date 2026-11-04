@@ -208,10 +208,11 @@ class RemoteTranslationCatalogService {
     try {
       final decoded = jsonDecode(body);
       if (decoded is! Map<String, dynamic>) return null;
-      final parser = _catalogEndpoints
-          .where((endpoint) => endpoint.url == url)
-          .map((endpoint) => endpoint.parser)
-          .firstOrNull ??
+      final parser =
+          _catalogEndpoints
+              .where((endpoint) => endpoint.url == url)
+              .map((endpoint) => endpoint.parser)
+              .firstOrNull ??
           _parseTranslationsEnvelope;
       return _translationsFromRawList(parser(decoded));
     } catch (_) {
@@ -251,6 +252,7 @@ class RemoteTranslationCatalogService {
       bundledByDefault: json['bundledByDefault'] == true,
       displayOrder: (json['displayOrder'] as num?)?.toInt() ?? 0,
       artifacts: artifacts,
+      rights: rightsFromCatalogJson(json),
     );
   }
 
@@ -289,6 +291,49 @@ class RemoteTranslationCatalogService {
     final normalized = raw.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), '_');
     return normalized.replaceAll(RegExp(r'^_+|_+$'), '');
   }
+}
+
+/// Where catalog `licenseNotesPath` values (repo-relative) are browsable.
+const kLicenseNotesBaseUrl = 'https://github.com/PopGTN/bible-data/blob/main/';
+
+/// Reads a catalog entry's rights fields. Null when it has none at all.
+///
+/// Lenient on types: these fields are optional metadata, and one malformed
+/// value must not throw and take the whole catalog down with it.
+BibleTranslationRights? rightsFromCatalogJson(Map<String, dynamic> json) {
+  String text(String key) {
+    final value = json[key];
+    return value is String ? value.trim() : '';
+  }
+
+  String? url(String key) {
+    final value = text(key);
+    return value.isEmpty ? null : value;
+  }
+
+  // Repo-relative; a leading '/' would resolve against the GitHub host root.
+  final notesPath = text('licenseNotesPath').replaceFirst(RegExp('^/+'), '');
+  final rights = BibleTranslationRights(
+    status: text('rightsStatus'),
+    license: text('license'),
+    licenseUrl: url('licenseUrl'),
+    copyrightNotice: text('copyrightNotice'),
+    sourceUrl: url('officialSourceUrl'),
+    notesUrl: notesPath.isEmpty
+        ? null
+        : Uri.parse(kLicenseNotesBaseUrl).resolve(notesPath).toString(),
+    allowDownload: json['allowDownload'] != false,
+    allowBundling: json['allowBundling'] == true,
+  );
+  final hasAny =
+      rights.status.isNotEmpty ||
+      rights.license.isNotEmpty ||
+      rights.copyrightNotice.isNotEmpty ||
+      rights.licenseUrl != null ||
+      rights.sourceUrl != null ||
+      rights.notesUrl != null ||
+      !rights.allowDownload;
+  return hasAny ? rights : null;
 }
 
 BibleTranslationArtifact? firstPreferredRemoteArtifact(

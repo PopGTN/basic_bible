@@ -1,4 +1,5 @@
 import 'package:basic_bible/l10n/app_localizations.dart';
+import 'package:basic_bible/src/features/library/presentation/translation_rights_sheet.dart';
 import 'package:basic_bible/src/features/library/presentation/versions_screen_actions.dart';
 import 'package:basic_bible/src/features/library/presentation/versions_screen_widgets.dart';
 import 'package:basic_bible/src/features/reader/application/view_models/bible_library_view_models.dart';
@@ -214,13 +215,13 @@ class _VersionsScreenState extends ConsumerState<VersionsScreen>
               translation: tr,
               isSelected: tr.id == currentTranslationId,
               isLoading: loadingIds.contains(tr.id),
+              onShowInfo: () => showTranslationRightsSheet(context, tr),
               onTap: () => selectTranslation(
                 context,
                 tr.id,
                 persist: tr.sourceType != BibleSourceType.session,
               ),
-              onOpenForSession:
-                  tr.availability == BibleTranslationAvailability.downloadable
+              onOpenForSession: _canDownload(tr)
                   ? () => openTranslationForSession(context, tr)
                   : null,
               onRemoveDownloaded:
@@ -251,15 +252,14 @@ class _VersionsScreenState extends ConsumerState<VersionsScreen>
               translation: tr,
               isSelected: tr.id == currentTranslationId,
               isLoading: loadingIds.contains(tr.id),
+              onShowInfo: () => showTranslationRightsSheet(context, tr),
               onTap: tr.availability == BibleTranslationAvailability.session
                   ? () => selectTranslation(context, tr.id, persist: false)
                   : null,
-              onOpenForSession:
-                  tr.availability == BibleTranslationAvailability.downloadable
+              onOpenForSession: _canDownload(tr)
                   ? () => openTranslationForSession(context, tr)
                   : null,
-              onDownload:
-                  tr.availability == BibleTranslationAvailability.downloadable
+              onDownload: _canDownload(tr)
                   ? () => downloadTranslation(context, tr)
                   : null,
               onRemoveDownloaded: null,
@@ -275,12 +275,18 @@ class _VersionsScreenState extends ConsumerState<VersionsScreen>
   // Helpers
   // ---------------------------------------------------------------------------
 
+  /// Downloadable, and the rights holder permits in-app download.
+  static bool _canDownload(BibleTranslation tr) =>
+      tr.availability == BibleTranslationAvailability.downloadable &&
+      (tr.rights?.allowDownload ?? true);
+
   List<String> _uniqueLanguages(List<BibleTranslation> translations) {
     final seen = <String>{};
     final result = <String>[];
     for (final t in translations) {
-      if (seen.add(t.effectiveLanguageName))
+      if (seen.add(t.effectiveLanguageName)) {
         result.add(t.effectiveLanguageName);
+      }
     }
     result.sort();
     return result;

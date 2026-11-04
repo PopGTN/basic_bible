@@ -1,10 +1,51 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
 
+import 'package:basic_bible/src/features/library/data/remote_translation_catalog_service.dart'
+    show kLicenseNotesBaseUrl;
 import 'package:basic_bible/src/models/bible_models.dart';
 
 // =============================================================================
 // Built-in translation definitions
 // =============================================================================
+
+// Offline fallbacks; the remote catalog's rights fields take precedence.
+const _ebiblePublicDomain = 'https://ebible.org/publicdomain.htm';
+
+const _kjvRights = BibleTranslationRights(
+  status: 'public_domain',
+  license: 'Public Domain',
+  licenseUrl: _ebiblePublicDomain,
+  copyrightNotice:
+      'Public domain outside the United Kingdom. In the UK, printing rights '
+      "are held under the historic Crown/Queen's Printer patent.",
+  sourceUrl: 'https://ebible.org/Scriptures/',
+  notesUrl: '${kLicenseNotesBaseUrl}licenses/bibles/kjv.md',
+  allowBundling: true,
+);
+
+const _asvRights = BibleTranslationRights(
+  status: 'public_domain',
+  license: 'Public Domain',
+  licenseUrl: _ebiblePublicDomain,
+  copyrightNotice:
+      "The OSIS header states: 'We believe that this Bible is found in the "
+      "Public Domain.'",
+  sourceUrl: 'https://ebible.org/Scriptures/',
+  notesUrl: '${kLicenseNotesBaseUrl}licenses/bibles/asv.md',
+  allowBundling: true,
+);
+
+const _webRights = BibleTranslationRights(
+  status: 'public_domain',
+  license: 'Public Domain',
+  licenseUrl: 'https://worldenglishbible.org/',
+  copyrightNotice:
+      'The World English Bible is in the public domain and may be freely '
+      'copied, distributed, and incorporated into software.',
+  sourceUrl: 'https://worldenglishbible.org/',
+  notesUrl: '${kLicenseNotesBaseUrl}licenses/bibles/web.md',
+  allowBundling: true,
+);
 
 /// The canonical list of translations shipped with the app.
 /// Always appears in the available list even with no network and no DB row.
@@ -33,6 +74,7 @@ final List<BibleTranslation> kBuiltInTranslations = [
     sourceType: BibleSourceType.asset,
     bundledByDefault: true,
     displayOrder: 10,
+    rights: _kjvRights,
     artifacts: [
       BibleTranslationArtifact(
         format: kIsWeb ? BibleFormat.usfx : BibleFormat.sqlite,
@@ -55,6 +97,7 @@ final List<BibleTranslation> kBuiltInTranslations = [
     format: BibleFormat.osis,
     sourceType: BibleSourceType.download,
     displayOrder: 20,
+    rights: _asvRights,
     artifacts: [
       BibleTranslationArtifact(
         format: BibleFormat.osis,
@@ -77,6 +120,7 @@ final List<BibleTranslation> kBuiltInTranslations = [
     format: BibleFormat.usfx,
     sourceType: BibleSourceType.download,
     displayOrder: 30,
+    rights: _webRights,
     artifacts: [
       BibleTranslationArtifact(
         format: BibleFormat.usfx,
@@ -106,6 +150,7 @@ BibleTranslation mergeCatalogTranslation({
     languageName: remote.languageName,
     description: remote.description,
     githubUrl: remote.githubUrl ?? builtIn.githubUrl,
+    rights: remote.rights ?? builtIn.rights,
     format: remote.format == BibleFormat.auto ? builtIn.format : remote.format,
     bundledByDefault: remote.bundledByDefault || builtIn.bundledByDefault,
     displayOrder: remote.displayOrder,
@@ -124,8 +169,9 @@ BibleTranslation mergeStoredTranslation({
   bool overrideSourceType = false,
 }) {
   if (stored == null) return base;
-  final effectiveSourceType =
-      overrideSourceType ? base.sourceType : stored.sourceType;
+  final effectiveSourceType = overrideSourceType
+      ? base.sourceType
+      : stored.sourceType;
   // Build directly instead of copyWith so filePath can be explicitly cleared
   // to null for download/session types (copyWith cannot pass null).
   final resolvedFilePath = switch (effectiveSourceType) {
@@ -149,6 +195,8 @@ BibleTranslation mergeStoredTranslation({
     bundledByDefault: base.bundledByDefault,
     displayOrder: base.displayOrder,
     artifacts: base.artifacts,
+    // Not stored in the DB; always from the catalog or built-in definition.
+    rights: base.rights,
   );
 }
 
