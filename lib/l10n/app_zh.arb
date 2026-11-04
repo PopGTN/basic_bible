@@ -72,5 +72,13 @@
   "readerFontUnloadable": "无法加载该字体文件。",
   "readerFontImportFailed": "无法导入该字体。",
   "readerFontDeleteFailed": "无法移除 {fontName}。",
-  "readerFontPreviewSample": "起初，神创造天地。"
+  "readerFontPreviewSample": "起初，神创造天地。",
+  "readerTextSizeLabel": "文字大小 {size}",
+  "readerDecreaseTextSize": "减小文字",
+  "readerIncreaseTextSize": "增大文字",
+  "readerLineSpacingTitle": "行距",
+  "readerLineSpacingCompact": "紧凑",
+  "readerLineSpacingNormal": "标准",
+  "readerLineSpacingRelaxed": "宽松",
+  "readerLineSpacingLoose": "很宽"
 }

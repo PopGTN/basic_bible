@@ -77,5 +77,13 @@
   "readerFontUnloadable": "Diese Schriftartdatei konnte nicht geladen werden.",
   "readerFontImportFailed": "Die Schriftart konnte nicht importiert werden.",
   "readerFontDeleteFailed": "{fontName} konnte nicht entfernt werden.",
-  "readerFontPreviewSample": "Am Anfang schuf Gott Himmel und Erde."
+  "readerFontPreviewSample": "Am Anfang schuf Gott Himmel und Erde.",
+  "readerTextSizeLabel": "Textgröße {size}",
+  "readerDecreaseTextSize": "Text verkleinern",
+  "readerIncreaseTextSize": "Text vergrößern",
+  "readerLineSpacingTitle": "Zeilenabstand",
+  "readerLineSpacingCompact": "Eng",
+  "readerLineSpacingNormal": "Normal",
+  "readerLineSpacingRelaxed": "Locker",
+  "readerLineSpacingLoose": "Weit"
 }

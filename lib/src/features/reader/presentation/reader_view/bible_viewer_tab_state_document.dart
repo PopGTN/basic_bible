@@ -20,6 +20,7 @@ extension _BibleTextViewStateDocument on _BibleTextViewState {
                       _DocumentBlockView(
                         block: block,
                         fontSize: widget.fontSize,
+                        lineSpacing: widget.lineSpacing,
                       ),
                   _isDocumentPoetrySection(section)
                       ? _buildDocumentPoetrySection(
@@ -66,6 +67,7 @@ extension _BibleTextViewStateDocument on _BibleTextViewState {
                       _DocumentBlockView(
                         block: block,
                         fontSize: widget.fontSize,
+                        lineSpacing: widget.lineSpacing,
                       ),
                   _isDocumentPoetrySection(section)
                       ? _buildDocumentPoetrySection(
@@ -182,7 +184,7 @@ extension _BibleTextViewStateDocument on _BibleTextViewState {
           fontFamily: _readerFontFamily(context),
           fontSize: widget.fontSize,
           color: Theme.of(context).textTheme.bodyLarge?.color,
-          height: 1.7,
+          height: 1.7 * widget.lineSpacing,
         ),
         children: [
           const WidgetSpan(
@@ -292,7 +294,7 @@ extension _BibleTextViewStateDocument on _BibleTextViewState {
                       fontFamily: _readerFontFamily(context),
                       fontSize: widget.fontSize,
                       color: Theme.of(context).textTheme.bodyLarge?.color,
-                      height: 1.7,
+                      height: 1.7 * widget.lineSpacing,
                     ),
                     children: [
                       WidgetSpan(

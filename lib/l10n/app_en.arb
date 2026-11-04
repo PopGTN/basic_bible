@@ -6,7 +6,7 @@
   "settings": "Settings",
   "logout": "Logout",
   "goToOther": "Go to Other Page",
-  "aboutDescription": "This Bible app is a free project by PopGTN. It is a practice project for learning Flutter & Dart. The app allows reading the Bible, taking notes, TTS support, and more. It is inspired by apps like YouVersion Bible but with extra features and improved UI.",  
+  "aboutDescription": "This Bible app is a free project by PopGTN. It is a practice project for learning Flutter & Dart. The app allows reading the Bible, taking notes, TTS support, and more. It is inspired by apps like YouVersion Bible but with extra features and improved UI.",
   "language": "Language",
   "theme": "Theme",
   "login": "Login",
@@ -232,5 +232,21 @@
       "fontName": {}
     }
   },
-  "readerFontPreviewSample": "In the beginning God created the heaven and the earth."
+  "readerFontPreviewSample": "In the beginning God created the heaven and the earth.",
+  "readerTextSizeLabel": "Text size {size}",
+  "@readerTextSizeLabel": {
+    "description": "Shows the current reader font size in points.",
+    "placeholders": {
+      "size": {
+        "type": "int"
+      }
+    }
+  },
+  "readerDecreaseTextSize": "Decrease text size",
+  "readerIncreaseTextSize": "Increase text size",
+  "readerLineSpacingTitle": "Line spacing",
+  "readerLineSpacingCompact": "Compact",
+  "readerLineSpacingNormal": "Normal",
+  "readerLineSpacingRelaxed": "Relaxed",
+  "readerLineSpacingLoose": "Loose"
 }

@@ -15,6 +15,7 @@ import 'package:basic_bible/src/features/reader/presentation/reader_view/bible_v
 import 'package:basic_bible/src/features/settings/application/view_models/theme_view_model.dart';
 import 'package:basic_bible/src/models/bible_models.dart';
 import 'package:basic_bible/src/services/font_size_service.dart';
+import 'package:basic_bible/src/services/line_spacing_service.dart';
 import 'package:basic_bible/src/widgets/horizontal_mouse_scroll_list.dart';
 import 'package:basic_bible/src/widgets/theme_preview_card.dart';
 
@@ -120,69 +121,87 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       isScrollControlled: true,
       showDragHandle: true,
       backgroundColor: Theme.of(context).colorScheme.surface,
+      // A light scrim keeps the Bible text readable behind the sheet so size
+      // and spacing changes can be judged live.
+      barrierColor: Colors.black12,
       builder: (sheetContext) {
-        return Consumer(
-          builder: (context, ref, child) {
-            final themeMode = ref.watch(themeProvider);
-            final layoutMode = ref.watch(readerLayoutModeProvider);
+        // Opens at half height with the text controls on top, leaving the
+        // reader visible; drag up for the remaining settings.
+        return DraggableScrollableSheet(
+          expand: false,
+          initialChildSize: 0.5,
+          minChildSize: 0.25,
+          maxChildSize: 0.92,
+          snap: true,
+          snapSizes: const [0.5, 0.92],
+          shouldCloseOnMinExtent: true,
+          builder: (context, scrollController) => Consumer(
+            builder: (context, ref, child) {
+              final themeMode = ref.watch(themeProvider);
+              final layoutMode = ref.watch(readerLayoutModeProvider);
 
-            return _BibleViewerSettingsSheet(
-              themeMode: themeMode,
-              layoutMode: layoutMode,
-              continuousScrolling: ref.watch(continuousScrollingProvider),
-              showNotesAcrossTranslations: ref.watch(
-                showNotesAcrossTranslationsProvider,
-              ),
-              onDecreaseFont: () {
-                final nextSize = (FontSizeService.instance.size - 2).clamp(
-                  12.0,
-                  28.0,
-                );
-                FontSizeService.instance.setSize(nextSize);
-              },
-              onIncreaseFont: () {
-                final nextSize = (FontSizeService.instance.size + 2).clamp(
-                  12.0,
-                  28.0,
-                );
-                FontSizeService.instance.setSize(nextSize);
-              },
-              onThemeSelected: (mode) {
-                ref.read(themeProvider.notifier).setTheme(mode);
-              },
-              onLayoutSelected: (mode) async {
-                await _anchorVisibleContinuousReferenceIfNeeded(ref);
-                ref.read(readerLayoutModeProvider.notifier).setLayoutMode(mode);
-              },
-              onContinuousScrollingChanged: (value) {
-                if (!value) {
-                  _anchorVisibleContinuousReferenceIfNeeded(ref);
-                }
-                ref
-                    .read(continuousScrollingProvider.notifier)
-                    .setEnabled(value);
-              },
-              onShowNotesAcrossTranslationsChanged: (value) {
-                ref
-                    .read(showNotesAcrossTranslationsProvider.notifier)
-                    .setEnabled(value);
-              },
-              fontName: readerFontDisplayName(
-                ref.watch(readerFontProvider.select((state) => state.selected)),
-                AppLocalizations.of(context)!,
-              ),
-              onOpenFontSettings: () {
-                Navigator.of(sheetContext).pop();
-                context.push('/home/font');
-              },
-              onOpenAllSettings: () {
-                Navigator.of(sheetContext).pop();
-                context.go('/home/settings');
-              },
-            );
-          },
+              return _BibleViewerSettingsSheet(
+                scrollController: scrollController,
+                themeMode: themeMode,
+                layoutMode: layoutMode,
+                continuousScrolling: ref.watch(continuousScrollingProvider),
+                showNotesAcrossTranslations: ref.watch(
+                  showNotesAcrossTranslationsProvider,
+                ),
+                onDecreaseFont: () => _stepFontSize(-2),
+                onIncreaseFont: () => _stepFontSize(2),
+                onLineSpacingSelected: LineSpacingService.instance.setSpacing,
+                onThemeSelected: (mode) {
+                  ref.read(themeProvider.notifier).setTheme(mode);
+                },
+                onLayoutSelected: (mode) async {
+                  await _anchorVisibleContinuousReferenceIfNeeded(ref);
+                  ref
+                      .read(readerLayoutModeProvider.notifier)
+                      .setLayoutMode(mode);
+                },
+                onContinuousScrollingChanged: (value) {
+                  if (!value) {
+                    _anchorVisibleContinuousReferenceIfNeeded(ref);
+                  }
+                  ref
+                      .read(continuousScrollingProvider.notifier)
+                      .setEnabled(value);
+                },
+                onShowNotesAcrossTranslationsChanged: (value) {
+                  ref
+                      .read(showNotesAcrossTranslationsProvider.notifier)
+                      .setEnabled(value);
+                },
+                fontName: readerFontDisplayName(
+                  ref.watch(
+                    readerFontProvider.select((state) => state.selected),
+                  ),
+                  AppLocalizations.of(context)!,
+                ),
+                onOpenFontSettings: () {
+                  Navigator.of(sheetContext).pop();
+                  context.push('/home/font');
+                },
+                onOpenAllSettings: () {
+                  Navigator.of(sheetContext).pop();
+                  context.go('/home/settings');
+                },
+              );
+            },
+          ),
         );
       },
+    );
+  }
+
+  void _stepFontSize(double delta) {
+    final service = FontSizeService.instance;
+    service.setSize(
+      (service.size + delta).clamp(
+        FontSizeService.minSize,
+        FontSizeService.maxSize,
+      ),
     );
   }
 
@@ -493,12 +512,14 @@ enum _BibleViewerMenuAction { relatedContent, fontsAndSettings }
 
 class _BibleViewerSettingsSheet extends StatelessWidget {
   const _BibleViewerSettingsSheet({
+    required this.scrollController,
     required this.themeMode,
     required this.layoutMode,
     required this.continuousScrolling,
     required this.showNotesAcrossTranslations,
     required this.onDecreaseFont,
     required this.onIncreaseFont,
+    required this.onLineSpacingSelected,
     required this.onThemeSelected,
     required this.onLayoutSelected,
     required this.onContinuousScrollingChanged,
@@ -508,12 +529,14 @@ class _BibleViewerSettingsSheet extends StatelessWidget {
     required this.onOpenAllSettings,
   });
 
+  final ScrollController scrollController;
   final AppThemeMode themeMode;
   final ReaderLayoutMode layoutMode;
   final bool continuousScrolling;
   final bool showNotesAcrossTranslations;
   final VoidCallback onDecreaseFont;
   final VoidCallback onIncreaseFont;
+  final ValueChanged<LineSpacing> onLineSpacingSelected;
   final ValueChanged<AppThemeMode> onThemeSelected;
   final ValueChanged<ReaderLayoutMode> onLayoutSelected;
   final ValueChanged<bool> onContinuousScrollingChanged;
@@ -525,9 +548,11 @@ class _BibleViewerSettingsSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context)!;
 
     return SafeArea(
       child: SingleChildScrollView(
+        controller: scrollController,
         padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -547,7 +572,28 @@ class _BibleViewerSettingsSheet extends StatelessWidget {
                         child: _FontAdjustButton(
                           label: 'A',
                           fontSize: 18,
-                          onPressed: onDecreaseFont,
+                          semanticLabel: l10n.readerDecreaseTextSize,
+                          onPressed: size > FontSizeService.minSize
+                              ? onDecreaseFont
+                              : null,
+                        ),
+                      ),
+                      Container(
+                        width: 1,
+                        height: 54,
+                        color: colors.outlineVariant.withValues(alpha: 0.5),
+                      ),
+                      // Live readout so each step is visible even when the
+                      // reader text behind the sheet is small.
+                      SizedBox(
+                        width: 56,
+                        child: Text(
+                          '${size.round()}',
+                          semanticsLabel: l10n.readerTextSizeLabel(
+                            size.round(),
+                          ),
+                          textAlign: TextAlign.center,
+                          style: Theme.of(context).textTheme.titleMedium,
                         ),
                       ),
                       Container(
@@ -559,10 +605,44 @@ class _BibleViewerSettingsSheet extends StatelessWidget {
                         child: _FontAdjustButton(
                           label: 'A',
                           fontSize: 32,
-                          onPressed: onIncreaseFont,
+                          semanticLabel: l10n.readerIncreaseTextSize,
+                          onPressed: size < FontSizeService.maxSize
+                              ? onIncreaseFont
+                              : null,
                         ),
                       ),
                     ],
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 18),
+            Text(
+              l10n.readerLineSpacingTitle,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: 10),
+            ValueListenableBuilder<LineSpacing>(
+              valueListenable: LineSpacingService.instance.notifier,
+              builder: (context, spacing, child) {
+                return SizedBox(
+                  width: double.infinity,
+                  child: SegmentedButton<LineSpacing>(
+                    showSelectedIcon: false,
+                    segments: [
+                      for (final option in LineSpacing.values)
+                        ButtonSegment(
+                          value: option,
+                          label: Text(
+                            _lineSpacingLabel(l10n, option),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                    ],
+                    selected: {spacing},
+                    onSelectionChanged: (selection) =>
+                        onLineSpacingSelected(selection.single),
                   ),
                 );
               },
@@ -652,29 +732,51 @@ class _BibleViewerSettingsSheet extends StatelessWidget {
   }
 }
 
+String _lineSpacingLabel(AppLocalizations l10n, LineSpacing spacing) {
+  return switch (spacing) {
+    LineSpacing.compact => l10n.readerLineSpacingCompact,
+    LineSpacing.normal => l10n.readerLineSpacingNormal,
+    LineSpacing.relaxed => l10n.readerLineSpacingRelaxed,
+    LineSpacing.loose => l10n.readerLineSpacingLoose,
+  };
+}
+
 class _FontAdjustButton extends StatelessWidget {
   const _FontAdjustButton({
     required this.label,
     required this.fontSize,
+    required this.semanticLabel,
     required this.onPressed,
   });
 
   final String label;
   final double fontSize;
-  final VoidCallback onPressed;
+  final String semanticLabel;
+
+  /// Null disables the button (size already at its limit).
+  final VoidCallback? onPressed;
 
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
-    return InkWell(
-      onTap: onPressed,
-      borderRadius: BorderRadius.circular(28),
-      child: SizedBox(
-        height: 56,
-        child: Center(
-          child: Text(
-            label,
-            style: TextStyle(fontSize: fontSize, color: colors.onSurface),
+    final color = onPressed == null
+        ? colors.onSurface.withValues(alpha: 0.38)
+        : colors.onSurface;
+    return Semantics(
+      button: true,
+      enabled: onPressed != null,
+      label: semanticLabel,
+      excludeSemantics: true,
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(28),
+        child: SizedBox(
+          height: 56,
+          child: Center(
+            child: Text(
+              label,
+              style: TextStyle(fontSize: fontSize, color: color),
+            ),
           ),
         ),
       ),

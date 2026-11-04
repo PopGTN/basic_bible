@@ -77,5 +77,13 @@
   "readerFontUnloadable": "Impossible de charger ce fichier de police.",
   "readerFontImportFailed": "Impossible d’importer cette police.",
   "readerFontDeleteFailed": "Impossible de supprimer {fontName}.",
-  "readerFontPreviewSample": "Au commencement, Dieu créa les cieux et la terre."
+  "readerFontPreviewSample": "Au commencement, Dieu créa les cieux et la terre.",
+  "readerTextSizeLabel": "Taille du texte {size}",
+  "readerDecreaseTextSize": "Réduire le texte",
+  "readerIncreaseTextSize": "Agrandir le texte",
+  "readerLineSpacingTitle": "Interligne",
+  "readerLineSpacingCompact": "Serré",
+  "readerLineSpacingNormal": "Normal",
+  "readerLineSpacingRelaxed": "Aéré",
+  "readerLineSpacingLoose": "Large"
 }

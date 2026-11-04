@@ -20,6 +20,7 @@ import 'package:basic_bible/src/features/settings/application/view_models/reader
 import 'package:basic_bible/src/models/bible_models.dart';
 import 'package:basic_bible/src/platform/runtime_support.dart';
 import 'package:basic_bible/src/services/font_size_service.dart';
+import 'package:basic_bible/src/services/line_spacing_service.dart';
 import 'package:basic_bible/src/utils/reference_utils.dart';
 import 'package:flutter/gestures.dart'
     show PointerScrollEvent, TapGestureRecognizer;
@@ -264,9 +265,14 @@ class _BibleViewerTabState extends ConsumerState<BibleViewerTab> {
   ) {
     // The async content layer is isolated here so loading/error/data branching
     // stays separate from the shell overlays above it.
-    return ValueListenableBuilder<double>(
-      valueListenable: FontSizeService.instance.notifier,
-      builder: (context, size, child) {
+    return ListenableBuilder(
+      listenable: Listenable.merge([
+        FontSizeService.instance.notifier,
+        LineSpacingService.instance.notifier,
+      ]),
+      builder: (context, child) {
+        final size = FontSizeService.instance.size;
+        final lineSpacing = LineSpacingService.instance.spacing.factor;
         final translationId = ref.read(currentTranslationProvider);
         return readerState.shellBooksAsync.when(
           data: (books) => readerState.chapterAsync.when(
@@ -326,6 +332,7 @@ class _BibleViewerTabState extends ConsumerState<BibleViewerTab> {
                       reference: readerState.currentReference,
                       displayReference: displayReference,
                       fontSize: size,
+                      lineSpacing: lineSpacing,
                       layoutMode: readerState.layoutMode,
                       continuousScrolling: readerState.continuousScrolling,
                       showBookIntroductions: readerState.showBookIntroductions,

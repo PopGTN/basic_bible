@@ -77,5 +77,13 @@
   "readerFontUnloadable": "No se pudo cargar ese archivo de fuente.",
   "readerFontImportFailed": "No se pudo importar esa fuente.",
   "readerFontDeleteFailed": "No se pudo quitar {fontName}.",
-  "readerFontPreviewSample": "En el principio creó Dios los cielos y la tierra."
+  "readerFontPreviewSample": "En el principio creó Dios los cielos y la tierra.",
+  "readerTextSizeLabel": "Tamaño del texto {size}",
+  "readerDecreaseTextSize": "Reducir texto",
+  "readerIncreaseTextSize": "Aumentar texto",
+  "readerLineSpacingTitle": "Interlineado",
+  "readerLineSpacingCompact": "Compacto",
+  "readerLineSpacingNormal": "Normal",
+  "readerLineSpacingRelaxed": "Amplio",
+  "readerLineSpacingLoose": "Extra"
 }

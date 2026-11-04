@@ -4,11 +4,13 @@ class _DocumentBlockView extends StatelessWidget {
   const _DocumentBlockView({
     required this.block,
     required this.fontSize,
+    this.lineSpacing = 1.0,
     this.isEmphasized = false,
   });
 
   final BibleDocumentBlock block;
   final double fontSize;
+  final double lineSpacing;
   final bool isEmphasized;
 
   @override
@@ -65,7 +67,7 @@ class _DocumentBlockView extends StatelessWidget {
               (style.fontSize ?? FontSizeService.defaultSize) * scale +
               (isEmphasized ? 1 : 0),
           color: isEmphasized ? theme.colorScheme.secondary : style.color,
-          height: 1.5,
+          height: 1.5 * lineSpacing,
         ),
         textAlign: isHeading ? TextAlign.center : TextAlign.start,
       ),
@@ -77,12 +79,14 @@ class _DocumentBlockSection extends StatelessWidget {
   const _DocumentBlockSection({
     required this.blocks,
     required this.fontSize,
+    this.lineSpacing = 1.0,
     this.eyebrow,
   });
 
   final String? eyebrow;
   final List<BibleDocumentBlock> blocks;
   final double fontSize;
+  final double lineSpacing;
 
   @override
   Widget build(BuildContext context) {
@@ -110,7 +114,11 @@ class _DocumentBlockSection extends StatelessWidget {
             const SizedBox(height: 10),
           ],
           for (final block in blocks)
-            _DocumentBlockView(block: block, fontSize: fontSize),
+            _DocumentBlockView(
+              block: block,
+              fontSize: fontSize,
+              lineSpacing: lineSpacing,
+            ),
         ],
       ),
     );
@@ -118,10 +126,15 @@ class _DocumentBlockSection extends StatelessWidget {
 }
 
 class _TableBlockSection extends StatelessWidget {
-  const _TableBlockSection({required this.rows, required this.fontSize});
+  const _TableBlockSection({
+    required this.rows,
+    required this.fontSize,
+    this.lineSpacing = 1.0,
+  });
 
   final List<BibleDocumentBlock> rows;
   final double fontSize;
+  final double lineSpacing;
 
   @override
   Widget build(BuildContext context) {
@@ -180,7 +193,7 @@ class _TableBlockSection extends StatelessWidget {
                 style: TextStyle(
                   fontSize: fontSize,
                   fontWeight: isHeader ? FontWeight.w700 : FontWeight.normal,
-                  height: 1.4,
+                  height: 1.4 * lineSpacing,
                 ),
               ),
             ),

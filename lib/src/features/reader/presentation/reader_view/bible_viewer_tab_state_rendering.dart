@@ -91,6 +91,7 @@ extension _BibleTextViewStateRendering on _BibleTextViewState {
         eyebrow: 'Introduction',
         blocks: visibleBlocks,
         fontSize: widget.fontSize,
+        lineSpacing: widget.lineSpacing,
       ),
     ];
   }
@@ -329,14 +330,20 @@ extension _BibleTextViewStateRendering on _BibleTextViewState {
         _DocumentBlockView(
           block: block,
           fontSize: widget.fontSize,
+          lineSpacing: widget.lineSpacing,
           isEmphasized: true,
         ),
       if (tableRows.isNotEmpty)
-        _TableBlockSection(rows: tableRows, fontSize: widget.fontSize),
+        _TableBlockSection(
+          rows: tableRows,
+          fontSize: widget.fontSize,
+          lineSpacing: widget.lineSpacing,
+        ),
       if (supportingBlocks.isNotEmpty)
         _DocumentBlockSection(
           blocks: supportingBlocks,
           fontSize: widget.fontSize,
+          lineSpacing: widget.lineSpacing,
         ),
     ];
   }
@@ -437,7 +444,7 @@ extension _BibleTextViewStateRendering on _BibleTextViewState {
                       fontFamily: _readerFontFamily(context),
                       fontSize: widget.fontSize,
                       color: bodyColor,
-                      height: 1.5,
+                      height: 1.5 * widget.lineSpacing,
                     ),
                     children: [
                       TextSpan(
@@ -509,6 +516,7 @@ extension _BibleTextViewStateRendering on _BibleTextViewState {
       child: _DocumentBlockView(
         block: block,
         fontSize: widget.fontSize,
+        lineSpacing: widget.lineSpacing,
         isEmphasized: true,
       ),
     );
@@ -516,7 +524,7 @@ extension _BibleTextViewStateRendering on _BibleTextViewState {
 
   Widget _buildContinuousChapterPlaceholder(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
-    // Height is scaled to the current font size so that unhydrated chapter
+    // Height is scaled to the current font size and line spacing so that unhydrated chapter
     // slots approximate their real rendered size. The previous fixed ~72 px
     // placeholder was 20–40× smaller than actual chapters, which caused
     // ScrollablePositionedList to accumulate position errors of 100 000+ px
@@ -525,7 +533,10 @@ extension _BibleTextViewStateRendering on _BibleTextViewState {
     // At the default font size of 18, this gives ~1350 px (≈ an average chapter).
     // Clamping prevents extremes from making short books feel padded or
     // long chapters from pushing the scroll range into the millions.
-    final estimatedHeight = (widget.fontSize * 75).clamp(600.0, 4000.0);
+    final estimatedHeight = (widget.fontSize * widget.lineSpacing * 75).clamp(
+      600.0,
+      4000.0,
+    );
     return SizedBox(
       height: estimatedHeight,
       child: Padding(

@@ -401,4 +401,30 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get readerFontPreviewSample => 'Am Anfang schuf Gott Himmel und Erde.';
+
+  @override
+  String readerTextSizeLabel(int size) {
+    return 'Textgröße $size';
+  }
+
+  @override
+  String get readerDecreaseTextSize => 'Text verkleinern';
+
+  @override
+  String get readerIncreaseTextSize => 'Text vergrößern';
+
+  @override
+  String get readerLineSpacingTitle => 'Zeilenabstand';
+
+  @override
+  String get readerLineSpacingCompact => 'Eng';
+
+  @override
+  String get readerLineSpacingNormal => 'Normal';
+
+  @override
+  String get readerLineSpacingRelaxed => 'Locker';
+
+  @override
+  String get readerLineSpacingLoose => 'Weit';
 }

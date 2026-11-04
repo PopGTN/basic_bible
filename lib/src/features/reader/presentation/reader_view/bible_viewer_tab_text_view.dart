@@ -23,6 +23,7 @@ class _BibleTextView extends ConsumerStatefulWidget {
     required this.reference,
     required this.displayReference,
     required this.fontSize,
+    required this.lineSpacing,
     required this.layoutMode,
     required this.continuousScrolling,
     required this.showBookIntroductions,
@@ -40,6 +41,9 @@ class _BibleTextView extends ConsumerStatefulWidget {
   final BibleReference reference;
   final BibleReference displayReference;
   final double fontSize;
+
+  /// Multiplier on each view's base line height (see [LineSpacing]).
+  final double lineSpacing;
   final ReaderLayoutMode layoutMode;
   final bool continuousScrolling;
   final bool showBookIntroductions;

@@ -401,4 +401,30 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get readerFontPreviewSample => 'En el principio creó Dios los cielos y la tierra.';
+
+  @override
+  String readerTextSizeLabel(int size) {
+    return 'Tamaño del texto $size';
+  }
+
+  @override
+  String get readerDecreaseTextSize => 'Reducir texto';
+
+  @override
+  String get readerIncreaseTextSize => 'Aumentar texto';
+
+  @override
+  String get readerLineSpacingTitle => 'Interlineado';
+
+  @override
+  String get readerLineSpacingCompact => 'Compacto';
+
+  @override
+  String get readerLineSpacingNormal => 'Normal';
+
+  @override
+  String get readerLineSpacingRelaxed => 'Amplio';
+
+  @override
+  String get readerLineSpacingLoose => 'Extra';
 }

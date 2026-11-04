@@ -401,4 +401,30 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get readerFontPreviewSample => '起初，神创造天地。';
+
+  @override
+  String readerTextSizeLabel(int size) {
+    return '文字大小 $size';
+  }
+
+  @override
+  String get readerDecreaseTextSize => '减小文字';
+
+  @override
+  String get readerIncreaseTextSize => '增大文字';
+
+  @override
+  String get readerLineSpacingTitle => '行距';
+
+  @override
+  String get readerLineSpacingCompact => '紧凑';
+
+  @override
+  String get readerLineSpacingNormal => '标准';
+
+  @override
+  String get readerLineSpacingRelaxed => '宽松';
+
+  @override
+  String get readerLineSpacingLoose => '很宽';
 }

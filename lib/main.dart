@@ -8,6 +8,7 @@ import 'src/features/settings/application/view_models/reader_font_view_models.da
 import 'src/features/settings/data/reader_font_repository.dart';
 import 'src/platform/runtime_support.dart';
 import 'src/services/font_size_service.dart';
+import 'src/services/line_spacing_service.dart';
 import 'src/services/shared_preferences_provider.dart';
 
 void main() async {
@@ -21,6 +22,7 @@ void main() async {
   // read their persisted values synchronously instead of flashing the wrong UI.
   final prefs = await SharedPreferences.getInstance();
   FontSizeService.instance.load(prefs);
+  LineSpacingService.instance.load(prefs);
   // Load only the saved reader font (if any) so the first frame uses it.
   final fontRepository = ReaderFontRepository(prefs);
   await fontRepository.restore();

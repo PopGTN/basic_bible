@@ -796,6 +796,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'In the beginning God created the heaven and the earth.'**
   String get readerFontPreviewSample;
+
+  /// Shows the current reader font size in points.
+  ///
+  /// In en, this message translates to:
+  /// **'Text size {size}'**
+  String readerTextSizeLabel(int size);
+
+  /// No description provided for @readerDecreaseTextSize.
+  ///
+  /// In en, this message translates to:
+  /// **'Decrease text size'**
+  String get readerDecreaseTextSize;
+
+  /// No description provided for @readerIncreaseTextSize.
+  ///
+  /// In en, this message translates to:
+  /// **'Increase text size'**
+  String get readerIncreaseTextSize;
+
+  /// No description provided for @readerLineSpacingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Line spacing'**
+  String get readerLineSpacingTitle;
+
+  /// No description provided for @readerLineSpacingCompact.
+  ///
+  /// In en, this message translates to:
+  /// **'Compact'**
+  String get readerLineSpacingCompact;
+
+  /// No description provided for @readerLineSpacingNormal.
+  ///
+  /// In en, this message translates to:
+  /// **'Normal'**
+  String get readerLineSpacingNormal;
+
+  /// No description provided for @readerLineSpacingRelaxed.
+  ///
+  /// In en, this message translates to:
+  /// **'Relaxed'**
+  String get readerLineSpacingRelaxed;
+
+  /// No description provided for @readerLineSpacingLoose.
+  ///
+  /// In en, this message translates to:
+  /// **'Loose'**
+  String get readerLineSpacingLoose;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {
