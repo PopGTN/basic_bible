@@ -81,15 +81,22 @@ class _VerseNoteButton extends StatelessWidget {
 class _InlineVerseSelector extends StatelessWidget {
   const _InlineVerseSelector({
     required this.verseNumber,
+    required this.fontSize,
     required this.color,
     required this.isSelected,
     required this.hasNote,
     required this.onTap,
+    this.fontFamily,
     this.inlineOnly = false,
     this.backgroundColor,
   });
 
   final int verseNumber;
+
+  /// Text inside a WidgetSpan doesn't inherit the paragraph's TextStyle, so
+  /// the reader size and font have to be passed in explicitly.
+  final double fontSize;
+  final String? fontFamily;
   final Color color;
   final bool isSelected;
   final bool hasNote;
@@ -102,8 +109,15 @@ class _InlineVerseSelector extends StatelessWidget {
     final theme = Theme.of(context);
     final numberText = Text(
       '$verseNumber',
-      style: TextStyle(fontWeight: FontWeight.bold, color: color),
+      style: TextStyle(
+        fontFamily: fontFamily,
+        fontSize: fontSize,
+        fontWeight: FontWeight.bold,
+        color: color,
+      ),
     );
+    // Keep the note marker proportional to the number it sits beside.
+    final iconScale = fontSize / (FontSizeService.defaultSize - 2);
 
     if (inlineOnly) {
       return GestureDetector(
@@ -123,7 +137,7 @@ class _InlineVerseSelector extends StatelessWidget {
                 const SizedBox(width: 3),
                 Icon(
                   Icons.bookmark_rounded,
-                  size: 11,
+                  size: 11 * iconScale,
                   color: theme.colorScheme.secondary,
                 ),
               ],
@@ -156,7 +170,7 @@ class _InlineVerseSelector extends StatelessWidget {
               const SizedBox(width: 3),
               Icon(
                 Icons.bookmark_rounded,
-                size: 12,
+                size: 12 * iconScale,
                 color: theme.colorScheme.secondary,
               ),
             ],

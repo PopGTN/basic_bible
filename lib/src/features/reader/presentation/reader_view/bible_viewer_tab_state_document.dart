@@ -395,6 +395,9 @@ extension _BibleTextViewStateDocument on _BibleTextViewState {
     final state = _docVerseRenderState(context, bookId, chapterNumber, verse);
     return _InlineVerseSelector(
       verseNumber: verse.number,
+      // Matches the verse-list number size (body size - 2).
+      fontSize: widget.fontSize - 2,
+      fontFamily: _readerFontFamily(context),
       color: _verseNumberColor(context, bookId, chapterNumber, verse),
       isSelected: state.isSelected,
       hasNote: false,
