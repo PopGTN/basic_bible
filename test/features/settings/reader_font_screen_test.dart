@@ -83,4 +83,58 @@ void main() {
     expect(repository.selected.name, 'Lora');
     expect(find.byIcon(Icons.check_circle), findsOneWidget);
   });
+
+  testWidgets('previews load only after scrolling stops', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+    final fontsDir = Directory.systemTemp.createTempSync('font_scroll');
+    addTearDown(() => fontsDir.deleteSync(recursive: true));
+    final deviceDir = Directory(p.join(fontsDir.path, 'device'))..createSync();
+    for (var i = 0; i < 60; i++) {
+      final name = 'Family${i.toString().padLeft(2, '0')}-Regular.ttf';
+      File(p.join(deviceDir.path, name)).writeAsBytesSync([1]);
+    }
+
+    final registered = <String>[];
+    final repository = ReaderFontRepository(
+      prefs,
+      registrar: (family, files) async => registered.add(family),
+      fontsDirectory: () async => fontsDir,
+      assetKeys: () async => const [],
+      deviceFontDirectories: [deviceDir.path],
+      fileReader: (path) async => Uint8List(16),
+    );
+    await tester.runAsync(repository.scanner.fonts);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(prefs),
+          readerFontRepositoryProvider.overrideWithValue(repository),
+        ],
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const ReaderFontScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    final initial = registered.length;
+    expect(initial, greaterThan(0)); // Rows visible at rest get previews.
+
+    // Hold a drag across several frames: nothing new may load meanwhile.
+    final gesture = await tester.startGesture(
+      tester.getCenter(find.byType(CustomScrollView)),
+    );
+    for (var i = 0; i < 10; i++) {
+      await gesture.moveBy(const Offset(0, -120));
+      await tester.pump(const Duration(milliseconds: 16));
+    }
+    expect(registered.length, initial);
+
+    await gesture.up();
+    await tester.pumpAndSettle();
+    expect(registered.length, greaterThan(initial));
+  });
 }

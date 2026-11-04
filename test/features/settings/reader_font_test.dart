@@ -246,6 +246,68 @@ void main() {
       expect(registered, ['device:A']);
     });
 
+    test('requests made together load as one batch', () async {
+      final repository = repo();
+      final fonts = [for (var i = 0; i < 5; i++) deviceFont('Batch$i')];
+
+      final results = await Future.wait([
+        for (final font in fonts)
+          repository.loader.loadForPreview(font, stillWanted: () => true),
+      ]);
+
+      expect(results, everyElement(isTrue));
+      expect(registered, unorderedEquals([for (final f in fonts) f.family]));
+      for (final font in fonts) {
+        expect(repository.loader.hasPreview(font), isTrue);
+        // Single-file families are fully usable once previewed.
+        expect(repository.loader.isLoaded(font), isTrue);
+      }
+    });
+
+    test('previews register only the regular face of a family', () async {
+      final repository = repo();
+      final paths = [
+        for (final style in ['Bold', 'Regular', 'Italic'])
+          (File(
+            p.join(tempDir.path, 'Multi-$style.ttf'),
+          )..writeAsBytesSync(fakeTtf())).path,
+      ];
+      final font = ReaderFont(
+        id: 'device:Multi',
+        name: 'Multi',
+        source: ReaderFontSource.device,
+        family: 'device:Multi',
+        paths: paths,
+        sizeBytes: 30,
+      );
+
+      expect(
+        await repository.loader.loadForPreview(font, stillWanted: () => true),
+        isTrue,
+      );
+      expect(registered, ['device:Multi']);
+      expect(repository.loader.hasPreview(font), isTrue);
+      expect(repository.loader.isLoaded(font), isFalse);
+
+      // Selecting it still loads the remaining faces.
+      expect(await repository.loader.ensureLoaded(font), isTrue);
+      expect(repository.loader.isLoaded(font), isTrue);
+    });
+
+    test('previewPath prefers the regular face, then the plainest name', () {
+      expect(
+        ReaderFontLoader.previewPath([
+          '/f/Lora-Bold.ttf',
+          '/f/Lora-Regular.ttf',
+        ]),
+        '/f/Lora-Regular.ttf',
+      );
+      expect(
+        ReaderFontLoader.previewPath(['/f/Lato-BoldItalic.ttf', '/f/Lato.ttf']),
+        '/f/Lato.ttf',
+      );
+    });
+
     test('fonts over the size limit are not previewed', () {
       final repository = repo();
       final huge = deviceFont(

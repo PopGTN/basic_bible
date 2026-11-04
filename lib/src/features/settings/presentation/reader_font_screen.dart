@@ -22,8 +22,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 ///   extent. Variable heights here caused scroll-offset corrections and
 ///   "RenderViewport exceeded its maximum number of layout cycles".
 /// - The slivers are flat (no SliverMainAxisGroup) for the same reason.
-/// - Row previews load lazily, one at a time, are deferred while flinging,
-///   and skipped for rows that scrolled away (see [_FontTile]).
+/// - Row previews load only once scrolling stops, so scrolling itself does no
+///   font work; the rows then visible are loaded as one batch (see
+///   [ReaderFontLoader.loadForPreview]), and rows that scrolled away are
+///   skipped (see [_FontTile]).
 /// - Typing in the search box only rebuilds the installed-fonts list.
 /// The name to show for [font]; the default's name is localized.
 String readerFontDisplayName(ReaderFont font, AppLocalizations l10n) =>
@@ -51,10 +53,25 @@ class ReaderFontScreen extends ConsumerStatefulWidget {
 class _ReaderFontScreenState extends ConsumerState<ReaderFontScreen> {
   final _query = ValueNotifier<String>('');
 
+  /// True while the list is being scrolled; rows wait for it to settle before
+  /// loading their previews.
+  final _scrolling = ValueNotifier<bool>(false);
+
   @override
   void dispose() {
     _query.dispose();
+    _scrolling.dispose();
     super.dispose();
+  }
+
+  bool _onScroll(ScrollNotification notification) {
+    if (notification.depth != 0) return false;
+    if (notification is ScrollStartNotification) {
+      _scrolling.value = true;
+    } else if (notification is ScrollEndNotification) {
+      _scrolling.value = false;
+    }
+    return false;
   }
 
   AppLocalizations get _l10n => AppLocalizations.of(context)!;
@@ -143,45 +160,60 @@ class _ReaderFontScreenState extends ConsumerState<ReaderFontScreen> {
     final selectedId = state.selected.id;
     final l10n = _l10n;
 
-    return Scaffold(
-      appBar: AppBar(
-        leading: const AppBackButton(),
-        title: Text(l10n.readerFontTitle),
-      ),
-      body: CustomScrollView(
-        slivers: [
-          SliverToBoxAdapter(child: _PreviewCard(font: state.selected)),
-          // Always 4px tall so showing/hiding progress never shifts the list.
-          SliverToBoxAdapter(
-            child: SizedBox(
-              height: 4,
-              child: state.busy ? const LinearProgressIndicator() : null,
+    // See [_withoutFallbackFonts]: keeps the re-layout after each batch of
+    // previews from searching the system fonts for every text style.
+    return Theme(
+      data: _withoutFallbackFonts(Theme.of(context)),
+      child: Scaffold(
+        appBar: AppBar(
+          leading: const AppBackButton(),
+          title: Text(l10n.readerFontTitle),
+        ),
+        body: _ScrollActivity(
+          scrolling: _scrolling,
+          child: NotificationListener<ScrollNotification>(
+            onNotification: _onScroll,
+            child: CustomScrollView(
+              // Build (and so preview) rows well past the bottom edge while
+              // the list is at rest, so scrolling down reaches rows whose
+              // fonts are already loaded instead of loading on arrival.
+              cacheExtent: 1200,
+              slivers: [
+                SliverToBoxAdapter(child: _PreviewCard(font: state.selected)),
+                // Always 4px tall so showing/hiding progress never shifts the list.
+                SliverToBoxAdapter(
+                  child: SizedBox(
+                    height: 4,
+                    child: state.busy ? const LinearProgressIndicator() : null,
+                  ),
+                ),
+                SliverToBoxAdapter(
+                  child: _SectionHeader(l10n.readerFontSectionDefault),
+                ),
+                _fontList(
+                  count: 1,
+                  tile: (_) => _FontTile(
+                    key: const ValueKey('default'),
+                    font: ReaderFont.systemDefault,
+                    selected: state.selected.isDefault,
+                    onTap: () => _select(ReaderFont.systemDefault),
+                  ),
+                ),
+                ..._bundledSection(selectedId),
+                if (ReaderFontRepository.supportsFontFiles)
+                  ..._importedSection(state),
+                SliverToBoxAdapter(
+                  child: _SectionHeader(l10n.readerFontSectionInstalled),
+                ),
+                ..._deviceSection(selectedId),
+                const SliverSafeArea(
+                  top: false,
+                  sliver: SliverToBoxAdapter(child: SizedBox(height: 32)),
+                ),
+              ],
             ),
           ),
-          SliverToBoxAdapter(
-            child: _SectionHeader(l10n.readerFontSectionDefault),
-          ),
-          _fontList(
-            count: 1,
-            tile: (_) => _FontTile(
-              key: const ValueKey('default'),
-              font: ReaderFont.systemDefault,
-              selected: state.selected.isDefault,
-              onTap: () => _select(ReaderFont.systemDefault),
-            ),
-          ),
-          ..._bundledSection(selectedId),
-          if (ReaderFontRepository.supportsFontFiles)
-            ..._importedSection(state),
-          SliverToBoxAdapter(
-            child: _SectionHeader(l10n.readerFontSectionInstalled),
-          ),
-          ..._deviceSection(selectedId),
-          const SliverSafeArea(
-            top: false,
-            sliver: SliverToBoxAdapter(child: SizedBox(height: 32)),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -332,6 +364,38 @@ class _DeviceFontList extends ConsumerWidget {
   }
 }
 
+/// Hands the page's "is the list scrolling" flag to the rows. The notifier
+/// itself never changes, so dependents never rebuild; rows listen to it.
+class _ScrollActivity extends InheritedWidget {
+  const _ScrollActivity({required this.scrolling, required super.child});
+
+  final ValueListenable<bool> scrolling;
+
+  static ValueListenable<bool>? maybeOf(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<_ScrollActivity>()?.scrolling;
+
+  @override
+  bool updateShouldNotify(_ScrollActivity old) => old.scrolling != scrolling;
+}
+
+/// The theme without its fallback font families.
+///
+/// Registering a font (every batch of previews) clears the engine's font
+/// lookup cache, so on the next frame every text style on screen resolves its
+/// families again. Families that aren't loaded into the app — on Linux the
+/// theme's Roboto plus five fallbacks (Ubuntu, Cantarell, DejaVu Sans, …) —
+/// are looked up through fontconfig, which is slow with thousands of fonts
+/// installed: measured ~250 ms per batch. Without the fallback list each
+/// style needs one lookup; characters a font lacks still fall back per glyph.
+ThemeData _withoutFallbackFonts(ThemeData theme) {
+  return theme.copyWith(
+    textTheme: theme.textTheme.apply(fontFamilyFallback: const <String>[]),
+    primaryTextTheme: theme.primaryTextTheme.apply(
+      fontFamilyFallback: const <String>[],
+    ),
+  );
+}
+
 /// A fixed-extent list of font rows. The prototype gives every row the same
 /// height (and still respects the user's text scale).
 Widget _fontList({
@@ -480,13 +544,23 @@ class _FontTile extends ConsumerStatefulWidget {
 class _FontTileState extends ConsumerState<_FontTile> {
   bool _ready = false;
   bool _loadScheduled = false;
+  ValueListenable<bool>? _scrolling;
 
   @override
   void initState() {
     super.initState();
-    final loader = ref.read(readerFontLoaderProvider);
     // Already-loaded fonts render in their own font on the first frame.
-    _ready = widget.preview && loader.isLoaded(widget.font);
+    _ready = _hasPreview(widget.font);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final scrolling = _ScrollActivity.maybeOf(context);
+    if (scrolling != _scrolling) {
+      _scrolling?.removeListener(_onScrollActivity);
+      _scrolling = scrolling;
+    }
     _scheduleLoad();
   }
 
@@ -494,33 +568,48 @@ class _FontTileState extends ConsumerState<_FontTile> {
   void didUpdateWidget(_FontTile old) {
     super.didUpdateWidget(old);
     if (old.font != widget.font || old.preview != widget.preview) {
-      _ready =
-          widget.preview &&
-          ref.read(readerFontLoaderProvider).isLoaded(widget.font);
+      _ready = _hasPreview(widget.font);
       _scheduleLoad();
     }
   }
 
+  @override
+  void dispose() {
+    _scrolling?.removeListener(_onScrollActivity);
+    super.dispose();
+  }
+
+  bool _hasPreview(ReaderFont font) =>
+      widget.preview && ref.read(readerFontLoaderProvider).hasPreview(font);
+
   bool _wants(ReaderFont font) => mounted && widget.font == font;
 
-  /// Waits a frame before loading, and keeps waiting while the list is being
-  /// flung fast (the same signal Image uses), so rows that only fly past
-  /// never touch the disk.
+  /// Loads the preview after the current frame, but never while the list is
+  /// scrolling: rows that only fly past never touch the disk, and the rows
+  /// visible when scrolling stops are loaded together as one batch.
   void _scheduleLoad() {
     if (_ready || _loadScheduled || !widget.preview) return;
-    final loader = ref.read(readerFontLoaderProvider);
-    if (!loader.canPreview(widget.font)) return;
+    if (!ref.read(readerFontLoaderProvider).canPreview(widget.font)) return;
     _loadScheduled = true;
-    SchedulerBinding.instance.addPostFrameCallback((_) {
-      _loadScheduled = false;
-      if (!mounted) return;
-      if (Scrollable.recommendDeferredLoadingForContext(context)) {
-        _scheduleLoad();
-        SchedulerBinding.instance.scheduleFrame();
-        return;
-      }
-      _load();
-    });
+    SchedulerBinding.instance.addPostFrameCallback((_) => _loadWhenIdle());
+  }
+
+  void _loadWhenIdle() {
+    if (!mounted) return;
+    final scrolling = _scrolling;
+    if (scrolling != null && scrolling.value) {
+      scrolling.removeListener(_onScrollActivity);
+      scrolling.addListener(_onScrollActivity);
+      return;
+    }
+    _loadScheduled = false;
+    _load();
+  }
+
+  void _onScrollActivity() {
+    if (_scrolling?.value ?? false) return;
+    _scrolling?.removeListener(_onScrollActivity);
+    _loadWhenIdle();
   }
 
   Future<void> _load() async {
@@ -543,6 +632,12 @@ class _FontTileState extends ConsumerState<_FontTile> {
         style: _ready
             ? theme.textTheme.titleMedium?.copyWith(
                 fontFamily: widget.font.family,
+                // The theme's fallback families (on Linux: Ubuntu, Cantarell,
+                // DejaVu Sans, …) aren't loaded fonts, so resolving them goes
+                // through fontconfig for every previewed row — the main cost
+                // when thousands of fonts are installed. The row only needs
+                // its own font.
+                fontFamilyFallback: const <String>[],
               )
             : null,
       ),
