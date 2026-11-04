@@ -64,8 +64,6 @@ UsfmSourceBundle? tryExtractUsfmBundle(
 
   return UsfmSourceBundle(
     sourceName: sourceName,
-    files: [
-      UsfmSourceFile(name: sourceName, content: utf8.decode(bytes)),
-    ],
+    files: [UsfmSourceFile(name: sourceName, content: utf8.decode(bytes))],
   );
 }

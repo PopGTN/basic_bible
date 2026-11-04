@@ -23,7 +23,9 @@ class SettingsScreen extends ConsumerWidget {
     final selectedLanguage = ref.watch(languageProvider);
     final showBookIntroductions = ref.watch(showBookIntroductionsProvider);
     final showVerseSelector = ref.watch(showVerseSelectorProvider);
-    final confirmRemoveLinkedVerse = ref.watch(confirmRemoveLinkedVerseProvider);
+    final confirmRemoveLinkedVerse = ref.watch(
+      confirmRemoveLinkedVerseProvider,
+    );
     final showNotesAcrossTranslations = ref.watch(
       showNotesAcrossTranslationsProvider,
     );

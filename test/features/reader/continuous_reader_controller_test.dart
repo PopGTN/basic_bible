@@ -2,7 +2,8 @@ import 'package:basic_bible/src/features/reader/application/continuous_reader_co
 import 'package:basic_bible/src/models/bible_models.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-BibleVerse verse(int number) => BibleVerse(number: number, text: 'Verse $number');
+BibleVerse verse(int number) =>
+    BibleVerse(number: number, text: 'Verse $number');
 
 BibleChapter shellChapter(int number) => BibleChapter(number: number);
 
@@ -27,7 +28,8 @@ void main() {
     Future<BibleChapter?> Function(String bookId, int chapterNumber)? loader,
   }) {
     return ContinuousReaderController(
-      loadChapter: loader ??
+      loadChapter:
+          loader ??
           (bookId, chapterNumber) async {
             loadedKeys.add('$bookId:$chapterNumber');
             return hydratedChapter(chapterNumber);
@@ -118,21 +120,23 @@ void main() {
       expect(hydrations, ['GEN:2']);
     });
 
-    test('null loader result falls back to the shell chapter unstored',
-        () async {
-      final c = controller(loader: (_, _) async => null);
-      c.rebuildSections([book('GEN', 1)]);
-      var notified = 0;
-      c.addListener(() => notified++);
+    test(
+      'null loader result falls back to the shell chapter unstored',
+      () async {
+        final c = controller(loader: (_, _) async => null);
+        c.rebuildSections([book('GEN', 1)]);
+        var notified = 0;
+        c.addListener(() => notified++);
 
-      final resolved = await c.chapterFuture(c.sections.first);
+        final resolved = await c.chapterFuture(c.sections.first);
 
-      // Shell chapter has no verses, so nothing is cached and no one is
-      // notified — the FutureBuilder just renders the fallback.
-      expect(resolved, same(c.sections.first.chapter));
-      expect(c.hydratedChapter('GEN', 1), isNull);
-      expect(notified, 0);
-    });
+        // Shell chapter has no verses, so nothing is cached and no one is
+        // notified — the FutureBuilder just renders the fallback.
+        expect(resolved, same(c.sections.first.chapter));
+        expect(c.hydratedChapter('GEN', 1), isNull);
+        expect(notified, 0);
+      },
+    );
   });
 
   group('LRU eviction', () {
@@ -172,19 +176,21 @@ void main() {
   });
 
   group('prefetch', () {
-    test('prefetchWindow loads ±radius chapters around the reference',
-        () async {
-      final c = controller();
-      c.rebuildSections([book('GEN', 10)]);
+    test(
+      'prefetchWindow loads ±radius chapters around the reference',
+      () async {
+        final c = controller();
+        c.rebuildSections([book('GEN', 10)]);
 
-      c.prefetchWindow(
-        const BibleReference(bookId: 'GEN', chapter: 5),
-        radius: 2,
-      );
-      await Future<void>.delayed(Duration.zero);
+        c.prefetchWindow(
+          const BibleReference(bookId: 'GEN', chapter: 5),
+          radius: 2,
+        );
+        await Future<void>.delayed(Duration.zero);
 
-      expect(loadedKeys, ['GEN:3', 'GEN:4', 'GEN:5', 'GEN:6', 'GEN:7']);
-    });
+        expect(loadedKeys, ['GEN:3', 'GEN:4', 'GEN:5', 'GEN:6', 'GEN:7']);
+      },
+    );
 
     test('prefetchWindow clamps at the edges of the Bible', () async {
       final c = controller();

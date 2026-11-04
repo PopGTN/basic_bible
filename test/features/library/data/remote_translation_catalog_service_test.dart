@@ -63,47 +63,44 @@ void main() {
 
     final artifact = firstPreferredRemoteArtifact(
       translation,
-      supportedFormats: {
-        BibleFormat.zip,
-        BibleFormat.usfx,
-      },
+      supportedFormats: {BibleFormat.zip, BibleFormat.usfx},
     );
 
     expect(artifact, isNotNull);
     expect(artifact!.fileName, 'acuNT_usfx.zip');
   });
 
-  test('does not rank usfm ahead of richer formats when no artifact is preferred', () {
-    final translation = BibleTranslation(
-      id: 'demo',
-      name: 'Demo Translation',
-      language: 'en',
-      description: '',
-      format: BibleFormat.auto,
-      sourceType: BibleSourceType.download,
-      artifacts: const [
-        BibleTranslationArtifact(
-          format: BibleFormat.usfm,
-          downloadUrl: 'https://example.com/demo_usfm.zip',
-          fileName: 'demo_usfm.zip',
-        ),
-        BibleTranslationArtifact(
-          format: BibleFormat.usfx,
-          downloadUrl: 'https://example.com/demo_usfx.zip',
-          fileName: 'demo_usfx.zip',
-        ),
-      ],
-    );
+  test(
+    'does not rank usfm ahead of richer formats when no artifact is preferred',
+    () {
+      final translation = BibleTranslation(
+        id: 'demo',
+        name: 'Demo Translation',
+        language: 'en',
+        description: '',
+        format: BibleFormat.auto,
+        sourceType: BibleSourceType.download,
+        artifacts: const [
+          BibleTranslationArtifact(
+            format: BibleFormat.usfm,
+            downloadUrl: 'https://example.com/demo_usfm.zip',
+            fileName: 'demo_usfm.zip',
+          ),
+          BibleTranslationArtifact(
+            format: BibleFormat.usfx,
+            downloadUrl: 'https://example.com/demo_usfx.zip',
+            fileName: 'demo_usfx.zip',
+          ),
+        ],
+      );
 
-    final artifact = firstPreferredRemoteArtifact(
-      translation,
-      supportedFormats: {
-        BibleFormat.usfm,
-        BibleFormat.usfx,
-      },
-    );
+      final artifact = firstPreferredRemoteArtifact(
+        translation,
+        supportedFormats: {BibleFormat.usfm, BibleFormat.usfx},
+      );
 
-    expect(artifact, isNotNull);
-    expect(artifact!.format, BibleFormat.usfx);
-  });
+      expect(artifact, isNotNull);
+      expect(artifact!.format, BibleFormat.usfx);
+    },
+  );
 }

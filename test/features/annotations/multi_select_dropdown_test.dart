@@ -110,7 +110,9 @@ void main() {
 
       expect(find.text('Translation'), findsOneWidget);
 
-      await tester.tap(find.byWidgetPredicate((widget) => widget is OutlinedButton));
+      await tester.tap(
+        find.byWidgetPredicate((widget) => widget is OutlinedButton),
+      );
       await tester.pumpAndSettle();
 
       expect(find.text('KJV'), findsOneWidget);
@@ -121,7 +123,11 @@ void main() {
       await tester.tap(find.text('KJV'));
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
-      expect(find.text('NIV'), findsOneWidget, reason: 'menu closed after one tap');
+      expect(
+        find.text('NIV'),
+        findsOneWidget,
+        reason: 'menu closed after one tap',
+      );
       expect(find.text('KJV', skipOffstage: false), findsWidgets);
 
       // Second selection — proves the menu is still open and state updates.

@@ -338,7 +338,8 @@ class AppBibleImportService {
     required String filePath,
     required List<BibleBook> importedBooks,
   }) {
-    final baseName = p.basenameWithoutExtension(filePath)
+    final baseName = p
+        .basenameWithoutExtension(filePath)
         .replaceAll('_', ' ')
         .trim();
     if (baseName.isNotEmpty) return baseName;

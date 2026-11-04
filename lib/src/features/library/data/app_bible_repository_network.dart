@@ -23,8 +23,9 @@ extension AppBibleRepositoryNetwork on AppBibleRepository {
   Future<List<BibleBook>> downloadBible(String translationId) {
     return _downloadInFlight.putIfAbsent(
       translationId,
-      () => _doDownloadBible(translationId)
-          .whenComplete(() => _downloadInFlight.remove(translationId)),
+      () => _doDownloadBible(
+        translationId,
+      ).whenComplete(() => _downloadInFlight.remove(translationId)),
     );
   }
 
@@ -39,7 +40,8 @@ extension AppBibleRepositoryNetwork on AppBibleRepository {
       final path = await _sqlitePathFor(translationId);
       final translationDb = await _dbManager.open(translationId, path);
       final books = await translationDb.getBible();
-      if (books.isNotEmpty) return _rememberLoadedTranslation(translationId, books);
+      if (books.isNotEmpty)
+        return _rememberLoadedTranslation(translationId, books);
     }
 
     // FIX #2: resolve the translation and verify an artifact exists BEFORE
@@ -110,8 +112,9 @@ extension AppBibleRepositoryNetwork on AppBibleRepository {
   Future<List<BibleBook>> openTranslationForSession(String translationId) {
     return _sessionReadInFlight.putIfAbsent(
       translationId,
-      () => _doOpenTranslationForSession(translationId)
-          .whenComplete(() => _sessionReadInFlight.remove(translationId)),
+      () => _doOpenTranslationForSession(
+        translationId,
+      ).whenComplete(() => _sessionReadInFlight.remove(translationId)),
     );
   }
 
@@ -119,7 +122,8 @@ extension AppBibleRepositoryNetwork on AppBibleRepository {
     String translationId,
   ) async {
     final memoryCached = peekLoadedTranslation(translationId);
-    if (memoryCached != null && _sessionTranslationIds.contains(translationId)) {
+    if (memoryCached != null &&
+        _sessionTranslationIds.contains(translationId)) {
       activateLoadedTranslation(translationId);
       return memoryCached;
     }
@@ -200,8 +204,9 @@ extension AppBibleRepositoryNetwork on AppBibleRepository {
       // Stream the body and count as we go, so a server that lies about (or
       // omits) Content-Length still can't fill memory without bound.
       final builder = BytesBuilder(copy: false);
-      await for (final chunk in response.stream
-          .timeout(AppBibleRepository._remoteRequestTimeout)) {
+      await for (final chunk in response.stream.timeout(
+        AppBibleRepository._remoteRequestTimeout,
+      )) {
         builder.add(chunk);
         if (builder.length > _maxDownloadBytes) {
           throw Exception(

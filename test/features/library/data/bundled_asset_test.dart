@@ -28,12 +28,16 @@ void main() {
     expect(bytes.length, greaterThan(10 * 1024 * 1024));
   });
 
-  test('bundled eng-kjv2006_usfx.xml.gz decompresses to a USFX document',
-      () async {
-    final data = await rootBundle.load('assets/bible/eng-kjv2006_usfx.xml.gz');
-    final content = utf8.decode(gunzipAsset(data));
+  test(
+    'bundled eng-kjv2006_usfx.xml.gz decompresses to a USFX document',
+    () async {
+      final data = await rootBundle.load(
+        'assets/bible/eng-kjv2006_usfx.xml.gz',
+      );
+      final content = utf8.decode(gunzipAsset(data));
 
-    expect(content, contains('<usfx'));
-    expect(content.length, greaterThan(10 * 1024 * 1024));
-  });
+      expect(content, contains('<usfx'));
+      expect(content.length, greaterThan(10 * 1024 * 1024));
+    },
+  );
 }

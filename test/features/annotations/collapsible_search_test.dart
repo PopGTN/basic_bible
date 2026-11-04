@@ -46,10 +46,7 @@ class _HarnessState extends State<_Harness> {
     return AppBar(
       title: const Text('Notes'),
       actions: [
-        IconButton(
-          onPressed: _startSearch,
-          icon: const Icon(Icons.search),
-        ),
+        IconButton(onPressed: _startSearch, icon: const Icon(Icons.search)),
       ],
     );
   }
@@ -117,7 +114,11 @@ void main() {
       await tester.tap(find.byIcon(Icons.clear));
       await tester.pump();
       expect(find.text('query:'), findsOneWidget);
-      expect(find.byType(TextField), findsOneWidget, reason: 'clear only resets text, not the bar');
+      expect(
+        find.byType(TextField),
+        findsOneWidget,
+        reason: 'clear only resets text, not the bar',
+      );
 
       // Back arrow restores the normal app bar entirely.
       await tester.enterText(find.byType(TextField), 'grace');

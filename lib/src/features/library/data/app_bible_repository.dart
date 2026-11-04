@@ -39,8 +39,8 @@ class AppBibleRepository {
   final Map<String, List<BibleBook>> _memoryCacheByTranslation = {};
   final LinkedHashMap<String, List<BibleBook>> _fullTranslationLru =
       LinkedHashMap<String, List<BibleBook>>();
-  final Map<String, LinkedHashMap<String, BibleChapter>> _chapterCacheByTranslation =
-      {};
+  final Map<String, LinkedHashMap<String, BibleChapter>>
+  _chapterCacheByTranslation = {};
   final Set<String> _sessionTranslationIds = {};
   String? _currentTranslationId;
   List<BibleBook> _currentBooks = [];
@@ -85,10 +85,7 @@ class AppBibleRepository {
       for (final t in builtInTranslations)
         applySessionState(
           mergeStoredTranslation(
-            base: mergeCatalogTranslation(
-              builtIn: t,
-              remote: remoteById[t.id],
-            ),
+            base: mergeCatalogTranslation(builtIn: t, remote: remoteById[t.id]),
             stored: storedById[t.id],
             overrideSourceType: true,
           ),
@@ -171,7 +168,9 @@ class AppBibleRepository {
     final effectiveTranslation = catalogTranslation ?? storedTranslation;
     if (effectiveTranslation.sourceType == BibleSourceType.import ||
         storedTranslation.sourceType == BibleSourceType.import) {
-      throw Exception('Imported translations must be deleted, not removed as downloads.');
+      throw Exception(
+        'Imported translations must be deleted, not removed as downloads.',
+      );
     }
     if (effectiveTranslation.sourceType == BibleSourceType.asset ||
         effectiveTranslation.bundledByDefault) {
@@ -187,8 +186,7 @@ class AppBibleRepository {
       languageName: effectiveTranslation.languageName,
       description: effectiveTranslation.description,
       isLocal: false,
-      githubUrl:
-          effectiveTranslation.githubUrl ?? storedTranslation.githubUrl,
+      githubUrl: effectiveTranslation.githubUrl ?? storedTranslation.githubUrl,
       format: effectiveTranslation.format,
       sourceType: BibleSourceType.download,
       bundledByDefault: effectiveTranslation.bundledByDefault,
@@ -378,7 +376,8 @@ class AppBibleRepository {
 
   Future<bool> _isCacheValid(String translationId) async {
     final meta = await _db.getInstalledTranslation(translationId);
-    if (meta == null || meta.parserVersion < kCurrentParserVersion) return false;
+    if (meta == null || meta.parserVersion < kCurrentParserVersion)
+      return false;
     if (!usesFileBackedStorage) return true;
     return pathExists(await _sqlitePathFor(translationId));
   }
@@ -487,8 +486,9 @@ class AppBibleRepository {
     String translationId, {
     bool includeRemoteCatalog = false,
   }) async {
-    final builtIn =
-        builtInTranslations.where((t) => t.id == translationId).firstOrNull;
+    final builtIn = builtInTranslations
+        .where((t) => t.id == translationId)
+        .firstOrNull;
     final storedMatch = await _db.getInstalledTranslationModel(translationId);
     final remote = includeRemoteCatalog
         ? (await _fetchRemoteTranslationsSafely())
@@ -515,16 +515,17 @@ class AppBibleRepository {
         _sessionTranslationIds,
       );
     }
-    if (remote != null) return applySessionState(remote, _sessionTranslationIds);
+    if (remote != null)
+      return applySessionState(remote, _sessionTranslationIds);
     throw Exception('Translation $translationId not found');
   }
 
   // FIX #7: apply the same timeout used for artifact fetches.
   Future<List<BibleTranslation>> _fetchRemoteTranslationsSafely() async {
     try {
-      return await _catalogService
-          .fetchTranslations()
-          .timeout(_remoteRequestTimeout);
+      return await _catalogService.fetchTranslations().timeout(
+        _remoteRequestTimeout,
+      );
     } catch (e) {
       assert(() {
         debugPrint('[AppBibleRepository] Remote catalog fetch failed: $e');

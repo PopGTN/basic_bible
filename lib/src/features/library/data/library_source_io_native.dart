@@ -42,9 +42,7 @@ Future<void> clearDirectoryFiles(
   final files = await dir
       .list()
       .where(
-        (e) =>
-            e is File &&
-            (extension == null || e.path.endsWith(extension)),
+        (e) => e is File && (extension == null || e.path.endsWith(extension)),
       )
       .cast<File>()
       .toList();

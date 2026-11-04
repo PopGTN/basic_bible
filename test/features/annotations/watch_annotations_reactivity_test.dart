@@ -23,43 +23,46 @@ void main() {
     await database.close();
   });
 
-  test('watchAnnotations emits again after saveAnnotation adds a note', () async {
-    final emissions = <List<UserAnnotation>>[];
-    final subscription = repository.watchAnnotations().listen(emissions.add);
-    addTearDown(subscription.cancel);
+  test(
+    'watchAnnotations emits again after saveAnnotation adds a note',
+    () async {
+      final emissions = <List<UserAnnotation>>[];
+      final subscription = repository.watchAnnotations().listen(emissions.add);
+      addTearDown(subscription.cancel);
 
-    // Let the initial (empty) emission land.
-    await Future<void>.delayed(Duration.zero);
-    expect(emissions, isNotEmpty);
-    final countBeforeSave = emissions.length;
+      // Let the initial (empty) emission land.
+      await Future<void>.delayed(Duration.zero);
+      expect(emissions, isNotEmpty);
+      final countBeforeSave = emissions.length;
 
-    await repository.saveAnnotation(
-      UserAnnotation(
-        type: UserAnnotationType.note,
-        primaryVerse: const AnnotationVerseLink(
-          bookId: 'JHN',
-          chapter: 3,
-          verse: 16,
-          translationId: 'kjv',
-          translationName: 'King James Version',
+      await repository.saveAnnotation(
+        UserAnnotation(
+          type: UserAnnotationType.note,
+          primaryVerse: const AnnotationVerseLink(
+            bookId: 'JHN',
+            chapter: 3,
+            verse: 16,
+            translationId: 'kjv',
+            translationName: 'King James Version',
+          ),
+          noteText: 'For God so loved the world',
+          createdAt: DateTime(2026, 4, 3, 12),
+          updatedAt: DateTime(2026, 4, 3, 12),
         ),
-        noteText: 'For God so loved the world',
-        createdAt: DateTime(2026, 4, 3, 12),
-        updatedAt: DateTime(2026, 4, 3, 12),
-      ),
-    );
+      );
 
-    // Drift's stream emits asynchronously after the write commits.
-    await Future<void>.delayed(const Duration(milliseconds: 50));
+      // Drift's stream emits asynchronously after the write commits.
+      await Future<void>.delayed(const Duration(milliseconds: 50));
 
-    expect(
-      emissions.length,
-      greaterThan(countBeforeSave),
-      reason: 'watchAnnotations() never emitted after saveAnnotation',
-    );
-    expect(emissions.last, hasLength(1));
-    expect(emissions.last.single.noteText, 'For God so loved the world');
-  });
+      expect(
+        emissions.length,
+        greaterThan(countBeforeSave),
+        reason: 'watchAnnotations() never emitted after saveAnnotation',
+      );
+      expect(emissions.last, hasLength(1));
+      expect(emissions.last.single.noteText, 'For God so loved the world');
+    },
+  );
 
   test(
     'a second note on the same verse also triggers a fresh emission '

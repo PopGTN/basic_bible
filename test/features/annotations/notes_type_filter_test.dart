@@ -63,15 +63,18 @@ void main() {
     );
   });
 
-  test('"noteWithHighlight" matches a note that also has a highlight color', () {
-    expect(_matchesType(noteWithHighlight, {'noteWithHighlight'}), isTrue);
-    expect(
-      _matchesType(plainNote, {'noteWithHighlight'}),
-      isFalse,
-      reason: 'no highlight color, so it does not qualify',
-    );
-    expect(_matchesType(highlightOnly, {'noteWithHighlight'}), isFalse);
-  });
+  test(
+    '"noteWithHighlight" matches a note that also has a highlight color',
+    () {
+      expect(_matchesType(noteWithHighlight, {'noteWithHighlight'}), isTrue);
+      expect(
+        _matchesType(plainNote, {'noteWithHighlight'}),
+        isFalse,
+        reason: 'no highlight color, so it does not qualify',
+      );
+      expect(_matchesType(highlightOnly, {'noteWithHighlight'}), isFalse);
+    },
+  );
 
   test('a plain text-only note (no highlight) never matches either type', () {
     expect(_matchesType(plainNote, {'highlightOnly'}), isFalse);

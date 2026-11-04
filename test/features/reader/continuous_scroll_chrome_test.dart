@@ -67,8 +67,9 @@ Widget _harness(_ChromeToggleProbe probe, {int initialScrollIndex = 0}) {
 }
 
 void main() {
-  testWidgets('dragging down hides the bars, dragging up shows them again',
-      (tester) async {
+  testWidgets('dragging down hides the bars, dragging up shows them again', (
+    tester,
+  ) async {
     final probe = _ChromeToggleProbe();
     await tester.pumpWidget(_harness(probe));
 
@@ -82,7 +83,8 @@ void main() {
     expect(
       probe.toggles,
       isNotEmpty,
-      reason: 'scroll notifications never reached the chrome handler — '
+      reason:
+          'scroll notifications never reached the chrome handler — '
           'deltas seen: ${probe.deltas}',
     );
     expect(probe.toggles.first, isFalse, reason: 'first toggle should hide');
@@ -99,8 +101,9 @@ void main() {
     expect(probe.isHiding, isFalse);
   });
 
-  testWidgets('auto-hide also works when anchored mid-Bible (after a jump)',
-      (tester) async {
+  testWidgets('auto-hide also works when anchored mid-Bible (after a jump)', (
+    tester,
+  ) async {
     // After chapter navigation SPL re-anchors: pixels are relative to the
     // anchored item, so content before it lives at negative offsets. The
     // delta-based logic must still work in that coordinate space.

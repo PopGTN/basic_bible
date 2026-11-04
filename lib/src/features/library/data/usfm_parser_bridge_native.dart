@@ -8,23 +8,21 @@ import 'package:path/path.dart' as p;
 
 import 'usfm_bundle_support.dart';
 
-typedef _ParseUsfmBundleNative = ffi.Pointer<Utf8> Function(
-  ffi.Pointer<Utf8>,
-);
+typedef _ParseUsfmBundleNative = ffi.Pointer<Utf8> Function(ffi.Pointer<Utf8>);
 typedef _ParseUsfmBundleDart = ffi.Pointer<Utf8> Function(ffi.Pointer<Utf8>);
 
 typedef _FreeStringNative = ffi.Void Function(ffi.Pointer<Utf8>);
 typedef _FreeStringDart = void Function(ffi.Pointer<Utf8>);
 
 final _nativeLibrary = _tryOpenUsfmLibrary();
-final _parseUsfmBundle = _nativeLibrary?.lookupFunction<
-  _ParseUsfmBundleNative,
-  _ParseUsfmBundleDart
->('basic_bible_parse_usfm_bundle');
-final _freeString = _nativeLibrary?.lookupFunction<
-  _FreeStringNative,
-  _FreeStringDart
->('basic_bible_free_string');
+final _parseUsfmBundle = _nativeLibrary
+    ?.lookupFunction<_ParseUsfmBundleNative, _ParseUsfmBundleDart>(
+      'basic_bible_parse_usfm_bundle',
+    );
+final _freeString = _nativeLibrary
+    ?.lookupFunction<_FreeStringNative, _FreeStringDart>(
+      'basic_bible_free_string',
+    );
 
 bool get supportsNativeUsfmParsing =>
     _nativeLibrary != null && _parseUsfmBundle != null && _freeString != null;
@@ -68,8 +66,7 @@ Future<List<Map<String, dynamic>>> parseUsfmBundleToSerializable(
             'The native USFM parser returned an unknown error.',
       );
     }
-    return (decoded['books'] as List<dynamic>)
-        .cast<Map<String, dynamic>>();
+    return (decoded['books'] as List<dynamic>).cast<Map<String, dynamic>>();
   } finally {
     malloc.free(requestPtr);
     if (responsePtr != ffi.nullptr) {
@@ -100,7 +97,11 @@ Iterable<String> _libraryCandidates() sync* {
   } else if (Platform.isMacOS) {
     yield p.join(executableDir, 'libbasic_bible_usfm_parser.dylib');
     yield p.join(executableDir, 'lib', 'libbasic_bible_usfm_parser.dylib');
-    yield p.join(executableParentDir, 'Frameworks', 'libbasic_bible_usfm_parser.dylib');
+    yield p.join(
+      executableParentDir,
+      'Frameworks',
+      'libbasic_bible_usfm_parser.dylib',
+    );
   } else if (Platform.isWindows) {
     yield p.join(executableDir, 'basic_bible_usfm_parser.dll');
     yield p.join(executableDir, 'data', 'basic_bible_usfm_parser.dll');
@@ -112,8 +113,13 @@ Iterable<String> _libraryCandidates() sync* {
   // plant a substitute library, so these paths are debug-only.
   if (kDebugMode) {
     final cwd = Directory.current.path;
-    final releaseDir =
-        p.join(cwd, 'native', 'usfm_parser', 'target', 'release');
+    final releaseDir = p.join(
+      cwd,
+      'native',
+      'usfm_parser',
+      'target',
+      'release',
+    );
     final debugDir = p.join(cwd, 'native', 'usfm_parser', 'target', 'debug');
     final fileName = _libraryFileNameForPlatform();
     yield p.join(releaseDir, fileName);

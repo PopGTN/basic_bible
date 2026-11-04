@@ -61,36 +61,35 @@ class _KeyedListHarnessState extends State<_KeyedListHarness> {
 }
 
 void main() {
-  testWidgets(
-    'a real anchor attaches once armed after scrollTo has settled',
-    (tester) async {
-      final key = GlobalKey<_KeyedListHarnessState>();
-      await tester.pumpWidget(_KeyedListHarness(key: key, itemCount: 200));
-      await tester.pumpAndSettle();
+  testWidgets('a real anchor attaches once armed after scrollTo has settled', (
+    tester,
+  ) async {
+    final key = GlobalKey<_KeyedListHarnessState>();
+    await tester.pumpWidget(_KeyedListHarness(key: key, itemCount: 200));
+    await tester.pumpAndSettle();
 
-      // Reposition first, entirely unkeyed, then let the animation settle.
-      unawaited(
-        key.currentState!.itemScrollController.scrollTo(
-          index: 10,
-          duration: const Duration(milliseconds: 50),
-        ),
-      );
-      await tester.pumpAndSettle();
-      expect(tester.takeException(), isNull);
+    // Reposition first, entirely unkeyed, then let the animation settle.
+    unawaited(
+      key.currentState!.itemScrollController.scrollTo(
+        index: 10,
+        duration: const Duration(milliseconds: 50),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
 
-      // Only now attach the real key — mirrors _armVerseSectionAfterSettle
-      // running after scrollTo()'s Future completes.
-      key.currentState!.arm(10);
-      await tester.pump();
+    // Only now attach the real key — mirrors _armVerseSectionAfterSettle
+    // running after scrollTo()'s Future completes.
+    key.currentState!.arm(10);
+    await tester.pump();
 
-      expect(tester.takeException(), isNull);
-      expect(
-        key.currentState!.contextFor(10),
-        isNotNull,
-        reason: 'armed index should have a live GlobalKey context once settled',
-      );
-    },
-  );
+    expect(tester.takeException(), isNull);
+    expect(
+      key.currentState!.contextFor(10),
+      isNotNull,
+      reason: 'armed index should have a live GlobalKey context once settled',
+    );
+  });
 
   testWidgets(
     'a large jump (key-reset via initialScrollIndex) also settles cleanly '
