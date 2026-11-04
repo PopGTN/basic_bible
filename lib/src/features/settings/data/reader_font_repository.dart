@@ -42,6 +42,28 @@ const bundledFontSpecs = <BundledFontSpec>[
   ),
 ];
 
+/// The bundled font Bible text uses until the user chooses another.
+const defaultBundledFontId = 'bundled:gentium-plus';
+
+/// Adds the bundled fonts' SIL Open Font License texts to Flutter's license
+/// registry (shown by `showLicensePage`). Read lazily, only when viewed.
+void registerBundledFontLicenses() {
+  LicenseRegistry.addLicense(() async* {
+    for (final (name, asset) in const [
+      ('Gentium Plus', 'assets/fonts/GentiumPlus-OFL.txt'),
+      ('OpenDyslexic', 'assets/fonts/OpenDyslexic-OFL.txt'),
+    ]) {
+      try {
+        yield LicenseEntryWithLineBreaks([
+          name,
+        ], await rootBundle.loadString(asset));
+      } catch (_) {
+        // Font not shipped in this build.
+      }
+    }
+  });
+}
+
 /// The reader-font feature's data entry point: remembers the user's choice,
 /// lists bundled fonts, and manages imported font files.
 ///
@@ -91,29 +113,61 @@ class ReaderFontRepository {
   // Selection + startup
   // ---------------------------------------------------------------------
 
-  /// The persisted choice, without loading anything.
-  ReaderFont get selected {
+  /// The font Bible text uses until the user picks another one: the bundled
+  /// font named by [defaultBundledFontId], once [restore] has found and
+  /// loaded it; otherwise the theme font.
+  ReaderFont get appDefault => _appDefault ?? ReaderFont.systemDefault;
+  ReaderFont? _appDefault;
+
+  /// The persisted choice (or [appDefault] if there is none), without
+  /// loading anything.
+  ReaderFont get selected => _savedSelection ?? appDefault;
+
+  ReaderFont? get _savedSelection {
     final raw = _prefs.getString(_selectedKey);
-    if (raw == null) return ReaderFont.systemDefault;
+    if (raw == null) return null;
     try {
-      return ReaderFont.fromJson(jsonDecode(raw)) ?? ReaderFont.systemDefault;
+      return ReaderFont.fromJson(jsonDecode(raw));
     } catch (_) {
-      return ReaderFont.systemDefault;
+      return null;
     }
   }
 
-  /// Loads the saved font into the engine. Call before `runApp` so the first
-  /// frame already uses it. Falls back to the default if its files are gone.
+  /// Loads the saved font (or [appDefault]) into the engine. Call before
+  /// `runApp` so the first frame already uses it. Falls back to [appDefault],
+  /// then the theme font, if a font's files are gone.
   Future<ReaderFont> restore() async {
-    final font = selected;
-    if (font.isDefault) return font;
-    if (await loader.ensureLoaded(font)) return font;
-    await _prefs.remove(_selectedKey);
+    _appDefault = await _findAppDefault();
+    final saved = _savedSelection;
+    if (saved != null) {
+      if (await loader.ensureLoaded(saved)) return saved;
+      await _prefs.remove(_selectedKey);
+    }
+    if (await loader.ensureLoaded(appDefault)) return appDefault;
+    _appDefault = null;
     return ReaderFont.systemDefault;
   }
 
+  Future<ReaderFont?> _findAppDefault() async {
+    try {
+      for (final font in await bundledFonts()) {
+        if (font.id == defaultBundledFontId) return font;
+      }
+    } catch (e) {
+      debugPrint('ReaderFontRepository: bundled fonts unavailable: $e');
+    }
+    return null;
+  }
+
+  /// Saves the choice. "System Default" is stored explicitly so it isn't
+  /// mistaken for "never chosen", which means [appDefault].
+  ///
+  /// Keyed on [defaultBundledFontId], not [appDefault]: before [restore] runs
+  /// (or when the bundled font is missing) [appDefault] is the theme font,
+  /// and comparing against it would silently forget an explicit
+  /// "System Default" choice.
   Future<void> saveSelected(ReaderFont font) async {
-    if (font.isDefault) {
+    if (font.id == defaultBundledFontId) {
       await _prefs.remove(_selectedKey);
     } else {
       await _prefs.setString(_selectedKey, jsonEncode(font.toJson()));
@@ -234,6 +288,7 @@ class ReaderFontRepository {
       for (final f in importedFonts())
         if (f.id != font.id) f,
     ]);
-    if (selected.id == font.id) await saveSelected(ReaderFont.systemDefault);
+    // Back to the app default (Gentium Plus), not the theme font.
+    if (selected.id == font.id) await _prefs.remove(_selectedKey);
   }
 }

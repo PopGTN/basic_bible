@@ -191,6 +191,56 @@ void main() {
       expect(repository.selected.isDefault, isTrue);
       expect(repository.selected.family, isNull);
     });
+
+    const gentium = [
+      'assets/fonts/GentiumPlus-Regular.ttf',
+      'assets/fonts/GentiumPlus-Bold.ttf',
+    ];
+
+    test('Gentium Plus is the default when it is bundled', () async {
+      final repository = repo(assets: gentium);
+      final restored = await repository.restore();
+
+      expect(restored.id, defaultBundledFontId);
+      expect(repository.selected.id, defaultBundledFontId);
+      expect(registered, [defaultBundledFontId]);
+    });
+
+    test('choosing System Default overrides the bundled default', () async {
+      final first = repo(assets: gentium);
+      await first.restore();
+      await first.saveSelected(ReaderFont.systemDefault);
+
+      final restarted = repo(assets: gentium);
+      final restored = await restarted.restore();
+
+      expect(restored.isDefault, isTrue);
+      expect(restarted.selected.isDefault, isTrue);
+    });
+
+    test('System Default is remembered even before restore runs', () async {
+      // An un-restored repository has appDefault == systemDefault; the
+      // explicit choice must still be persisted.
+      await repo(assets: gentium).saveSelected(ReaderFont.systemDefault);
+
+      final restored = await repo(assets: gentium).restore();
+
+      expect(restored.isDefault, isTrue);
+    });
+
+    test('a vanished font falls back to the bundled default', () async {
+      final repository = repo(assets: gentium);
+      final font = await repository.importFont(
+        fileName: 'a.ttf',
+        bytes: fakeTtf(),
+      );
+      await repository.saveSelected(font);
+      File(font.paths.single).deleteSync();
+
+      final restored = await repo(assets: gentium).restore();
+
+      expect(restored.id, defaultBundledFontId);
+    });
   });
 
   group('loading', () {

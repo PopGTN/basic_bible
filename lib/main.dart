@@ -23,9 +23,11 @@ void main() async {
   final prefs = await SharedPreferences.getInstance();
   FontSizeService.instance.load(prefs);
   LineSpacingService.instance.load(prefs);
-  // Load only the saved reader font (if any) so the first frame uses it.
+  // Load only the saved reader font (default: bundled Gentium Plus) so the
+  // first frame uses it.
   final fontRepository = ReaderFontRepository(prefs);
   await fontRepository.restore();
+  registerBundledFontLicenses();
   await configurePlatformServices();
   setupPlatformWindow();
   runApp(

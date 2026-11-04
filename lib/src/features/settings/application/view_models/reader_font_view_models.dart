@@ -202,10 +202,10 @@ class ReaderFontController extends StateNotifier<ReaderFontState> {
       return;
     }
     if (!mounted) return;
-    state = state.copyWith(
-      imported: _repository.importedFonts(),
-      selected: state.selected == font ? ReaderFont.systemDefault : null,
-    );
+    final wasSelected = state.selected == font;
+    state = state.copyWith(imported: _repository.importedFonts());
+    // Loads the app default if this session hasn't needed it yet.
+    if (wasSelected) await select(_repository.appDefault);
   }
 
   void clearError() => state = state.copyWith(clearError: true);
