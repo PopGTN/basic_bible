@@ -369,12 +369,20 @@ extension _BibleTextViewStateRendering on _BibleTextViewState {
     // Heading blocks with `beforeVerse` are also rendered inline by those
     // section builders — exclude them here to avoid double-rendering.
     // Only chapter-top headings (no `beforeVerse`) stay here.
+    //
+    // Document mode also renders anchored poetry blocks inline (e.g. Psalm
+    // titles from USFX `<d>`), so drop those too. Verse-list mode has no
+    // inline poetry pass, so it keeps them here.
+    final isDocumentMode = widget.layoutMode == ReaderLayoutMode.document;
     return chapter.blocks
         .where(
           (block) =>
               block.kind != BibleDocumentBlockKind.paragraph &&
               block.text.trim().isNotEmpty &&
               !(block.kind == BibleDocumentBlockKind.heading &&
+                  block.metadata.containsKey('beforeVerse')) &&
+              !(isDocumentMode &&
+                  block.kind == BibleDocumentBlockKind.poetry &&
                   block.metadata.containsKey('beforeVerse')),
         )
         .toList();

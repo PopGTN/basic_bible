@@ -38,8 +38,9 @@ extension AppBibleRepositoryLoading on AppBibleRepository {
     }
     return _inFlight.putIfAbsent(
       translationId,
-      () => _doLoadLocalBible(translationId)
-          .whenComplete(() => _inFlight.remove(translationId)),
+      () => _doLoadLocalBible(
+        translationId,
+      ).whenComplete(() => _inFlight.remove(translationId)),
     );
   }
 
@@ -54,7 +55,9 @@ extension AppBibleRepositoryLoading on AppBibleRepository {
       final path = await _sqlitePathFor(translationId);
       final translationDb = await _dbManager.open(translationId, path);
       final books = await translationDb.getBible();
-      if (books.isNotEmpty) return _rememberLoadedTranslation(translationId, books);
+      if (books.isNotEmpty) {
+        return _rememberLoadedTranslation(translationId, books);
+      }
     }
 
     try {
@@ -121,6 +124,11 @@ extension AppBibleRepositoryLoading on AppBibleRepository {
       final content = await _loadLocalContent(translation);
       // parse + model mapping both happen inside the worker isolate.
       final books = await compute(parseBibleContentToBooks, content);
+      // Never cache and version-stamp an empty parse: it would be treated as
+      // a valid translation and the reader would show nothing.
+      if (books.isEmpty) {
+        throw Exception('Translation ${translation.id} parsed to zero books.');
+      }
 
       final path = await _sqlitePathFor(translationId);
       final translationDb = await _dbManager.open(translationId, path);
@@ -149,7 +157,11 @@ extension AppBibleRepositoryLoading on AppBibleRepository {
     String bookId,
     int chapterNumber,
   ) async {
-    final cachedChapter = _lookupCachedChapter(translationId, bookId, chapterNumber);
+    final cachedChapter = _lookupCachedChapter(
+      translationId,
+      bookId,
+      chapterNumber,
+    );
     if (cachedChapter != null) {
       return cachedChapter;
     }
@@ -188,13 +200,13 @@ extension AppBibleRepositoryLoading on AppBibleRepository {
   Future<bool> _canReadWithoutNetwork(BibleTranslation translation) async {
     return switch (translation.sourceType) {
       BibleSourceType.asset => true,
-      BibleSourceType.session =>
-        peekLoadedTranslation(translation.id) != null,
+      BibleSourceType.session => peekLoadedTranslation(translation.id) != null,
       BibleSourceType.download => _isCacheValid(translation.id),
-      BibleSourceType.import => await _isCacheValid(translation.id) ||
-          (translation.filePath != null &&
-              translation.filePath!.isNotEmpty &&
-              await pathExists(translation.filePath!)),
+      BibleSourceType.import =>
+        await _isCacheValid(translation.id) ||
+            (translation.filePath != null &&
+                translation.filePath!.isNotEmpty &&
+                await pathExists(translation.filePath!)),
     };
   }
 
@@ -229,7 +241,9 @@ extension AppBibleRepositoryLoading on AppBibleRepository {
     return document.content;
   }
 
-  Future<List<BibleBook>> _loadImportedBooks(BibleTranslation translation) async {
+  Future<List<BibleBook>> _loadImportedBooks(
+    BibleTranslation translation,
+  ) async {
     final filePath = translation.filePath;
     if (filePath == null || filePath.isEmpty) {
       throw Exception(

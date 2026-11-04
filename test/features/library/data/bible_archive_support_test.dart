@@ -8,9 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   group('decodeBibleArchiveText', () {
     test('extracts USFX content from a zip archive', () {
-      final bytes = _zipBytes({
-        'eng-kjv2006_usfx.xml': _sampleUsfx,
-      });
+      final bytes = _zipBytes({'eng-kjv2006_usfx.xml': _sampleUsfx});
 
       final document = decodeBibleArchiveText(
         bytes,
@@ -22,6 +20,26 @@ void main() {
       expect(document.format, BibleFormat.usfx);
       expect(document.sourceName, 'eng-kjv2006_usfx.xml');
       expect(document.content, contains('<usfx'));
+    });
+
+    test('ignores sidecar XML when the stored format hint is usfx', () {
+      // eBible.org USFX zips ship BookNames.xml and metadata alongside the
+      // scripture file; the shorter sidecar name must not win.
+      final bytes = _zipBytes({
+        'BookNames.xml':
+            '<?xml version="1.0"?><BookNames><book code="MAT"/></BookNames>',
+        'engkjvcpbmetadata.xml': '<?xml version="1.0"?><dbsMetadata/>',
+        'engkjvcpb_usfx.xml': _sampleUsfx,
+      });
+
+      final document = decodeBibleArchiveText(
+        bytes,
+        sourceName: 'engkjvcpb_usfx.zip',
+        hintedFormat: BibleFormat.usfx,
+      );
+
+      expect(document.sourceName, 'engkjvcpb_usfx.xml');
+      expect(document.format, BibleFormat.usfx);
     });
 
     test('rejects zip archives that only contain USFM files', () {
@@ -76,11 +94,7 @@ List<int> _zipBytes(Map<String, String> entries) {
   final archive = Archive();
   for (final entry in entries.entries) {
     archive.addFile(
-      ArchiveFile(
-        entry.key,
-        entry.value.length,
-        utf8.encode(entry.value),
-      ),
+      ArchiveFile(entry.key, entry.value.length, utf8.encode(entry.value)),
     );
   }
   return ZipEncoder().encode(archive);

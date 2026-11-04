@@ -116,6 +116,7 @@ BibleArchiveText _decodeBibleZip(
     );
   }
   final xmlCandidates = <BibleArchiveText>[];
+  final hintOnlyCandidates = <BibleArchiveText>[];
   var sawUsfm = false;
   var totalDecodedBytes = 0;
 
@@ -145,12 +146,15 @@ BibleArchiveText _decodeBibleZip(
 
     try {
       final content = utf8.decode(rawEntryBytes);
-      final format = _detectBibleFormatFromContent(
-        content,
-        hintedFormat: hintedFormat,
-      );
+      // Sniff without the hint first: archives often ship sidecar XML
+      // (BookNames.xml, *metadata.xml, VernacularParms.xml) that the hint
+      // alone would misclassify as Bible text.
+      final sniffed = _detectBibleFormatFromContent(content);
+      final format = _isXmlBibleFormat(sniffed)
+          ? sniffed
+          : _detectBibleFormatFromContent(content, hintedFormat: hintedFormat);
       if (_isXmlBibleFormat(format)) {
-        xmlCandidates.add(
+        (_isXmlBibleFormat(sniffed) ? xmlCandidates : hintOnlyCandidates).add(
           BibleArchiveText(
             content: content,
             format: format,
@@ -164,11 +168,12 @@ BibleArchiveText _decodeBibleZip(
     }
   }
 
+  if (xmlCandidates.isEmpty) xmlCandidates.addAll(hintOnlyCandidates);
   if (xmlCandidates.isNotEmpty) {
     xmlCandidates.sort((a, b) {
-      final formatRank = _formatPreferenceRank(a.format).compareTo(
-        _formatPreferenceRank(b.format),
-      );
+      final formatRank = _formatPreferenceRank(
+        a.format,
+      ).compareTo(_formatPreferenceRank(b.format));
       if (formatRank != 0) return formatRank;
       return a.sourceName.length.compareTo(b.sourceName.length);
     });
