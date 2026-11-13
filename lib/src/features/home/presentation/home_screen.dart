@@ -117,7 +117,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       context: context,
       isScrollControlled: true,
       showDragHandle: true,
-      backgroundColor: Theme.of(context).colorScheme.surface,
+      // No explicit backgroundColor: a value read from Theme.of(context) here
+      // is captured once when the sheet opens, so switching theme from inside
+      // this very sheet left its background on the old theme (#83). Letting
+      // the sheet resolve its colour from the live theme keeps it in sync and
+      // matches every other bottom sheet in the app.
       builder: (sheetContext) {
         return Consumer(
           builder: (context, ref, child) {
