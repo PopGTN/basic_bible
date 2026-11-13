@@ -16,6 +16,7 @@
 // path below ([mapSerializableBook]) remains for the native USFM parser,
 // which hands its results across the FFI boundary as JSON.
 
+import 'package:basic_bible/src/features/library/data/annotation_marker_normalizer.dart';
 import 'package:bible_parser_flutter/bible_parser_flutter.dart';
 import 'package:basic_bible/src/models/bible_models.dart';
 
@@ -45,7 +46,7 @@ Future<List<BibleBook>> parseBibleContentToBooks(String content) async {
             BibleChapter(
               number: chapter.num,
               blocks: chapter.blocks,
-              verses: [
+              verses: normalizeChapterAnnotationMarkers([
                 for (final verse in chapter.verses)
                   BibleVerse(
                     number: verse.num,
@@ -56,7 +57,7 @@ Future<List<BibleBook>> parseBibleContentToBooks(String content) async {
                     footnotes: verse.footnotes,
                     crossReferences: verse.crossReferences,
                   ),
-              ],
+              ]),
             ),
         ],
       ),
@@ -99,9 +100,11 @@ BibleChapter _mapSerializableChapter(Map<String, dynamic> chapter) {
           (item) => BibleDocumentBlock.fromJson(item as Map<String, dynamic>),
         )
         .toList(),
-    verses: (chapter['verses'] as List<dynamic>)
-        .map((v) => _mapSerializableVerse(v as Map<String, dynamic>))
-        .toList(),
+    verses: normalizeChapterAnnotationMarkers(
+      (chapter['verses'] as List<dynamic>)
+          .map((v) => _mapSerializableVerse(v as Map<String, dynamic>))
+          .toList(),
+    ),
   );
 }
 

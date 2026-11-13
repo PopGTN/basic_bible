@@ -194,7 +194,15 @@ extension _BibleTextViewStateAnnotations on _BibleTextViewState {
   }
 
   String _annotationMarker(BibleFootnote footnote, {required String fallback}) {
-    final candidates = [footnote.marker?.trim(), footnote.label?.trim()];
+    // Markers are normalized chapter-wide at load time (#74) and can run past
+    // "z" to "aa", so trust any alphanumeric marker as-is: it is exactly what
+    // the inline text shows.
+    final marker = footnote.marker?.trim();
+    if (marker != null && RegExp(r'^[a-z0-9]+$').hasMatch(marker)) {
+      return marker;
+    }
+
+    final candidates = [marker, footnote.label?.trim()];
 
     for (final candidate in candidates) {
       if (candidate == null || candidate.isEmpty) continue;

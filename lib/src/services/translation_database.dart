@@ -1,3 +1,4 @@
+import 'package:basic_bible/src/features/library/data/annotation_marker_normalizer.dart';
 import 'package:drift/drift.dart';
 
 import '../models/bible_models.dart';
@@ -234,7 +235,9 @@ class TranslationDatabase extends _$TranslationDatabase {
           .add(
             BibleChapter(
               number: c.number,
-              verses: versesByChapterId[c.id] ?? const [],
+              verses: normalizeChapterAnnotationMarkers(
+                versesByChapterId[c.id] ?? const [],
+              ),
               blocks: c.blocks ?? const [],
             ),
           );
@@ -281,7 +284,9 @@ class TranslationDatabase extends _$TranslationDatabase {
 
     return BibleChapter(
       number: chapterRow.number,
-      verses: verseRows.map(_mapVerse).toList(),
+      verses: normalizeChapterAnnotationMarkers(
+        verseRows.map(_mapVerse).toList(),
+      ),
       blocks: chapterRow.blocks ?? const [],
     );
   }
