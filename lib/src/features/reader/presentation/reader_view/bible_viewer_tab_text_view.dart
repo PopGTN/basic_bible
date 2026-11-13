@@ -69,7 +69,12 @@ class _BibleTextViewState extends ConsumerState<_BibleTextView> {
   List<ContinuousChapterSection> get _continuousSections =>
       _continuousController.sections;
   BibleReference? _selectionAnchorReference;
-  bool _showSelectedVerseFocus = true;
+  // Whether the current reference's verse was *navigated to* (reference
+  // picker, "Open in Reader", ...) and should be scrolled to and emphasised.
+  // Taken once from ReferenceNotifier so a persisted verse is not replayed
+  // when the reader is rebuilt on a tab return or app restart (#22).
+  bool _verseFocusRequested = false;
+  bool _showSelectedVerseFocus = false;
   bool _visibleSyncQueued = false;
   // True while an animated programmatic scroll (chapter navigation) is
   // running. Scroll notifications are not forwarded to the bar auto-hide
@@ -122,6 +127,7 @@ class _BibleTextViewState extends ConsumerState<_BibleTextView> {
           )
           ..onChapterHydrated = _onContinuousChapterHydrated
           ..addListener(_onContinuousControllerChanged);
+    _takeVerseFocusRequest();
     _rebuildContinuousSections();
     final initialReference =
         widget.continuousScrolling &&
@@ -168,9 +174,13 @@ class _BibleTextViewState extends ConsumerState<_BibleTextView> {
             oldWidget.chapter.number != widget.chapter.number)) {
       _resetVerseTapRecognizers();
     }
+    if (oldWidget.reference != widget.reference) {
+      _takeVerseFocusRequest();
+    }
     if (oldWidget.reference != widget.reference ||
         oldWidget.chapter != widget.chapter) {
-      _showSelectedVerseFocus = true;
+      // Also retried when the chapter object changes (verses hydrated), so a
+      // requested verse that wasn't laid out yet still gets scrolled to.
       _scheduleVerseFocus();
     }
     if (widget.continuousScrolling &&
@@ -195,6 +205,13 @@ class _BibleTextViewState extends ConsumerState<_BibleTextView> {
       _scrollableListInitialIndex = targetIndex;
       _scrollableListKey = UniqueKey();
     });
+  }
+
+  void _takeVerseFocusRequest() {
+    _verseFocusRequested = ref
+        .read(currentReferenceProvider.notifier)
+        .takeVerseFocusRequest(widget.reference);
+    _showSelectedVerseFocus = _verseFocusRequested;
   }
 
   void _setSelectedVerseFocusVisible(bool value) {

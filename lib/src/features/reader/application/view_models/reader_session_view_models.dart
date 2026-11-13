@@ -82,7 +82,35 @@ class ReferenceNotifier extends StateNotifier<BibleReference> {
 
   final SharedPreferences _prefs;
 
-  Future<void> setReference(BibleReference reference) async {
+  /// A verse the user just navigated to and has not been shown yet.
+  ///
+  /// The reader emphasises (dims around, scrolls to) a target verse only in
+  /// response to that navigation. It used to infer this from `state.verse`,
+  /// which is persisted and survives leaving the Bible tab, so the old verse
+  /// was re-emphasised on every return and after every restart (issue #22).
+  /// References restored from preferences therefore never carry a request.
+  BibleReference? _pendingVerseFocus;
+
+  /// Returns true exactly once for [reference] after it was set with
+  /// `focusVerse: true`; false otherwise (e.g. returning to the tab).
+  bool takeVerseFocusRequest(BibleReference reference) {
+    if (_pendingVerseFocus == null || _pendingVerseFocus != reference) {
+      return false;
+    }
+    _pendingVerseFocus = null;
+    return true;
+  }
+
+  /// Moves the reader to [reference]. When it names a verse, the reader will
+  /// emphasise that verse once; pass `focusVerse: false` for bookkeeping
+  /// updates that only re-anchor the position (layout/translation switches).
+  Future<void> setReference(
+    BibleReference reference, {
+    bool focusVerse = true,
+  }) async {
+    _pendingVerseFocus = focusVerse && reference.verse != null
+        ? reference
+        : null;
     // Update in-memory state first so Riverpod listeners (and the reader's
     // didUpdateWidget) see the new reference immediately — in the same
     // event-loop turn as this call. SharedPreferences writes are persistence

@@ -90,6 +90,8 @@ class TranslationActions {
             chapter: visibleReference.chapter,
             verse: currentReference.verse,
           ),
+          // Re-anchoring only: don't re-emphasise the old verse (#22).
+          focusVerse: false,
         );
   }
 }

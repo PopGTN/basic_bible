@@ -106,7 +106,9 @@ final bibleBooksShellProvider =
             ref.read(currentReferenceProvider),
           );
           if (fallback != null) {
-            ref.read(currentReferenceProvider.notifier).setReference(fallback);
+            ref
+                .read(currentReferenceProvider.notifier)
+                .setReference(fallback, focusVerse: false);
           }
         }
 

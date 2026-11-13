@@ -11,8 +11,9 @@ extension _BibleTextViewStateCore on _BibleTextViewState {
       _continuousController.rebuildSections(widget.books);
 
   void _scheduleVerseFocus() {
+    if (!_verseFocusRequested) return;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
+      if (!mounted || !_verseFocusRequested) return;
       final verseNumber = widget.reference.verse;
       if (verseNumber == null) return;
       final targetContext = _verseKey(
@@ -116,7 +117,7 @@ extension _BibleTextViewStateCore on _BibleTextViewState {
   /// frame past the scrollTo/reset completion so SPL's positioning pass is
   /// fully done before a GlobalKey is attached — see [_armedVerseSectionIndex].
   void _armVerseSectionAfterSettle(int targetIndex) {
-    if (widget.reference.verse == null) return;
+    if (widget.reference.verse == null || !_verseFocusRequested) return;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       _setArmedVerseSectionIndex(targetIndex);
@@ -746,6 +747,9 @@ extension _BibleTextViewStateCore on _BibleTextViewState {
 
   void _dismissSelectedVerseFocus() {
     if (!_hasActiveVerseFocus) return;
+    // Once the user interacts, stop steering the scroll back to the verse
+    // (e.g. when a late chapter hydration would otherwise retry it).
+    _verseFocusRequested = false;
     _setSelectedVerseFocusVisible(false);
   }
 
