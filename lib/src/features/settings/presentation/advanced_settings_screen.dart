@@ -1,5 +1,6 @@
 import 'package:basic_bible/src/features/reader/application/view_models/bible_library_view_models.dart';
 import 'package:basic_bible/src/features/settings/application/view_models/advanced_preferences_view_models.dart';
+import 'package:basic_bible/src/features/settings/application/view_models/translation_export_view_models.dart';
 import 'package:basic_bible/src/models/bible_models.dart';
 import 'package:basic_bible/src/platform/runtime_support.dart';
 import 'package:basic_bible/src/features/library/data/remote_translation_catalog_service.dart';
@@ -150,7 +151,7 @@ class _AdvancedSettingsScreenState
 
   @override
   Widget build(BuildContext context) {
-    final translationsAsync = ref.watch(availableTranslationsProvider);
+    final translationsAsync = ref.watch(exportableTranslationsProvider);
     final catalogUrlOverride = ref.watch(translationCatalogUrlOverrideProvider);
     if (!_hasUnsavedCatalogUrlChanges &&
         catalogUrlOverride != _lastSyncedOverride &&
@@ -221,8 +222,8 @@ class _AdvancedSettingsScreenState
             ),
             const SizedBox(height: 4),
             Text(
-              'Exports the cached SQLite file for a translation. '
-              'Open the translation in the reader first if the file is not yet cached.',
+              'Exports the SQLite file for a translation stored on this '
+              'device. Download a translation from Translations to export it.',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
@@ -243,7 +244,7 @@ class _AdvancedSettingsScreenState
                 if (translations.isEmpty) {
                   return const Padding(
                     padding: EdgeInsets.symmetric(vertical: 16),
-                    child: Text('No translations installed.'),
+                    child: Text('No downloaded translations to export.'),
                   );
                 }
                 return Column(
