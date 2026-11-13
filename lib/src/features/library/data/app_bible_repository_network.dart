@@ -59,6 +59,14 @@ extension AppBibleRepositoryNetwork on AppBibleRepository {
       );
     }
 
+    // Mark any existing install row incomplete *before* touching the files.
+    // `_isCacheValid` trusts "row at current parser version + file exists",
+    // so if the app is killed mid-write (issue #55) a re-download would
+    // otherwise leave a half-written database that looks fully installed.
+    // The row is promoted back to the current parser version only after the
+    // install below finishes.
+    await _db.updateInstalledTranslationParserVersion(translationId, 0);
+    _storedTranslationsDirty = true;
     await _invalidateCache(translationId);
 
     try {
