@@ -21,10 +21,9 @@ extension AppBibleRepositoryNetwork on AppBibleRepository {
   // ---------------------------------------------------------------------------
 
   Future<List<BibleBook>> downloadBible(String translationId) {
-    return _downloadInFlight.putIfAbsent(
+    return _downloadInFlight.run(
       translationId,
-      () => _doDownloadBible(translationId)
-          .whenComplete(() => _downloadInFlight.remove(translationId)),
+      () => _doDownloadBible(translationId),
     );
   }
 
@@ -116,10 +115,9 @@ extension AppBibleRepositoryNetwork on AppBibleRepository {
 
   // FIX #8: use putIfAbsent for consistent in-flight dedup.
   Future<List<BibleBook>> openTranslationForSession(String translationId) {
-    return _sessionReadInFlight.putIfAbsent(
+    return _sessionReadInFlight.run(
       translationId,
-      () => _doOpenTranslationForSession(translationId)
-          .whenComplete(() => _sessionReadInFlight.remove(translationId)),
+      () => _doOpenTranslationForSession(translationId),
     );
   }
 

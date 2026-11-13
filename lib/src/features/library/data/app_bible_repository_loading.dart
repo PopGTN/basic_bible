@@ -36,10 +36,9 @@ extension AppBibleRepositoryLoading on AppBibleRepository {
       activateLoadedTranslation(translationId);
       return Future.value(memoryCached);
     }
-    return _inFlight.putIfAbsent(
+    return _inFlight.run(
       translationId,
-      () => _doLoadLocalBible(translationId)
-          .whenComplete(() => _inFlight.remove(translationId)),
+      () => _doLoadLocalBible(translationId),
     );
   }
 
