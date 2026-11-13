@@ -93,6 +93,34 @@ final bibleBooksShellProvider =
         ref.listen<String>(currentTranslationProvider, (_, next) {
           notifier.changeTranslation(next);
         });
+
+        // Whenever a book list lands (initial load or translation switch),
+        // move the reference to what the reader can actually show, so the
+        // reference bar never names a book the translation doesn't have
+        // (#46).
+        void reconcileReference(AsyncValue<List<BibleBook>> booksState) {
+          final books = booksState.asData?.value;
+          if (books == null) return;
+          final fallback = readerFallbackReference(
+            books,
+            ref.read(currentReferenceProvider),
+          );
+          if (fallback != null) {
+            ref.read(currentReferenceProvider.notifier).setReference(fallback);
+          }
+        }
+
+        var isInitialState = true;
+        final removeListener = notifier.addListener((booksState) {
+          if (!isInitialState) return reconcileReference(booksState);
+          isInitialState = false;
+          // Providers may not modify other providers while they are being
+          // built, so the check for the initial state runs just after.
+          Future.microtask(() {
+            if (notifier.mounted) reconcileReference(booksState);
+          });
+        });
+        ref.onDispose(removeListener);
         return notifier;
       },
     );

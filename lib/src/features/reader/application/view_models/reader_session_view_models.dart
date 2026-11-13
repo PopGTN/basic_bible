@@ -38,6 +38,37 @@ class TranslationNotifier extends StateNotifier<String> {
   }
 }
 
+/// Returns the reference the reader will actually show for [reference] in
+/// [books], or null when [reference] is already displayable as-is.
+///
+/// The reader falls back to the first book (and the first chapter) when a
+/// translation lacks the requested book/chapter — e.g. switching to an
+/// NT-only translation while in Genesis. Without writing that fallback back
+/// into [currentReferenceProvider], the reference bar kept naming the old
+/// book while the page showed another (issue #46).
+BibleReference? readerFallbackReference(
+  List<BibleBook> books,
+  BibleReference reference,
+) {
+  if (books.isEmpty) return null;
+
+  final resolvedBook = resolveBookFromReference(books, reference.bookId);
+  final book =
+      resolvedBook ??
+      books.firstWhere(
+        (candidate) => candidate.chapters.isNotEmpty,
+        orElse: () => books.first,
+      );
+  final hasChapter = book.chapters.any((c) => c.number == reference.chapter);
+  if (resolvedBook != null && hasChapter) return null;
+  if (book.chapters.isEmpty) return null;
+
+  return BibleReference(
+    bookId: book.id,
+    chapter: hasChapter ? reference.chapter : book.chapters.first.number,
+  );
+}
+
 /// ViewModel for the reader's current translation and location.
 class ReferenceNotifier extends StateNotifier<BibleReference> {
   ReferenceNotifier(this._prefs)
