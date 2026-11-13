@@ -20,6 +20,7 @@ import 'package:basic_bible/src/features/settings/application/view_models/reader
 import 'package:basic_bible/src/models/bible_models.dart';
 import 'package:basic_bible/src/platform/runtime_support.dart';
 import 'package:basic_bible/src/services/font_size_service.dart';
+import 'package:basic_bible/src/utils/reference_range_parser.dart';
 import 'package:basic_bible/src/utils/reference_utils.dart';
 import 'package:flutter/gestures.dart'
     show PointerScrollEvent, TapGestureRecognizer;
