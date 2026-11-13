@@ -2,6 +2,7 @@ import 'package:basic_bible/l10n/app_localizations.dart';
 import 'package:basic_bible/src/features/annotations/application/view_models/annotation_data_view_models.dart';
 import 'package:basic_bible/src/features/annotations/application/view_models/annotation_selection_view_models.dart';
 import 'package:basic_bible/src/features/annotations/data/user_annotation_repository.dart';
+import 'package:basic_bible/src/features/annotations/models/annotation_verse_ranges.dart';
 import 'package:basic_bible/src/features/annotations/models/user_annotations.dart';
 import 'package:basic_bible/src/features/annotations/presentation/annotation_detail_screen.dart';
 import 'package:basic_bible/src/features/annotations/presentation/linked_verses_section.dart';

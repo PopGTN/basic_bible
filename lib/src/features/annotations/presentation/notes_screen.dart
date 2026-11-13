@@ -1,4 +1,5 @@
 import 'package:basic_bible/src/features/annotations/application/view_models/annotation_data_view_models.dart';
+import 'package:basic_bible/src/features/annotations/models/annotation_verse_ranges.dart';
 import 'package:basic_bible/src/features/annotations/models/user_annotations.dart';
 import 'package:basic_bible/src/features/annotations/presentation/linked_verses_section.dart';
 import 'package:basic_bible/src/features/annotations/presentation/annotation_theme.dart';
@@ -718,9 +719,13 @@ class _AnnotationListCard extends StatelessWidget {
             annotation.highlightColorValue,
             theme.colorScheme.primary,
           );
-    final referenceLabel =
-        '${displayBookNameForReference(books, annotation.primaryVerse.bookId)} '
-        '${annotation.primaryVerse.chapter}:${annotation.primaryVerse.verse}';
+    // Consecutive verses collapse into one range; the first range is the
+    // heading and only the remaining ranges become chips (#50 / #82).
+    final verseRanges = annotation.verseRanges;
+    final referenceLabel = verseRanges.first.label(
+      displayBookNameForReference(books, verseRanges.first.bookId),
+    );
+    final linkedRanges = verseRanges.skip(1).toList(growable: false);
 
     return InkWell(
       onTap: onViewDetails,
@@ -810,12 +815,13 @@ class _AnnotationListCard extends StatelessWidget {
               ),
             ),
           ),
-          if (annotation.linkedVerses.isNotEmpty) ...[
+          if (linkedRanges.isNotEmpty) ...[
             const SizedBox(height: 12),
-            LinkedVersesSection(
+            LinkedVersesSection.grouped(
               books: books,
-              links: annotation.linkedVerses,
+              ranges: linkedRanges,
               onPreviewLinkedVerse: onPreviewLinkedVerse,
+              maxVisible: kLinkedReferencesPreviewLimit,
             ),
           ],
           if (annotation.labels.isNotEmpty) ...[

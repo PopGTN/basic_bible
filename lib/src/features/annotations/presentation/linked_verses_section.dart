@@ -1,23 +1,44 @@
+import 'package:basic_bible/src/features/annotations/models/annotation_verse_ranges.dart';
 import 'package:basic_bible/src/features/annotations/models/user_annotations.dart';
 import 'package:basic_bible/src/models/bible_models.dart';
 import 'package:basic_bible/src/utils/reference_utils.dart';
 import 'package:flutter/material.dart';
 
+/// How many linked-reference chips a note *preview* (Notes list card, reader
+/// notes sheet) shows before collapsing the rest into "+N more". Shared so the
+/// two previews truncate identically (#82). Full detail views show everything.
+const int kLinkedReferencesPreviewLimit = 3;
+
 class LinkedVersesSection extends StatelessWidget {
-  const LinkedVersesSection({
+  /// One chip per linked verse. Use this where individual verses can be
+  /// removed (e.g. the note editor).
+  LinkedVersesSection({
     super.key,
     required this.books,
-    required this.links,
+    required List<AnnotationVerseLink> links,
     required this.onPreviewLinkedVerse,
     this.onDeleteLink,
     this.title = 'Linked Verses',
     this.maxVisible = 24,
     this.emptyMessage,
-  });
+  }) : ranges = [for (final link in links) AnnotationVerseRange([link])];
+
+  /// One chip per run of consecutive verses ("Genesis 1:2-5"). Read-only:
+  /// tapping a chip previews the first verse of its range.
+  const LinkedVersesSection.grouped({
+    super.key,
+    required this.books,
+    required this.ranges,
+    required this.onPreviewLinkedVerse,
+    this.title = 'Linked Verses',
+    this.maxVisible = 24,
+    this.emptyMessage,
+  }) : onDeleteLink = null;
 
   final List<BibleBook> books;
-  final List<AnnotationVerseLink> links;
+  final List<AnnotationVerseRange> ranges;
   final Future<void> Function(AnnotationVerseLink link) onPreviewLinkedVerse;
+
   /// When provided, each chip shows a delete icon. Tapping it calls this
   /// callback — the caller decides whether to confirm before removing.
   final void Function(AnnotationVerseLink link)? onDeleteLink;
@@ -27,15 +48,18 @@ class LinkedVersesSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (links.isEmpty) {
+    if (ranges.isEmpty) {
       if (emptyMessage == null) return const SizedBox.shrink();
       return Text(emptyMessage!);
     }
 
     final theme = Theme.of(context);
-    final visibleLinks = links.take(maxVisible).toList(growable: false);
-    final hiddenCount = links.length - visibleLinks.length;
+    final visibleRanges = ranges.take(maxVisible).toList(growable: false);
+    final hiddenCount = ranges.length - visibleRanges.length;
     final canDelete = onDeleteLink != null;
+
+    String labelFor(AnnotationVerseRange range) =>
+        range.label(displayBookNameForReference(books, range.bookId));
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -51,27 +75,21 @@ class LinkedVersesSection extends StatelessWidget {
           spacing: 8,
           runSpacing: 8,
           children: [
-            for (final link in visibleLinks)
+            for (final range in visibleRanges)
               if (canDelete)
                 InputChip(
-                  onPressed: () => onPreviewLinkedVerse(link),
+                  onPressed: () => onPreviewLinkedVerse(range.first),
                   avatar: const Icon(Icons.visibility_outlined, size: 16),
-                  label: Text(
-                    '${displayBookNameForReference(books, link.bookId)} '
-                    '${link.chapter}:${link.verse}',
-                  ),
-                  onDeleted: () => onDeleteLink!(link),
+                  label: Text(labelFor(range)),
+                  onDeleted: () => onDeleteLink!(range.first),
                   deleteIcon: const Icon(Icons.close, size: 16),
                   deleteButtonTooltipMessage: 'Remove',
                 )
               else
                 ActionChip(
-                  onPressed: () => onPreviewLinkedVerse(link),
+                  onPressed: () => onPreviewLinkedVerse(range.first),
                   avatar: const Icon(Icons.visibility_outlined, size: 16),
-                  label: Text(
-                    '${displayBookNameForReference(books, link.bookId)} '
-                    '${link.chapter}:${link.verse}',
-                  ),
+                  label: Text(labelFor(range)),
                 ),
             if (hiddenCount > 0)
               Chip(
@@ -83,7 +101,8 @@ class LinkedVersesSection extends StatelessWidget {
         if (hiddenCount > 0) ...[
           const SizedBox(height: 8),
           Text(
-            'Showing ${visibleLinks.length} of ${links.length} linked verses.',
+            'Showing ${visibleRanges.length} of ${ranges.length} linked '
+            'references.',
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),

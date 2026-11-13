@@ -1,3 +1,4 @@
+import 'package:basic_bible/src/features/annotations/models/annotation_verse_ranges.dart';
 import 'package:basic_bible/src/features/annotations/models/user_annotations.dart';
 import 'package:basic_bible/src/features/annotations/presentation/annotation_theme.dart';
 import 'package:basic_bible/src/features/annotations/presentation/linked_verses_section.dart';
@@ -33,9 +34,11 @@ class AnnotationDetailScreen extends StatelessWidget {
             theme.colorScheme.primary,
           );
     final primary = annotation.primaryVerse;
-    final referenceLabel =
-        '${displayBookNameForReference(books, primary.bookId)} '
-        '${primary.chapter}:${primary.verse}';
+    final verseRanges = annotation.verseRanges;
+    final referenceLabel = verseRanges.first.label(
+      displayBookNameForReference(books, verseRanges.first.bookId),
+    );
+    final linkedRanges = verseRanges.skip(1).toList(growable: false);
 
     return Scaffold(
       appBar: AppBar(
@@ -121,11 +124,11 @@ class AnnotationDetailScreen extends StatelessWidget {
                     ),
                   ),
                 ),
-                if (annotation.linkedVerses.isNotEmpty) ...[
+                if (linkedRanges.isNotEmpty) ...[
                   const SizedBox(height: 16),
-                  LinkedVersesSection(
+                  LinkedVersesSection.grouped(
                     books: books,
-                    links: annotation.linkedVerses,
+                    ranges: linkedRanges,
                     onPreviewLinkedVerse: onPreviewLinkedVerse,
                   ),
                 ],

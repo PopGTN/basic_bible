@@ -136,10 +136,12 @@ class _PersonalNoteCard extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
-    final primaryVerse = annotation.primaryVerse;
-    final primaryReferenceLabel =
-        '${displayBookNameForReference(books, primaryVerse.bookId)} '
-        '${primaryVerse.chapter}:${primaryVerse.verse}';
+    // Same heading + grouped-chip layout as the Notes list card (#50 / #82).
+    final verseRanges = annotation.verseRanges;
+    final primaryReferenceLabel = verseRanges.first.label(
+      displayBookNameForReference(books, verseRanges.first.bookId),
+    );
+    final linkedRanges = verseRanges.skip(1).toList(growable: false);
     final highlightColor = annotation.highlightColorValue == null
         ? null
         : annotationColorFromValue(
@@ -216,13 +218,13 @@ class _PersonalNoteCard extends StatelessWidget {
                   ),
                 ),
               ),
-              if (annotation.linkedVerses.isNotEmpty) ...[
+              if (linkedRanges.isNotEmpty) ...[
                 const SizedBox(height: 12),
-                LinkedVersesSection(
+                LinkedVersesSection.grouped(
                   books: books,
-                  links: annotation.linkedVerses,
+                  ranges: linkedRanges,
                   onPreviewLinkedVerse: onPreviewLinkedVerse,
-                  maxVisible: 3,
+                  maxVisible: kLinkedReferencesPreviewLimit,
                 ),
               ],
               const SizedBox(height: 12),
