@@ -251,7 +251,24 @@ class RemoteTranslationCatalogService {
       bundledByDefault: json['bundledByDefault'] == true,
       displayOrder: (json['displayOrder'] as num?)?.toInt() ?? 0,
       artifacts: artifacts,
+      rights: _rightsFromJson(json),
     );
+  }
+
+  /// Copyright / license fields (#18); null when the entry has none.
+  BibleTranslationRights? _rightsFromJson(Map<String, dynamic> json) {
+    String? field(String key) {
+      final value = (json[key] as String?)?.trim();
+      return value == null || value.isEmpty ? null : value;
+    }
+
+    final rights = BibleTranslationRights(
+      license: field('license'),
+      licenseUrl: field('licenseUrl'),
+      copyrightNotice: field('copyrightNotice'),
+      sourceUrl: field('officialSourceUrl'),
+    );
+    return rights.isEmpty ? null : rights;
   }
 
   BibleTranslationArtifact? _artifactFromJson(Map<String, dynamic> json) {

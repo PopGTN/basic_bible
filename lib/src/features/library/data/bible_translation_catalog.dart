@@ -6,6 +6,36 @@ import 'package:basic_bible/src/models/bible_models.dart';
 // Built-in translation definitions
 // =============================================================================
 
+// Offline copies of the catalog's rights fields (#18), so the copyright line
+// shows before the remote catalog has ever been fetched. The catalog wins
+// when it is available (see mergeCatalogTranslation).
+const _kjvRights = BibleTranslationRights(
+  license: 'Public Domain',
+  licenseUrl: 'https://ebible.org/publicdomain.htm',
+  copyrightNotice:
+      'Embedded metadata says the text is firmly in the public domain outside '
+      'the UK, with UK printing restrictions under the historic '
+      "Crown/Queen's Printer regime.",
+  sourceUrl: 'https://ebible.org/Scriptures/',
+);
+const _asvRights = BibleTranslationRights(
+  license: 'Public Domain',
+  licenseUrl: 'https://ebible.org/publicdomain.htm',
+  copyrightNotice:
+      "The OSIS header states: 'We believe that this Bible is found in the "
+      "Public Domain.'",
+  sourceUrl: 'https://ebible.org/Scriptures/',
+);
+const _webRights = BibleTranslationRights(
+  license: 'Public Domain',
+  licenseUrl: 'https://worldenglishbible.org/',
+  copyrightNotice:
+      'The USFX preface states that the World English Bible is in the public '
+      'domain and may be freely copied, distributed, and incorporated into '
+      'software.',
+  sourceUrl: 'https://worldenglishbible.org/',
+);
+
 /// The canonical list of translations shipped with the app.
 /// Always appears in the available list even with no network and no DB row.
 final List<BibleTranslation> kBuiltInTranslations = [
@@ -33,6 +63,7 @@ final List<BibleTranslation> kBuiltInTranslations = [
     sourceType: BibleSourceType.asset,
     bundledByDefault: true,
     displayOrder: 10,
+    rights: _kjvRights,
     artifacts: [
       BibleTranslationArtifact(
         format: kIsWeb ? BibleFormat.usfx : BibleFormat.sqlite,
@@ -55,6 +86,7 @@ final List<BibleTranslation> kBuiltInTranslations = [
     format: BibleFormat.osis,
     sourceType: BibleSourceType.download,
     displayOrder: 20,
+    rights: _asvRights,
     artifacts: [
       BibleTranslationArtifact(
         format: BibleFormat.osis,
@@ -77,6 +109,7 @@ final List<BibleTranslation> kBuiltInTranslations = [
     format: BibleFormat.usfx,
     sourceType: BibleSourceType.download,
     displayOrder: 30,
+    rights: _webRights,
     artifacts: [
       BibleTranslationArtifact(
         format: BibleFormat.usfx,
@@ -110,6 +143,7 @@ BibleTranslation mergeCatalogTranslation({
     bundledByDefault: remote.bundledByDefault || builtIn.bundledByDefault,
     displayOrder: remote.displayOrder,
     artifacts: remote.artifacts.isEmpty ? builtIn.artifacts : remote.artifacts,
+    rights: remote.rights ?? builtIn.rights,
   );
 }
 
@@ -149,6 +183,7 @@ BibleTranslation mergeStoredTranslation({
     bundledByDefault: base.bundledByDefault,
     displayOrder: base.displayOrder,
     artifacts: base.artifacts,
+    rights: base.rights ?? stored.rights,
   );
 }
 

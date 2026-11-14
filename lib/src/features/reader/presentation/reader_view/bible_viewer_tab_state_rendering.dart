@@ -27,6 +27,7 @@ extension _BibleTextViewStateRendering on _BibleTextViewState {
         ..._buildVerseListWithInlineHeadings(context, widget.chapter)
       else
         _buildDocumentReadingView(context),
+      const TranslationRightsFooter(),
     ];
 
     return NotificationListener<ScrollNotification>(
@@ -217,6 +218,7 @@ extension _BibleTextViewStateRendering on _BibleTextViewState {
                     !hasVerses && !isFrontMatterChapter(section.chapter.number)
                     ? _buildContinuousChapterPlaceholder(context)
                     : null,
+                footer: hasVerses ? const TranslationRightsFooter() : null,
               );
             },
           ),

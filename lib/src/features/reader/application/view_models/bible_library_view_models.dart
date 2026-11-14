@@ -74,6 +74,14 @@ final availableTranslationsProvider = FutureProvider<List<BibleTranslation>>((
   return repository.getAvailableTranslations();
 });
 
+/// Catalog entry for the translation the reader is showing, or null while the
+/// list loads or for an unknown id. Used for the copyright footer (#18).
+final currentTranslationInfoProvider = Provider<BibleTranslation?>((ref) {
+  final id = ref.watch(currentTranslationProvider);
+  final translations = ref.watch(availableTranslationsProvider).asData?.value;
+  return translations?.where((t) => t.id == id).firstOrNull;
+});
+
 // =============================================================================
 // Bible books — shell (fast, no verses)
 // =============================================================================
