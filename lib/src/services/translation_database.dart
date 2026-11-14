@@ -292,6 +292,60 @@ class TranslationDatabase extends _$TranslationDatabase {
   }
 
   // -------------------------------------------------------------------------
+  // Search (#69)
+  // -------------------------------------------------------------------------
+
+  /// Verses containing every term (case-insensitive substring), in canonical
+  /// order, optionally limited to [bookIds]. At most [limit] rows.
+  Future<List<BibleSearchHit>> searchVerses(
+    List<String> terms, {
+    Set<String>? bookIds,
+    int limit = 500,
+  }) async {
+    if (terms.isEmpty || (bookIds != null && bookIds.isEmpty)) return const [];
+
+    String escape(String term) => term
+        .replaceAll(r'\', r'\\')
+        .replaceAll('%', r'\%')
+        .replaceAll('_', r'\_');
+
+    Expression<bool> where = tVerses.verseText.lower().like(
+      '%${escape(terms.first)}%',
+      escapeChar: r'\',
+    );
+    for (final term in terms.skip(1)) {
+      where =
+          where &
+          tVerses.verseText.lower().like('%${escape(term)}%', escapeChar: r'\');
+    }
+    if (bookIds != null) where = where & tBooks.id.isIn(bookIds);
+
+    final rows =
+        await (select(tVerses).join([
+                innerJoin(tChapters, tChapters.id.equalsExp(tVerses.chapterId)),
+                innerJoin(tBooks, tBooks.id.equalsExp(tChapters.bookId)),
+              ])
+              ..where(where)
+              ..orderBy([
+                OrderingTerm(expression: tBooks.bookNumber),
+                OrderingTerm(expression: tChapters.number),
+                OrderingTerm(expression: tVerses.number),
+              ])
+              ..limit(limit))
+            .get();
+
+    return [
+      for (final row in rows)
+        BibleSearchHit(
+          bookId: row.readTable(tBooks).id,
+          chapter: row.readTable(tChapters).number,
+          verse: row.readTable(tVerses).number,
+          text: row.readTable(tVerses).verseText,
+        ),
+    ];
+  }
+
+  // -------------------------------------------------------------------------
   // Helpers
   // -------------------------------------------------------------------------
 

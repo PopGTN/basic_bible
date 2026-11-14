@@ -6,6 +6,7 @@ import 'package:basic_bible/src/features/annotations/application/view_models/ann
 import 'package:basic_bible/src/features/library/data/app_bible_repository.dart';
 import 'package:basic_bible/src/features/home/application/view_models/home_navigation_view_model.dart';
 import 'package:basic_bible/src/features/menu/presentation/menu_tab.dart';
+import 'package:basic_bible/src/features/reader/presentation/search/bible_search_screen.dart';
 import 'package:basic_bible/src/features/reader/application/view_models/bible_library_view_models.dart';
 import 'package:basic_bible/src/features/reader/application/view_models/reader_preferences_view_models.dart';
 import 'package:basic_bible/src/features/reader/application/view_models/reader_session_view_models.dart';
@@ -343,7 +344,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             ),
             IconButton(
               icon: const Icon(Icons.search),
-              onPressed: () {},
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const BibleSearchScreen(),
+                ),
+              ),
               tooltip: 'Search',
             ),
             Consumer(

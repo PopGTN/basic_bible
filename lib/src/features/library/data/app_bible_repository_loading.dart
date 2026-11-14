@@ -176,6 +176,43 @@ extension AppBibleRepositoryLoading on AppBibleRepository {
     return _rememberHydratedChapter(translationId, bookId, chapter);
   }
 
+  // ---------------------------------------------------------------------------
+  // Search (#69)
+  // ---------------------------------------------------------------------------
+
+  /// Verses of [translationId] containing every word of [query].
+  ///
+  /// Installed translations are searched in their database; session-only
+  /// reads (memory only, no database) are searched in memory. Returns an
+  /// empty list rather than throwing when there is nothing searchable.
+  Future<List<BibleSearchHit>> searchVerses(
+    String translationId,
+    String query, {
+    Set<String>? bookIds,
+    int limit = 500,
+  }) async {
+    final terms = bibleSearchTerms(query);
+    if (terms.isEmpty) return const [];
+
+    final inMemory = peekLoadedTranslation(translationId);
+    if (inMemory != null && _sessionTranslationIds.contains(translationId)) {
+      return searchBooksInMemory(
+        inMemory,
+        terms,
+        bookIds: bookIds,
+        limit: limit,
+      );
+    }
+    if (!await _isCacheValid(translationId)) {
+      return inMemory == null
+          ? const []
+          : searchBooksInMemory(inMemory, terms, bookIds: bookIds, limit: limit);
+    }
+    final path = await _sqlitePathFor(translationId);
+    final translationDb = await _dbManager.open(translationId, path);
+    return translationDb.searchVerses(terms, bookIds: bookIds, limit: limit);
+  }
+
   /// Loads from local storage only. Never makes a network request.
   Future<List<BibleBook>> loadBibleForReading(String translationId) =>
       loadLocalBible(translationId);
