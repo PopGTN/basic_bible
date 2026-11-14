@@ -20,6 +20,7 @@ extension _BibleTextViewStateRendering on _BibleTextViewState {
       ..._buildBookIntroductionBlocks(
         context,
         showForCurrentSection: widget.chapter.number == 1,
+        isFrontMatterPage: isFrontMatterChapter(widget.chapter.number),
       ),
       ..._buildChapterBlocks(context),
       if (widget.layoutMode == ReaderLayoutMode.verseList)
@@ -62,11 +63,13 @@ extension _BibleTextViewStateRendering on _BibleTextViewState {
   List<Widget> _buildBookIntroductionBlocks(
     BuildContext context, {
     required bool showForCurrentSection,
+    bool isFrontMatterPage = false,
   }) {
     return _buildBookIntroductionBlocksForBook(
       context,
       widget.book,
       showForCurrentSection: showForCurrentSection,
+      isFrontMatterPage: isFrontMatterPage,
     );
   }
 
@@ -74,13 +77,23 @@ extension _BibleTextViewStateRendering on _BibleTextViewState {
     BuildContext context,
     BibleBook book, {
     required bool showForCurrentSection,
+    bool isFrontMatterPage = false,
   }) {
     final visibleBlocks = book.introductionBlocks
         .where((block) => block.text.trim().isNotEmpty)
         .toList();
-    if (!widget.showBookIntroductions ||
-        !showForCurrentSection ||
-        visibleBlocks.isEmpty) {
+    if (visibleBlocks.isEmpty) return const [];
+
+    // A front-matter book (preface, glossary — #87) has no chapters: this
+    // text *is* the page, so show it even with book introductions turned off,
+    // in source order and without the "Introduction" label.
+    if (isFrontMatterPage) {
+      return [
+        _DocumentBlockSection(blocks: visibleBlocks, fontSize: widget.fontSize),
+      ];
+    }
+
+    if (!widget.showBookIntroductions || !showForCurrentSection) {
       return const [];
     }
 
@@ -175,12 +188,17 @@ extension _BibleTextViewStateRendering on _BibleTextViewState {
                 ),
                 buildInlineHeading: (block) =>
                     _buildInlineSectionHeading(context, block),
-                introBuilder: section.chapter.number == 1
+                introBuilder:
+                    section.chapter.number == 1 ||
+                        isFrontMatterChapter(section.chapter.number)
                     ? () => Column(
                         children: _buildBookIntroductionBlocksForBook(
                           context,
                           section.book,
                           showForCurrentSection: true,
+                          isFrontMatterPage: isFrontMatterChapter(
+                            section.chapter.number,
+                          ),
                         ),
                       )
                     : null,
@@ -189,7 +207,9 @@ extension _BibleTextViewStateRendering on _BibleTextViewState {
                   section.book,
                   section.chapter.number,
                 ),
-                fallbackBody: !hasVerses
+                // A front-matter page never has verses; don't shimmer forever.
+                fallbackBody:
+                    !hasVerses && !isFrontMatterChapter(section.chapter.number)
                     ? _buildContinuousChapterPlaceholder(context)
                     : null,
               );
@@ -233,15 +253,17 @@ extension _BibleTextViewStateRendering on _BibleTextViewState {
                 ),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 4),
-              Text(
-                '$chapterNumber',
-                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  fontSize: widget.fontSize + 4,
-                  fontWeight: FontWeight.bold,
+              if (!isFrontMatterChapter(chapterNumber)) ...[
+                const SizedBox(height: 4),
+                Text(
+                  '$chapterNumber',
+                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                    fontSize: widget.fontSize + 4,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  textAlign: TextAlign.center,
                 ),
-                textAlign: TextAlign.center,
-              ),
+              ],
             ],
           ),
         ),

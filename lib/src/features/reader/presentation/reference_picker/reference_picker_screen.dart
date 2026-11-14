@@ -338,8 +338,10 @@ class _ReferencePickerScreenState extends ConsumerState<ReferencePickerScreen> {
                     _searchController.clear();
                     _filterBooks('');
                   },
-                  selectedLabel:
-                      '${preferredBookName(expandedBook)} $selectedChapter',
+                  selectedLabel: chapterReferenceLabel(
+                    preferredBookName(expandedBook),
+                    selectedChapter,
+                  ),
                 ),
               ),
               Expanded(
@@ -627,7 +629,7 @@ class _ReferenceBookList extends StatelessWidget {
                             ),
                       ),
                     ),
-                    if (isSelected)
+                    if (isSelected && !isFrontMatterChapter(selectedChapter))
                       Text(
                         '$selectedChapter',
                         style: Theme.of(context).textTheme.labelLarge?.copyWith(
@@ -695,7 +697,7 @@ class _ReferenceBookCard extends StatelessWidget {
                       ),
                     ),
                   ),
-                  if (isExpanded)
+                  if (isExpanded && !isFrontMatterChapter(selectedChapter))
                     Padding(
                       padding: const EdgeInsets.only(right: 10),
                       child: Text(
@@ -786,7 +788,10 @@ class _ReferenceSelectionPanel extends StatelessWidget {
             final isSelected = chapter.number == selectedChapter;
             return _ReferenceNumberTile(
               key: isSelected ? selectedChapterKey : null,
-              label: '${chapter.number}',
+              // A front-matter book's single page (#87) has no number.
+              label: isFrontMatterChapter(chapter.number)
+                  ? 'Read'
+                  : '${chapter.number}',
               isSelected: isSelected,
               colors: colors,
               compact: compact,
@@ -799,7 +804,9 @@ class _ReferenceSelectionPanel extends StatelessWidget {
           TextButton.icon(
             onPressed: onChapterSelect,
             icon: const Icon(Icons.arrow_forward, size: 18),
-            label: Text('Go to ${preferredBookName(book)} $selectedChapter'),
+            label: Text(
+              'Go to ${chapterReferenceLabel(preferredBookName(book), selectedChapter)}',
+            ),
           ),
           if (selectedChapterModel.verses.isNotEmpty) ...[
             SizedBox(height: compact ? 10 : 14),

@@ -1,6 +1,7 @@
 import 'package:basic_bible/src/features/library/data/app_bible_repository.dart';
 import 'package:basic_bible/src/features/library/data/remote_translation_catalog_service.dart';
 import 'package:basic_bible/src/models/bible_models.dart';
+import 'package:basic_bible/src/utils/reference_utils.dart';
 import 'package:basic_bible/src/features/settings/application/view_models/advanced_preferences_view_models.dart';
 import 'package:basic_bible/src/services/app_database.dart';
 import 'package:basic_bible/src/services/shared_preferences_provider.dart';
@@ -127,31 +128,36 @@ final bibleBooksShellProvider =
       },
     );
 
-/// The shell book list as readers navigate it: books without chapters are
-/// left out (issue #87).
+/// The shell book list as readers navigate it (issue #87).
 ///
-/// Some sources ship non-chapter books such as a USFX `FRT` preface. They
-/// can't be opened, so listing them in the book picker or stepping onto them
-/// with next/previous chapter only led to "Chapter not found". UI should
-/// watch this provider; [bibleBooksShellProvider] keeps the raw list for
-/// repository-facing code.
+/// Some sources ship books with text but no chapters, such as the WEB's
+/// `FRT` preface and `GLO` glossary. They used to sit in the book picker but
+/// could only lead to "Chapter not found". Here each one gets a single
+/// synthetic page, chapter [kFrontMatterChapter], so the picker, chapter bar,
+/// next/previous and continuous scroll all reach it; the reader renders the
+/// book's text on that page. Chapterless books with no text are dropped.
+/// UI should watch this provider; [bibleBooksShellProvider] keeps the raw
+/// list for repository-facing code.
 final readableBibleBooksProvider = Provider<AsyncValue<List<BibleBook>>>((
   ref,
 ) {
-  return ref.watch(bibleBooksShellProvider).whenData(booksWithChapters);
+  return ref.watch(bibleBooksShellProvider).whenData(readableBooks);
 });
 
-/// [books] minus the ones with no chapters. Returns [books] itself when
-/// nothing is removed (so widgets comparing lists by identity don't rebuild),
-/// and also when *every* book is chapterless, so a malformed translation
-/// still shows what it has instead of an empty picker.
-List<BibleBook> booksWithChapters(List<BibleBook> books) {
+/// See [readableBibleBooksProvider]. Returns [books] itself when every book
+/// already has chapters, so widgets comparing book lists by identity don't
+/// reset.
+List<BibleBook> readableBooks(List<BibleBook> books) {
   if (books.every((book) => book.chapters.isNotEmpty)) return books;
-  final readable = [
+  return [
     for (final book in books)
-      if (book.chapters.isNotEmpty) book,
+      if (book.chapters.isNotEmpty)
+        book
+      else if (book.introductionBlocks.any((b) => b.text.trim().isNotEmpty))
+        book.copyWith(
+          chapters: const [BibleChapter(number: kFrontMatterChapter)],
+        ),
   ];
-  return readable.isEmpty ? books : readable;
 }
 
 // =============================================================================

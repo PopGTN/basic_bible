@@ -91,6 +91,18 @@ const _canonicalBookIdOrder = [
   '2PE', '1JN', '2JN', '3JN', 'JUD', 'REV',
 ];
 
+/// Chapter number of the single synthetic page given to a book that has text
+/// but no chapters, such as a USFX `FRT` preface or `GLO` glossary (#87).
+/// Real chapters start at 1, so 0 can never collide with one.
+const int kFrontMatterChapter = 0;
+
+bool isFrontMatterChapter(int chapterNumber) =>
+    chapterNumber == kFrontMatterChapter;
+
+/// "Genesis 3", or just "Preface" for a front-matter page.
+String chapterReferenceLabel(String bookName, int chapterNumber) =>
+    isFrontMatterChapter(chapterNumber) ? bookName : '$bookName $chapterNumber';
+
 /// Prefer parser-provided targets and only fall back to display-label parsing.
 BibleReference? parseAnyReference({String? target, required String label}) {
   return parseStructuredReferenceTarget(target) ?? parseReferenceString(label);
