@@ -75,6 +75,9 @@ flutter:
   generate: true
   assets:
     - "assets/icon/"
+    # Licenses for code Flutter can't discover on its own (see
+    # lib/src/services/additional_licenses.dart).
+    - "assets/licenses/"
     # Bundled KJV, gzipped: 8 MB shipped instead of 62 MB raw. The loaders
     # decompress on first use (see app_bible_repository_loading.dart).
     - "assets/bible/eng-kjv2006_usfx.xml.gz"

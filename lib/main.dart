@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'src/app.dart';
+import 'src/services/additional_licenses.dart';
 import 'src/platform/runtime_support.dart';
 import 'src/services/font_size_service.dart';
 import 'src/services/shared_preferences_provider.dart';
@@ -15,6 +16,8 @@ void main() async {
   // any second instantiation of the same generated class, which is a
   // false-positive for this multi-file architecture.
   driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
+  // Licenses Flutter can't collect from pub (e.g. sql.js on web), #88.
+  registerAdditionalLicenses();
   // Bootstrap prefs before runApp so startup routing and tab selection can
   // read their persisted values synchronously instead of flashing the wrong UI.
   final prefs = await SharedPreferences.getInstance();

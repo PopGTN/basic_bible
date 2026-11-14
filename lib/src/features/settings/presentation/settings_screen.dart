@@ -8,6 +8,7 @@ import 'package:basic_bible/src/features/sync/presentation/sync_settings_section
 import 'package:basic_bible/src/widgets/app_back_button.dart';
 import 'package:basic_bible/src/widgets/horizontal_mouse_scroll_list.dart';
 import 'package:basic_bible/src/widgets/theme_preview_card.dart';
+import 'package:basic_bible/src/widgets/app_about.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:basic_bible/src/features/settings/application/view_models/language_view_model.dart';
@@ -288,6 +289,14 @@ class SettingsScreen extends ConsumerWidget {
               ),
               trailing: const Icon(Icons.chevron_right),
               onTap: () => context.push('/home/settings/advanced'),
+            ),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.description_outlined),
+              title: const Text('Open-source licenses'),
+              subtitle: const Text('Libraries and code used by this app'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => showAppLicenses(context),
             ),
           ],
         ),
