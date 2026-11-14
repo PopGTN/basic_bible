@@ -6,6 +6,8 @@ import 'package:basic_bible/src/features/annotations/application/view_models/ann
 import 'package:basic_bible/src/features/library/data/app_bible_repository.dart';
 import 'package:basic_bible/src/features/home/application/view_models/home_navigation_view_model.dart';
 import 'package:basic_bible/src/features/menu/presentation/menu_tab.dart';
+import 'package:basic_bible/src/features/reader/application/view_models/split_view_view_models.dart';
+import 'package:basic_bible/src/features/reader/presentation/split_view/split_reader_layout.dart';
 import 'package:basic_bible/src/features/reader/presentation/search/bible_search_screen.dart';
 import 'package:basic_bible/src/features/reader/application/view_models/bible_library_view_models.dart';
 import 'package:basic_bible/src/features/reader/application/view_models/reader_preferences_view_models.dart';
@@ -307,13 +309,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         icon: Icons.home,
       ),
       _HomeTabDefinition(
-        widget: BibleViewerTab(
-          key: _bibleViewerKey,
-          showBottomNav: showBottomNav,
-          hideBottomNav: hideBottomNav,
-          showAppBar: showAppBar,
-          hideAppBar: hideAppBar,
-          isSmallDevice: isSmall,
+        widget: SplitReaderLayout(
+          primary: BibleViewerTab(
+            key: _bibleViewerKey,
+            showBottomNav: showBottomNav,
+            hideBottomNav: hideBottomNav,
+            showAppBar: showAppBar,
+            hideAppBar: hideAppBar,
+            isSmallDevice: isSmall,
+          ),
         ),
         title: t.bible,
         icon: Icons.menu_book,
@@ -337,6 +341,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     // Extra buttons only appear on Bible tab
     final actions = isBible
         ? [
+            Consumer(
+              builder: (context, ref, _) {
+                final split = ref.watch(splitViewEnabledProvider);
+                return IconButton(
+                  isSelected: split,
+                  icon: const Icon(Icons.vertical_split_outlined),
+                  selectedIcon: const Icon(Icons.vertical_split),
+                  tooltip: split ? 'Close split view' : 'Split view',
+                  onPressed: () =>
+                      ref.read(splitViewEnabledProvider.notifier).toggle(),
+                );
+              },
+            ),
             IconButton(
               icon: const Icon(Icons.volume_up),
               onPressed: () {},

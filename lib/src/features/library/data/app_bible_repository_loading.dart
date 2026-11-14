@@ -26,6 +26,22 @@ extension AppBibleRepositoryLoading on AppBibleRepository {
     return loadLocalBible(translationId);
   }
 
+  /// Books + chapter metadata for a *secondary* view (split view, #84)
+  /// without making [translationId] the repository's active translation, so
+  /// the main reader's state is untouched. Falls back to the normal shell
+  /// load only when nothing is cached yet.
+  Future<List<BibleBook>> loadShellWithoutActivating(String translationId) async {
+    final inMemory = peekLoadedTranslation(translationId);
+    if (inMemory != null) return inMemory;
+    if (await _isCacheValid(translationId)) {
+      final path = await _sqlitePathFor(translationId);
+      final translationDb = await _dbManager.open(translationId, path);
+      final shell = await translationDb.getBooksShell();
+      if (shell.isNotEmpty) return shell;
+    }
+    return loadLocalBibleShell(translationId);
+  }
+
   // ---------------------------------------------------------------------------
   // Full load (parses XML if needed, in-flight dedup via _inFlight map)
   // ---------------------------------------------------------------------------
