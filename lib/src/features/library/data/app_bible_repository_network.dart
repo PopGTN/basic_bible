@@ -20,14 +20,23 @@ extension AppBibleRepositoryNetwork on AppBibleRepository {
   // Download (cached to SQLite on disk)
   // ---------------------------------------------------------------------------
 
-  Future<List<BibleBook>> downloadBible(String translationId) {
+  /// [onProgress] reports bytes received (#55). Only the caller that starts
+  /// a download gets callbacks; a concurrent duplicate call shares the same
+  /// future without them.
+  Future<List<BibleBook>> downloadBible(
+    String translationId, {
+    DownloadProgressCallback? onProgress,
+  }) {
     return _downloadInFlight.run(
       translationId,
-      () => _doDownloadBible(translationId),
+      () => _doDownloadBible(translationId, onProgress: onProgress),
     );
   }
 
-  Future<List<BibleBook>> _doDownloadBible(String translationId) async {
+  Future<List<BibleBook>> _doDownloadBible(
+    String translationId, {
+    DownloadProgressCallback? onProgress,
+  }) async {
     // A session-only translation is in memory but not on disk; downloading it
     // must still install it, so only short-circuit for persisted ones (#28).
     final memoryCached = peekLoadedTranslation(translationId);
@@ -77,6 +86,7 @@ extension AppBibleRepositoryNetwork on AppBibleRepository {
         responseBody: await _fetchRemoteArtifactBytes(
           artifact,
           actionLabel: 'download ${translation.name}',
+          onProgress: onProgress,
         ),
       );
 
@@ -116,16 +126,20 @@ extension AppBibleRepositoryNetwork on AppBibleRepository {
   // ---------------------------------------------------------------------------
 
   // FIX #8: use putIfAbsent for consistent in-flight dedup.
-  Future<List<BibleBook>> openTranslationForSession(String translationId) {
+  Future<List<BibleBook>> openTranslationForSession(
+    String translationId, {
+    DownloadProgressCallback? onProgress,
+  }) {
     return _sessionReadInFlight.run(
       translationId,
-      () => _doOpenTranslationForSession(translationId),
+      () => _doOpenTranslationForSession(translationId, onProgress: onProgress),
     );
   }
 
   Future<List<BibleBook>> _doOpenTranslationForSession(
-    String translationId,
-  ) async {
+    String translationId, {
+    DownloadProgressCallback? onProgress,
+  }) async {
     final memoryCached = peekLoadedTranslation(translationId);
     if (memoryCached != null && _sessionTranslationIds.contains(translationId)) {
       activateLoadedTranslation(translationId);
@@ -150,6 +164,7 @@ extension AppBibleRepositoryNetwork on AppBibleRepository {
       await _fetchRemoteArtifactBytes(
         artifact,
         actionLabel: 'open ${translation.name}',
+        onProgress: onProgress,
       ),
     );
     if (books.isEmpty) {
@@ -174,6 +189,7 @@ extension AppBibleRepositoryNetwork on AppBibleRepository {
   Future<Uint8List> _fetchRemoteArtifactBytes(
     BibleTranslationArtifact artifact, {
     required String actionLabel,
+    DownloadProgressCallback? onProgress,
   }) async {
     final uri = Uri.parse(artifact.downloadUrl);
     if (uri.scheme != 'https') {
@@ -208,9 +224,12 @@ extension AppBibleRepositoryNetwork on AppBibleRepository {
       // Stream the body and count as we go, so a server that lies about (or
       // omits) Content-Length still can't fill memory without bound.
       final builder = BytesBuilder(copy: false);
+      final expectedBytes = response.contentLength ?? artifact.sizeBytes;
+      onProgress?.call(0, expectedBytes);
       await for (final chunk in response.stream
           .timeout(AppBibleRepository._remoteRequestTimeout)) {
         builder.add(chunk);
+        onProgress?.call(builder.length, expectedBytes);
         if (builder.length > _maxDownloadBytes) {
           throw Exception(
             'The download exceeded the '

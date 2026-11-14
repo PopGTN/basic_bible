@@ -115,17 +115,25 @@ class BibleBooksNotifier extends StateNotifier<AsyncValue<List<BibleBook>>> {
 
   /// Downloads without blanking the reader. After this returns, call
   /// setTranslation() so changeTranslation() picks up the cached books.
-  Future<void> downloadTranslation(String translationId) =>
-      repository.downloadBible(translationId);
+  Future<void> downloadTranslation(
+    String translationId, {
+    DownloadProgressCallback? onProgress,
+  }) => repository.downloadBible(translationId, onProgress: onProgress);
 
   // FIX #3: bump _loadGeneration so a concurrent loadBible() cannot overwrite
   // the result of openTranslationForSession after it completes.
-  Future<void> openTranslationForSession(String translationId) async {
+  Future<void> openTranslationForSession(
+    String translationId, {
+    DownloadProgressCallback? onProgress,
+  }) async {
     final loadGeneration = ++_loadGeneration;
     state = const AsyncValue.loading();
 
     try {
-      final books = await repository.openTranslationForSession(translationId);
+      final books = await repository.openTranslationForSession(
+        translationId,
+        onProgress: onProgress,
+      );
       _currentTranslationId = translationId;
       if (mounted && loadGeneration == _loadGeneration) {
         state = AsyncValue.data(books);

@@ -27,6 +27,9 @@ export 'bible_import_service.dart' show BibleImportDraft, BibleImportRequest;
 part 'app_bible_repository_loading.dart';
 part 'app_bible_repository_network.dart';
 
+/// Bytes received so far and the expected total (null when unknown).
+typedef DownloadProgressCallback = void Function(int received, int? total);
+
 class AppBibleRepository {
   AppBibleRepository(this._db, this._dbManager, this._catalogService)
     : _importService = AppBibleImportService(db: _db, dbManager: _dbManager);

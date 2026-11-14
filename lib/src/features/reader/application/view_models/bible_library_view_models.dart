@@ -21,26 +21,73 @@ export 'bible_books_shell_notifier.dart' show BibleBooksShellNotifier;
 // Download-progress provider
 // =============================================================================
 
-/// Tracks which translation IDs have an in-progress download or session-open.
-/// Lives here so any screen can observe it without coupling to widget state.
+/// Progress of one in-progress download or session-open (#55).
+class TranslationDownloadStatus {
+  const TranslationDownloadStatus({required this.name, this.fraction});
+
+  /// Translation display name, for notifications.
+  final String name;
+
+  /// 0..1 while bytes arrive and the size is known; null when the size is
+  /// unknown or the file is being parsed/installed (indeterminate).
+  final double? fraction;
+}
+
+/// In-progress downloads and session-opens keyed by translation ID.
+/// Lives here so any screen (and the download notification) can observe it
+/// without coupling to widget state.
 final translationDownloadsProvider =
-    StateNotifierProvider<TranslationDownloadsNotifier, Set<String>>((ref) {
+    StateNotifierProvider<
+      TranslationDownloadsNotifier,
+      Map<String, TranslationDownloadStatus>
+    >((ref) {
       return TranslationDownloadsNotifier();
     });
 
-class TranslationDownloadsNotifier extends StateNotifier<Set<String>> {
+class TranslationDownloadsNotifier
+    extends StateNotifier<Map<String, TranslationDownloadStatus>> {
   TranslationDownloadsNotifier() : super(const {});
 
-  /// Marks [id] as in-progress. Returns false if already in-progress
-  /// (caller should treat this as a dedup guard).
-  bool markStarted(String id) {
-    if (state.contains(id)) return false;
-    state = {...state, id};
+  /// Marks [id] as in progress. Returns false if it already is (callers
+  /// treat that as a dedup guard).
+  bool markStarted(String id, {String? name}) {
+    if (state.containsKey(id)) return false;
+    state = {...state, id: TranslationDownloadStatus(name: name ?? id)};
     return true;
   }
 
+  /// Records bytes received. Updates are coalesced to whole percents so a
+  /// fast stream doesn't rebuild listeners (or re-post a notification) for
+  /// every chunk.
+  void reportProgress(String id, int received, int? total) {
+    final current = state[id];
+    if (current == null) return;
+    final fraction = total == null || total <= 0
+        ? null
+        : (received / total).clamp(0.0, 1.0);
+    final before = current.fraction;
+    if (fraction != null &&
+        before != null &&
+        (fraction * 100).floor() == (before * 100).floor()) {
+      return;
+    }
+    if (fraction == before) return;
+    state = {
+      ...state,
+      id: TranslationDownloadStatus(name: current.name, fraction: fraction),
+    };
+  }
+
+  /// Bytes are in; parsing/installing has no measurable progress.
+  void markInstalling(String id) {
+    final current = state[id];
+    if (current == null || current.fraction == null) return;
+    state = {...state, id: TranslationDownloadStatus(name: current.name)};
+  }
+
   void markFinished(String id) {
-    if (state.contains(id)) state = state.difference({id});
+    if (!state.containsKey(id)) return;
+    state = {...state}..remove(id);
   }
 }
 

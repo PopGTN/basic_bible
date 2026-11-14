@@ -1,3 +1,4 @@
+import 'package:basic_bible/src/features/library/data/app_bible_repository.dart';
 import 'package:basic_bible/src/models/bible_models.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -39,10 +40,10 @@ class TranslationActions {
   /// list. Returns false without doing anything if the same translation is
   /// already downloading. Errors are rethrown for the caller to report.
   Future<bool> download(BibleTranslation translation) {
-    return _runExclusive(translation.id, () async {
+    return _runExclusive(translation, (onProgress) async {
       await _ref
           .read(bibleBooksProvider.notifier)
-          .downloadTranslation(translation.id);
+          .downloadTranslation(translation.id, onProgress: onProgress);
       await switchTo(translation.id);
     });
   }
@@ -50,22 +51,33 @@ class TranslationActions {
   /// Opens [translation] in memory for this run only (nothing persisted).
   /// Same dedup / error contract as [download].
   Future<bool> openForSession(BibleTranslation translation) {
-    return _runExclusive(translation.id, () async {
+    return _runExclusive(translation, (onProgress) async {
       await _ref
           .read(bibleBooksProvider.notifier)
-          .openTranslationForSession(translation.id);
+          .openTranslationForSession(translation.id, onProgress: onProgress);
       await switchTo(translation.id, persist: false);
     });
   }
 
   Future<bool> _runExclusive(
-    String translationId,
-    Future<void> Function() body,
+    BibleTranslation translation,
+    Future<void> Function(DownloadProgressCallback onProgress) body,
   ) async {
+    final translationId = translation.id;
     final downloads = _ref.read(translationDownloadsProvider.notifier);
-    if (!downloads.markStarted(translationId)) return false;
+    if (!downloads.markStarted(translationId, name: translation.name)) {
+      return false;
+    }
+    void onProgress(int received, int? total) {
+      downloads.reportProgress(translationId, received, total);
+      // All bytes in: what follows (parse + install) can't be measured.
+      if (total != null && received >= total) {
+        downloads.markInstalling(translationId);
+      }
+    }
+
     try {
-      await body();
+      await body(onProgress);
       return true;
     } finally {
       // Refresh on success *and* failure: a failed download may still have

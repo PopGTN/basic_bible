@@ -50,13 +50,13 @@ class _VersionsScreenState extends ConsumerState<VersionsScreen>
     final t = AppLocalizations.of(context)!;
     final translationsAsync = ref.watch(availableTranslationsProvider);
     final currentTranslationId = ref.watch(currentTranslationProvider);
-    final loadingIds = ref.watch(translationDownloadsProvider);
+    final downloads = ref.watch(translationDownloadsProvider);
 
     return Scaffold(
       appBar: _isSearching ? _buildSearchBar(t) : _buildNormalBar(t),
       body: translationsAsync.when(
         data: (translations) =>
-            _buildList(context, translations, currentTranslationId, loadingIds),
+            _buildList(context, translations, currentTranslationId, downloads),
         error: (error, _) => Center(
           child: Padding(
             padding: const EdgeInsets.all(24),
@@ -154,7 +154,7 @@ class _VersionsScreenState extends ConsumerState<VersionsScreen>
     BuildContext context,
     List<BibleTranslation> translations,
     String currentTranslationId,
-    Set<String> loadingIds,
+    Map<String, TranslationDownloadStatus> downloads,
   ) {
     final languages = _uniqueLanguages(translations);
 
@@ -213,7 +213,8 @@ class _VersionsScreenState extends ConsumerState<VersionsScreen>
             TranslationTile(
               translation: tr,
               isSelected: tr.id == currentTranslationId,
-              isLoading: loadingIds.contains(tr.id),
+              isLoading: downloads.containsKey(tr.id),
+              progress: downloads[tr.id]?.fraction,
               onTap: () => selectTranslation(
                 context,
                 tr.id,
@@ -250,7 +251,8 @@ class _VersionsScreenState extends ConsumerState<VersionsScreen>
             TranslationTile(
               translation: tr,
               isSelected: tr.id == currentTranslationId,
-              isLoading: loadingIds.contains(tr.id),
+              isLoading: downloads.containsKey(tr.id),
+              progress: downloads[tr.id]?.fraction,
               onTap: tr.availability == BibleTranslationAvailability.session
                   ? () => selectTranslation(context, tr.id, persist: false)
                   : null,

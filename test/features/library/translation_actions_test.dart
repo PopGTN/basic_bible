@@ -6,6 +6,7 @@
 
 import 'dart:async';
 
+import 'package:basic_bible/src/features/library/data/app_bible_repository.dart';
 import 'package:basic_bible/src/features/reader/application/view_models/bible_library_view_models.dart';
 import 'package:basic_bible/src/features/reader/application/view_models/reader_session_view_models.dart';
 import 'package:basic_bible/src/features/reader/application/view_models/translation_actions_view_model.dart';
@@ -22,10 +23,15 @@ class _FakeBooksNotifier extends StateNotifier<AsyncValue<List<BibleBook>>>
 
   Completer<void> download = Completer<void>();
   final downloadedIds = <String>[];
+  DownloadProgressCallback? lastProgress;
 
   @override
-  Future<void> downloadTranslation(String translationId) {
+  Future<void> downloadTranslation(
+    String translationId, {
+    DownloadProgressCallback? onProgress,
+  }) {
     downloadedIds.add(translationId);
+    lastProgress = onProgress;
     return download.future;
   }
 
@@ -76,7 +82,11 @@ void main() {
     final actions = container.read(translationActionsProvider);
 
     final pending = actions.download(_translation);
-    expect(container.read(translationDownloadsProvider), {'web'});
+    expect(container.read(translationDownloadsProvider).keys, ['web']);
+    expect(
+      container.read(translationDownloadsProvider)['web']!.name,
+      'World English Bible',
+    );
 
     books.download.complete();
     expect(await pending, isTrue);
@@ -112,5 +122,41 @@ void main() {
     // A retry is allowed once the first attempt has failed.
     books.download = Completer<void>()..complete();
     expect(await actions.download(_translation), isTrue);
+  });
+
+  test('download progress is reported, coalesced, then indeterminate '
+      'while installing (#55)', () async {
+    final actions = container.read(translationActionsProvider);
+    final pending = actions.download(_translation);
+    final notify = books.lastProgress!;
+    double? fraction() =>
+        container.read(translationDownloadsProvider)['web']?.fraction;
+
+    var updates = 0;
+    container.listen(translationDownloadsProvider, (_, _) => updates++);
+
+    notify(0, 1000);
+    expect(fraction(), 0);
+    notify(4, 1000); // still 0%: no rebuild
+    notify(5, 1000);
+    expect(updates, 1);
+    notify(500, 1000);
+    expect(fraction(), 0.5);
+    notify(1000, 1000); // all bytes in -> installing (indeterminate)
+    expect(fraction(), isNull);
+    expect(container.read(translationDownloadsProvider), contains('web'));
+
+    books.download.complete();
+    await pending;
+    expect(container.read(translationDownloadsProvider), isEmpty);
+  });
+
+  test('unknown size stays indeterminate', () async {
+    final actions = container.read(translationActionsProvider);
+    final pending = actions.download(_translation);
+    books.lastProgress!(12345, null);
+    expect(container.read(translationDownloadsProvider)['web']!.fraction, isNull);
+    books.download.complete();
+    await pending;
   });
 }
