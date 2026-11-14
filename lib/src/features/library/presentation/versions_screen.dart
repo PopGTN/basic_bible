@@ -258,8 +258,11 @@ class _VersionsScreenState extends ConsumerState<VersionsScreen>
                   tr.availability == BibleTranslationAvailability.downloadable
                   ? () => openTranslationForSession(context, tr)
                   : null,
+              // Session-only reads can be kept by downloading them (#28).
               onDownload:
-                  tr.availability == BibleTranslationAvailability.downloadable
+                  tr.availability ==
+                          BibleTranslationAvailability.downloadable ||
+                      tr.availability == BibleTranslationAvailability.session
                   ? () => downloadTranslation(context, tr)
                   : null,
               onRemoveDownloaded: null,

@@ -28,8 +28,10 @@ extension AppBibleRepositoryNetwork on AppBibleRepository {
   }
 
   Future<List<BibleBook>> _doDownloadBible(String translationId) async {
+    // A session-only translation is in memory but not on disk; downloading it
+    // must still install it, so only short-circuit for persisted ones (#28).
     final memoryCached = peekLoadedTranslation(translationId);
-    if (memoryCached != null) {
+    if (memoryCached != null && !_sessionTranslationIds.contains(translationId)) {
       activateLoadedTranslation(translationId);
       return memoryCached;
     }
