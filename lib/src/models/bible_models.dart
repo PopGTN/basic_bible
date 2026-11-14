@@ -5,3 +5,4 @@ export 'bible_models/footnote.dart';
 export 'bible_models/verse_span.dart';
 export 'bible_models/document_block.dart';
 export 'bible_models/bible_structure.dart';
+export 'bible_models/bible_search.dart';

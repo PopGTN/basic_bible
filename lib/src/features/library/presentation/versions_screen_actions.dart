@@ -3,7 +3,7 @@ import 'package:basic_bible/src/features/library/data/app_bible_repository.dart'
 import 'package:basic_bible/src/features/library/presentation/import_translation_screen.dart';
 import 'package:basic_bible/src/features/library/presentation/versions_screen.dart';
 import 'package:basic_bible/src/features/reader/application/view_models/bible_library_view_models.dart';
-import 'package:basic_bible/src/features/reader/application/view_models/reader_session_view_models.dart';
+import 'package:basic_bible/src/features/reader/application/view_models/translation_actions_view_model.dart';
 import 'package:basic_bible/src/models/bible_models.dart';
 import 'package:basic_bible/src/platform/runtime_support.dart';
 import 'package:file_selector/file_selector.dart';
@@ -16,6 +16,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// The mixin constrains itself to [ConsumerState<VersionsScreen>] so it has
 /// direct access to [ref], [context], and [mounted] without extra plumbing.
 mixin VersionsScreenActions on ConsumerState<VersionsScreen> {
+  TranslationActions get _translations => ref.read(translationActionsProvider);
+
   // ---------------------------------------------------------------------------
   // Select / switch
   // ---------------------------------------------------------------------------
@@ -27,9 +29,7 @@ mixin VersionsScreenActions on ConsumerState<VersionsScreen> {
   }) async {
     final t = AppLocalizations.of(context)!;
     try {
-      await ref
-          .read(currentTranslationProvider.notifier)
-          .setTranslation(translationId, persist: persist);
+      await _translations.switchTo(translationId, persist: persist);
       if (!context.mounted) return;
       if (Navigator.of(context).canPop()) Navigator.of(context).pop();
     } catch (error) {
@@ -41,78 +41,62 @@ mixin VersionsScreenActions on ConsumerState<VersionsScreen> {
   }
 
   // ---------------------------------------------------------------------------
-  // Session open
+  // Session open / download
+  //
+  // The work itself runs in [TranslationActions] so it finishes (switches the
+  // reader and refreshes the list) even if this screen is closed mid-download.
+  // The widget only owns the feedback: the snackbar goes through the
+  // app-level messenger captured up front, and the pop only happens if this
+  // screen is still on top.
   // ---------------------------------------------------------------------------
 
   Future<void> openTranslationForSession(
     BuildContext context,
     BibleTranslation translation,
-  ) async {
-    final downloads = ref.read(translationDownloadsProvider.notifier);
-    if (!downloads.markStarted(translation.id)) return;
+  ) {
     final t = AppLocalizations.of(context)!;
-    final messenger = ScaffoldMessenger.of(context);
-    try {
-      await ref
-          .read(bibleBooksProvider.notifier)
-          .openTranslationForSession(translation.id);
-      await ref
-          .read(currentTranslationProvider.notifier)
-          .setTranslation(translation.id, persist: false);
-      ref.invalidate(availableTranslationsProvider);
-      if (!context.mounted) return;
-      messenger.showSnackBar(
-        SnackBar(content: Text(t.openedForSessionMessage(translation.name))),
-      );
-      if (Navigator.of(context).canPop()) Navigator.of(context).pop();
-    } catch (error) {
-      if (!context.mounted) return;
-      messenger.showSnackBar(
-        SnackBar(content: Text(t.couldNotOpenTranslation(error.toString()))),
-      );
-    } finally {
-      downloads.markFinished(translation.id);
-    }
+    return _runTranslationJob(
+      context,
+      job: () => _translations.openForSession(translation),
+      successMessage: t.openedForSessionMessage(translation.name),
+      failureMessage: t.couldNotOpenTranslation,
+    );
   }
-
-  // ---------------------------------------------------------------------------
-  // Download
-  // ---------------------------------------------------------------------------
 
   Future<void> downloadTranslation(
     BuildContext context,
     BibleTranslation translation,
-  ) async {
-    final downloads = ref.read(translationDownloadsProvider.notifier);
-    if (!downloads.markStarted(translation.id)) return;
+  ) {
     final t = AppLocalizations.of(context)!;
+    return _runTranslationJob(
+      context,
+      job: () => _translations.download(translation),
+      successMessage: t.downloadedTranslationMessage(translation.name),
+      failureMessage: t.couldNotDownloadTranslation,
+    );
+  }
+
+  Future<void> _runTranslationJob(
+    BuildContext context, {
+    required Future<bool> Function() job,
+    required String successMessage,
+    required String Function(String error) failureMessage,
+  }) async {
     final messenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
     try {
-      await ref
-          .read(bibleBooksProvider.notifier)
-          .downloadTranslation(translation.id);
-      // FIX #5: use context.mounted (not bare mounted) consistently.
-      if (!context.mounted) return;
-      await ref
-          .read(currentTranslationProvider.notifier)
-          .setTranslation(translation.id);
-      ref.invalidate(availableTranslationsProvider);
-      if (!context.mounted) return;
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text(t.downloadedTranslationMessage(translation.name)),
-        ),
-      );
-      if (Navigator.of(context).canPop()) Navigator.of(context).pop();
+      final ran = await job();
+      if (!ran) return;
+      if (messenger.mounted) {
+        messenger.showSnackBar(SnackBar(content: Text(successMessage)));
+      }
+      if (context.mounted && navigator.canPop()) navigator.pop();
     } catch (error) {
-      if (!context.mounted) return;
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text(t.couldNotDownloadTranslation(error.toString())),
-        ),
-      );
-    } finally {
-      downloads.markFinished(translation.id);
+      if (messenger.mounted) {
+        messenger.showSnackBar(
+          SnackBar(content: Text(failureMessage(error.toString()))),
+        );
+      }
     }
   }
 
@@ -165,9 +149,7 @@ mixin VersionsScreenActions on ConsumerState<VersionsScreen> {
             ),
           );
       if (importedTranslation == null || !context.mounted) return;
-      await ref
-          .read(currentTranslationProvider.notifier)
-          .setTranslation(importedTranslation.id);
+      await _translations.switchTo(importedTranslation.id);
       ref.invalidate(availableTranslationsProvider);
       if (!context.mounted) return;
       messenger.showSnackBar(
@@ -179,6 +161,50 @@ mixin VersionsScreenActions on ConsumerState<VersionsScreen> {
       if (!context.mounted) return;
       messenger.showSnackBar(
         SnackBar(content: Text(t.importFailedMessage(error.toString()))),
+      );
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Clear cache
+  // ---------------------------------------------------------------------------
+
+  Future<void> clearTranslationCache(BuildContext context) async {
+    final t = AppLocalizations.of(context)!;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(t.clearTranslationCacheTitle),
+        content: Text(t.clearTranslationCacheDescription),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(t.cancelAction),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: Text(t.clearCacheAction),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+
+    try {
+      await ref.read(bibleBooksProvider.notifier).clearAllTranslationCache();
+      final defaultId = AppBibleRepository.builtInTranslations.first.id;
+      await _translations.switchTo(defaultId);
+      ref.invalidate(availableTranslationsProvider);
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(t.clearedTranslationCacheMessage)));
+    } catch (error) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(t.couldNotClearTranslationCache(error.toString())),
+        ),
       );
     }
   }
@@ -219,9 +245,7 @@ mixin VersionsScreenActions on ConsumerState<VersionsScreen> {
           (c) => c.id != translation.id,
           orElse: () => AppBibleRepository.builtInTranslations.first,
         );
-        await ref
-            .read(currentTranslationProvider.notifier)
-            .setTranslation(fallback.id);
+        await _translations.switchTo(fallback.id);
       }
       await ref
           .read(bibleBooksProvider.notifier)
@@ -275,9 +299,7 @@ mixin VersionsScreenActions on ConsumerState<VersionsScreen> {
           (c) => c.id != translation.id,
           orElse: () => AppBibleRepository.builtInTranslations.first,
         );
-        await ref
-            .read(currentTranslationProvider.notifier)
-            .setTranslation(fallback.id);
+        await _translations.switchTo(fallback.id);
       }
       await ref
           .read(bibleBooksProvider.notifier)

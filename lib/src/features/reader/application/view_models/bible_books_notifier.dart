@@ -4,7 +4,15 @@ import 'package:basic_bible/src/models/bible_models.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 
-/// Full-load notifier: holds all verses for every book.
+/// Full-load notifier: holds all verses for every book *on request*.
+///
+/// The reader renders from the shell provider plus per-chapter hydration, so
+/// nothing watches this state. It is used as the command object for
+/// download / import / session-open / delete. It used to start a full load
+/// (every verse of the Bible, ~1.2 s on a fast machine, several seconds and
+/// the whole text in memory on a phone) as soon as anything read its
+/// `.notifier`, and again on every translation switch. Now it only loads when
+/// [loadBible] is called explicitly.
 ///
 /// Uses [_loadGeneration] to discard stale async results when the requested
 /// translation changes while a load is in progress.
@@ -13,11 +21,7 @@ class BibleBooksNotifier extends StateNotifier<AsyncValue<List<BibleBook>>> {
     this.repository,
     this._currentTranslationId, {
     required this.onResolvedTranslationChanged,
-  }) : super(initialBibleBooksState(repository, _currentTranslationId)) {
-    if (!state.hasValue) {
-      loadBible();
-    }
-  }
+  }) : super(initialBibleBooksState(repository, _currentTranslationId));
 
   final AppBibleRepository repository;
   String _currentTranslationId;
@@ -89,8 +93,7 @@ class BibleBooksNotifier extends StateNotifier<AsyncValue<List<BibleBook>>> {
   // Translation switching
   // ---------------------------------------------------------------------------
 
-  // Note: returns Future<void> but kicks off loadBible() without awaiting it.
-  // The caller observes completion via state changes, not the returned future.
+  /// Tracks the current translation without loading it (see the class doc).
   Future<void> changeTranslation(String translationId) async {
     if (_currentTranslationId == translationId) return;
     _currentTranslationId = translationId;
@@ -101,12 +104,9 @@ class BibleBooksNotifier extends StateNotifier<AsyncValue<List<BibleBook>>> {
       // so getBook() / getAllBooks() return the correct data after this switch.
       repository.activateLoadedTranslation(translationId);
       if (mounted) state = AsyncValue.data(inMemoryBooks);
-      return;
+    } else if (mounted) {
+      state = const AsyncValue.loading();
     }
-
-    // FIX #6: fire-and-forget is intentional here — callers observe state.
-    // ignore: unawaited_futures
-    loadBible(showLoading: !state.hasValue);
   }
 
   // ---------------------------------------------------------------------------
@@ -115,17 +115,25 @@ class BibleBooksNotifier extends StateNotifier<AsyncValue<List<BibleBook>>> {
 
   /// Downloads without blanking the reader. After this returns, call
   /// setTranslation() so changeTranslation() picks up the cached books.
-  Future<void> downloadTranslation(String translationId) =>
-      repository.downloadBible(translationId);
+  Future<void> downloadTranslation(
+    String translationId, {
+    DownloadProgressCallback? onProgress,
+  }) => repository.downloadBible(translationId, onProgress: onProgress);
 
   // FIX #3: bump _loadGeneration so a concurrent loadBible() cannot overwrite
   // the result of openTranslationForSession after it completes.
-  Future<void> openTranslationForSession(String translationId) async {
+  Future<void> openTranslationForSession(
+    String translationId, {
+    DownloadProgressCallback? onProgress,
+  }) async {
     final loadGeneration = ++_loadGeneration;
     state = const AsyncValue.loading();
 
     try {
-      final books = await repository.openTranslationForSession(translationId);
+      final books = await repository.openTranslationForSession(
+        translationId,
+        onProgress: onProgress,
+      );
       _currentTranslationId = translationId;
       if (mounted && loadGeneration == _loadGeneration) {
         state = AsyncValue.data(books);
@@ -221,6 +229,13 @@ class BibleBooksNotifier extends StateNotifier<AsyncValue<List<BibleBook>>> {
   Future<void> removeDownloadedTranslation(String translationId) async {
     await repository.removeDownloadedTranslation(translationId);
     if (_currentTranslationId == translationId && mounted) {
+      state = const AsyncValue.loading();
+    }
+  }
+
+  Future<void> clearAllTranslationCache() async {
+    await repository.clearAllCache();
+    if (mounted) {
       state = const AsyncValue.loading();
     }
   }

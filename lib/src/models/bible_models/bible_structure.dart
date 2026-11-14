@@ -1,3 +1,4 @@
+import 'package:bible_parser_flutter/bible_parser_flutter.dart' show TocLabel;
 import 'package:equatable/equatable.dart';
 
 import 'bible_translation.dart';
@@ -8,26 +9,8 @@ import 'verse_span.dart';
 
 enum BibleBookType { oldTestament, newTestament }
 
-class BibleTocLabel extends Equatable {
-  final String text;
-  final int level;
-
-  const BibleTocLabel({required this.text, required this.level});
-
-  factory BibleTocLabel.fromJson(Map<String, dynamic> json) {
-    return BibleTocLabel(
-      text: json['text'] as String,
-      level: json['level'] as int,
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {'text': text, 'level': level};
-  }
-
-  @override
-  List<Object?> get props => [text, level];
-}
+// Alias for the parser's class — see verse_span.dart for why.
+typedef BibleTocLabel = TocLabel;
 
 class BibleDocument extends Equatable {
   final BibleTranslation translation;

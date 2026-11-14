@@ -11,6 +11,12 @@ Future<String> readTextFile(String path) async {
   );
 }
 
+Future<List<int>> readBinaryFile(String path) async {
+  throw UnsupportedError(
+    'Importing local Bible files is not available in the browser yet.',
+  );
+}
+
 Future<void> copyFile(String sourcePath, String destinationPath) async {
   throw UnsupportedError(
     'Copying local Bible files is not available in the browser.',

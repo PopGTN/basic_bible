@@ -60,6 +60,7 @@ class AnnotationVerseLink extends Equatable {
 class UserAnnotation extends Equatable {
   const UserAnnotation({
     this.id,
+    this.uuid,
     required this.type,
     required this.primaryVerse,
     this.noteText,
@@ -68,9 +69,14 @@ class UserAnnotation extends Equatable {
     this.linkedVerses = const [],
     required this.createdAt,
     required this.updatedAt,
+    this.deletedAt,
   });
 
   final int? id;
+
+  /// Globally stable identity for sync/export merging. Assigned by the
+  /// database layer on first save; null only on unsaved drafts.
+  final String? uuid;
   final UserAnnotationType type;
   final AnnotationVerseLink primaryVerse;
   final String? noteText;
@@ -79,6 +85,12 @@ class UserAnnotation extends Equatable {
   final List<AnnotationVerseLink> linkedVerses;
   final DateTime createdAt;
   final DateTime updatedAt;
+
+  /// Soft-delete tombstone timestamp; non-null means this annotation is
+  /// deleted and only kept for sync/export propagation.
+  final DateTime? deletedAt;
+
+  bool get isDeleted => deletedAt != null;
 
   bool get hasHighlight => highlightColorValue != null;
 
@@ -90,17 +102,27 @@ class UserAnnotation extends Equatable {
   List<AnnotationVerseLink> get allVerses => [primaryVerse, ...linkedVerses];
 
   bool touchesReference(BibleReference reference, {String? translationId}) {
-    return allVerses.any(
-      (link) =>
-          link.bookId == reference.bookId &&
-          link.chapter == reference.chapter &&
-          link.verse == reference.verse &&
-          (translationId == null || link.translationId == translationId),
+    // Hot path: the reader calls this per annotation per verse per frame,
+    // so check primary + linked directly instead of allocating [allVerses].
+    if (annotationVerseLinkMatchesReference(
+      primaryVerse,
+      reference,
+      translationId: translationId,
+    )) {
+      return true;
+    }
+    return linkedVerses.any(
+      (link) => annotationVerseLinkMatchesReference(
+        link,
+        reference,
+        translationId: translationId,
+      ),
     );
   }
 
   UserAnnotation copyWith({
     int? id,
+    String? uuid,
     UserAnnotationType? type,
     AnnotationVerseLink? primaryVerse,
     String? noteText,
@@ -111,9 +133,11 @@ class UserAnnotation extends Equatable {
     List<AnnotationVerseLink>? linkedVerses,
     DateTime? createdAt,
     DateTime? updatedAt,
+    DateTime? deletedAt,
   }) {
     return UserAnnotation(
       id: id ?? this.id,
+      uuid: uuid ?? this.uuid,
       type: type ?? this.type,
       primaryVerse: primaryVerse ?? this.primaryVerse,
       noteText: clearNoteText ? null : (noteText ?? this.noteText),
@@ -124,12 +148,14 @@ class UserAnnotation extends Equatable {
       linkedVerses: linkedVerses ?? this.linkedVerses,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      deletedAt: deletedAt ?? this.deletedAt,
     );
   }
 
   @override
   List<Object?> get props => [
     id,
+    uuid,
     type,
     primaryVerse,
     noteText,
@@ -138,6 +164,7 @@ class UserAnnotation extends Equatable {
     linkedVerses,
     createdAt,
     updatedAt,
+    deletedAt,
   ];
 }
 

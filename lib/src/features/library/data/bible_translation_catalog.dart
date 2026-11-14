@@ -1,12 +1,52 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
+
 import 'package:basic_bible/src/models/bible_models.dart';
 
 // =============================================================================
 // Built-in translation definitions
 // =============================================================================
 
+// Offline copies of the catalog's rights fields (#18), so the copyright line
+// shows before the remote catalog has ever been fetched. The catalog wins
+// when it is available (see mergeCatalogTranslation).
+const _kjvRights = BibleTranslationRights(
+  license: 'Public Domain',
+  licenseUrl: 'https://ebible.org/publicdomain.htm',
+  copyrightNotice:
+      'Embedded metadata says the text is firmly in the public domain outside '
+      'the UK, with UK printing restrictions under the historic '
+      "Crown/Queen's Printer regime.",
+  sourceUrl: 'https://ebible.org/Scriptures/',
+);
+const _asvRights = BibleTranslationRights(
+  license: 'Public Domain',
+  licenseUrl: 'https://ebible.org/publicdomain.htm',
+  copyrightNotice:
+      "The OSIS header states: 'We believe that this Bible is found in the "
+      "Public Domain.'",
+  sourceUrl: 'https://ebible.org/Scriptures/',
+);
+const _webRights = BibleTranslationRights(
+  license: 'Public Domain',
+  licenseUrl: 'https://worldenglishbible.org/',
+  copyrightNotice:
+      'The USFX preface states that the World English Bible is in the public '
+      'domain and may be freely copied, distributed, and incorporated into '
+      'software.',
+  sourceUrl: 'https://worldenglishbible.org/',
+);
+
 /// The canonical list of translations shipped with the app.
 /// Always appears in the available list even with no network and no DB row.
 final List<BibleTranslation> kBuiltInTranslations = [
+  // Both bundled KJV assets ship gzipped (62 MB raw → 8 MB shipped); the
+  // asset loaders decompress transparently for `.gz` paths.
+  //
+  // IMPORTANT: kjv.sqlite.gz is a pre-parsed snapshot. When
+  // kCurrentParserVersion is bumped, regenerate it (export the re-parsed
+  // kjv.sqlite via Advanced Settings, then `gzip -9`) or shipped KJV will
+  // silently lack the new parser features — the restore path stamps it with
+  // the current version.
   BibleTranslation(
     id: 'kjv',
     name: 'King James Version',
@@ -14,19 +54,22 @@ final List<BibleTranslation> kBuiltInTranslations = [
     languageName: 'English',
     description: 'The classic English Bible translation',
     isLocal: true,
-    filePath: 'assets/bible/eng-kjv2006_usfx.xml',
+    // Every platform, web included, opens the prebuilt database directly
+    // (see seedTranslationDatabase) instead of parsing the XML on device.
+    filePath: 'assets/bible/kjv.sqlite.gz',
     githubUrl:
         'https://raw.githubusercontent.com/PopGTN/bible-data/main/English/kjv/eng-kjv2006_usfx.xml',
-    format: BibleFormat.usfx,
+    format: BibleFormat.sqlite,
     sourceType: BibleSourceType.asset,
     bundledByDefault: true,
     displayOrder: 10,
+    rights: _kjvRights,
     artifacts: [
       BibleTranslationArtifact(
-        format: BibleFormat.usfx,
+        format: kIsWeb ? BibleFormat.usfx : BibleFormat.sqlite,
         downloadUrl:
             'https://raw.githubusercontent.com/PopGTN/bible-data/main/English/kjv/eng-kjv2006_usfx.xml',
-        fileName: 'eng-kjv2006_usfx.xml',
+        fileName: kIsWeb ? 'eng-kjv2006_usfx.xml' : 'kjv.sqlite',
         isPreferred: true,
       ),
     ],
@@ -43,6 +86,7 @@ final List<BibleTranslation> kBuiltInTranslations = [
     format: BibleFormat.osis,
     sourceType: BibleSourceType.download,
     displayOrder: 20,
+    rights: _asvRights,
     artifacts: [
       BibleTranslationArtifact(
         format: BibleFormat.osis,
@@ -65,6 +109,7 @@ final List<BibleTranslation> kBuiltInTranslations = [
     format: BibleFormat.usfx,
     sourceType: BibleSourceType.download,
     displayOrder: 30,
+    rights: _webRights,
     artifacts: [
       BibleTranslationArtifact(
         format: BibleFormat.usfx,
@@ -98,6 +143,7 @@ BibleTranslation mergeCatalogTranslation({
     bundledByDefault: remote.bundledByDefault || builtIn.bundledByDefault,
     displayOrder: remote.displayOrder,
     artifacts: remote.artifacts.isEmpty ? builtIn.artifacts : remote.artifacts,
+    rights: remote.rights ?? builtIn.rights,
   );
 }
 
@@ -137,6 +183,7 @@ BibleTranslation mergeStoredTranslation({
     bundledByDefault: base.bundledByDefault,
     displayOrder: base.displayOrder,
     artifacts: base.artifacts,
+    rights: base.rights ?? stored.rights,
   );
 }
 

@@ -128,6 +128,7 @@ class TranslationTile extends StatelessWidget {
     required this.translation,
     required this.isSelected,
     required this.isLoading,
+    this.progress,
     required this.onTap,
     this.onOpenForSession,
     this.onDownload,
@@ -138,6 +139,9 @@ class TranslationTile extends StatelessWidget {
   final BibleTranslation translation;
   final bool isSelected;
   final bool isLoading;
+
+  /// 0..1 while a download's size is known (#55); null = indeterminate.
+  final double? progress;
   final VoidCallback? onTap;
   final VoidCallback? onOpenForSession;
   final VoidCallback? onDownload;
@@ -157,26 +161,29 @@ class TranslationTile extends StatelessWidget {
         translation.availability == BibleTranslationAvailability.downloaded ||
         translation.availability == BibleTranslationAvailability.imported;
 
-    final Widget statusAction = isLoading
+    final Widget? statusAction = isLoading
         ? SizedBox(
             width: 20,
             height: 20,
             child: CircularProgressIndicator(
+              value: progress,
               strokeWidth: 2,
               color: colors.primary,
             ),
+          )
+        : onDownload != null
+        ? IconButton(
+            tooltip: t.downloadAction,
+            onPressed: onDownload,
+            icon: const Icon(Icons.download_rounded),
+            color: colors.primary,
           )
         : isStoredLocally
         ? Tooltip(
             message: t.availableOfflineTooltip,
             child: Icon(Icons.check_circle, color: colors.primary),
           )
-        : IconButton(
-            tooltip: t.downloadAction,
-            onPressed: onDownload,
-            icon: const Icon(Icons.download_rounded),
-            color: colors.primary,
-          );
+        : null;
 
     final Widget? overflowMenu = !hasSecondaryActions
         ? null
@@ -227,9 +234,9 @@ class TranslationTile extends StatelessWidget {
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          statusAction,
+          if (statusAction != null) statusAction,
           if (overflowMenu != null) ...[
-            const SizedBox(width: 4),
+            if (statusAction != null) const SizedBox(width: 4),
             overflowMenu,
           ],
         ],

@@ -12,7 +12,8 @@ extension AppBibleRepositoryLoading on AppBibleRepository {
   Future<List<BibleBook>> loadLocalBibleShell(String translationId) async {
     final memoryCached = peekLoadedTranslation(translationId);
     if (memoryCached != null) {
-      return _rememberLoadedTranslation(translationId, memoryCached);
+      activateLoadedTranslation(translationId);
+      return memoryCached;
     }
 
     if (await _isCacheValid(translationId)) {
@@ -25,6 +26,22 @@ extension AppBibleRepositoryLoading on AppBibleRepository {
     return loadLocalBible(translationId);
   }
 
+  /// Books + chapter metadata for a *secondary* view (split view, #84)
+  /// without making [translationId] the repository's active translation, so
+  /// the main reader's state is untouched. Falls back to the normal shell
+  /// load only when nothing is cached yet.
+  Future<List<BibleBook>> loadShellWithoutActivating(String translationId) async {
+    final inMemory = peekLoadedTranslation(translationId);
+    if (inMemory != null) return inMemory;
+    if (await _isCacheValid(translationId)) {
+      final path = await _sqlitePathFor(translationId);
+      final translationDb = await _dbManager.open(translationId, path);
+      final shell = await translationDb.getBooksShell();
+      if (shell.isNotEmpty) return shell;
+    }
+    return loadLocalBibleShell(translationId);
+  }
+
   // ---------------------------------------------------------------------------
   // Full load (parses XML if needed, in-flight dedup via _inFlight map)
   // ---------------------------------------------------------------------------
@@ -32,19 +49,20 @@ extension AppBibleRepositoryLoading on AppBibleRepository {
   Future<List<BibleBook>> loadLocalBible(String translationId) {
     final memoryCached = peekLoadedTranslation(translationId);
     if (memoryCached != null) {
-      return Future.value(_rememberLoadedTranslation(translationId, memoryCached));
+      activateLoadedTranslation(translationId);
+      return Future.value(memoryCached);
     }
-    return _inFlight.putIfAbsent(
+    return _inFlight.run(
       translationId,
-      () => _doLoadLocalBible(translationId)
-          .whenComplete(() => _inFlight.remove(translationId)),
+      () => _doLoadLocalBible(translationId),
     );
   }
 
   Future<List<BibleBook>> _doLoadLocalBible(String translationId) async {
     final memoryCached = peekLoadedTranslation(translationId);
     if (memoryCached != null) {
-      return _rememberLoadedTranslation(translationId, memoryCached);
+      activateLoadedTranslation(translationId);
+      return memoryCached;
     }
 
     if (await _isCacheValid(translationId)) {
@@ -57,6 +75,32 @@ extension AppBibleRepositoryLoading on AppBibleRepository {
     try {
       final translation = await _getTranslation(translationId);
       await _invalidateCache(translationId);
+
+      if (_isBuiltInSqliteTranslation(translation)) {
+        try {
+          await _restoreBuiltInSqliteCache(translation: translation);
+          await _db.upsertInstalledTranslation(
+            translation: translation,
+            sourceLocation: sourceLocationForTranslation(translation),
+            sourceTypeOverride: translation.sourceType,
+            parserVersion: kCurrentParserVersion,
+          );
+          final path = await _sqlitePathFor(translationId);
+          final translationDb = await _dbManager.open(translationId, path);
+          // Use shell load (no verses) — the SQLite file itself is the cache.
+          // Verses are hydrated on-demand via loadChapterVerses/getChapter().
+          final books = await translationDb.getBooksShell();
+          if (books.isNotEmpty) {
+            return _rememberLoadedTranslation(translationId, books);
+          }
+        } catch (_) {
+          // Asset restore failed or produced no data — fall through to network.
+        }
+        // Clean up any partial state before falling back to a network download.
+        await _invalidateCache(translationId);
+        await _db.deleteInstalledTranslation(translationId);
+        return downloadBible(translationId);
+      }
 
       if (_isImportedSqliteTranslation(translation)) {
         await _restoreImportedSqliteCache(translation: translation);
@@ -75,22 +119,34 @@ extension AppBibleRepositoryLoading on AppBibleRepository {
         return _rememberLoadedTranslation(translationId, books);
       }
 
+      if (translation.sourceType == BibleSourceType.import &&
+          (translation.format == BibleFormat.usfm ||
+              translation.format == BibleFormat.zip)) {
+        final books = await _loadImportedBooks(translation);
+        final path = await _sqlitePathFor(translationId);
+        final translationDb = await _dbManager.open(translationId, path);
+        await translationDb.insertBible(books);
+        await _db.updateInstalledTranslationParserVersion(
+          translationId,
+          kCurrentParserVersion,
+        );
+        return _rememberLoadedTranslation(translationId, books);
+      }
+
       final content = await _loadLocalContent(translation);
-      final parsed = await compute(parseBibleToSerializable, content);
-      final books = parsed.map(mapSerializableBook).toList();
+      // parse + model mapping both happen inside the worker isolate.
+      final books = await compute(parseBibleContentToBooks, content);
 
       final path = await _sqlitePathFor(translationId);
       final translationDb = await _dbManager.open(translationId, path);
       await translationDb.insertBible(books);
 
+      // Single round-trip: upsert metadata and stamp the parser version together.
       await _db.upsertInstalledTranslation(
         translation: translation,
         sourceLocation: sourceLocationForTranslation(translation),
         sourceTypeOverride: translation.sourceType,
-      );
-      await _db.updateInstalledTranslationParserVersion(
-        translationId,
-        kCurrentParserVersion,
+        parserVersion: kCurrentParserVersion,
       );
 
       return _rememberLoadedTranslation(translationId, books);
@@ -108,10 +164,82 @@ extension AppBibleRepositoryLoading on AppBibleRepository {
     String bookId,
     int chapterNumber,
   ) async {
+    final cachedChapter = _lookupCachedChapter(translationId, bookId, chapterNumber);
+    if (cachedChapter != null) {
+      return cachedChapter;
+    }
+
+    final fullBooks = peekLoadedTranslation(translationId);
+    if (fullBooks != null) {
+      for (final book in fullBooks) {
+        if (book.id != bookId) continue;
+        for (final chapter in book.chapters) {
+          if (chapter.number != chapterNumber || chapter.verses.isEmpty) {
+            continue;
+          }
+          return _rememberHydratedChapter(translationId, bookId, chapter);
+        }
+      }
+    }
+
     final path = await _sqlitePathFor(translationId);
-    if (usesFileBackedStorage && !await pathExists(path)) return null;
+    if (usesFileBackedStorage && !await pathExists(path)) {
+      return null;
+    }
     final translationDb = await _dbManager.open(translationId, path);
-    return translationDb.getChapter(bookId, chapterNumber);
+    final chapter = await translationDb.getChapter(bookId, chapterNumber);
+    if (chapter == null) return null;
+    return _rememberHydratedChapter(translationId, bookId, chapter);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Search (#69)
+  // ---------------------------------------------------------------------------
+
+  /// Verses of [translationId] containing every word of [query].
+  ///
+  /// Installed translations are searched in their database; session-only
+  /// reads (memory only, no database) are searched in memory. Returns an
+  /// empty list rather than throwing when there is nothing searchable.
+  Future<List<BibleSearchHit>> searchVerses(
+    String translationId,
+    String query, {
+    Set<String>? bookIds,
+    int? chapter,
+    int limit = 500,
+  }) async {
+    final terms = bibleSearchTerms(query);
+    if (terms.isEmpty) return const [];
+
+    final inMemory = peekLoadedTranslation(translationId);
+    if (inMemory != null && _sessionTranslationIds.contains(translationId)) {
+      return searchBooksInMemory(
+        inMemory,
+        terms,
+        bookIds: bookIds,
+        chapter: chapter,
+        limit: limit,
+      );
+    }
+    if (!await _isCacheValid(translationId)) {
+      return inMemory == null
+          ? const []
+          : searchBooksInMemory(
+              inMemory,
+              terms,
+              bookIds: bookIds,
+              chapter: chapter,
+              limit: limit,
+            );
+    }
+    final path = await _sqlitePathFor(translationId);
+    final translationDb = await _dbManager.open(translationId, path);
+    return translationDb.searchVerses(
+      terms,
+      bookIds: bookIds,
+      chapter: chapter,
+      limit: limit,
+    );
   }
 
   /// Loads from local storage only. Never makes a network request.
@@ -158,7 +286,30 @@ extension AppBibleRepositoryLoading on AppBibleRepository {
     if (!await pathExists(filePath)) {
       throw Exception('Imported translation file was not found: $filePath');
     }
-    return readTextFile(filePath);
+    final document = decodeBibleArchiveText(
+      await readBinaryFile(filePath),
+      sourceName: p.basename(filePath),
+      hintedFormat: translation.format,
+    );
+    return document.content;
+  }
+
+  Future<List<BibleBook>> _loadImportedBooks(BibleTranslation translation) async {
+    final filePath = translation.filePath;
+    if (filePath == null || filePath.isEmpty) {
+      throw Exception(
+        'Imported translation ${translation.id} is missing a file path.',
+      );
+    }
+    if (!await pathExists(filePath)) {
+      throw Exception('Imported translation file was not found: $filePath');
+    }
+    final parsed = await parseBibleSourceBytes(
+      await readBinaryFile(filePath),
+      sourceName: p.basename(filePath),
+      hintedFormat: translation.format,
+    );
+    return parsed.books;
   }
 
   Future<String> _loadAssetContent(BibleTranslation translation) async {
@@ -169,12 +320,56 @@ extension AppBibleRepositoryLoading on AppBibleRepository {
       );
     }
     try {
+      if (assetPath.endsWith('.gz')) {
+        return utf8.decode(_gunzipAssetBytes(await rootBundle.load(assetPath)));
+      }
       return await rootBundle.loadString(assetPath);
     } catch (error) {
       throw Exception(
         'Bundled translation ${translation.id} not found at $assetPath: $error',
       );
     }
+  }
+
+  /// Bundled Bible assets ship gzipped to keep install size down (the raw
+  /// KJV pair is 62 MB; gzipped it is 8 MB). Uses package:archive so the
+  /// same code runs on web.
+  List<int> _gunzipAssetBytes(ByteData byteData) {
+    final compressed = byteData.buffer.asUint8List(
+      byteData.offsetInBytes,
+      byteData.lengthInBytes,
+    );
+    return GZipDecoder().decodeBytes(compressed);
+  }
+
+  bool _isBuiltInSqliteTranslation(BibleTranslation translation) =>
+      translation.sourceType == BibleSourceType.asset &&
+      translation.format == BibleFormat.sqlite;
+
+  Future<void> _restoreBuiltInSqliteCache({
+    required BibleTranslation translation,
+  }) async {
+    final assetPath = translation.filePath;
+    if (assetPath == null || assetPath.isEmpty) {
+      throw Exception(
+        'Built-in SQLite translation ${translation.id} is missing an asset path.',
+      );
+    }
+    final byteData = await rootBundle.load(assetPath);
+    final List<int> bytes = assetPath.endsWith('.gz')
+        ? _gunzipAssetBytes(byteData)
+        : byteData.buffer.asUint8List(
+            byteData.offsetInBytes,
+            byteData.lengthInBytes,
+          );
+    await _dbManager.close(translation.id);
+    // Works on web too (IndexedDB): the browser opens the prebuilt database
+    // instead of parsing the XML and inserting ~31k verses on the main
+    // thread, which took ~6 s of the first visit.
+    await seedTranslationDatabase(
+      await _sqlitePathFor(translation.id),
+      bytes is Uint8List ? bytes : Uint8List.fromList(bytes),
+    );
   }
 
   bool _isImportedSqliteTranslation(BibleTranslation translation) =>
@@ -193,7 +388,7 @@ extension AppBibleRepositoryLoading on AppBibleRepository {
     if (!await pathExists(sourcePath)) {
       throw Exception('Imported translation file was not found: $sourcePath');
     }
-    _dbManager.close(translation.id);
+    await _dbManager.close(translation.id);
     await copyFile(sourcePath, await _sqlitePathFor(translation.id));
   }
 }

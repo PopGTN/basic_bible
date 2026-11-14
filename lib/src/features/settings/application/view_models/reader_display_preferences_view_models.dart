@@ -80,7 +80,7 @@ class UnderlineWordMetadataNotifier extends _ReaderDisplayPreferenceNotifier {
 class BracketTranslatorAdditionsNotifier
     extends _ReaderDisplayPreferenceNotifier {
   BracketTranslatorAdditionsNotifier(SharedPreferences prefs)
-    : super(prefs, 'reader_bracket_translator_additions', true);
+    : super(prefs, 'reader_bracket_translator_additions', false);
 }
 
 class UseSourceBoldStylingNotifier extends _ReaderDisplayPreferenceNotifier {

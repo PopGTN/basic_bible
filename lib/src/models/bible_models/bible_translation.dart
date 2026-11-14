@@ -46,6 +46,34 @@ class BibleTranslationArtifact extends Equatable {
   ];
 }
 
+/// Copyright / licensing details for a translation, from the catalog (#18).
+class BibleTranslationRights extends Equatable {
+  const BibleTranslationRights({
+    this.license,
+    this.licenseUrl,
+    this.copyrightNotice,
+    this.sourceUrl,
+  });
+
+  /// Short label, e.g. "Public Domain".
+  final String? license;
+  final String? licenseUrl;
+
+  /// Longer statement about the rights, shown in the details sheet.
+  final String? copyrightNotice;
+
+  /// Where the text was published (e.g. the translation's website).
+  final String? sourceUrl;
+
+  bool get isEmpty =>
+      [license, licenseUrl, copyrightNotice, sourceUrl].every(
+        (value) => value == null || value.trim().isEmpty,
+      );
+
+  @override
+  List<Object?> get props => [license, licenseUrl, copyrightNotice, sourceUrl];
+}
+
 class BibleTranslation extends Equatable {
   final String id;
   final String name;
@@ -61,6 +89,9 @@ class BibleTranslation extends Equatable {
   final int displayOrder;
   final List<BibleTranslationArtifact> artifacts;
 
+  /// Null when nothing is known (e.g. an imported file).
+  final BibleTranslationRights? rights;
+
   const BibleTranslation({
     required this.id,
     required this.name,
@@ -75,6 +106,7 @@ class BibleTranslation extends Equatable {
     this.bundledByDefault = false,
     this.displayOrder = 0,
     this.artifacts = const [],
+    this.rights,
   });
 
   BibleTranslation copyWith({
@@ -91,6 +123,7 @@ class BibleTranslation extends Equatable {
     bool? bundledByDefault,
     int? displayOrder,
     List<BibleTranslationArtifact>? artifacts,
+    BibleTranslationRights? rights,
   }) {
     return BibleTranslation(
       id: id ?? this.id,
@@ -106,6 +139,7 @@ class BibleTranslation extends Equatable {
       bundledByDefault: bundledByDefault ?? this.bundledByDefault,
       displayOrder: displayOrder ?? this.displayOrder,
       artifacts: artifacts ?? this.artifacts,
+      rights: rights ?? this.rights,
     );
   }
 
@@ -143,5 +177,6 @@ class BibleTranslation extends Equatable {
     bundledByDefault,
     displayOrder,
     artifacts,
+    rights,
   ];
 }
