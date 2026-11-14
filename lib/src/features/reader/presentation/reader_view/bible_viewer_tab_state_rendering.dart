@@ -45,6 +45,11 @@ extension _BibleTextViewStateRendering on _BibleTextViewState {
         ),
         child: ListView.builder(
           controller: _scrollController,
+          // Build the whole chapter (at most ~176 verses), not just what's
+          // on screen: jumping to a verse (search result, picker, note) uses
+          // Scrollable.ensureVisible on that verse's widget, which can't
+          // scroll to a verse that a lazy list hasn't built yet.
+          cacheExtent: 1e6,
           itemCount: contentWidgets.length,
           itemBuilder: (context, index) => contentWidgets[index],
         ),
