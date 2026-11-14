@@ -9,7 +9,9 @@ import 'package:basic_bible/l10n/app_localizations.dart';
 
 // Screens
 import 'features/auth/presentation/login_screen.dart';
+import 'features/home/application/view_models/reader_link_opener.dart';
 import 'features/home/presentation/home_screen.dart';
+import 'features/reader/models/reader_deep_link.dart';
 import 'features/library/presentation/versions_screen.dart';
 import 'features/annotations/presentation/notes_screen.dart';
 import 'features/settings/application/view_models/app_launch_preferences_view_models.dart';
@@ -177,6 +179,18 @@ class _MyAppState extends ConsumerState<MyApp> {
         ),
       ],
       redirect: (context, state) {
+        // Reader deep links (#40): basicbible://bible/JHN/3/16?translation=kjv
+        // or /bible/John/3 on web. Apply the link, then land on /home (the
+        // login rule below still applies on the follow-up redirect).
+        final readerLink = ReaderDeepLink.tryParse(state.uri);
+        if (readerLink != null) {
+          // Not while the router is mid-redirect: providers change next tick.
+          Future.microtask(
+            () => ref.read(readerLinkOpenerProvider).open(readerLink),
+          );
+          return '/home';
+        }
+
         final loggedIn = isAppAuthenticated(
           localLoggedIn: ref.read(authProvider),
           syncState: ref.read(syncControllerProvider),
