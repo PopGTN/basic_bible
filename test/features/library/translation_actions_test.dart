@@ -11,6 +11,7 @@ import 'package:basic_bible/src/features/reader/application/view_models/bible_li
 import 'package:basic_bible/src/features/reader/application/view_models/reader_session_view_models.dart';
 import 'package:basic_bible/src/features/reader/application/view_models/translation_actions_view_model.dart';
 import 'package:basic_bible/src/models/bible_models.dart';
+import 'package:basic_bible/src/services/download_notification_service.dart';
 import 'package:basic_bible/src/services/shared_preferences_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
@@ -42,6 +43,35 @@ class _FakeBooksNotifier extends StateNotifier<AsyncValue<List<BibleBook>>>
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
+class _RecordingNotifications implements DownloadNotifications {
+  final events = <String>[];
+
+  @override
+  Future<void> showProgress(
+    String translationId,
+    String name,
+    double? fraction, {
+    bool installing = false,
+  }) async {
+    events.add(
+      installing
+          ? 'installing'
+          : fraction == null
+          ? 'starting'
+          : '${(fraction * 100).round()}%',
+    );
+  }
+
+  @override
+  Future<void> showFinished(
+    String translationId,
+    String name, {
+    required bool success,
+  }) async {
+    events.add(success ? 'done' : 'failed');
+  }
+}
+
 const _translation = BibleTranslation(
   id: 'web',
   name: 'World English Bible',
@@ -53,14 +83,17 @@ void main() {
   late ProviderContainer container;
   late _FakeBooksNotifier books;
   late int translationListLoads;
+  late _RecordingNotifications notifications;
 
   setUp(() async {
     SharedPreferences.setMockInitialValues({'bible_translation': 'kjv'});
     final prefs = await SharedPreferences.getInstance();
     books = _FakeBooksNotifier();
     translationListLoads = 0;
+    notifications = _RecordingNotifications();
     container = ProviderContainer(
       overrides: [
+        downloadNotificationsProvider.overrideWithValue(notifications),
         sharedPreferencesProvider.overrideWithValue(prefs),
         bibleBooksProvider.overrideWith((ref) => books),
         availableTranslationsProvider.overrideWith((ref) async {
@@ -158,5 +191,34 @@ void main() {
     expect(container.read(translationDownloadsProvider)['web']!.fraction, isNull);
     books.download.complete();
     await pending;
+  });
+
+  test('a download drives its system notification (#55)', () async {
+    final pending = container.read(translationActionsProvider).download(
+      _translation,
+    );
+    final notify = books.lastProgress!;
+    notify(0, 200);
+    notify(1, 200); // same percent: no extra notification
+    notify(100, 200);
+    notify(200, 200);
+    books.download.complete();
+    await pending;
+    expect(notifications.events, [
+      'starting',
+      '0%',
+      '50%',
+      'installing',
+      'done',
+    ]);
+  });
+
+  test('a failed download posts a failure notification', () async {
+    final pending = container.read(translationActionsProvider).download(
+      _translation,
+    );
+    books.download.completeError(Exception('offline'));
+    await expectLater(pending, throwsException);
+    expect(notifications.events.last, 'failed');
   });
 }

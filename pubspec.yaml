@@ -58,6 +58,9 @@ dependencies:
   # Building/reading standalone notes-backup SQLite files (also used by
   # migration tests to build legacy-schema fixture databases).
   sqlite3: ^2.4.0
+  # System notification with progress for translation downloads (#55).
+  # 20.x is the newest line that still supports Flutter 3.35 / Dart 3.9.
+  flutter_local_notifications: ^20.1.0
 
 dev_dependencies:
   flutter_test:

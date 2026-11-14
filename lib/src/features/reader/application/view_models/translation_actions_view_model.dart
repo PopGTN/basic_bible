@@ -1,5 +1,6 @@
 import 'package:basic_bible/src/features/library/data/app_bible_repository.dart';
 import 'package:basic_bible/src/models/bible_models.dart';
+import 'package:basic_bible/src/services/download_notification_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'bible_library_view_models.dart';
@@ -40,7 +41,7 @@ class TranslationActions {
   /// list. Returns false without doing anything if the same translation is
   /// already downloading. Errors are rethrown for the caller to report.
   Future<bool> download(BibleTranslation translation) {
-    return _runExclusive(translation, (onProgress) async {
+    return _runExclusive(translation, notify: true, (onProgress) async {
       await _ref
           .read(bibleBooksProvider.notifier)
           .downloadTranslation(translation.id, onProgress: onProgress);
@@ -61,24 +62,51 @@ class TranslationActions {
 
   Future<bool> _runExclusive(
     BibleTranslation translation,
-    Future<void> Function(DownloadProgressCallback onProgress) body,
-  ) async {
+    Future<void> Function(DownloadProgressCallback onProgress) body, {
+    bool notify = false,
+  }) async {
     final translationId = translation.id;
     final downloads = _ref.read(translationDownloadsProvider.notifier);
     if (!downloads.markStarted(translationId, name: translation.name)) {
       return false;
     }
+    final notifications = notify
+        ? _ref.read(downloadNotificationsProvider)
+        : null;
+
+    // Mirror each *visible* status change (already coalesced to whole
+    // percents by the notifier) into the system notification (#55).
+    TranslationDownloadStatus? lastPublished;
+    void publish() {
+      final status = _ref.read(translationDownloadsProvider)[translationId];
+      if (notifications == null || status == null) return;
+      if (identical(status, lastPublished)) return;
+      lastPublished = status;
+      notifications.showProgress(
+        translationId,
+        translation.name,
+        status.fraction,
+        installing: status.installing,
+      );
+    }
+
     void onProgress(int received, int? total) {
       downloads.reportProgress(translationId, received, total);
       // All bytes in: what follows (parse + install) can't be measured.
       if (total != null && received >= total) {
         downloads.markInstalling(translationId);
       }
+      publish();
     }
 
+    publish();
     try {
       await body(onProgress);
+      notifications?.showFinished(translationId, translation.name, success: true);
       return true;
+    } catch (_) {
+      notifications?.showFinished(translationId, translation.name, success: false);
+      rethrow;
     } finally {
       // Refresh on success *and* failure: a failed download may still have
       // changed what is on disk (e.g. invalidated an old cache).

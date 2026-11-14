@@ -23,7 +23,11 @@ export 'bible_books_shell_notifier.dart' show BibleBooksShellNotifier;
 
 /// Progress of one in-progress download or session-open (#55).
 class TranslationDownloadStatus {
-  const TranslationDownloadStatus({required this.name, this.fraction});
+  const TranslationDownloadStatus({
+    required this.name,
+    this.fraction,
+    this.installing = false,
+  });
 
   /// Translation display name, for notifications.
   final String name;
@@ -31,6 +35,9 @@ class TranslationDownloadStatus {
   /// 0..1 while bytes arrive and the size is known; null when the size is
   /// unknown or the file is being parsed/installed (indeterminate).
   final double? fraction;
+
+  /// All bytes are in and the Bible is being parsed/installed.
+  final bool installing;
 }
 
 /// In-progress downloads and session-opens keyed by translation ID.
@@ -81,8 +88,11 @@ class TranslationDownloadsNotifier
   /// Bytes are in; parsing/installing has no measurable progress.
   void markInstalling(String id) {
     final current = state[id];
-    if (current == null || current.fraction == null) return;
-    state = {...state, id: TranslationDownloadStatus(name: current.name)};
+    if (current == null || current.installing) return;
+    state = {
+      ...state,
+      id: TranslationDownloadStatus(name: current.name, installing: true),
+    };
   }
 
   void markFinished(String id) {
