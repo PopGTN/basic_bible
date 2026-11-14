@@ -46,11 +46,11 @@ extension _BibleTextViewStateRendering on _BibleTextViewState {
         ),
         child: ListView.builder(
           controller: _scrollController,
-          // Build the whole chapter (at most ~176 verses), not just what's
-          // on screen: jumping to a verse (search result, picker, note) uses
-          // Scrollable.ensureVisible on that verse's widget, which can't
-          // scroll to a verse that a lazy list hasn't built yet.
-          cacheExtent: 1e6,
+          // When jumping to a verse (search result, picker, note), build the
+          // whole chapter so Scrollable.ensureVisible can reach a verse a lazy
+          // list hasn't built yet. Otherwise stay lazy: building all of
+          // Psalm 119 up front made it open ~4x slower than a short chapter.
+          cacheExtent: _verseFocusRequested ? 1e6 : null,
           itemCount: contentWidgets.length,
           itemBuilder: (context, index) => contentWidgets[index],
         ),
