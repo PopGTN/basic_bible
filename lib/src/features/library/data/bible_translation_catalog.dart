@@ -54,12 +54,12 @@ final List<BibleTranslation> kBuiltInTranslations = [
     languageName: 'English',
     description: 'The classic English Bible translation',
     isLocal: true,
-    filePath: kIsWeb
-        ? 'assets/bible/eng-kjv2006_usfx.xml.gz'
-        : 'assets/bible/kjv.sqlite.gz',
+    // Every platform, web included, opens the prebuilt database directly
+    // (see seedTranslationDatabase) instead of parsing the XML on device.
+    filePath: 'assets/bible/kjv.sqlite.gz',
     githubUrl:
         'https://raw.githubusercontent.com/PopGTN/bible-data/main/English/kjv/eng-kjv2006_usfx.xml',
-    format: kIsWeb ? BibleFormat.usfx : BibleFormat.sqlite,
+    format: BibleFormat.sqlite,
     sourceType: BibleSourceType.asset,
     bundledByDefault: true,
     displayOrder: 10,

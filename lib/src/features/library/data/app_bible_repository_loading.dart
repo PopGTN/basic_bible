@@ -356,14 +356,20 @@ extension AppBibleRepositoryLoading on AppBibleRepository {
       );
     }
     final byteData = await rootBundle.load(assetPath);
-    final bytes = assetPath.endsWith('.gz')
+    final List<int> bytes = assetPath.endsWith('.gz')
         ? _gunzipAssetBytes(byteData)
         : byteData.buffer.asUint8List(
             byteData.offsetInBytes,
             byteData.lengthInBytes,
           );
-    _dbManager.close(translation.id);
-    await writeBinaryFile(await _sqlitePathFor(translation.id), bytes);
+    await _dbManager.close(translation.id);
+    // Works on web too (IndexedDB): the browser opens the prebuilt database
+    // instead of parsing the XML and inserting ~31k verses on the main
+    // thread, which took ~6 s of the first visit.
+    await seedTranslationDatabase(
+      await _sqlitePathFor(translation.id),
+      bytes is Uint8List ? bytes : Uint8List.fromList(bytes),
+    );
   }
 
   bool _isImportedSqliteTranslation(BibleTranslation translation) =>
@@ -382,7 +388,7 @@ extension AppBibleRepositoryLoading on AppBibleRepository {
     if (!await pathExists(sourcePath)) {
       throw Exception('Imported translation file was not found: $sourcePath');
     }
-    _dbManager.close(translation.id);
+    await _dbManager.close(translation.id);
     await copyFile(sourcePath, await _sqlitePathFor(translation.id));
   }
 }

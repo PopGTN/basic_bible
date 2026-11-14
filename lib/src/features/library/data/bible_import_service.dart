@@ -250,7 +250,7 @@ class AppBibleImportService {
     required String destinationPath,
     required String translationId,
   }) async {
-    _dbManager.close(translationId);
+    await _dbManager.close(translationId);
     if (!await pathExists(sourcePath)) {
       throw Exception('Selected Bible file does not exist.');
     }

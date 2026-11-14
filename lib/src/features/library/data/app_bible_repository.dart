@@ -17,6 +17,7 @@ import 'package:basic_bible/src/features/library/data/in_flight_requests.dart';
 import 'package:basic_bible/src/features/library/data/remote_translation_catalog_service.dart';
 import 'package:basic_bible/src/models/bible_models.dart';
 import 'package:basic_bible/src/services/app_database.dart';
+import 'package:basic_bible/src/services/translation_database_executor.dart';
 import 'package:basic_bible/src/services/translation_database_manager.dart';
 
 import 'library_source_io.dart';
@@ -388,12 +389,12 @@ class AppBibleRepository {
   }
 
   Future<void> _invalidateCache(String translationId) async {
-    _dbManager.close(translationId);
+    await _dbManager.close(translationId);
     if (!usesFileBackedStorage) {
       final path = await _sqlitePathFor(translationId);
       final db = await _dbManager.open(translationId, path);
       await db.clearBible();
-      _dbManager.close(translationId);
+      await _dbManager.close(translationId);
       return;
     }
     await deleteFileIfExists(await _sqlitePathFor(translationId));
