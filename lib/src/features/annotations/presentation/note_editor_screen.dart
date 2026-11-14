@@ -200,7 +200,7 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final booksAsync = ref.watch(bibleBooksShellProvider);
+    final booksAsync = ref.watch(readableBibleBooksProvider);
     final theme = Theme.of(context);
     final highlightColor = annotationColorFromValue(
       _draft.highlightColorValue,

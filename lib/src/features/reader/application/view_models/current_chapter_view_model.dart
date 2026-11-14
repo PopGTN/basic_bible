@@ -8,7 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// Resolves the fully hydrated chapter the reader should currently display.
 /// It starts from the faster shell load and only hydrates verses when needed.
 final currentChapterProvider = FutureProvider<BibleChapter?>((ref) async {
-  final booksAsync = ref.watch(bibleBooksShellProvider);
+  final booksAsync = ref.watch(readableBibleBooksProvider);
   final reference = ref.watch(currentReferenceProvider);
   final repository = ref.watch(bibleRepositoryProvider);
   final translation = ref.watch(currentTranslationProvider);

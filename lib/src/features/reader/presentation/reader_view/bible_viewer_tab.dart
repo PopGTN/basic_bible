@@ -212,7 +212,7 @@ class _BibleViewerTabState extends ConsumerState<BibleViewerTab> {
     // bar and picker are populated immediately, regardless of scroll mode.
     // Full books (with verses) are only needed in continuous mode for content
     // rendering and are watched separately.
-    final shellBooksAsync = ref.watch(bibleBooksShellProvider);
+    final shellBooksAsync = ref.watch(readableBibleBooksProvider);
     return _ReaderShellStateSnapshot(
       layoutMode: ref.watch(readerLayoutModeProvider),
       continuousScrolling: continuousScrolling,

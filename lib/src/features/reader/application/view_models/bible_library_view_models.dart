@@ -127,6 +127,33 @@ final bibleBooksShellProvider =
       },
     );
 
+/// The shell book list as readers navigate it: books without chapters are
+/// left out (issue #87).
+///
+/// Some sources ship non-chapter books such as a USFX `FRT` preface. They
+/// can't be opened, so listing them in the book picker or stepping onto them
+/// with next/previous chapter only led to "Chapter not found". UI should
+/// watch this provider; [bibleBooksShellProvider] keeps the raw list for
+/// repository-facing code.
+final readableBibleBooksProvider = Provider<AsyncValue<List<BibleBook>>>((
+  ref,
+) {
+  return ref.watch(bibleBooksShellProvider).whenData(booksWithChapters);
+});
+
+/// [books] minus the ones with no chapters. Returns [books] itself when
+/// nothing is removed (so widgets comparing lists by identity don't rebuild),
+/// and also when *every* book is chapterless, so a malformed translation
+/// still shows what it has instead of an empty picker.
+List<BibleBook> booksWithChapters(List<BibleBook> books) {
+  if (books.every((book) => book.chapters.isNotEmpty)) return books;
+  final readable = [
+    for (final book in books)
+      if (book.chapters.isNotEmpty) book,
+  ];
+  return readable.isEmpty ? books : readable;
+}
+
 // =============================================================================
 // Bible books — full (all verses)
 // =============================================================================

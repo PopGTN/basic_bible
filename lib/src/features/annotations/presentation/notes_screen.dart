@@ -178,7 +178,7 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
   @override
   Widget build(BuildContext context) {
     final annotationsAsync = ref.watch(userAnnotationsProvider);
-    final booksAsync = ref.watch(bibleBooksShellProvider);
+    final booksAsync = ref.watch(readableBibleBooksProvider);
 
     return Scaffold(
       appBar: _isSearching ? _buildSearchAppBar() : _buildNormalAppBar(),
