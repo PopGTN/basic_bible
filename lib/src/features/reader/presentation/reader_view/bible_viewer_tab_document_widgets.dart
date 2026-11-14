@@ -275,8 +275,13 @@ class _ErrorView extends StatelessWidget {
             Consumer(
               builder: (context, ref, child) {
                 return ElevatedButton(
+                  // Retry what the reader actually renders from: the book list
+                  // and the current chapter. (This used to invalidate the
+                  // unused full-Bible provider, which retried nothing and
+                  // started a full load instead.)
                   onPressed: () {
-                    ref.invalidate(bibleBooksProvider);
+                    ref.invalidate(bibleBooksShellProvider);
+                    ref.invalidate(currentChapterProvider);
                   },
                   child: const Text('Retry'),
                 );
