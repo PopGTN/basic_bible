@@ -1,23 +1,16 @@
-// Guards the Notes screen's "Type" filter semantics: 'highlightOnly' matches
-// a highlight with no note text, 'noteWithHighlight' matches a note that also
-// carries a highlight color. This replicates the exact matchesType predicate
-// from _NotesScreenState.build (private, can't be imported from another
-// library file) against the real UserAnnotation model.
+// Guards the Notes screen filters (#39), using the same functions the screen
+// calls (note_filters.dart) rather than a copy of its predicate.
+//
+// Type semantics: "Note" = any annotation with note text (with or without a
+// highlight); "Highlight only" = a highlight with no note text. Previously
+// "Note" only matched notes that also had a highlight, so a plain note was
+// hidden by every Type selection.
 
+import 'package:basic_bible/src/features/annotations/models/note_filters.dart';
 import 'package:basic_bible/src/features/annotations/models/user_annotations.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-bool _matchesType(UserAnnotation annotation, Set<String> selectedTypes) {
-  return selectedTypes.isEmpty ||
-      (selectedTypes.contains('highlightOnly') &&
-          annotation.hasHighlight &&
-          !annotation.hasNoteText) ||
-      (selectedTypes.contains('noteWithHighlight') &&
-          annotation.hasNoteText &&
-          annotation.hasHighlight);
-}
-
-AnnotationVerseLink _verse() => AnnotationVerseLink(
+AnnotationVerseLink _verse() => const AnnotationVerseLink(
   bookId: 'JHN',
   chapter: 3,
   verse: 16,
@@ -25,8 +18,13 @@ AnnotationVerseLink _verse() => AnnotationVerseLink(
   translationName: 'KJV',
 );
 
-UserAnnotation _annotation({String? noteText, int? highlightColorValue}) {
-  final now = DateTime(2026);
+UserAnnotation _annotation({
+  String? noteText,
+  int? highlightColorValue,
+  DateTime? created,
+  DateTime? updated,
+}) {
+  final created0 = created ?? DateTime(2026);
   return UserAnnotation(
     type: noteText != null
         ? UserAnnotationType.note
@@ -34,58 +32,99 @@ UserAnnotation _annotation({String? noteText, int? highlightColorValue}) {
     primaryVerse: _verse(),
     noteText: noteText,
     highlightColorValue: highlightColorValue,
-    createdAt: now,
-    updatedAt: now,
+    createdAt: created0,
+    updatedAt: updated ?? created0,
   );
 }
 
 void main() {
-  final highlightOnly = _annotation(highlightColorValue: 0xffff0000);
-  final plainNote = _annotation(noteText: 'just text');
-  final noteWithHighlight = _annotation(
-    noteText: 'text and color',
-    highlightColorValue: 0xff00ff00,
-  );
-
-  test('no types selected shows everything', () {
-    expect(_matchesType(highlightOnly, {}), isTrue);
-    expect(_matchesType(plainNote, {}), isTrue);
-    expect(_matchesType(noteWithHighlight, {}), isTrue);
-  });
-
-  test('"highlightOnly" matches a highlight with no note text', () {
-    expect(_matchesType(highlightOnly, {'highlightOnly'}), isTrue);
-    expect(_matchesType(plainNote, {'highlightOnly'}), isFalse);
-    expect(
-      _matchesType(noteWithHighlight, {'highlightOnly'}),
-      isFalse,
-      reason: 'has note text, so it is not a highlight-only entry',
+  group('type', () {
+    final highlightOnly = _annotation(highlightColorValue: 0xffff0000);
+    final plainNote = _annotation(noteText: 'just text');
+    final noteWithHighlight = _annotation(
+      noteText: 'text and color',
+      highlightColorValue: 0xff00ff00,
     );
+
+    test('no types selected shows everything', () {
+      for (final a in [highlightOnly, plainNote, noteWithHighlight]) {
+        expect(matchesNoteTypes(a, {}), isTrue);
+      }
+    });
+
+    test('"Note" matches every annotation with note text', () {
+      const note = {NoteTypeFilter.note};
+      expect(matchesNoteTypes(plainNote, note), isTrue);
+      expect(matchesNoteTypes(noteWithHighlight, note), isTrue);
+      expect(matchesNoteTypes(highlightOnly, note), isFalse);
+    });
+
+    test('"Highlight only" matches a highlight with no note text', () {
+      const highlight = {NoteTypeFilter.highlight};
+      expect(matchesNoteTypes(highlightOnly, highlight), isTrue);
+      expect(matchesNoteTypes(plainNote, highlight), isFalse);
+      expect(matchesNoteTypes(noteWithHighlight, highlight), isFalse);
+    });
+
+    test('selecting both types is a union', () {
+      final both = NoteTypeFilter.values.toSet();
+      for (final a in [highlightOnly, plainNote, noteWithHighlight]) {
+        expect(matchesNoteTypes(a, both), isTrue);
+      }
+    });
   });
 
-  test('"noteWithHighlight" matches a note that also has a highlight color', () {
-    expect(_matchesType(noteWithHighlight, {'noteWithHighlight'}), isTrue);
-    expect(
-      _matchesType(plainNote, {'noteWithHighlight'}),
-      isFalse,
-      reason: 'no highlight color, so it does not qualify',
+  group('date', () {
+    final now = DateTime(2026, 11, 14, 15);
+    final oldButEdited = _annotation(
+      noteText: 'a',
+      created: DateTime(2025, 1, 1),
+      updated: DateTime(2026, 11, 14, 9),
     );
-    expect(_matchesType(highlightOnly, {'noteWithHighlight'}), isFalse);
-  });
+    final lastWeek = _annotation(noteText: 'b', created: DateTime(2026, 11, 10));
 
-  test('a plain text-only note (no highlight) never matches either type', () {
-    expect(_matchesType(plainNote, {'highlightOnly'}), isFalse);
-    expect(_matchesType(plainNote, {'noteWithHighlight'}), isFalse);
-    expect(
-      _matchesType(plainNote, {'highlightOnly', 'noteWithHighlight'}),
-      isFalse,
-    );
-  });
+    test('any time keeps everything', () {
+      expect(
+        matchesNoteDateRange(
+          oldButEdited,
+          field: NoteDateField.created,
+          range: NoteDateRange.any,
+          now: now,
+        ),
+        isTrue,
+      );
+    });
 
-  test('selecting both types is a union', () {
-    const both = {'highlightOnly', 'noteWithHighlight'};
-    expect(_matchesType(highlightOnly, both), isTrue);
-    expect(_matchesType(noteWithHighlight, both), isTrue);
-    expect(_matchesType(plainNote, both), isFalse);
+    test('ranges use the chosen field', () {
+      bool today(UserAnnotation a, NoteDateField f) => matchesNoteDateRange(
+        a,
+        field: f,
+        range: NoteDateRange.today,
+        now: now,
+      );
+      expect(today(oldButEdited, NoteDateField.modified), isTrue);
+      expect(today(oldButEdited, NoteDateField.created), isFalse);
+      expect(
+        matchesNoteDateRange(
+          lastWeek,
+          field: NoteDateField.created,
+          range: NoteDateRange.pastWeek,
+          now: now,
+        ),
+        isTrue,
+      );
+    });
+
+    test('sorting is newest first by the chosen field', () {
+      final list = [lastWeek, oldButEdited];
+      expect(sortNotesByDate(list, NoteDateField.modified), [
+        oldButEdited,
+        lastWeek,
+      ]);
+      expect(sortNotesByDate(list, NoteDateField.created), [
+        lastWeek,
+        oldButEdited,
+      ]);
+    });
   });
 }
