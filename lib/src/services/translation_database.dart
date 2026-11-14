@@ -296,10 +296,12 @@ class TranslationDatabase extends _$TranslationDatabase {
   // -------------------------------------------------------------------------
 
   /// Verses containing every term (case-insensitive substring), in canonical
-  /// order, optionally limited to [bookIds]. At most [limit] rows.
+  /// order, optionally limited to [bookIds] (and, with [chapter], to that
+  /// chapter number). At most [limit] rows.
   Future<List<BibleSearchHit>> searchVerses(
     List<String> terms, {
     Set<String>? bookIds,
+    int? chapter,
     int limit = 500,
   }) async {
     if (terms.isEmpty || (bookIds != null && bookIds.isEmpty)) return const [];
@@ -319,6 +321,7 @@ class TranslationDatabase extends _$TranslationDatabase {
           tVerses.verseText.lower().like('%${escape(term)}%', escapeChar: r'\');
     }
     if (bookIds != null) where = where & tBooks.id.isIn(bookIds);
+    if (chapter != null) where = where & tChapters.number.equals(chapter);
 
     final rows =
         await (select(tVerses).join([

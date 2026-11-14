@@ -82,6 +82,17 @@ void main() {
       ]);
     });
 
+    test('chapter scope restricts to one chapter of the book', () async {
+      expect(
+        _refs(await db.searchVerses(['god'], bookIds: {'JHN'}, chapter: 3)),
+        ['JHN 3:2'],
+      );
+      expect(
+        await db.searchVerses(['god'], bookIds: {'JHN'}, chapter: 4),
+        isEmpty,
+      );
+    });
+
     test('LIKE wildcards in the query are matched literally', () async {
       expect(await db.searchVerses(['%']), isEmpty);
       expect(await db.searchVerses(['_']), isEmpty);
@@ -91,6 +102,22 @@ void main() {
   test('in-memory search matches the database semantics', () {
     final hits = searchBooksInMemory(_books, ['god', 'love']);
     expect(_refs(hits), ['JHN 3:2', '1JN 4:1']);
+    expect(
+      _refs(searchBooksInMemory(_books, ['god'], bookIds: {'JHN'}, chapter: 3)),
+      ['JHN 3:2'],
+    );
+  });
+
+  test('"This chapter" uses the current book (chapter filtered separately)',
+      () {
+    expect(
+      bookIdsForSearchScope(
+        BibleSearchScope.currentChapter,
+        _books,
+        currentBookId: 'JHN',
+      ),
+      {'JHN'},
+    );
   });
 
   test('testament scopes', () {

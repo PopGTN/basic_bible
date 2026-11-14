@@ -5,6 +5,7 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'bible_library_view_models.dart';
+import 'reader_preferences_view_models.dart';
 import 'reader_session_view_models.dart';
 
 /// Most verses a single Bible search returns (#69). Enough for any focused
@@ -16,7 +17,8 @@ enum BibleSearchScope {
   all('Whole Bible'),
   oldTestament('Old Testament'),
   newTestament('New Testament'),
-  currentBook('This book');
+  currentBook('This book'),
+  currentChapter('This chapter');
 
   const BibleSearchScope(this.label);
   final String label;
@@ -32,6 +34,15 @@ class BibleSearchRequest extends Equatable {
   List<Object?> get props => [query, scope];
 }
 
+/// The book/chapter "This book" / "This chapter" refer to: what is on
+/// screen. In continuous scroll that is the visible chapter, which can be
+/// ahead of the last navigated-to reference.
+final searchContextReferenceProvider = Provider<BibleReference>((ref) {
+  final current = ref.watch(currentReferenceProvider);
+  if (!ref.watch(continuousScrollingProvider)) return current;
+  return ref.watch(visibleReaderReferenceProvider) ?? current;
+});
+
 /// Book IDs a [scope] covers in [books], or null for no restriction.
 Set<String>? bookIdsForSearchScope(
   BibleSearchScope scope,
@@ -40,7 +51,8 @@ Set<String>? bookIdsForSearchScope(
 }) {
   return switch (scope) {
     BibleSearchScope.all => null,
-    BibleSearchScope.currentBook => {currentBookId},
+    BibleSearchScope.currentBook ||
+    BibleSearchScope.currentChapter => {currentBookId},
     BibleSearchScope.oldTestament => {
       for (final book in books)
         if (getBookType(book.id) == BibleBookType.oldTestament) book.id,
@@ -61,15 +73,19 @@ final bibleSearchResultsProvider = FutureProvider.autoDispose
       final books =
           ref.watch(readableBibleBooksProvider).asData?.value ??
           const <BibleBook>[];
+      final current = ref.read(searchContextReferenceProvider);
       final bookIds = bookIdsForSearchScope(
         request.scope,
         books,
-        currentBookId: ref.read(currentReferenceProvider).bookId,
+        currentBookId: current.bookId,
       );
       return repository.searchVerses(
         translationId,
         request.query,
         bookIds: bookIds,
+        chapter: request.scope == BibleSearchScope.currentChapter
+            ? current.chapter
+            : null,
         limit: kBibleSearchLimit,
       );
     });

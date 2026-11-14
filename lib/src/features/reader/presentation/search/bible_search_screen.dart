@@ -5,6 +5,7 @@ import 'package:basic_bible/src/features/reader/application/view_models/bible_se
 import 'package:basic_bible/src/features/reader/application/view_models/reader_session_view_models.dart';
 import 'package:basic_bible/src/models/bible_models.dart';
 import 'package:basic_bible/src/utils/reference_utils.dart';
+import 'package:basic_bible/src/widgets/horizontal_mouse_scroll_list.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -44,7 +45,9 @@ class _BibleSearchScreenState extends ConsumerState<BibleSearchScreen> {
   }
 
   Future<void> _open(BibleSearchHit hit) async {
-    await ref.read(currentReferenceProvider.notifier).setReference(hit.reference);
+    await ref
+        .read(currentReferenceProvider.notifier)
+        .setReference(hit.reference);
     if (mounted) Navigator.of(context).pop();
   }
 
@@ -54,10 +57,20 @@ class _BibleSearchScreenState extends ConsumerState<BibleSearchScreen> {
     final books =
         ref.watch(readableBibleBooksProvider).asData?.value ??
         const <BibleBook>[];
+    final currentReference = ref.watch(searchContextReferenceProvider);
     final currentBookName = displayBookNameForReference(
       books,
-      ref.watch(currentReferenceProvider).bookId,
+      currentReference.bookId,
     );
+    // Chip labels name the actual book/chapter being read, e.g. "John 3".
+    String scopeLabel(BibleSearchScope scope) => switch (scope) {
+      BibleSearchScope.currentBook => currentBookName,
+      BibleSearchScope.currentChapter => chapterReferenceLabel(
+        currentBookName,
+        currentReference.chapter,
+      ),
+      _ => scope.label,
+    };
     final terms = bibleSearchTerms(_query);
     final results = terms.isEmpty
         ? null
@@ -97,26 +110,25 @@ class _BibleSearchScreenState extends ConsumerState<BibleSearchScreen> {
       ),
       body: Column(
         children: [
-          SizedBox(
-            height: 52,
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              children: [
-                for (final scope in BibleSearchScope.values)
-                  Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: ChoiceChip(
-                      label: Text(
-                        scope == BibleSearchScope.currentBook
-                            ? currentBookName
-                            : scope.label,
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 8, 0, 8),
+            child: SizedBox(
+              height: 36,
+              // Mouse-wheel scrollable too, so chips past the edge ("John 3")
+              // are reachable on web/desktop where a mouse can't drag a list.
+              child: HorizontalMouseScrollList(
+                children: [
+                  for (final scope in BibleSearchScope.values)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: ChoiceChip(
+                        label: Text(scopeLabel(scope)),
+                        selected: _scope == scope,
+                        onSelected: (_) => setState(() => _scope = scope),
                       ),
-                      selected: _scope == scope,
-                      onSelected: (_) => setState(() => _scope = scope),
                     ),
-                  ),
-              ],
+                ],
+              ),
             ),
           ),
           const Divider(height: 1),

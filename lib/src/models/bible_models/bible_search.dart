@@ -47,19 +47,21 @@ List<BibleSearchHit> searchBooksInMemory(
   List<BibleBook> books,
   List<String> terms, {
   Set<String>? bookIds,
+  int? chapter,
   int limit = 500,
 }) {
   final hits = <BibleSearchHit>[];
   if (terms.isEmpty) return hits;
   for (final book in books) {
     if (bookIds != null && !bookIds.contains(book.id)) continue;
-    for (final chapter in book.chapters) {
-      for (final verse in chapter.verses) {
+    for (final bookChapter in book.chapters) {
+      if (chapter != null && bookChapter.number != chapter) continue;
+      for (final verse in bookChapter.verses) {
         if (!verseMatchesTerms(verse.text, terms)) continue;
         hits.add(
           BibleSearchHit(
             bookId: book.id,
-            chapter: chapter.number,
+            chapter: bookChapter.number,
             verse: verse.number,
             text: verse.text,
           ),

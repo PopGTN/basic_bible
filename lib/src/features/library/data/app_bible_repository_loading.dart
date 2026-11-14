@@ -205,6 +205,7 @@ extension AppBibleRepositoryLoading on AppBibleRepository {
     String translationId,
     String query, {
     Set<String>? bookIds,
+    int? chapter,
     int limit = 500,
   }) async {
     final terms = bibleSearchTerms(query);
@@ -216,17 +217,29 @@ extension AppBibleRepositoryLoading on AppBibleRepository {
         inMemory,
         terms,
         bookIds: bookIds,
+        chapter: chapter,
         limit: limit,
       );
     }
     if (!await _isCacheValid(translationId)) {
       return inMemory == null
           ? const []
-          : searchBooksInMemory(inMemory, terms, bookIds: bookIds, limit: limit);
+          : searchBooksInMemory(
+              inMemory,
+              terms,
+              bookIds: bookIds,
+              chapter: chapter,
+              limit: limit,
+            );
     }
     final path = await _sqlitePathFor(translationId);
     final translationDb = await _dbManager.open(translationId, path);
-    return translationDb.searchVerses(terms, bookIds: bookIds, limit: limit);
+    return translationDb.searchVerses(
+      terms,
+      bookIds: bookIds,
+      chapter: chapter,
+      limit: limit,
+    );
   }
 
   /// Loads from local storage only. Never makes a network request.
