@@ -103,6 +103,28 @@ bool isFrontMatterChapter(int chapterNumber) =>
 String chapterReferenceLabel(String bookName, int chapterNumber) =>
     isFrontMatterChapter(chapterNumber) ? bookName : '$bookName $chapterNumber';
 
+/// Position of a book in the canonical 66-book order (Genesis = 0). Accepts
+/// IDs or names. Unknown books sort after the canon, alphabetically.
+int canonicalBookIndex(String bookId) {
+  final id = resolveBookIdFromName(bookId) ?? bookId.toUpperCase();
+  final index = _canonicalBookIdOrder.indexOf(id);
+  return index < 0 ? _canonicalBookIdOrder.length : index;
+}
+
+/// Reading order: book (canonical), then chapter, then verse; a reference
+/// without a verse (whole chapter) sorts before its verses.
+int compareReferencesInReadingOrder(BibleReference a, BibleReference b) {
+  final byBook = canonicalBookIndex(a.bookId).compareTo(
+    canonicalBookIndex(b.bookId),
+  );
+  if (byBook != 0) return byBook;
+  final byId = a.bookId.compareTo(b.bookId); // only matters for unknown books
+  if (byId != 0) return byId;
+  final byChapter = a.chapter.compareTo(b.chapter);
+  if (byChapter != 0) return byChapter;
+  return (a.verse ?? 0).compareTo(b.verse ?? 0);
+}
+
 /// Prefer parser-provided targets and only fall back to display-label parsing.
 BibleReference? parseAnyReference({String? target, required String label}) {
   return parseStructuredReferenceTarget(target) ?? parseReferenceString(label);

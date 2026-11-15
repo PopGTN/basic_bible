@@ -1,4 +1,5 @@
 import 'package:basic_bible/src/features/annotations/models/user_annotations.dart';
+import 'package:basic_bible/src/utils/reference_utils.dart';
 
 /// A run of consecutive verses in one chapter of one translation, used to show
 /// a multi-verse note as "Genesis 1:1-5" instead of five separate references.
@@ -55,8 +56,37 @@ bool _continues(AnnotationVerseLink previous, AnnotationVerseLink next) =>
     next.chapter == previous.chapter &&
     next.verse == previous.verse + 1;
 
+/// [links] in reading order (book, chapter, verse; then translation), for
+/// display. Stored order is whatever order verses were tapped in, which
+/// scattered a passage like Luke 15:1-32 into 31 separate chips.
+List<AnnotationVerseLink> sortVerseLinksInReadingOrder(
+  Iterable<AnnotationVerseLink> links,
+) {
+  final sorted = links.toList();
+  sorted.sort((a, b) {
+    final byReference = compareReferencesInReadingOrder(
+      a.reference,
+      b.reference,
+    );
+    return byReference != 0
+        ? byReference
+        : a.translationId.compareTo(b.translationId);
+  });
+  return sorted;
+}
+
 extension AnnotationVerseRangesX on UserAnnotation {
-  /// Every verse of the note grouped into ranges. The first range always
-  /// starts at [UserAnnotation.primaryVerse] and is the note's heading.
-  List<AnnotationVerseRange> get verseRanges => groupConsecutiveVerses(allVerses);
+  /// Every verse of the note, in reading order, grouped into ranges. The
+  /// first range is the one containing [UserAnnotation.primaryVerse] — the
+  /// note's heading — and the rest follow in reading order.
+  List<AnnotationVerseRange> get verseRanges {
+    final ranges = groupConsecutiveVerses(
+      sortVerseLinksInReadingOrder(allVerses),
+    );
+    final headingIndex = ranges.indexWhere(
+      (range) => range.verses.contains(primaryVerse),
+    );
+    if (headingIndex <= 0) return ranges;
+    return [ranges[headingIndex], ...ranges]..removeAt(headingIndex + 1);
+  }
 }

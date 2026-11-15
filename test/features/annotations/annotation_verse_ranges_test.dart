@@ -62,4 +62,49 @@ void main() {
     expect(ranges.first.label('Genesis'), 'Genesis 1:1-3');
     expect(ranges.skip(1).map((r) => r.label('Genesis')), ['Genesis 1:7']);
   });
+
+  test('verses tapped out of order still read as one passage', () {
+    // The screenshot case: Luke 15 selected in tap order, primary = 15:23.
+    final tapOrder = [24, 25, 26, 28, 27, 29, 30, 31, 32, 22, 21, 20, 18, 19,
+      17, 16, 15, 14, 13, 3, 1, 2, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+    final note = UserAnnotation(
+      type: UserAnnotationType.note,
+      primaryVerse: _v(23, book: 'LUK', chapter: 15),
+      linkedVerses: [for (final v in tapOrder) _v(v, book: 'LUK', chapter: 15)],
+      createdAt: DateTime(2026),
+      updatedAt: DateTime(2026),
+    );
+    final ranges = note.verseRanges;
+    expect(ranges, hasLength(1));
+    expect(ranges.single.label('Luke'), 'Luke 15:1-32');
+  });
+
+  test('the range containing the primary verse is the heading', () {
+    final note = UserAnnotation(
+      type: UserAnnotationType.note,
+      primaryVerse: _v(10),
+      linkedVerses: [_v(1), _v(2), _v(11)],
+      createdAt: DateTime(2026),
+      updatedAt: DateTime(2026),
+    );
+    expect(note.verseRanges.map((r) => r.label('Genesis')), [
+      'Genesis 1:10-11',
+      'Genesis 1:1-2',
+    ]);
+  });
+
+  test('reading order spans books canonically, not alphabetically', () {
+    final sorted = sortVerseLinksInReadingOrder([
+      _v(1, book: 'REV'),
+      _v(1, book: 'EXO'),
+      _v(1, book: 'GEN', chapter: 2),
+      _v(1, book: 'GEN'),
+    ]);
+    expect([for (final l in sorted) '${l.bookId} ${l.chapter}'], [
+      'GEN 1',
+      'GEN 2',
+      'EXO 1',
+      'REV 1',
+    ]);
+  });
 }

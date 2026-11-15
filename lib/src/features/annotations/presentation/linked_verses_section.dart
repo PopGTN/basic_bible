@@ -5,13 +5,13 @@ import 'package:basic_bible/src/utils/reference_utils.dart';
 import 'package:flutter/material.dart';
 
 /// How many linked-reference chips a note *preview* (Notes list card, reader
-/// notes sheet) shows before collapsing the rest into "+N more". Shared so the
-/// two previews truncate identically (#82). Full detail views show everything.
+/// notes sheet) shows before collapsing the rest behind "Show all". Shared so
+/// the two previews truncate identically (#82).
 const int kLinkedReferencesPreviewLimit = 3;
 
-class LinkedVersesSection extends StatelessWidget {
-  /// One chip per linked verse. Use this where individual verses can be
-  /// removed (e.g. the note editor).
+class LinkedVersesSection extends StatefulWidget {
+  /// One chip per linked verse, in reading order. Use this where individual
+  /// verses can be removed (e.g. the note editor).
   LinkedVersesSection({
     super.key,
     required this.books,
@@ -21,7 +21,10 @@ class LinkedVersesSection extends StatelessWidget {
     this.title = 'Linked Verses',
     this.maxVisible = 24,
     this.emptyMessage,
-  }) : ranges = [for (final link in links) AnnotationVerseRange([link])];
+  }) : ranges = [
+         for (final link in sortVerseLinksInReadingOrder(links))
+           AnnotationVerseRange([link]),
+       ];
 
   /// One chip per run of consecutive verses ("Genesis 1:2-5"). Read-only:
   /// tapping a chip previews the first verse of its range.
@@ -43,29 +46,44 @@ class LinkedVersesSection extends StatelessWidget {
   /// callback — the caller decides whether to confirm before removing.
   final void Function(AnnotationVerseLink link)? onDeleteLink;
   final String title;
+
+  /// Chips shown before the rest collapse behind "Show all".
   final int maxVisible;
   final String? emptyMessage;
 
   @override
+  State<LinkedVersesSection> createState() => _LinkedVersesSectionState();
+}
+
+class _LinkedVersesSectionState extends State<LinkedVersesSection> {
+  // "+N more" used to be a plain label, so verses past the limit could not be
+  // seen, or removed in the editor. It is now a toggle.
+  bool _expanded = false;
+
+  @override
   Widget build(BuildContext context) {
+    final ranges = widget.ranges;
     if (ranges.isEmpty) {
-      if (emptyMessage == null) return const SizedBox.shrink();
-      return Text(emptyMessage!);
+      if (widget.emptyMessage == null) return const SizedBox.shrink();
+      return Text(widget.emptyMessage!);
     }
 
     final theme = Theme.of(context);
-    final visibleRanges = ranges.take(maxVisible).toList(growable: false);
+    final collapsible = ranges.length > widget.maxVisible;
+    final visibleRanges = collapsible && !_expanded
+        ? ranges.take(widget.maxVisible).toList(growable: false)
+        : ranges;
     final hiddenCount = ranges.length - visibleRanges.length;
-    final canDelete = onDeleteLink != null;
+    final onDeleteLink = widget.onDeleteLink;
 
     String labelFor(AnnotationVerseRange range) =>
-        range.label(displayBookNameForReference(books, range.bookId));
+        range.label(displayBookNameForReference(widget.books, range.bookId));
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          title,
+          widget.title,
           style: theme.textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.w700,
           ),
@@ -76,38 +94,32 @@ class LinkedVersesSection extends StatelessWidget {
           runSpacing: 8,
           children: [
             for (final range in visibleRanges)
-              if (canDelete)
+              if (onDeleteLink != null)
                 InputChip(
-                  onPressed: () => onPreviewLinkedVerse(range.first),
+                  onPressed: () => widget.onPreviewLinkedVerse(range.first),
                   avatar: const Icon(Icons.visibility_outlined, size: 16),
                   label: Text(labelFor(range)),
-                  onDeleted: () => onDeleteLink!(range.first),
+                  onDeleted: () => onDeleteLink(range.first),
                   deleteIcon: const Icon(Icons.close, size: 16),
                   deleteButtonTooltipMessage: 'Remove',
                 )
               else
                 ActionChip(
-                  onPressed: () => onPreviewLinkedVerse(range.first),
+                  onPressed: () => widget.onPreviewLinkedVerse(range.first),
                   avatar: const Icon(Icons.visibility_outlined, size: 16),
                   label: Text(labelFor(range)),
                 ),
-            if (hiddenCount > 0)
-              Chip(
-                label: Text('+$hiddenCount more'),
-                avatar: const Icon(Icons.more_horiz, size: 16),
+            if (collapsible)
+              ActionChip(
+                avatar: Icon(
+                  _expanded ? Icons.expand_less : Icons.expand_more,
+                  size: 18,
+                ),
+                label: Text(_expanded ? 'Show less' : 'Show all (+$hiddenCount)'),
+                onPressed: () => setState(() => _expanded = !_expanded),
               ),
           ],
         ),
-        if (hiddenCount > 0) ...[
-          const SizedBox(height: 8),
-          Text(
-            'Showing ${visibleRanges.length} of ${ranges.length} linked '
-            'references.',
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ],
       ],
     );
   }
