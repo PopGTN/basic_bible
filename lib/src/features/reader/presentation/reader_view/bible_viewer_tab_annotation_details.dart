@@ -15,13 +15,14 @@ class _VerseDetailsSheet extends ConsumerWidget {
   final String referenceLabel;
   final BibleVerse verse;
   final List<_VerseAnnotationEntry> annotationEntries;
-  final ValueChanged<BibleCrossReference> onReferenceTap;
+  final ValueChanged<_ReferenceTarget> onReferenceTap;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
     final boldDivineName = ref.watch(boldDivineNameProvider);
+    final boldWordsOfJesus = ref.watch(boldWordsOfJesusProvider);
     final underlineProperNames = ref.watch(underlineProperNamesProvider);
     final underlineWordMetadata = ref.watch(underlineWordMetadataProvider);
     final bracketTranslatorAdditions = ref.watch(
@@ -80,6 +81,7 @@ class _VerseDetailsSheet extends ConsumerWidget {
                   children: versePreview.inlineSpans(
                     colors,
                     boldDivineName: boldDivineName,
+                    boldWordsOfJesus: boldWordsOfJesus,
                     bracketTranslatorAdditions: bracketTranslatorAdditions,
                     underlineProperNames: underlineProperNames,
                     underlineWordMetadata: underlineWordMetadata,
@@ -113,8 +115,8 @@ class _VerseAnnotationEntry {
     this.originRef,
     this.bodyText,
     this.quotedText,
-    this.reference,
-    this.relatedReferences = const [],
+    this.targets = const [],
+    this.alwaysShowTargetChips = false,
   });
 
   final String marker;
@@ -122,8 +124,26 @@ class _VerseAnnotationEntry {
   final String? originRef;
   final String? bodyText;
   final String? quotedText;
-  final BibleCrossReference? reference;
-  final List<BibleCrossReference> relatedReferences;
+
+  /// Every passage this note/reference points at, one per parsed range.
+  final List<_ReferenceTarget> targets;
+
+  /// Footnotes list their references as chips even when there is only one,
+  /// because the footnote body is not itself the reference.
+  final bool alwaysShowTargetChips;
+
+  bool get showTargetChips =>
+      targets.length > 1 || (alwaysShowTargetChips && targets.isNotEmpty);
+}
+
+/// One tappable passage from a footnote or cross-reference. [range] is null
+/// when the source label could not be parsed; the chip still shows the
+/// label and the preview explains that it is unavailable.
+class _ReferenceTarget {
+  const _ReferenceTarget({required this.label, required this.range});
+
+  final String label;
+  final BibleReferenceRange? range;
 }
 
 class _VerseMetadataSummary {
@@ -313,6 +333,7 @@ class _VersePreviewText {
   List<InlineSpan> inlineSpans(
     ColorScheme colors, {
     bool boldDivineName = false,
+    bool boldWordsOfJesus = false,
     bool bracketTranslatorAdditions = true,
     bool underlineProperNames = true,
     bool underlineWordMetadata = false,
@@ -339,6 +360,7 @@ class _VersePreviewText {
             fontWeight: _spanFontWeight(
               span.kind,
               boldDivineName: boldDivineName,
+              boldWordsOfJesus: boldWordsOfJesus,
               useSourceBoldStyling: useSourceBoldStyling,
             ),
             decoration: _spanDecoration(
@@ -503,11 +525,12 @@ class _VersePreviewText {
   FontWeight _spanFontWeight(
     BibleVerseSpanKind kind, {
     bool boldDivineName = false,
+    bool boldWordsOfJesus = false,
     bool useSourceBoldStyling = true,
   }) {
     switch (kind) {
       case BibleVerseSpanKind.wordsOfJesus:
-        return FontWeight.w600;
+        return boldWordsOfJesus ? FontWeight.w600 : FontWeight.normal;
       case BibleVerseSpanKind.divineNameTag:
         return boldDivineName ? FontWeight.w700 : FontWeight.normal;
       case BibleVerseSpanKind.acrosticHeading:
@@ -541,7 +564,7 @@ class _VerseAnnotationRow extends StatelessWidget {
   const _VerseAnnotationRow({required this.entry, this.onReferenceTap});
 
   final _VerseAnnotationEntry entry;
-  final ValueChanged<BibleCrossReference>? onReferenceTap;
+  final ValueChanged<_ReferenceTarget>? onReferenceTap;
 
   @override
   Widget build(BuildContext context) {
@@ -612,19 +635,19 @@ class _VerseAnnotationRow extends StatelessWidget {
                           height: 1.5,
                         ),
                       ),
-                if (entry.relatedReferences.isNotEmpty) ...[
+                if (entry.showTargetChips) ...[
                   const SizedBox(height: 10),
                   Wrap(
                     spacing: 8,
                     runSpacing: 8,
                     children: [
-                      for (final reference in entry.relatedReferences)
+                      for (final target in entry.targets)
                         ActionChip(
                           avatar: const Icon(Icons.link, size: 16),
-                          label: Text(reference.label),
+                          label: Text(target.label),
                           onPressed: onReferenceTap == null
                               ? null
-                              : () => onReferenceTap!(reference),
+                              : () => onReferenceTap!(target),
                         ),
                     ],
                   ),
@@ -632,10 +655,10 @@ class _VerseAnnotationRow extends StatelessWidget {
               ],
             ),
           ),
-          if (entry.reference != null && onReferenceTap != null) ...[
+          if (entry.targets.isNotEmpty && onReferenceTap != null) ...[
             const SizedBox(width: 8),
             IconButton(
-              onPressed: () => onReferenceTap!(entry.reference!),
+              onPressed: () => onReferenceTap!(entry.targets.first),
               icon: const Icon(Icons.chevron_right),
               color: colors.onSurfaceVariant,
             ),

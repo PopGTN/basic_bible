@@ -50,15 +50,13 @@ class _VersionsScreenState extends ConsumerState<VersionsScreen>
     final t = AppLocalizations.of(context)!;
     final translationsAsync = ref.watch(availableTranslationsProvider);
     final currentTranslationId = ref.watch(currentTranslationProvider);
-    final loadingIds = ref.watch(translationDownloadsProvider);
+    final downloads = ref.watch(translationDownloadsProvider);
 
     return Scaffold(
-      appBar: _isSearching
-          ? _buildSearchBar(t)
-          : _buildNormalBar(t),
+      appBar: _isSearching ? _buildSearchBar(t) : _buildNormalBar(t),
       body: translationsAsync.when(
         data: (translations) =>
-            _buildList(context, translations, currentTranslationId, loadingIds),
+            _buildList(context, translations, currentTranslationId, downloads),
         error: (error, _) => Center(
           child: Padding(
             padding: const EdgeInsets.all(24),
@@ -117,6 +115,8 @@ class _VersionsScreenState extends ConsumerState<VersionsScreen>
             switch (action) {
               case _MenuAction.importBibleFile:
                 importBibleFile(context);
+              case _MenuAction.clearTranslationCache:
+                clearTranslationCache(context);
             }
           },
           itemBuilder: (context) => [
@@ -127,6 +127,16 @@ class _VersionsScreenState extends ConsumerState<VersionsScreen>
                   const Icon(Icons.upload_file),
                   const SizedBox(width: 8),
                   Text(t.importBibleFileAction),
+                ],
+              ),
+            ),
+            PopupMenuItem(
+              value: _MenuAction.clearTranslationCache,
+              child: Row(
+                children: [
+                  const Icon(Icons.cleaning_services_outlined),
+                  const SizedBox(width: 8),
+                  Text(t.clearTranslationCacheAction),
                 ],
               ),
             ),
@@ -144,7 +154,7 @@ class _VersionsScreenState extends ConsumerState<VersionsScreen>
     BuildContext context,
     List<BibleTranslation> translations,
     String currentTranslationId,
-    Set<String> loadingIds,
+    Map<String, TranslationDownloadStatus> downloads,
   ) {
     final languages = _uniqueLanguages(translations);
 
@@ -165,24 +175,27 @@ class _VersionsScreenState extends ConsumerState<VersionsScreen>
           .toList();
     }
 
-    final downloaded = filtered
-        .where(
-          (tr) =>
-              tr.availability == BibleTranslationAvailability.bundled ||
-              tr.availability == BibleTranslationAvailability.downloaded ||
-              tr.availability == BibleTranslationAvailability.imported,
-        )
-        .toList()
-      ..sort(_translationComparator);
+    final downloaded =
+        filtered
+            .where(
+              (tr) =>
+                  tr.availability == BibleTranslationAvailability.bundled ||
+                  tr.availability == BibleTranslationAvailability.downloaded ||
+                  tr.availability == BibleTranslationAvailability.imported,
+            )
+            .toList()
+          ..sort(_translationComparator);
 
-    final available = filtered
-        .where(
-          (tr) =>
-              tr.availability == BibleTranslationAvailability.downloadable ||
-              tr.availability == BibleTranslationAvailability.session,
-        )
-        .toList()
-      ..sort(_translationComparator);
+    final available =
+        filtered
+            .where(
+              (tr) =>
+                  tr.availability ==
+                      BibleTranslationAvailability.downloadable ||
+                  tr.availability == BibleTranslationAvailability.session,
+            )
+            .toList()
+          ..sort(_translationComparator);
 
     return ListView(
       children: [
@@ -193,12 +206,15 @@ class _VersionsScreenState extends ConsumerState<VersionsScreen>
             onSelected: (lang) => setState(() => _selectedLanguage = lang),
           ),
         if (downloaded.isNotEmpty) ...[
-          TranslationSectionHeader(label: AppLocalizations.of(context)!.downloadedSectionHeader),
+          TranslationSectionHeader(
+            label: AppLocalizations.of(context)!.downloadedSectionHeader,
+          ),
           for (final tr in downloaded)
             TranslationTile(
               translation: tr,
               isSelected: tr.id == currentTranslationId,
-              isLoading: loadingIds.contains(tr.id),
+              isLoading: downloads.containsKey(tr.id),
+              progress: downloads[tr.id]?.fraction,
               onTap: () => selectTranslation(
                 context,
                 tr.id,
@@ -228,12 +244,15 @@ class _VersionsScreenState extends ConsumerState<VersionsScreen>
             ),
         ],
         if (available.isNotEmpty) ...[
-          TranslationSectionHeader(label: AppLocalizations.of(context)!.availableSectionHeader),
+          TranslationSectionHeader(
+            label: AppLocalizations.of(context)!.availableSectionHeader,
+          ),
           for (final tr in available)
             TranslationTile(
               translation: tr,
               isSelected: tr.id == currentTranslationId,
-              isLoading: loadingIds.contains(tr.id),
+              isLoading: downloads.containsKey(tr.id),
+              progress: downloads[tr.id]?.fraction,
               onTap: tr.availability == BibleTranslationAvailability.session
                   ? () => selectTranslation(context, tr.id, persist: false)
                   : null,
@@ -241,7 +260,13 @@ class _VersionsScreenState extends ConsumerState<VersionsScreen>
                   tr.availability == BibleTranslationAvailability.downloadable
                   ? () => openTranslationForSession(context, tr)
                   : null,
-              onDownload: () => downloadTranslation(context, tr),
+              // Session-only reads can be kept by downloading them (#28).
+              onDownload:
+                  tr.availability ==
+                          BibleTranslationAvailability.downloadable ||
+                      tr.availability == BibleTranslationAvailability.session
+                  ? () => downloadTranslation(context, tr)
+                  : null,
               onRemoveDownloaded: null,
               onDeleteImported: null,
             ),
@@ -259,7 +284,8 @@ class _VersionsScreenState extends ConsumerState<VersionsScreen>
     final seen = <String>{};
     final result = <String>[];
     for (final t in translations) {
-      if (seen.add(t.effectiveLanguageName)) result.add(t.effectiveLanguageName);
+      if (seen.add(t.effectiveLanguageName))
+        result.add(t.effectiveLanguageName);
     }
     result.sort();
     return result;
@@ -274,4 +300,4 @@ class _VersionsScreenState extends ConsumerState<VersionsScreen>
   }
 }
 
-enum _MenuAction { importBibleFile }
+enum _MenuAction { importBibleFile, clearTranslationCache }

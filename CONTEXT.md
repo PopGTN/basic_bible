@@ -232,11 +232,18 @@ This split is a structural maintenance improvement, not a feature change. Treat 
   - `asv_osis.xml`
 - Because the IDs in code are `kjv`, `web`, and `asv`, local lookup may miss bundled assets and fall back to download behavior.
 
-### Web storage still falls back to memory
+### Web storage
 - Non-web platforms use a file-backed SQLite path.
-- Web Bible loading is intentionally session-memory only: browser builds parse
-  XML into memory for the current session instead of maintaining a durable
-  translation cache that survives reloads.
+- Web translation databases are persisted in IndexedDB through drift's legacy
+  `WebDatabase` (`translation_database_executor_web.dart`); a parsed or
+  downloaded Bible survives a page reload. That drift API is deprecated in
+  favour of `package:drift/wasm.dart`.
+
+### Concurrent-load dedup
+- `AppBibleRepository` shares one in-progress load/download/session-read per
+  translation through `InFlightRequests`. Do not hand-roll
+  `map.putIfAbsent(id, () => f.whenComplete(() => map.remove(id)))`: the arrow
+  returns the stored future, so it waits on itself forever (issues #52/#91).
 - Personal annotations on web still depend on the current web database path and
   should be treated separately from Bible-content loading behavior.
 

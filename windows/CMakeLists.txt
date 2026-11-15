@@ -52,6 +52,16 @@ add_subdirectory(${FLUTTER_MANAGED_DIR})
 # Application build; see runner/CMakeLists.txt.
 add_subdirectory("runner")
 
+find_program(CARGO_EXECUTABLE cargo)
+if(CARGO_EXECUTABLE)
+  add_custom_target(build_usfm_parser ALL
+    COMMAND ${CARGO_EXECUTABLE} build --manifest-path ${CMAKE_CURRENT_SOURCE_DIR}/../native/usfm_parser/Cargo.toml
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/..
+    COMMENT "Building native USFM parser"
+  )
+  add_dependencies(${BINARY_NAME} build_usfm_parser)
+endif()
+
 
 # Generated plugin build rules, which manage building the plugins and adding
 # them to the application.
@@ -83,6 +93,18 @@ install(FILES "${FLUTTER_LIBRARY}" DESTINATION "${INSTALL_BUNDLE_LIB_DIR}"
 
 if(PLUGIN_BUNDLED_LIBRARIES)
   install(FILES "${PLUGIN_BUNDLED_LIBRARIES}"
+    DESTINATION "${INSTALL_BUNDLE_LIB_DIR}"
+    COMPONENT Runtime)
+endif()
+
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../native/usfm_parser/target/debug/basic_bible_usfm_parser.dll")
+  install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/../native/usfm_parser/target/debug/basic_bible_usfm_parser.dll"
+    DESTINATION "${INSTALL_BUNDLE_LIB_DIR}"
+    COMPONENT Runtime)
+endif()
+
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../native/usfm_parser/target/release/basic_bible_usfm_parser.dll")
+  install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/../native/usfm_parser/target/release/basic_bible_usfm_parser.dll"
     DESTINATION "${INSTALL_BUNDLE_LIB_DIR}"
     COMPONENT Runtime)
 endif()

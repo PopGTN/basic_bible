@@ -24,6 +24,17 @@
   "versionsTitle": "Versions",
   "searchTranslationsTooltip": "Search translations",
   "importBibleFileAction": "Import Bible File",
+  "clearTranslationCacheAction": "Clear translation cache",
+  "clearTranslationCacheTitle": "Clear translation cache?",
+  "clearTranslationCacheDescription": "This removes downloaded translation files, imported source snapshots, and stale translation registry entries from local app storage. Bundled translations will remain available.",
+  "clearCacheAction": "Clear cache",
+  "clearedTranslationCacheMessage": "Translation cache cleared.",
+  "couldNotClearTranslationCache": "Could not clear translation cache: {error}",
+  "@couldNotClearTranslationCache": {
+    "placeholders": {
+      "error": {}
+    }
+  },
   "translationsFileTypeLabel": "Bible files",
   "unableToLoadTranslations": "Unable to load translations: {error}",
   "@unableToLoadTranslations": {

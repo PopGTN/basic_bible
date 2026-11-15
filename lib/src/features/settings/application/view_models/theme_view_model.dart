@@ -150,6 +150,12 @@ ThemeData _buildSoftDarkTheme() {
       surfaceTintColor: Colors.transparent,
       elevation: 0,
     ),
+    textButtonTheme: TextButtonThemeData(
+      style: TextButton.styleFrom(
+        foregroundColor: scheme.onSurface,
+        textStyle: const TextStyle(fontWeight: FontWeight.w600),
+      ),
+    ),
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
         foregroundColor: scheme.onSurface,
@@ -200,6 +206,12 @@ ThemeData _buildSeedTheme({
     brightness: brightness,
     colorScheme: scheme,
     scaffoldBackgroundColor: scheme.surface,
+    textButtonTheme: TextButtonThemeData(
+      style: TextButton.styleFrom(
+        foregroundColor: scheme.onSurface,
+        textStyle: const TextStyle(fontWeight: FontWeight.w600),
+      ),
+    ),
   );
 }
 

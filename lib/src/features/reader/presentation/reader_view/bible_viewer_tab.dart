@@ -1,9 +1,15 @@
 import 'package:basic_bible/l10n/app_localizations.dart';
 import 'package:basic_bible/src/features/annotations/application/view_models/annotation_data_view_models.dart';
 import 'package:basic_bible/src/features/annotations/application/view_models/annotation_selection_view_models.dart';
+import 'package:basic_bible/src/features/annotations/data/user_annotation_repository.dart';
+import 'package:basic_bible/src/features/annotations/models/annotation_verse_ranges.dart';
 import 'package:basic_bible/src/features/annotations/models/user_annotations.dart';
+import 'package:basic_bible/src/features/annotations/presentation/annotation_detail_screen.dart';
+import 'package:basic_bible/src/features/annotations/presentation/linked_verses_section.dart';
 import 'package:basic_bible/src/features/annotations/presentation/annotation_theme.dart';
 import 'package:basic_bible/src/features/annotations/presentation/note_editor_screen.dart';
+import 'package:basic_bible/src/features/library/data/app_bible_repository.dart';
+import 'package:basic_bible/src/features/reader/application/continuous_reader_controller.dart';
 import 'package:basic_bible/src/features/reader/application/view_models/bible_library_view_models.dart';
 import 'package:basic_bible/src/features/reader/application/view_models/current_chapter_view_model.dart';
 import 'package:basic_bible/src/features/reader/application/view_models/reader_preferences_view_models.dart';
@@ -14,6 +20,8 @@ import 'package:basic_bible/src/features/settings/application/view_models/reader
 import 'package:basic_bible/src/models/bible_models.dart';
 import 'package:basic_bible/src/platform/runtime_support.dart';
 import 'package:basic_bible/src/services/font_size_service.dart';
+import 'package:basic_bible/src/features/reader/presentation/reader_view/translation_rights_footer.dart';
+import 'package:basic_bible/src/utils/reference_range_parser.dart';
 import 'package:basic_bible/src/utils/reference_utils.dart';
 import 'package:flutter/gestures.dart'
     show PointerScrollEvent, TapGestureRecognizer;
@@ -24,18 +32,22 @@ import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 import 'package:shimmer/shimmer.dart';
 
 // File map for this reader module:
-// - this file: top-level reader coordinators and shell widgets
-// - *_state_core.dart: selection state / focus / annotation lookup helpers
-// - *_state_rendering.dart: verse-list + continuous rendering flow
-// - *_state_document.dart: document-mode rendering details
-// - *_state_annotations.dart: parser-note sheets + inline span helpers
-// - *_widgets.dart / *_sections.dart: extracted local widgets and support types
+// - this file:                  shell coordinator (BibleViewerTab + _BibleViewerTabState)
+// - *_text_view.dart:           _BibleTextView + _BibleTextViewState widget declaration
+// - *_state_selection.dart:     copy/share/highlight/note action handlers
+// - *_state_core.dart:          selection state / focus / annotation lookup helpers
+// - *_state_rendering.dart:     verse-list + continuous rendering flow
+// - *_state_document.dart:      document-mode rendering details
+// - *_state_annotations.dart:   parser-note sheets + inline span helpers
+// - *_sections.dart:            support types and shared layout helpers
 part 'bible_viewer_tab_sections.dart';
 part 'bible_viewer_tab_shell_snapshot.dart';
 part 'bible_viewer_tab_annotation_controls.dart';
 part 'bible_viewer_tab_annotation_details.dart';
 part 'bible_viewer_tab_document_widgets.dart';
 part 'bible_viewer_tab_personal_notes.dart';
+part 'bible_viewer_tab_text_view.dart';
+part 'bible_viewer_tab_state_selection.dart';
 part 'bible_viewer_tab_state_core.dart';
 part 'bible_viewer_tab_state_rendering.dart';
 part 'bible_viewer_tab_state_document.dart';
@@ -68,34 +80,46 @@ class _BibleViewerTabState extends ConsumerState<BibleViewerTab> {
   static const _readerBarBottomInset = 12.0;
   static const _readerBarBottomPadding =
       _readerBarHeight + _readerBarBottomInset + 8;
+  static const _chapterTransitionDuration = Duration(milliseconds: 140);
 
-  final ScrollController _scrollController = ScrollController();
   BibleReference? _continuousVisibleReference;
-  // Removed local constants; layout spacing is handled by widgets directly.
-  //TODO: Make The Text Size Changeable through Settings
-  // Font size is now provided by FontSizeService; listen to changes in build
+
+  // Cached flat list of every chapter reference across all books.
+  // Rebuilt only when the books list reference changes, so prev/next taps
+  // don't allocate ~1189-entry lists on every press.
+  List<BibleBook>? _chapterRefCacheSource;
+  List<BibleReference> _chapterRefs = const [];
+
+  List<BibleReference> _flatChapterRefs(List<BibleBook> books) {
+    if (identical(_chapterRefCacheSource, books)) return _chapterRefs;
+    _chapterRefCacheSource = books;
+    _chapterRefs = [
+      for (final book in books)
+        for (final chapter in book.chapters)
+          BibleReference(bookId: book.id, chapter: chapter.number),
+    ];
+    return _chapterRefs;
+  }
 
   double? _lastScroll;
   bool _isHiding = false;
   bool _selectionActionInFlight = false;
 
-  @override
-  void initState() {
-    super.initState();
-    _scrollController.addListener(_handleScroll);
-  }
-
-  void _handleScroll() {
-    if (!_scrollController.hasClients) return;
-
-    final current = _scrollController.position.pixels;
-    final max = _scrollController.position.maxScrollExtent;
+  void _handleScrollNotification(ScrollNotification notification) {
+    final current = notification.metrics.pixels;
+    final max = notification.metrics.maxScrollExtent;
     final delta = current - (_lastScroll ?? current);
     _lastScroll = current;
 
     if (delta.abs() < 1) return;
 
-    // Always show bars when at the bottom
+    // A large single-notification jump is a programmatic reposition (chapter
+    // navigation, continuous-list key reset), not the user scrolling. Only
+    // rebaseline — toggling the bars here would hide them when the user taps
+    // next/previous chapter.
+    if (delta.abs() > 400) return;
+
+    // Always show bars when at the bottom.
     if (current >= max) {
       if (_isHiding) _toggleBars(show: true);
       return;
@@ -127,14 +151,6 @@ class _BibleViewerTabState extends ConsumerState<BibleViewerTab> {
   }
 
   @override
-  void dispose() {
-    _scrollController
-      ..removeListener(_handleScroll)
-      ..dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     final readerState = _watchReaderShellState();
     final contentBottomPadding = _contentBottomPadding(
@@ -150,6 +166,10 @@ class _BibleViewerTabState extends ConsumerState<BibleViewerTab> {
     // Use them for the nav bar and picker so they work instantly regardless
     // of whether the full verse data has finished loading in continuous mode.
     final navBooks = readerState.shellBooksAsync.value ?? const [];
+    final canOpenReferencePicker =
+        !readerState.shellBooksAsync.isLoading &&
+        !readerState.chapterAsync.isLoading &&
+        navBooks.isNotEmpty;
 
     return Stack(
       children: [
@@ -165,19 +185,19 @@ class _BibleViewerTabState extends ConsumerState<BibleViewerTab> {
           readerBarHeight: _readerBarHeight,
           displayReference: displayReference,
           books: navBooks,
+          canOpenReferencePicker: canOpenReferencePicker,
           showVerseSelector: readerState.showVerseSelector,
           continuousScrolling: readerState.continuousScrolling,
         ),
 
         // Selection action tray for highlight / note / copy / share.
-        // Uses full booksAsync (has verse text) so copy/share captures actual
-        // verse content in continuous mode; shell books degrade to ref-label-only
-        // which is the same as the existing non-continuous behaviour.
+        // Selection actions use shell books for labels while verse text is
+        // resolved lazily from chapter storage when needed.
         if (readerState.selectedVerses.isNotEmpty &&
             readerState.selectedVerse != null)
           _buildSelectionOverlay(
             selectedVerses: readerState.selectedVerses,
-            books: readerState.booksAsync.value ?? const [],
+            books: navBooks,
             selectedVerseAnnotations: readerState.selectedVerseAnnotations,
             showHighlightPalette: readerState.showHighlightPalette,
           ),
@@ -193,13 +213,10 @@ class _BibleViewerTabState extends ConsumerState<BibleViewerTab> {
     // bar and picker are populated immediately, regardless of scroll mode.
     // Full books (with verses) are only needed in continuous mode for content
     // rendering and are watched separately.
-    final shellBooksAsync = ref.watch(bibleBooksShellProvider);
+    final shellBooksAsync = ref.watch(readableBibleBooksProvider);
     return _ReaderShellStateSnapshot(
       layoutMode: ref.watch(readerLayoutModeProvider),
       continuousScrolling: continuousScrolling,
-      booksAsync: continuousScrolling
-          ? ref.watch(bibleBooksProvider)
-          : shellBooksAsync,
       shellBooksAsync: shellBooksAsync,
       currentReference: ref.watch(currentReferenceProvider),
       chapterAsync: ref.watch(currentChapterProvider),
@@ -250,31 +267,81 @@ class _BibleViewerTabState extends ConsumerState<BibleViewerTab> {
     return ValueListenableBuilder<double>(
       valueListenable: FontSizeService.instance.notifier,
       builder: (context, size, child) {
-        return readerState.booksAsync.when(
+        final translationId = ref.read(currentTranslationProvider);
+        return readerState.shellBooksAsync.when(
           data: (books) => readerState.chapterAsync.when(
+            skipLoadingOnReload: true,
+            skipLoadingOnRefresh: true,
             data: (chapter) => chapter != null
-                ? _BibleTextView(
-                    controller: _scrollController,
-                    books: books,
-                    book: _resolveCurrentBook(
-                      books,
-                      readerState.currentReference.bookId,
+                ? AnimatedSwitcher(
+                    duration: _chapterTransitionDuration,
+                    switchInCurve: Curves.easeOutCubic,
+                    switchOutCurve: Curves.easeOutCubic,
+                    layoutBuilder: (currentChild, previousChildren) => Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        ...previousChildren,
+                        if (currentChild != null) currentChild,
+                      ],
                     ),
-                    chapter: chapter,
-                    reference: readerState.currentReference,
-                    displayReference: displayReference,
-                    fontSize: size,
-                    layoutMode: readerState.layoutMode,
-                    continuousScrolling: readerState.continuousScrolling,
-                    showBookIntroductions: readerState.showBookIntroductions,
-                    isSmallDevice: widget.isSmallDevice,
-                    bottomOverlayPadding: contentBottomPadding,
-                    onVisibleReferenceChanged: (reference) {
-                      if (_continuousVisibleReference == reference) return;
-                      setState(() {
-                        _continuousVisibleReference = reference;
-                      });
+                    transitionBuilder: (child, animation) {
+                      final fade = CurvedAnimation(
+                        parent: animation,
+                        curve: Curves.easeOutCubic,
+                      );
+                      final slide = Tween<Offset>(
+                        begin: const Offset(0, 0.012),
+                        end: Offset.zero,
+                      ).animate(fade);
+                      return FadeTransition(
+                        opacity: fade,
+                        child: SlideTransition(position: slide, child: child),
+                      );
                     },
+                    child: _BibleTextView(
+                      key: ValueKey(
+                        [
+                          translationId,
+                          // In continuous mode the reference changes as the user
+                          // scrolls — don't include book/chapter in the key or
+                          // _BibleTextViewState is destroyed (losing all hydrated
+                          // chapters and scroll position) every time the visible
+                          // chapter changes via navigation.
+                          if (!readerState.continuousScrolling) ...[
+                            readerState.currentReference.bookId,
+                            readerState.currentReference.chapter,
+                          ],
+                          readerState.layoutMode.name,
+                          readerState.continuousScrolling,
+                        ].join(':'),
+                      ),
+                      onScrollNotification: _handleScrollNotification,
+                      books: books,
+                      translationId: translationId,
+                      book: _resolveCurrentBook(
+                        books,
+                        readerState.currentReference.bookId,
+                      ),
+                      chapter: chapter,
+                      reference: readerState.currentReference,
+                      displayReference: displayReference,
+                      fontSize: size,
+                      layoutMode: readerState.layoutMode,
+                      continuousScrolling: readerState.continuousScrolling,
+                      showBookIntroductions: readerState.showBookIntroductions,
+                      isSmallDevice: widget.isSmallDevice,
+                      bottomOverlayPadding: contentBottomPadding,
+                      onVisibleReferenceChanged: (reference) {
+                        if (_continuousVisibleReference == reference) return;
+                        setState(() {
+                          _continuousVisibleReference = reference;
+                        });
+                        ref
+                                .read(visibleReaderReferenceProvider.notifier)
+                                .state =
+                            reference;
+                      },
+                    ),
                   )
                 : const _ErrorView(message: 'Chapter not found'),
             loading: () => const _LoadingView(),
@@ -294,11 +361,7 @@ class _BibleViewerTabState extends ConsumerState<BibleViewerTab> {
     BibleReference baseReference, {
     required int direction,
   }) {
-    final chapterReferences = <BibleReference>[
-      for (final book in books)
-        for (final chapter in book.chapters)
-          BibleReference(bookId: book.id, chapter: chapter.number),
-    ];
+    final chapterReferences = _flatChapterRefs(books);
     if (chapterReferences.isEmpty) return;
 
     final currentIndex = chapterReferences.indexWhere(
@@ -315,10 +378,11 @@ class _BibleViewerTabState extends ConsumerState<BibleViewerTab> {
     setState(() {
       _continuousVisibleReference = targetReference;
     });
+    ref.read(visibleReaderReferenceProvider.notifier).state = targetReference;
     ref.read(currentReferenceProvider.notifier).setReference(targetReference);
   }
 
-  void _clearSelectionUi(WidgetRef ref) {
+  void _clearSelectionUi() {
     ref.read(selectedVersesProvider.notifier).clear();
     ref.read(highlightPaletteExpandedProvider.notifier).state = false;
   }
@@ -327,35 +391,43 @@ class _BibleViewerTabState extends ConsumerState<BibleViewerTab> {
     required double readerBarHeight,
     required BibleReference displayReference,
     required List<BibleBook> books,
+    required bool canOpenReferencePicker,
     required bool showVerseSelector,
     required bool continuousScrolling,
   }) {
+    // The bar floats with margins around it. Give the whole strip (margins and
+    // the system safe-area inset) a solid background so scrolling text never
+    // shows through beside or under the bar, in continuous mode especially.
     return Align(
       alignment: Alignment.bottomCenter,
-      child: SafeArea(
-        top: false,
-        bottom: true,
-        child: ChapterBar(
-          barHeight: readerBarHeight,
-          isFloating: true,
-          reference: displayReference,
-          books: books,
-          showVerseSelector: showVerseSelector,
-          onReferenceChanged: (reference) => _handleReferenceChanged(
-            reference,
-            continuousScrolling: continuousScrolling,
-          ),
-          onPreviousChapter: () => _handleAdjacentChapter(
-            books,
-            displayReference,
-            continuousScrolling: continuousScrolling,
-            direction: -1,
-          ),
-          onNextChapter: () => _handleAdjacentChapter(
-            books,
-            displayReference,
-            continuousScrolling: continuousScrolling,
-            direction: 1,
+      child: ColoredBox(
+        color: Theme.of(context).scaffoldBackgroundColor,
+        child: SafeArea(
+          top: false,
+          bottom: true,
+          child: ChapterBar(
+            barHeight: readerBarHeight,
+            isFloating: true,
+            reference: displayReference,
+            books: books,
+            canOpenReferencePicker: canOpenReferencePicker,
+            showVerseSelector: showVerseSelector,
+            onReferenceChanged: (reference) => _handleReferenceChanged(
+              reference,
+              continuousScrolling: continuousScrolling,
+            ),
+            onPreviousChapter: () => _handleAdjacentChapter(
+              books,
+              displayReference,
+              continuousScrolling: continuousScrolling,
+              direction: -1,
+            ),
+            onNextChapter: () => _handleAdjacentChapter(
+              books,
+              displayReference,
+              continuousScrolling: continuousScrolling,
+              direction: 1,
+            ),
           ),
         ),
       ),
@@ -366,11 +438,12 @@ class _BibleViewerTabState extends ConsumerState<BibleViewerTab> {
     BibleReference reference, {
     required bool continuousScrolling,
   }) {
-    _clearSelectionUi(ref);
+    _clearSelectionUi();
     if (continuousScrolling) {
       setState(() {
         _continuousVisibleReference = reference;
       });
+      ref.read(visibleReaderReferenceProvider.notifier).state = reference;
     }
     ref.read(currentReferenceProvider.notifier).setReference(reference);
   }
@@ -381,7 +454,7 @@ class _BibleViewerTabState extends ConsumerState<BibleViewerTab> {
     required bool continuousScrolling,
     required int direction,
   }) {
-    _clearSelectionUi(ref);
+    _clearSelectionUi();
     if (books.isEmpty) return;
 
     // Continuous mode navigates by jumping to the next mounted chapter section.
@@ -426,7 +499,7 @@ class _BibleViewerTabState extends ConsumerState<BibleViewerTab> {
             isBusy: _selectionActionInFlight,
             onDismiss: () {
               if (_selectionActionInFlight) return;
-              _clearSelectionUi(ref);
+              _clearSelectionUi();
             },
             onHighlightPressed: _toggleHighlightPalette,
             onHighlightSelected: _handleHighlightColorSelected,
@@ -443,268 +516,6 @@ class _BibleViewerTabState extends ConsumerState<BibleViewerTab> {
         ),
       ),
     );
-  }
-
-  void _toggleHighlightPalette() {
-    if (_selectionActionInFlight) return;
-    final notifier = ref.read(highlightPaletteExpandedProvider.notifier);
-    notifier.state = !notifier.state;
-  }
-
-  List<UserAnnotation> _standaloneHighlightAnnotationsForSelection({
-    required List<UserAnnotation> annotations,
-    required List<BibleReference> references,
-    required String translationId,
-  }) {
-    final matchedById = <int?, UserAnnotation>{};
-    for (final annotation in annotations) {
-      if (!annotation.isHighlightOnly) continue;
-      final touchesSelection = references.any(
-        (reference) => annotation.touchesReference(
-          reference,
-          translationId: translationId,
-        ),
-      );
-      if (!touchesSelection) continue;
-      matchedById[annotation.id] = annotation;
-    }
-    return matchedById.values.toList();
-  }
-
-  Future<void> _handleHighlightColorSelected(Color color) async {
-    if (_selectionActionInFlight) return;
-    final selectedReferences = [...ref.read(selectedVersesProvider)];
-    if (selectedReferences.isEmpty) return;
-
-    final messenger = ScaffoldMessenger.of(context);
-    final existingAnnotations = [...ref.read(selectedVerseAnnotationsProvider)];
-    _setSelectionActionInFlight(true);
-
-    try {
-      final translation = await resolveCurrentTranslation(ref);
-      if (!mounted) return;
-      if (translation == null) {
-        messenger.showSnackBar(
-          const SnackBar(content: Text('Translation not available.')),
-        );
-        return;
-      }
-
-      final repository = ref.read(userAnnotationRepositoryProvider);
-
-      // Find all standalone highlight annotations that overlap the selection.
-      final highlightAnnotations = _standaloneHighlightAnnotationsForSelection(
-        annotations: existingAnnotations,
-        references: selectedReferences,
-        translationId: translation.id,
-      );
-
-      // Remove the selected verses from every overlapping annotation.
-      // Processing each annotation ID once prevents redundant saves when multiple
-      // selected verses belong to the same multi-verse annotation.
-      // This also handles the "recolour a subset" case correctly: if an annotation
-      // covers verses 1–5 and only verse 3 is selected, the annotation is trimmed
-      // to 1–2, 4–5 (preserving the original colour there) before the new
-      // per-verse annotation is created for verse 3 below.
-      final processedIds = <int?>{};
-      for (final annotation in highlightAnnotations) {
-        final annotationId = annotation.id;
-        if (processedIds.contains(annotationId)) continue;
-        processedIds.add(annotationId);
-
-        final trimmed = removeReferencesFromStandaloneHighlight(
-          annotation,
-          selectedReferences,
-          translationId: translation.id,
-        );
-        if (trimmed == null) {
-          if (annotationId != null) await repository.deleteAnnotation(annotationId);
-        } else {
-          await repository.saveAnnotation(trimmed);
-        }
-      }
-
-      // Create one fresh per-verse annotation with the chosen colour for every
-      // selected reference. We never update an existing multi-verse annotation
-      // in-place because that would silently recolour unselected verses too.
-      for (final reference in selectedReferences) {
-        await repository.saveAnnotation(
-          UserAnnotation(
-            type: UserAnnotationType.highlight,
-            primaryVerse: buildAnnotationVerseLink(
-              reference: reference,
-              translation: translation,
-            ),
-            highlightColorValue: color.toARGB32(),
-            createdAt: DateTime.now(),
-            updatedAt: DateTime.now(),
-          ),
-        );
-      }
-
-      if (!mounted) return;
-      ref.read(highlightPaletteExpandedProvider.notifier).state = false;
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text(
-            selectedReferences.length == 1
-                ? 'Highlight saved.'
-                : 'Highlights saved for ${selectedReferences.length} verses.',
-          ),
-        ),
-      );
-    } finally {
-      _setSelectionActionInFlight(false);
-    }
-  }
-
-  Future<void> _handleClearHighlightPressed() async {
-    if (_selectionActionInFlight) return;
-    final selectedReferences = [...ref.read(selectedVersesProvider)];
-    if (selectedReferences.isEmpty) return;
-
-    final messenger = ScaffoldMessenger.of(context);
-    final existingAnnotations = [...ref.read(selectedVerseAnnotationsProvider)];
-    _setSelectionActionInFlight(true);
-
-    try {
-      final translation = await resolveCurrentTranslation(ref);
-      if (!mounted) return;
-      if (translation == null) {
-        messenger.showSnackBar(
-          const SnackBar(content: Text('Translation not available.')),
-        );
-        return;
-      }
-
-      final highlightAnnotations = _standaloneHighlightAnnotationsForSelection(
-        annotations: existingAnnotations,
-        references: selectedReferences,
-        translationId: translation.id,
-      );
-      if (highlightAnnotations.isEmpty) {
-        ref.read(highlightPaletteExpandedProvider.notifier).state = false;
-        messenger.showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Only standalone highlights can be removed here. Edit a note to change its highlight.',
-            ),
-          ),
-        );
-        return;
-      }
-
-      final repository = ref.read(userAnnotationRepositoryProvider);
-      for (final annotation in highlightAnnotations) {
-        final nextAnnotation = removeReferencesFromStandaloneHighlight(
-          annotation,
-          selectedReferences,
-          translationId: translation.id,
-        );
-        if (nextAnnotation == null) {
-          final annotationId = annotation.id;
-          if (annotationId != null) {
-            await repository.deleteAnnotation(annotationId);
-          }
-        } else {
-          await repository.saveAnnotation(nextAnnotation);
-        }
-      }
-
-      if (!mounted) return;
-      ref.read(highlightPaletteExpandedProvider.notifier).state = false;
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text(
-            highlightAnnotations.length == 1
-                ? 'Highlight removed.'
-                : 'Highlights removed.',
-          ),
-        ),
-      );
-    } finally {
-      _setSelectionActionInFlight(false);
-    }
-  }
-
-  Future<void> _handleNotePressed() async {
-    if (_selectionActionInFlight) return;
-    final selectedReferences = [...ref.read(selectedVersesProvider)];
-    if (selectedReferences.isEmpty) return;
-    final messenger = ScaffoldMessenger.of(context);
-    final navigator = Navigator.of(context);
-    _setSelectionActionInFlight(true);
-
-    try {
-      final translation = await resolveCurrentTranslation(ref);
-      if (!mounted) return;
-      if (translation == null) {
-        messenger.showSnackBar(
-          const SnackBar(content: Text('Translation not available.')),
-        );
-        return;
-      }
-      final selectedLinks = [
-        for (final reference in selectedReferences)
-          buildAnnotationVerseLink(
-            reference: reference,
-            translation: translation,
-          ),
-      ];
-
-      // Always open a fresh note editor. Highlights are a separate annotation
-      // type and must not be automatically merged with notes — the user must
-      // explicitly edit an existing annotation to combine them.
-      final saved = await navigator.push<bool>(
-        MaterialPageRoute(
-          builder: (context) => NoteEditorScreen(
-            primaryVerse: selectedLinks.first,
-            initialLinkedVerses: selectedLinks.skip(1).toList(),
-          ),
-        ),
-      );
-      if (saved == true && mounted) {
-        _clearSelectionUi(ref);
-      }
-    } finally {
-      _setSelectionActionInFlight(false);
-    }
-  }
-
-  Future<void> _handleSelectionCopy(
-    List<BibleBook> books, {
-    required String copiedMessage,
-  }) async {
-    if (_selectionActionInFlight) return;
-    final selectedReferences = [...ref.read(selectedVersesProvider)];
-    if (selectedReferences.isEmpty) return;
-    final messenger = ScaffoldMessenger.of(context);
-    _setSelectionActionInFlight(true);
-
-    final text = _selectedVersesText(selectedReferences, books);
-    try {
-      await Clipboard.setData(ClipboardData(text: text));
-      if (mounted) {
-        messenger.showSnackBar(SnackBar(content: Text(copiedMessage)));
-      }
-    } finally {
-      _setSelectionActionInFlight(false);
-    }
-  }
-
-  String _selectedVersesText(
-    List<BibleReference> references,
-    List<BibleBook> books,
-  ) {
-    return references
-        .map((reference) {
-          final verse = _findVerseInBooks(books, reference);
-          final bookName = displayBookNameForReference(books, reference.bookId);
-          return verse == null
-              ? '$bookName ${reference.chapter}:${reference.verse}'
-              : '$bookName ${reference.chapter}:${reference.verse} ${verse.text}';
-        })
-        .join('\n');
   }
 }
 
@@ -727,155 +538,4 @@ BibleVerse? _findVerseInChapter(BibleChapter? chapter, int? verseNumber) {
     if (verse.number == verseNumber) return verse;
   }
   return null;
-}
-
-BibleVerse? _findVerseInBooks(List<BibleBook> books, BibleReference reference) {
-  final book = resolveBookFromReference(books, reference.bookId);
-  final chapter = book?.chapters
-      .where((item) => item.number == reference.chapter)
-      .firstOrNull;
-  return _findVerseInChapter(chapter, reference.verse);
-}
-
-/// Bible text display widget
-class _BibleTextView extends ConsumerStatefulWidget {
-  const _BibleTextView({
-    required this.controller,
-    required this.books,
-    required this.book,
-    required this.chapter,
-    required this.reference,
-    required this.displayReference,
-    required this.fontSize,
-    required this.layoutMode,
-    required this.continuousScrolling,
-    required this.showBookIntroductions,
-    required this.isSmallDevice,
-    required this.bottomOverlayPadding,
-    required this.onVisibleReferenceChanged,
-  });
-
-  final ScrollController controller;
-  final List<BibleBook> books;
-  final BibleBook book;
-  final BibleChapter chapter;
-  final BibleReference reference;
-  final BibleReference displayReference;
-  final double fontSize;
-  final ReaderLayoutMode layoutMode;
-  final bool continuousScrolling;
-  final bool showBookIntroductions;
-  final bool isSmallDevice;
-  final double bottomOverlayPadding;
-  final ValueChanged<BibleReference> onVisibleReferenceChanged;
-
-  @override
-  ConsumerState<_BibleTextView> createState() => _BibleTextViewState();
-}
-
-class _BibleTextViewState extends ConsumerState<_BibleTextView> {
-  final Map<String, GlobalKey> _verseKeys = <String, GlobalKey>{};
-  final Map<String, GlobalKey> _chapterSectionKeys = <String, GlobalKey>{};
-  final Map<String, TapGestureRecognizer> _verseTapRecognizers =
-      <String, TapGestureRecognizer>{};
-  final ItemScrollController _continuousItemScrollController =
-      ItemScrollController();
-  final ItemPositionsListener _continuousItemPositionsListener =
-      ItemPositionsListener.create();
-  List<_ContinuousChapterSection> _continuousSections =
-      <_ContinuousChapterSection>[];
-  BibleReference? _selectionAnchorReference;
-  bool _showSelectedVerseFocus = true;
-  bool _suppressNextChapterAutoScroll = false;
-  bool _visibleSyncQueued = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _rebuildContinuousSections();
-    _scheduleVerseFocus();
-    if (widget.continuousScrolling && widget.reference.verse == null) {
-      _scheduleChapterFocus();
-    }
-  }
-
-  @override
-  void didUpdateWidget(covariant _BibleTextView oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.books != widget.books) {
-      _rebuildContinuousSections();
-      _resetVerseTapRecognizers();
-    } else if (!widget.continuousScrolling &&
-        (oldWidget.book.id != widget.book.id ||
-            oldWidget.chapter.number != widget.chapter.number)) {
-      _resetVerseTapRecognizers();
-    }
-    if (oldWidget.reference != widget.reference ||
-        oldWidget.chapter != widget.chapter) {
-      _showSelectedVerseFocus = true;
-      _scheduleVerseFocus();
-    }
-    if (widget.continuousScrolling &&
-        (oldWidget.reference.bookId != widget.reference.bookId ||
-            oldWidget.reference.chapter != widget.reference.chapter)) {
-      if (_suppressNextChapterAutoScroll) {
-        _suppressNextChapterAutoScroll = false;
-      } else if (widget.reference.verse == null) {
-        // In continuous mode a verse jump should land on the verse itself.
-        // Only fall back to the chapter header when no verse was requested.
-        _scheduleChapterFocus();
-      }
-    }
-  }
-
-  void _setSelectedVerseFocusVisible(bool value) {
-    if (!mounted || _showSelectedVerseFocus == value) return;
-    setState(() {
-      _showSelectedVerseFocus = value;
-    });
-  }
-
-  @override
-  void dispose() {
-    _resetVerseTapRecognizers();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    // Listener catches mouse-wheel scroll (PointerScrollEvent) on desktop,
-    // which does not set dragDetails on ScrollStartNotification.
-    return Listener(
-      onPointerDown: (event) {
-        final focusedVerseRect = _focusedVerseHitRect();
-        if (focusedVerseRect != null &&
-            !focusedVerseRect.contains(event.position)) {
-          _dismissSelectedVerseFocus();
-        }
-      },
-      onPointerSignal: (event) {
-        if (event is PointerScrollEvent) _dismissSelectedVerseFocus();
-      },
-      child: NotificationListener<ScrollStartNotification>(
-        onNotification: (notification) {
-          if (notification.dragDetails != null) {
-            // Keep the selected-verse focus treatment only until the user starts
-            // interacting with the scroll view. Programmatic scrolling from a
-            // verse jump should not immediately clear the visual focus.
-            _dismissSelectedVerseFocus();
-          }
-          return false;
-        },
-        child: widget.continuousScrolling
-            ? NotificationListener<ScrollUpdateNotification>(
-                onNotification: (notification) {
-                  _queueVisibleChapterSync(context);
-                  return false;
-                },
-                child: _buildContinuousReadingView(context),
-              )
-            : _buildSingleChapterView(context),
-      ),
-    );
-  }
 }

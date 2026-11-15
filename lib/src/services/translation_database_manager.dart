@@ -26,9 +26,11 @@ class TranslationDatabaseManager {
   }
 
   /// Closes and removes the connection for [translationId].
-  /// Call this before deleting the underlying file.
-  void close(String translationId) {
-    _cache.remove(translationId)?.close();
+  /// Call this (and await it) before deleting or replacing the underlying
+  /// storage: on web, closing writes the connection's copy of the database
+  /// back, which would otherwise race with — and overwrite — a replacement.
+  Future<void> close(String translationId) async {
+    await _cache.remove(translationId)?.close();
   }
 
   /// Closes all open connections.

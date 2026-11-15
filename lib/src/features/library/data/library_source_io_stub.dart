@@ -9,6 +9,10 @@ Future<String> readTextFile(String path) async {
   throw UnsupportedError('Direct file access is unavailable on this platform.');
 }
 
+Future<List<int>> readBinaryFile(String path) async {
+  throw UnsupportedError('Direct file access is unavailable on this platform.');
+}
+
 Future<void> copyFile(String sourcePath, String destinationPath) async {
   throw UnsupportedError('File copy is unavailable on this platform.');
 }

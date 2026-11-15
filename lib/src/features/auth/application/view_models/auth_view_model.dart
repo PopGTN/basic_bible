@@ -1,7 +1,15 @@
+import 'package:basic_bible/src/features/sync/application/view_models/sync_view_models.dart';
 import 'package:basic_bible/src/services/shared_preferences_provider.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+bool isAppAuthenticated({
+  required bool localLoggedIn,
+  required SyncState syncState,
+}) {
+  return localLoggedIn || syncState.isSignedIn;
+}
 
 /// ViewModel for session-level auth state used by the sample login flow.
 class AuthNotifier extends StateNotifier<bool> {

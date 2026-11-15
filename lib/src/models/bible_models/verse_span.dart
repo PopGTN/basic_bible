@@ -1,49 +1,11 @@
-import 'package:equatable/equatable.dart';
+import 'package:bible_parser_flutter/bible_parser_flutter.dart'
+    show VerseSpan, VerseSpanKind;
 
-enum BibleVerseSpanKind {
-  normal,
-  wordsOfJesus,
-  translatorAddition,
-  quote,
-  poetry,
-  word,
-  divineNameTag,
-  properName,
-  selah,
-  acrosticHeading,
-  emphasis,
-  bold,
-  italic,
-  foreignLanguage,
-  keyword,
-}
-
-class BibleVerseSpan extends Equatable {
-  final String text;
-  final BibleVerseSpanKind kind;
-  final Map<String, String> metadata;
-
-  const BibleVerseSpan({
-    required this.text,
-    this.kind = BibleVerseSpanKind.normal,
-    this.metadata = const {},
-  });
-
-  factory BibleVerseSpan.fromJson(Map<String, dynamic> json) {
-    final rawMetadata = json['metadata'] as Map<String, dynamic>? ?? const {};
-    return BibleVerseSpan(
-      text: json['text'] as String,
-      kind: BibleVerseSpanKind.values[json['kind'] as int? ?? 0],
-      metadata: rawMetadata.map(
-        (key, value) => MapEntry(key, value.toString()),
-      ),
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {'text': text, 'kind': kind.index, 'metadata': metadata};
-  }
-
-  @override
-  List<Object?> get props => [text, kind, metadata];
-}
+// The app previously duplicated the parser's rich-content models under
+// Bible-prefixed names, which meant every parser change had to be mirrored
+// by hand (and silently broke rendering when it wasn't). The names are now
+// aliases for the parser's classes — one source of truth. JSON serialization
+// lives on the parser classes and is byte-identical to the old format, so
+// cached translations stay valid.
+typedef BibleVerseSpanKind = VerseSpanKind;
+typedef BibleVerseSpan = VerseSpan;

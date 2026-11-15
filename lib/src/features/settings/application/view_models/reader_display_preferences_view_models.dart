@@ -7,6 +7,13 @@ final boldDivineNameProvider =
       return BoldDivineNameNotifier(ref.read(sharedPreferencesProvider));
     });
 
+/// Words of Jesus are always red; bold on top is optional and off by default,
+/// matching the red-letter convention of print Bibles and most apps.
+final boldWordsOfJesusProvider =
+    StateNotifierProvider<BoldWordsOfJesusNotifier, bool>((ref) {
+      return BoldWordsOfJesusNotifier(ref.read(sharedPreferencesProvider));
+    });
+
 final underlineProperNamesProvider =
     StateNotifierProvider<UnderlineProperNamesNotifier, bool>((ref) {
       return UnderlineProperNamesNotifier(ref.read(sharedPreferencesProvider));
@@ -67,6 +74,11 @@ class BoldDivineNameNotifier extends _ReaderDisplayPreferenceNotifier {
     : super(prefs, 'reader_bold_divine_name', false);
 }
 
+class BoldWordsOfJesusNotifier extends _ReaderDisplayPreferenceNotifier {
+  BoldWordsOfJesusNotifier(SharedPreferences prefs)
+    : super(prefs, 'reader_bold_words_of_jesus', false);
+}
+
 class UnderlineProperNamesNotifier extends _ReaderDisplayPreferenceNotifier {
   UnderlineProperNamesNotifier(SharedPreferences prefs)
     : super(prefs, 'reader_underline_proper_names', true);
@@ -80,7 +92,7 @@ class UnderlineWordMetadataNotifier extends _ReaderDisplayPreferenceNotifier {
 class BracketTranslatorAdditionsNotifier
     extends _ReaderDisplayPreferenceNotifier {
   BracketTranslatorAdditionsNotifier(SharedPreferences prefs)
-    : super(prefs, 'reader_bracket_translator_additions', true);
+    : super(prefs, 'reader_bracket_translator_additions', false);
 }
 
 class UseSourceBoldStylingNotifier extends _ReaderDisplayPreferenceNotifier {

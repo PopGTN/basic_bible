@@ -2,23 +2,107 @@ import 'dart:convert';
 
 import 'package:basic_bible/src/models/bible_models.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
+
+/// Signature for a function that extracts a raw translation list from a
+/// successfully decoded JSON body. Throws if the body shape is unexpected.
+typedef _CatalogParser =
+    List<Map<String, dynamic>> Function(Map<String, dynamic> body);
+
+List<Map<String, dynamic>> _parseTranslationsEnvelope(
+  Map<String, dynamic> body,
+) {
+  final raw = body['translations'];
+  if (raw is! List) {
+    throw FormatException('Catalog JSON is missing a "translations" list.');
+  }
+  return raw.whereType<Map<String, dynamic>>().toList(growable: false);
+}
+
+/// Parses the legacy ebible_list.json format where translations are stored
+/// directly as a top-level list under the "bibles" key.
+List<Map<String, dynamic>> _parseEbibleList(Map<String, dynamic> body) {
+  final raw = body['bibles'] ?? body['translations'];
+  if (raw is! List) {
+    throw FormatException('ebible_list JSON is missing a "bibles" list.');
+  }
+  return raw.whereType<Map<String, dynamic>>().toList(growable: false);
+}
 
 class RemoteTranslationCatalogService {
-  RemoteTranslationCatalogService({http.Client? client})
-    : _client = client ?? http.Client();
+  RemoteTranslationCatalogService({
+    http.Client? client,
+    this.catalogUrlOverride,
+    SharedPreferences? prefs,
+  }) : _client = client ?? http.Client(),
+       _prefs = prefs;
 
   static const String defaultCatalogUrl = String.fromEnvironment(
     'BIBLE_DATA_CATALOG_URL',
     defaultValue:
-        'https://raw.githubusercontent.com/PopGTN/bible-data/main/catalog/translations.json',
+        'https://raw.githubusercontent.com/PopGTN/bible-data/main/catalog/production/bibles.json',
   );
+
+  /// Ordered list of (url, parser) pairs tried in sequence on primary failure.
+  /// Each entry uses the parser appropriate for that endpoint's schema so a
+  /// format mismatch on one fallback does not silently discard data from another.
+  static final List<({String url, _CatalogParser parser})>
+  _fallbackCatalogEndpoints = [
+    (url: defaultCatalogUrl, parser: _parseTranslationsEnvelope),
+    (
+      url:
+          'https://raw.githubusercontent.com/PopGTN/bible-data/main/catalog/translations.json',
+      parser: _parseTranslationsEnvelope,
+    ),
+    (
+      url:
+          'https://raw.githubusercontent.com/PopGTN/bible-data/main/ebible_list.json',
+      parser: _parseEbibleList,
+    ),
+  ];
 
   static const Duration _cacheTtl = Duration(minutes: 30);
   static const Duration _requestTimeout = Duration(seconds: 20);
 
   final http.Client _client;
+  final String? catalogUrlOverride;
+  final SharedPreferences? _prefs;
   Future<List<BibleTranslation>>? _catalogFuture;
   DateTime? _cachedAt;
+
+  // Last-good catalog persisted across restarts, so the library screen works
+  // offline and skips the network round-trip on a fresh launch.
+  static const String _cachedBodyPrefKey = 'translation_catalog_cache_body';
+  static const String _cachedUrlPrefKey = 'translation_catalog_cache_url';
+  static const String _cachedAtPrefKey = 'translation_catalog_cache_at';
+
+  List<({String url, _CatalogParser parser})> get _catalogEndpoints {
+    final overrideUrl = catalogUrlOverride?.trim();
+    if (overrideUrl == null ||
+        overrideUrl.isEmpty ||
+        !_isAllowedCatalogUrl(overrideUrl)) {
+      return _fallbackCatalogEndpoints;
+    }
+    return [
+      (url: overrideUrl, parser: _parseTranslationsEnvelope),
+      ..._fallbackCatalogEndpoints.where(
+        (endpoint) => endpoint.url != overrideUrl,
+      ),
+    ];
+  }
+
+  /// The settings screen validates this too, but an override saved before the
+  /// https-only rule existed could still be sitting in preferences — so the
+  /// service ignores anything that isn't https (or http to localhost).
+  static bool _isAllowedCatalogUrl(String url) {
+    final uri = Uri.tryParse(url);
+    if (uri == null || !uri.hasAuthority) return false;
+    if (uri.scheme == 'https') return true;
+    return uri.scheme == 'http' &&
+        (uri.host == 'localhost' ||
+            uri.host == '127.0.0.1' ||
+            uri.host == '::1');
+  }
 
   Future<List<BibleTranslation>> fetchTranslations({
     bool forceRefresh = false,
@@ -35,37 +119,110 @@ class RemoteTranslationCatalogService {
   }
 
   Future<List<BibleTranslation>> _fetchTranslations() async {
-    final response = await _client
-        .get(Uri.parse(defaultCatalogUrl))
-        .timeout(_requestTimeout);
-    if (response.statusCode != 200) {
-      throw Exception(
-        'Failed to fetch translation catalog: HTTP ${response.statusCode}',
-      );
+    final errors = <String>[];
+    final endpoints = _catalogEndpoints;
+
+    // A recent persisted copy of the primary endpoint saves the network
+    // round-trip on a cold start.
+    final persisted = _readPersistedCatalog();
+    if (persisted != null &&
+        persisted.url == endpoints.first.url &&
+        DateTime.now().difference(persisted.fetchedAt) <= _cacheTtl) {
+      final cached = _tryParseCatalogBody(persisted.body, persisted.url);
+      if (cached != null) return cached;
     }
 
-    final decoded = jsonDecode(utf8.decode(response.bodyBytes));
-    if (decoded is! Map<String, dynamic>) {
-      throw Exception('Translation catalog JSON must be an object.');
+    for (final endpoint in endpoints) {
+      try {
+        final response = await _client
+            .get(Uri.parse(endpoint.url))
+            .timeout(_requestTimeout);
+
+        if (response.statusCode != 200) {
+          errors.add('HTTP ${response.statusCode} at ${endpoint.url}');
+          continue;
+        }
+
+        final body = utf8.decode(response.bodyBytes);
+        final decoded = jsonDecode(body);
+        if (decoded is! Map<String, dynamic>) {
+          errors.add('Non-object JSON body at ${endpoint.url}');
+          continue;
+        }
+
+        final translations = _translationsFromRawList(endpoint.parser(decoded));
+        _persistCatalog(url: endpoint.url, body: body);
+        return translations;
+      } catch (e) {
+        errors.add('${endpoint.url}: $e');
+      }
     }
 
-    final rawTranslations = decoded['translations'];
-    if (rawTranslations is! List) {
-      throw Exception('Translation catalog JSON is missing "translations".');
+    // Every endpoint failed (probably offline) — fall back to the last
+    // successful catalog regardless of age so the library keeps working.
+    if (persisted != null) {
+      final stale = _tryParseCatalogBody(persisted.body, persisted.url);
+      if (stale != null) return stale;
     }
 
-    return rawTranslations
-        .whereType<Map<String, dynamic>>()
+    throw Exception(
+      'Failed to fetch translation catalog after ${errors.length} attempt(s):\n'
+      '${errors.join('\n')}',
+    );
+  }
+
+  List<BibleTranslation> _translationsFromRawList(
+    List<Map<String, dynamic>> rawList,
+  ) {
+    return rawList
         .map(_translationFromJson)
-        .where((translation) => translation != null)
+        .where((t) => t != null)
         .cast<BibleTranslation>()
         .toList(growable: false);
+  }
+
+  ({String url, String body, DateTime fetchedAt})? _readPersistedCatalog() {
+    final prefs = _prefs;
+    if (prefs == null) return null;
+    final body = prefs.getString(_cachedBodyPrefKey);
+    final url = prefs.getString(_cachedUrlPrefKey);
+    final fetchedAtMs = prefs.getInt(_cachedAtPrefKey);
+    if (body == null || url == null || fetchedAtMs == null) return null;
+    return (
+      url: url,
+      body: body,
+      fetchedAt: DateTime.fromMillisecondsSinceEpoch(fetchedAtMs),
+    );
+  }
+
+  void _persistCatalog({required String url, required String body}) {
+    final prefs = _prefs;
+    if (prefs == null) return;
+    // Fire-and-forget: failing to persist must never fail the fetch itself.
+    prefs.setString(_cachedBodyPrefKey, body);
+    prefs.setString(_cachedUrlPrefKey, url);
+    prefs.setInt(_cachedAtPrefKey, DateTime.now().millisecondsSinceEpoch);
+  }
+
+  List<BibleTranslation>? _tryParseCatalogBody(String body, String url) {
+    try {
+      final decoded = jsonDecode(body);
+      if (decoded is! Map<String, dynamic>) return null;
+      final parser = _catalogEndpoints
+          .where((endpoint) => endpoint.url == url)
+          .map((endpoint) => endpoint.parser)
+          .firstOrNull ??
+          _parseTranslationsEnvelope;
+      return _translationsFromRawList(parser(decoded));
+    } catch (_) {
+      return null;
+    }
   }
 
   BibleTranslation? _translationFromJson(Map<String, dynamic> json) {
     if (json['enabled'] == false) return null;
 
-    final id = (json['id'] as String? ?? '').trim();
+    final id = _resolveStableTranslationId(json);
     final name = (json['name'] as String? ?? '').trim();
     if (id.isEmpty || name.isEmpty) return null;
 
@@ -94,7 +251,24 @@ class RemoteTranslationCatalogService {
       bundledByDefault: json['bundledByDefault'] == true,
       displayOrder: (json['displayOrder'] as num?)?.toInt() ?? 0,
       artifacts: artifacts,
+      rights: _rightsFromJson(json),
     );
+  }
+
+  /// Copyright / license fields (#18); null when the entry has none.
+  BibleTranslationRights? _rightsFromJson(Map<String, dynamic> json) {
+    String? field(String key) {
+      final value = (json[key] as String?)?.trim();
+      return value == null || value.isEmpty ? null : value;
+    }
+
+    final rights = BibleTranslationRights(
+      license: field('license'),
+      licenseUrl: field('licenseUrl'),
+      copyrightNotice: field('copyrightNotice'),
+      sourceUrl: field('officialSourceUrl'),
+    );
+    return rights.isEmpty ? null : rights;
   }
 
   BibleTranslationArtifact? _artifactFromJson(Map<String, dynamic> json) {
@@ -120,6 +294,17 @@ class RemoteTranslationCatalogService {
   BibleFormat? _parseFormat(String? raw) {
     if (raw == null) return null;
     return BibleFormat.values.where((format) => format.name == raw).firstOrNull;
+  }
+
+  String _resolveStableTranslationId(Map<String, dynamic> json) {
+    final rawSourceId = (json['sourceId'] as String? ?? '').trim();
+    final rawId = (json['id'] as String? ?? '').trim();
+    return _normalizeId(rawSourceId.isNotEmpty ? rawSourceId : rawId);
+  }
+
+  String _normalizeId(String raw) {
+    final normalized = raw.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), '_');
+    return normalized.replaceAll(RegExp(r'^_+|_+$'), '');
   }
 }
 
@@ -151,9 +336,12 @@ BibleTranslationArtifact? _firstRemoteArtifactForList(
 }) {
   const preferenceOrder = <BibleFormat>[
     BibleFormat.sqlite,
+    BibleFormat.zip,
     BibleFormat.usfx,
     BibleFormat.osis,
     BibleFormat.zefania,
+    BibleFormat
+        .usfm, // last: requires native Rust parser; prefer XML formats first
   ];
 
   final filtered = artifacts
