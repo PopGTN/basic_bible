@@ -16,7 +16,7 @@ class LinkedVersesSection extends StatefulWidget {
     super.key,
     required this.books,
     required List<AnnotationVerseLink> links,
-    required this.onPreviewLinkedVerse,
+    required this.onPreviewVerses,
     this.onDeleteLink,
     this.title = 'Linked Verses',
     this.maxVisible = 24,
@@ -27,12 +27,12 @@ class LinkedVersesSection extends StatefulWidget {
        ];
 
   /// One chip per run of consecutive verses ("Genesis 1:2-5"). Read-only:
-  /// tapping a chip previews the first verse of its range.
+  /// tapping a chip previews the whole range.
   const LinkedVersesSection.grouped({
     super.key,
     required this.books,
     required this.ranges,
-    required this.onPreviewLinkedVerse,
+    required this.onPreviewVerses,
     this.title = 'Linked Verses',
     this.maxVisible = 24,
     this.emptyMessage,
@@ -40,7 +40,9 @@ class LinkedVersesSection extends StatefulWidget {
 
   final List<BibleBook> books;
   final List<AnnotationVerseRange> ranges;
-  final Future<void> Function(AnnotationVerseLink link) onPreviewLinkedVerse;
+  /// Called with the tapped chip's verses (one verse, or a range like
+  /// "Luke 15:5-7") so the preview shows all of them.
+  final Future<void> Function(AnnotationVerseRange verses) onPreviewVerses;
 
   /// When provided, each chip shows a delete icon. Tapping it calls this
   /// callback — the caller decides whether to confirm before removing.
@@ -96,7 +98,7 @@ class _LinkedVersesSectionState extends State<LinkedVersesSection> {
             for (final range in visibleRanges)
               if (onDeleteLink != null)
                 InputChip(
-                  onPressed: () => widget.onPreviewLinkedVerse(range.first),
+                  onPressed: () => widget.onPreviewVerses(range),
                   avatar: const Icon(Icons.visibility_outlined, size: 16),
                   label: Text(labelFor(range)),
                   onDeleted: () => onDeleteLink(range.first),
@@ -105,7 +107,7 @@ class _LinkedVersesSectionState extends State<LinkedVersesSection> {
                 )
               else
                 ActionChip(
-                  onPressed: () => widget.onPreviewLinkedVerse(range.first),
+                  onPressed: () => widget.onPreviewVerses(range),
                   avatar: const Icon(Icons.visibility_outlined, size: 16),
                   label: Text(labelFor(range)),
                 ),

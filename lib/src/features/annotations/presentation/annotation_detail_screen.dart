@@ -11,7 +11,7 @@ class AnnotationDetailScreen extends StatelessWidget {
     super.key,
     required this.annotation,
     required this.books,
-    required this.onPreviewLinkedVerse,
+    required this.onPreviewVerses,
     required this.onOpenReference,
     required this.onEdit,
     required this.onDelete,
@@ -19,7 +19,7 @@ class AnnotationDetailScreen extends StatelessWidget {
 
   final UserAnnotation annotation;
   final List<BibleBook> books;
-  final Future<void> Function(AnnotationVerseLink link) onPreviewLinkedVerse;
+  final Future<void> Function(AnnotationVerseRange verses) onPreviewVerses;
   final Future<void> Function() onOpenReference;
   final Future<void> Function() onEdit;
   final Future<void> Function() onDelete;
@@ -34,11 +34,12 @@ class AnnotationDetailScreen extends StatelessWidget {
             theme.colorScheme.primary,
           );
     final primary = annotation.primaryVerse;
-    final verseRanges = annotation.verseRanges;
-    final referenceLabel = verseRanges.first.label(
-      displayBookNameForReference(books, verseRanges.first.bookId),
-    );
-    final linkedRanges = verseRanges.skip(1).toList(growable: false);
+    // Detail view lists every verse individually (headed by the primary
+    // verse); only the compact previews (Notes list, reader sheet) group
+    // verses into ranges.
+    final referenceLabel =
+        '${displayBookNameForReference(books, primary.bookId)} '
+        '${primary.chapter}:${primary.verse}';
 
     return Scaffold(
       appBar: AppBar(
@@ -124,12 +125,12 @@ class AnnotationDetailScreen extends StatelessWidget {
                     ),
                   ),
                 ),
-                if (linkedRanges.isNotEmpty) ...[
+                if (annotation.linkedVerses.isNotEmpty) ...[
                   const SizedBox(height: 16),
-                  LinkedVersesSection.grouped(
+                  LinkedVersesSection(
                     books: books,
-                    ranges: linkedRanges,
-                    onPreviewLinkedVerse: onPreviewLinkedVerse,
+                    links: annotation.linkedVerses,
+                    onPreviewVerses: onPreviewVerses,
                   ),
                 ],
                 if (annotation.labels.isNotEmpty) ...[

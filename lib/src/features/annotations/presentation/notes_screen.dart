@@ -134,7 +134,7 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
 
   Future<void> _showLinkedVersePreview(
     BuildContext context, {
-    required AnnotationVerseLink link,
+    required AnnotationVerseRange verses,
     required List<BibleBook> books,
   }) {
     final currentTranslationId = ref.read(currentTranslationProvider);
@@ -154,11 +154,13 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
       showDragHandle: true,
       builder: (sheetContext) {
         return ReferencePreviewSheet(
-          referenceLabel:
-              '${displayBookNameForReference(books, link.bookId)} ${link.chapter}:${link.verse}',
-          reference: link.reference,
-          preferredTranslationId: link.translationId,
-          preferredTranslationName: link.translationName,
+          referenceLabel: verses.label(
+            displayBookNameForReference(books, verses.bookId),
+          ),
+          reference: verses.first.reference,
+          range: verses.passage,
+          preferredTranslationId: verses.first.translationId,
+          preferredTranslationName: verses.first.translationName,
           fallbackTranslationId: currentTranslationId,
           fallbackTranslationName: currentTranslationName,
           books: books,
@@ -314,10 +316,10 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
                                   builder: (context) => AnnotationDetailScreen(
                                     annotation: annotation,
                                     books: books,
-                                    onPreviewLinkedVerse: (link) =>
+                                    onPreviewVerses: (verses) =>
                                         _showLinkedVersePreview(
                                           context,
-                                          link: link,
+                                          verses: verses,
                                           books: books,
                                         ),
                                     onOpenReference: () async {
@@ -460,10 +462,10 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
                                 }
                               }
                             },
-                            onPreviewLinkedVerse: (link) =>
+                            onPreviewVerses: (verses) =>
                                 _showLinkedVersePreview(
                                   context,
-                                  link: link,
+                                  verses: verses,
                                   books: books,
                                 ),
                           );
@@ -716,7 +718,7 @@ class _AnnotationListCard extends StatelessWidget {
     required this.onOpenReference,
     required this.onEdit,
     required this.onDelete,
-    required this.onPreviewLinkedVerse,
+    required this.onPreviewVerses,
   });
 
   final UserAnnotation annotation;
@@ -725,7 +727,7 @@ class _AnnotationListCard extends StatelessWidget {
   final Future<void> Function() onOpenReference;
   final Future<void> Function() onEdit;
   final Future<void> Function() onDelete;
-  final Future<void> Function(AnnotationVerseLink link) onPreviewLinkedVerse;
+  final Future<void> Function(AnnotationVerseRange verses) onPreviewVerses;
 
   @override
   Widget build(BuildContext context) {
@@ -837,7 +839,7 @@ class _AnnotationListCard extends StatelessWidget {
             LinkedVersesSection.grouped(
               books: books,
               ranges: linkedRanges,
-              onPreviewLinkedVerse: onPreviewLinkedVerse,
+              onPreviewVerses: onPreviewVerses,
               maxVisible: kLinkedReferencesPreviewLimit,
             ),
           ],

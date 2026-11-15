@@ -556,19 +556,23 @@ extension _BibleTextViewStateCore on _BibleTextViewState {
                   ),
                 );
               },
-              onPreviewLinkedVerse: (link) {
+              onPreviewVerses: (verses) {
                 return showModalBottomSheet<void>(
                   context: sheetContext,
                   isScrollControlled: true,
                   showDragHandle: true,
                   builder: (previewContext) {
                     return ReferencePreviewSheet(
-                      referenceLabel:
-                          '${displayBookNameForReference(widget.books, link.bookId)} '
-                          '${link.chapter}:${link.verse}',
-                      reference: link.reference,
-                      preferredTranslationId: link.translationId,
-                      preferredTranslationName: link.translationName,
+                      referenceLabel: verses.label(
+                        displayBookNameForReference(
+                          widget.books,
+                          verses.bookId,
+                        ),
+                      ),
+                      reference: verses.first.reference,
+                      range: verses.passage,
+                      preferredTranslationId: verses.first.translationId,
+                      preferredTranslationName: verses.first.translationName,
                       fallbackTranslationId: translationId,
                       fallbackTranslationName: fallbackTranslationName,
                       books: widget.books,
@@ -617,17 +621,22 @@ extension _BibleTextViewStateCore on _BibleTextViewState {
                     builder: (context) => AnnotationDetailScreen(
                       annotation: annotation,
                       books: widget.books,
-                      onPreviewLinkedVerse: (link) => showModalBottomSheet<void>(
+                      onPreviewVerses: (verses) => showModalBottomSheet<void>(
                         context: context,
                         isScrollControlled: true,
                         showDragHandle: true,
                         builder: (previewContext) => ReferencePreviewSheet(
-                          referenceLabel:
-                              '${displayBookNameForReference(widget.books, link.bookId)} '
-                              '${link.chapter}:${link.verse}',
-                          reference: link.reference,
-                          preferredTranslationId: link.translationId,
-                          preferredTranslationName: link.translationName,
+                          referenceLabel: verses.label(
+                            displayBookNameForReference(
+                              widget.books,
+                              verses.bookId,
+                            ),
+                          ),
+                          reference: verses.first.reference,
+                          range: verses.passage,
+                          preferredTranslationId: verses.first.translationId,
+                          preferredTranslationName:
+                              verses.first.translationName,
                           fallbackTranslationId: translationId,
                           fallbackTranslationName: fallbackTranslationName,
                           books: widget.books,

@@ -1,7 +1,9 @@
 // "+N more" used to be a dead label: verses past the limit could not be seen
 // (or removed in the editor). It is now a Show all / Show less toggle.
 
+import 'package:basic_bible/src/features/annotations/models/annotation_verse_ranges.dart';
 import 'package:basic_bible/src/features/annotations/models/user_annotations.dart';
+import 'package:basic_bible/src/models/bible_models.dart';
 import 'package:basic_bible/src/features/annotations/presentation/linked_verses_section.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -28,7 +30,7 @@ void main() {
               // Tap order, as stored.
               links: [for (final v in [5, 1, 4, 2, 3]) _v(v)],
               maxVisible: 2,
-              onPreviewLinkedVerse: (_) async {},
+              onPreviewVerses: (_) async {},
               onDeleteLink: (link) => removed.add(link.verse),
             ),
           ),
@@ -72,11 +74,36 @@ void main() {
             books: const [],
             links: [_v(1), _v(2)],
             maxVisible: 5,
-            onPreviewLinkedVerse: (_) async {},
+            onPreviewVerses: (_) async {},
           ),
         ),
       ),
     );
     expect(find.textContaining('Show'), findsNothing);
+  });
+
+  testWidgets('tapping a range chip previews the whole range', (tester) async {
+    AnnotationVerseRange? previewed;
+    final range = AnnotationVerseRange([_v(5), _v(6), _v(7)]);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: LinkedVersesSection.grouped(
+            books: const [],
+            ranges: [range, AnnotationVerseRange([_v(9)])],
+            onPreviewVerses: (verses) async => previewed = verses,
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('Luke 15:5-7'));
+    expect(previewed, same(range));
+    expect(
+      previewed!.passage,
+      const BibleReferenceRange(
+        start: BibleReference(bookId: 'LUK', chapter: 15, verse: 5),
+        endVerse: 7,
+      ),
+    );
   });
 }

@@ -1,4 +1,5 @@
 import 'package:basic_bible/src/features/annotations/models/user_annotations.dart';
+import 'package:basic_bible/src/models/bible_models.dart';
 import 'package:basic_bible/src/utils/reference_utils.dart';
 
 /// A run of consecutive verses in one chapter of one translation, used to show
@@ -20,6 +21,12 @@ class AnnotationVerseRange {
   int get startVerse => first.verse;
   int get endVerse => verses.last.verse;
   bool get isSingleVerse => verses.length == 1;
+
+  /// The whole range as a passage, for previewing / opening all its verses.
+  BibleReferenceRange get passage => BibleReferenceRange(
+    start: first.reference,
+    endVerse: isSingleVerse ? null : endVerse,
+  );
 
   /// `"<book> <chapter>:<start>"` or `"<book> <chapter>:<start>-<end>"`.
   String label(String bookName) => isSingleVerse

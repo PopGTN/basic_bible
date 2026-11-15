@@ -258,7 +258,7 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
               links: _draft.linkedVerses,
               maxVisible: 20,
               emptyMessage: null,
-              onPreviewLinkedVerse: (link) async {},
+              onPreviewVerses: (_) async {},
               onDeleteLink: (link) async {
                 final confirm = ref.read(confirmRemoveLinkedVerseProvider);
                 if (confirm) {
