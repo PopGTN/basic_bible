@@ -72,9 +72,12 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
-  generate: true
   assets:
     - "assets/icon/"
+    # UI strings: bundled English + language index; other languages download
+    # from GitHub on demand (see lib/src/features/localization/).
+    - "lib/l10n/app_en.arb"
+    - "lib/l10n/languages.json"
     # Licenses for code Flutter can't discover on its own (see
     # lib/src/services/additional_licenses.dart).
     - "assets/licenses/"

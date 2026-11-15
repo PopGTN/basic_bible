@@ -14,43 +14,217 @@
   "spanish": "Espagnol",
   "french": "Français",
   "german": "Allemand",
+  "menu": "Menu",
   "readerFootnotesTooltip": "Voir les notes de bas de page et les références",
   "readerNotesTooltip": "Voir les notes personnelles",
   "savedNoteLabel": "Note enregistrée",
   "savedNotesLabel": "Notes enregistrées",
   "openAction": "Ouvrir",
   "editAction": "Modifier",
-  "searchTranslationsHint": "Search translations...",
-  "downloadedSectionHeader": "Downloaded",
-  "availableSectionHeader": "Available",
-  "downloadAction": "Download",
-  "openForSessionAction": "Open for session",
-  "openedForSessionMessage": "{name} opened for this session.",
+  "versionsTitle": "Versions",
+  "searchTranslationsTooltip": "Rechercher des traductions",
+  "importBibleFileAction": "Importer un fichier biblique",
+  "clearTranslationCacheAction": "Vider le cache des traductions",
+  "clearTranslationCacheTitle": "Vider le cache des traductions ?",
+  "clearTranslationCacheDescription": "Cela supprime du stockage local les fichiers de traduction téléchargés, les copies des sources importées et les entrées obsolètes du registre des traductions. Les traductions intégrées restent disponibles.",
+  "clearCacheAction": "Vider le cache",
+  "clearedTranslationCacheMessage": "Cache des traductions vidé.",
+  "couldNotClearTranslationCache": "Impossible de vider le cache des traductions : {error}",
+  "@couldNotClearTranslationCache": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "translationsFileTypeLabel": "Fichiers bibliques",
+  "unableToLoadTranslations": "Impossible de charger les traductions : {error}",
+  "@unableToLoadTranslations": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "couldNotSwitchTranslation": "Impossible de changer de traduction : {error}",
+  "@couldNotSwitchTranslation": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "importedTranslationMessage": "{name} importée.",
+  "@importedTranslationMessage": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "importFailedMessage": "Échec de l'importation : {error}",
+  "@importFailedMessage": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "deleteTranslationTitle": "Supprimer {name} ?",
+  "@deleteTranslationTitle": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "deleteImportedTranslationDescription": "Cela supprime la Bible importée de la bibliothèque et du cache de l'application. Le fichier d'origine sur l'appareil n'est pas supprimé.",
+  "cancelAction": "Annuler",
+  "deleteAction": "Supprimer",
+  "deletedTranslationMessage": "{name} supprimée.",
+  "@deletedTranslationMessage": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "couldNotDeleteTranslation": "Impossible de supprimer la traduction : {error}",
+  "@couldNotDeleteTranslation": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "removeDownloadedTranslationTitle": "Retirer le téléchargement de {name} ?",
+  "@removeDownloadedTranslationTitle": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "removeDownloadedTranslationDescription": "Cela supprime la Bible téléchargée du stockage local. Elle reste dans la bibliothèque comme option téléchargeable pour la retélécharger plus tard.",
+  "removeAction": "Retirer",
+  "removedLocalDownloadMessage": "Téléchargement local de {name} retiré.",
+  "@removedLocalDownloadMessage": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "couldNotRemoveDownload": "Impossible de retirer le téléchargement : {error}",
+  "@couldNotRemoveDownload": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "moreActionsTooltip": "Plus d'actions",
+  "deleteImportAction": "Supprimer l'importation",
+  "removeDownloadAction": "Retirer le téléchargement",
+  "availableOfflineTooltip": "Disponible hors ligne",
+  "downloadTranslationTooltip": "Télécharger la traduction",
+  "audioOptionsTooltip": "Options audio",
+  "bundledTranslationSource": "Intégrée",
+  "downloadedTranslationSource": "Téléchargée",
+  "downloadableTranslationSource": "Téléchargeable",
+  "importedTranslationSource": "Importée",
+  "importBibleTitle": "Importer une Bible",
+  "unableToPrepareImport": "Impossible de préparer l'importation : {error}",
+  "@unableToPrepareImport": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "translationDetailsTitle": "Détails de la traduction",
+  "translationDetailsDescription": "Définissez le nom, l'abréviation, le code de langue et la description de la bibliothèque avant l'enregistrement de l'importation.",
+  "translationNameLabel": "Nom",
+  "translationNameHint": "World English Bible",
+  "translationNameRequired": "Saisissez un nom de traduction.",
+  "translationAbbreviationLabel": "Abréviation",
+  "translationAbbreviationHint": "WEB",
+  "translationAbbreviationHelp": "Utilisée comme les abréviations intégrées, par exemple KJV et ASV.",
+  "translationAbbreviationRequired": "Saisissez une abréviation.",
+  "translationAbbreviationTaken": "Cette abréviation est déjà utilisée.",
+  "translationLanguageCodeLabel": "Code de langue",
+  "translationLanguageCodeHint": "fr",
+  "translationLanguageCodeHelp": "Utilisez un code court comme en, es, fr ou de.",
+  "translationLanguageCodeRequired": "Saisissez un code de langue.",
+  "translationDescriptionLabel": "Description",
+  "translationDescriptionHint": "Importée depuis my_local_bible.xml ou my_translation.sqlite",
+  "importingAction": "Importation...",
+  "importTranslationAction": "Importer la traduction",
+  "detectedFormatLabel": "Format détecté : {format}",
+  "@detectedFormatLabel": {
+    "placeholders": {
+      "format": {}
+    }
+  },
+  "booksFoundLabel": "Livres trouvés : {count}",
+  "@booksFoundLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "searchTranslationsHint": "Rechercher des traductions...",
+  "downloadedSectionHeader": "Téléchargées",
+  "availableSectionHeader": "Disponibles",
+  "downloadAction": "Télécharger",
+  "openForSessionAction": "Ouvrir pour la session",
+  "openedForSessionMessage": "{name} ouverte pour cette session.",
   "@openedForSessionMessage": {
     "placeholders": {
       "name": {}
     }
   },
-  "couldNotOpenTranslation": "Could not open translation: {error}",
+  "couldNotOpenTranslation": "Impossible d'ouvrir la traduction : {error}",
   "@couldNotOpenTranslation": {
     "placeholders": {
       "error": {}
     }
   },
-  "downloadedTranslationMessage": "{name} downloaded.",
+  "downloadedTranslationMessage": "{name} téléchargée.",
   "@downloadedTranslationMessage": {
     "placeholders": {
       "name": {}
     }
   },
-  "couldNotDownloadTranslation": "Could not download translation: {error}",
+  "couldNotDownloadTranslation": "Impossible de télécharger la traduction : {error}",
   "@couldNotDownloadTranslation": {
     "placeholders": {
       "error": {}
     }
   },
-  "importNotAvailableOnWeb": "Importing local Bible files is not available in the browser yet.",
+  "importNotAvailableOnWeb": "L'importation de fichiers bibliques locaux n'est pas encore disponible dans le navigateur.",
   "languageFilterLabel": "Langue",
   "allLanguagesOption": "Toutes les langues",
-  "selectLanguageTitle": "Sélectionner la langue"
+  "selectLanguageTitle": "Sélectionner la langue",
+  "languageDeviceDefault": "Langue de l'appareil",
+  "languageDownloading": "Téléchargement…",
+  "languageDownloadFailed": "Impossible de télécharger {language}. Vérifiez votre connexion et réessayez.",
+  "@languageDownloadFailed": {
+    "placeholders": {
+      "language": {}
+    }
+  },
+  "languageAvailableOffline": "Disponible hors ligne",
+  "languageNeedsDownload": "Téléchargé à la sélection",
+  "retryAction": "Réessayer",
+  "settingsAppStartup": "Démarrage de l'application",
+  "settingsOpenBibleTab": "Ouvrir l'onglet Bible par défaut",
+  "settingsOpenBibleTabDesc": "Démarrer sur la page Bible plutôt que sur l'onglet Accueil à l'ouverture de l'application.",
+  "settingsRequireLogin": "Exiger la connexion factice",
+  "settingsRequireLoginDesc": "Garder l'écran de connexion d'exemple avant d'entrer dans l'application.",
+  "settingsBibleViewer": "Lecteur de la Bible",
+  "settingsShowIntroductions": "Afficher les introductions",
+  "settingsShowIntroductionsDesc": "Afficher les introductions des livres et les pages liminaires lorsqu'elles existent.",
+  "settingsBoldDivineName": "Nom divin en gras (SEIGNEUR)",
+  "settingsBoldDivineNameDesc": "Afficher le nom divin (SEIGNEUR / Yahvé) en gras. Désactivé par défaut — activez-le si votre traduction le signale.",
+  "settingsBoldWordsOfJesus": "Paroles de Jésus en gras",
+  "settingsBoldWordsOfJesusDesc": "Afficher les paroles de Jésus en gras en plus du rouge. Désactivé par défaut, comme dans la plupart des Bibles à paroles en rouge.",
+  "settingsUnderlineProperNames": "Souligner les noms propres",
+  "settingsUnderlineProperNamesDesc": "Souligner les noms propres lorsque la source les signale.",
+  "settingsUnderlineWordTags": "Souligner les étiquettes de mots",
+  "settingsUnderlineWordTagsDesc": "Souligner les mots étiquetés par la source, comme ceux liés à Strong. Désactivé par défaut.",
+  "settingsBracketAdditions": "Crochets pour les ajouts du traducteur",
+  "settingsBracketAdditionsDesc": "Afficher les mots ajoutés par le traducteur entre [crochets]. Désactivez pour un affichage en italique uniquement.",
+  "settingsSourceBold": "Utiliser le gras de la source",
+  "settingsSourceBoldDesc": "Respecter l'emphase en gras du format source pour les balises comme les mots-clés et les passages explicitement en gras.",
+  "settingsSourceDetails": "Afficher les détails de la source",
+  "settingsSourceDetailsDesc": "Afficher les données d'étude (numéros de Strong, lemmes, morphologie, locuteurs) dans la fiche du verset. Désactivé par défaut.",
+  "settingsVerseSelector": "Activer le sélecteur de verset",
+  "settingsVerseSelectorDesc": "Permettre au sélecteur de référence de choisir aussi les versets, et pas seulement les chapitres. Désactivé par défaut.",
+  "settingsNotes": "Notes",
+  "settingsConfirmUnlink": "Confirmer avant de retirer un verset lié",
+  "settingsConfirmUnlinkDesc": "Afficher une confirmation avant de dissocier un verset d'une note.",
+  "settingsNotesAcrossTranslations": "Afficher les notes sur les autres traductions",
+  "settingsNotesAcrossTranslationsDesc": "Afficher les notes et surlignages d'un verset même s'ils ont été enregistrés avec une autre traduction. Désactivé par défaut.",
+  "settingsAdvanced": "Avancé",
+  "settingsAdvancedDesc": "Outils de développement — exporter les bases de traductions",
+  "settingsLicenses": "Licences open source",
+  "settingsLicensesDesc": "Bibliothèques et code utilisés par cette application"
 }

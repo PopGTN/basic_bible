@@ -11,6 +11,7 @@ import 'package:basic_bible/src/widgets/theme_preview_card.dart';
 import 'package:basic_bible/src/widgets/app_about.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:basic_bible/src/features/localization/language_pack_providers.dart';
 import 'package:basic_bible/src/features/settings/application/view_models/language_view_model.dart';
 import 'package:basic_bible/src/features/settings/application/view_models/theme_view_model.dart';
 import 'package:go_router/go_router.dart';
@@ -39,19 +40,22 @@ class SettingsScreen extends ConsumerWidget {
     final showSourceDetails = ref.watch(showSourceDetailsProvider);
     final openBibleTabByDefault = ref.watch(openBibleTabByDefaultProvider);
     final requireDummyLogin = ref.watch(requireDummyLoginProvider);
-    final colors = Theme.of(context).colorScheme;
-
-    final languages = {
-      'en': 'English',
-      'es': 'Spanish',
-      'fr': 'French',
-      'de': 'German',
-    };
+    final t = AppLocalizations.of(context)!;
+    final languageName = ref
+            .watch(availableLanguagesProvider)
+            .maybeWhen(
+              data: (list) => list
+                  .where((l) => l.code == selectedLanguage.code)
+                  .map((l) => l.nativeName)
+                  .firstOrNull,
+              orElse: () => null,
+            ) ??
+        selectedLanguage.code;
 
     return Scaffold(
       appBar: AppBar(
         leading: const AppBackButton(),
-        title: Text(AppLocalizations.of(context)!.settings),
+        title: Text(t.settings),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
@@ -60,7 +64,7 @@ class SettingsScreen extends ConsumerWidget {
           children: [
             // Theme Section
             Text(
-              AppLocalizations.of(context)!.theme,
+              t.theme,
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 10),
@@ -84,38 +88,35 @@ class SettingsScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 20),
 
-            // Language Section
-            Text(
-              AppLocalizations.of(context)!.language,
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 10),
-            Wrap(
-              spacing: 12,
-              children: languages.entries.map((entry) {
-                final isSelected = selectedLanguage == entry.key;
-                return _SettingsChoiceChip(
-                  label: entry.value,
-                  isSelected: isSelected,
-                  colors: colors,
-                  onSelected: () {
-                    ref.read(languageProvider.notifier).setLanguage(entry.key);
-                  },
-                );
-              }).toList(),
+            // Language: one row that opens a dedicated page.
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.language),
+              title: Text(
+                t.language,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              subtitle: Text(
+                selectedLanguage.followsDevice
+                    ? '${t.languageDeviceDefault} · $languageName'
+                    : languageName,
+              ),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => context.push('/home/settings/language'),
             ),
             const SizedBox(height: 20),
 
-            Text(
-              'App Startup',
+            Text(t.settingsAppStartup,
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 10),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
-              title: const Text('Open Bible Tab By Default'),
-              subtitle: const Text(
-                'Start on the Bible page instead of the Home tab when the app opens.',
+              title: Text(t.settingsOpenBibleTab),
+              subtitle: Text(t.settingsOpenBibleTabDesc,
               ),
               value: openBibleTabByDefault,
               onChanged: (value) {
@@ -126,9 +127,8 @@ class SettingsScreen extends ConsumerWidget {
             ),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
-              title: const Text('Require Dummy Login'),
-              subtitle: const Text(
-                'Keep the sample login screen turned on before entering the app.',
+              title: Text(t.settingsRequireLogin),
+              subtitle: Text(t.settingsRequireLoginDesc,
               ),
               value: requireDummyLogin,
               onChanged: (value) {
@@ -137,16 +137,14 @@ class SettingsScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 20),
 
-            Text(
-              'Bible Viewer',
+            Text(t.settingsBibleViewer,
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 10),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
-              title: const Text('Show Introductions'),
-              subtitle: const Text(
-                'Show book introductions and front-matter blocks when they exist.',
+              title: Text(t.settingsShowIntroductions),
+              subtitle: Text(t.settingsShowIntroductionsDesc,
               ),
               value: showBookIntroductions,
               onChanged: (value) {
@@ -157,9 +155,8 @@ class SettingsScreen extends ConsumerWidget {
             ),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
-              title: const Text('Bold Divine Name (LORD)'),
-              subtitle: const Text(
-                'Display the divine name (LORD / Yahweh) in bold. Off by default — turn on if your translation marks it.',
+              title: Text(t.settingsBoldDivineName),
+              subtitle: Text(t.settingsBoldDivineNameDesc,
               ),
               value: boldDivineName,
               onChanged: (value) {
@@ -168,9 +165,8 @@ class SettingsScreen extends ConsumerWidget {
             ),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
-              title: const Text('Bold Words of Jesus'),
-              subtitle: const Text(
-                'Show the words of Jesus in bold as well as red. Off by default, like most red-letter Bibles.',
+              title: Text(t.settingsBoldWordsOfJesus),
+              subtitle: Text(t.settingsBoldWordsOfJesusDesc,
               ),
               value: boldWordsOfJesus,
               onChanged: (value) {
@@ -179,9 +175,8 @@ class SettingsScreen extends ConsumerWidget {
             ),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
-              title: const Text('Underline Proper Names'),
-              subtitle: const Text(
-                'Underline proper nouns when the source marks them.',
+              title: Text(t.settingsUnderlineProperNames),
+              subtitle: Text(t.settingsUnderlineProperNamesDesc,
               ),
               value: underlineProperNames,
               onChanged: (value) {
@@ -192,9 +187,8 @@ class SettingsScreen extends ConsumerWidget {
             ),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
-              title: const Text('Underline Word Tags'),
-              subtitle: const Text(
-                'Underline source-tagged word metadata such as Strong\'s-linked words. Off by default.',
+              title: Text(t.settingsUnderlineWordTags),
+              subtitle: Text(t.settingsUnderlineWordTagsDesc,
               ),
               value: underlineWordMetadata,
               onChanged: (value) {
@@ -205,9 +199,8 @@ class SettingsScreen extends ConsumerWidget {
             ),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
-              title: const Text('Bracket Translator Additions'),
-              subtitle: const Text(
-                'Show translator-supplied words in [brackets]. Turn this off if you prefer italic-only rendering.',
+              title: Text(t.settingsBracketAdditions),
+              subtitle: Text(t.settingsBracketAdditionsDesc,
               ),
               value: bracketTranslatorAdditions,
               onChanged: (value) {
@@ -218,9 +211,8 @@ class SettingsScreen extends ConsumerWidget {
             ),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
-              title: const Text('Use Source Bold Styling'),
-              subtitle: const Text(
-                'Respect bold-style emphasis from the source format for tags such as keywords and explicit bold spans.',
+              title: Text(t.settingsSourceBold),
+              subtitle: Text(t.settingsSourceBoldDesc,
               ),
               value: useSourceBoldStyling,
               onChanged: (value) {
@@ -231,9 +223,8 @@ class SettingsScreen extends ConsumerWidget {
             ),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
-              title: const Text('Show Source Details'),
-              subtitle: const Text(
-                'Show study metadata such as Strong\'s numbers, lemmas, morphology, and quote speakers in the verse details sheet. Off by default.',
+              title: Text(t.settingsSourceDetails),
+              subtitle: Text(t.settingsSourceDetailsDesc,
               ),
               value: showSourceDetails,
               onChanged: (value) {
@@ -242,9 +233,8 @@ class SettingsScreen extends ConsumerWidget {
             ),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
-              title: const Text('Enable Verse Selector'),
-              subtitle: const Text(
-                'Allow the reference picker to drill into verse selection instead of only picking chapters. Off by default.',
+              title: Text(t.settingsVerseSelector),
+              subtitle: Text(t.settingsVerseSelectorDesc,
               ),
               value: showVerseSelector,
               onChanged: (value) {
@@ -253,16 +243,14 @@ class SettingsScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 20),
 
-            Text(
-              'Notes',
+            Text(t.settingsNotes,
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 10),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
-              title: const Text('Confirm Before Removing Linked Verses'),
-              subtitle: const Text(
-                'Show a confirmation dialog before unlinking a verse from a note.',
+              title: Text(t.settingsConfirmUnlink),
+              subtitle: Text(t.settingsConfirmUnlinkDesc,
               ),
               value: confirmRemoveLinkedVerse,
               onChanged: (value) {
@@ -273,10 +261,8 @@ class SettingsScreen extends ConsumerWidget {
             ),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
-              title: const Text('Show Notes On Other Translations'),
-              subtitle: const Text(
-                'Show notes and highlights on a verse even if they were saved '
-                'while reading a different translation. Off by default.',
+              title: Text(t.settingsNotesAcrossTranslations),
+              subtitle: Text(t.settingsNotesAcrossTranslationsDesc,
               ),
               value: showNotesAcrossTranslations,
               onChanged: (value) {
@@ -295,9 +281,8 @@ class SettingsScreen extends ConsumerWidget {
             ListTile(
               contentPadding: EdgeInsets.zero,
               leading: const Icon(Icons.developer_mode_outlined),
-              title: const Text('Advanced'),
-              subtitle: const Text(
-                'Developer tools — export translation databases',
+              title: Text(t.settingsAdvanced),
+              subtitle: Text(t.settingsAdvancedDesc,
               ),
               trailing: const Icon(Icons.chevron_right),
               onTap: () => context.push('/home/settings/advanced'),
@@ -305,46 +290,13 @@ class SettingsScreen extends ConsumerWidget {
             ListTile(
               contentPadding: EdgeInsets.zero,
               leading: const Icon(Icons.description_outlined),
-              title: const Text('Open-source licenses'),
-              subtitle: const Text('Libraries and code used by this app'),
+              title: Text(t.settingsLicenses),
+              subtitle: Text(t.settingsLicensesDesc),
               trailing: const Icon(Icons.chevron_right),
               onTap: () => showAppLicenses(context),
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _SettingsChoiceChip extends StatelessWidget {
-  const _SettingsChoiceChip({
-    required this.label,
-    required this.isSelected,
-    required this.colors,
-    required this.onSelected,
-  });
-
-  final String label;
-  final bool isSelected;
-  final ColorScheme colors;
-  final VoidCallback onSelected;
-
-  @override
-  Widget build(BuildContext context) {
-    return ChoiceChip(
-      label: Text(label),
-      selected: isSelected,
-      onSelected: (_) => onSelected(),
-      showCheckmark: false,
-      selectedColor: colors.surfaceContainerHighest,
-      backgroundColor: colors.surfaceContainerLow,
-      side: BorderSide(
-        color: isSelected ? colors.onSurface : colors.outlineVariant,
-      ),
-      labelStyle: TextStyle(
-        color: isSelected ? colors.onSurface : colors.onSurfaceVariant,
-        fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
       ),
     );
   }

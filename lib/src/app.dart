@@ -4,7 +4,6 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:basic_bible/l10n/app_localizations.dart';
 
 // Screens
@@ -17,6 +16,7 @@ import 'features/annotations/presentation/notes_screen.dart';
 import 'features/settings/application/view_models/app_launch_preferences_view_models.dart';
 import 'views/placeholder/other_screen.dart';
 import 'features/settings/presentation/settings_screen.dart';
+import 'features/settings/presentation/language_screen.dart';
 import 'features/settings/presentation/advanced_settings_screen.dart';
 import 'views/placeholder/coming_soon_screen.dart';
 
@@ -166,6 +166,10 @@ class _MyAppState extends ConsumerState<MyApp> {
               builder: (context, state) => SettingsScreen(),
               routes: [
                 GoRoute(
+                  path: 'language',
+                  builder: (context, state) => const LanguageScreen(),
+                ),
+                GoRoute(
                   path: 'advanced',
                   builder: (context, state) => const AdvancedSettingsScreen(),
                 ),
@@ -222,21 +226,16 @@ class _MyAppState extends ConsumerState<MyApp> {
   @override
   Widget build(BuildContext context) {
     final appTheme = ref.watch(themeProvider);
-    final localelang = ref.watch(languageProvider);
+    final localelang = ref.watch(languageProvider.select((s) => s.code));
 
     return MaterialApp.router(
-      title: 'The Basic Bible App',
+      onGenerateTitle: (context) => 'The Basic Bible App',
       debugShowCheckedModeBanner: false,
       routerConfig: _router,
       //Languages
       locale: Locale(localelang),
 
-      localizationsDelegates: const [
-        AppLocalizations.delegate,
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-      ],
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
 
       theme: getThemeData(appTheme),
