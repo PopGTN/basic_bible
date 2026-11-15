@@ -34,12 +34,15 @@ class AnnotationDetailScreen extends StatelessWidget {
             theme.colorScheme.primary,
           );
     final primary = annotation.primaryVerse;
-    // Detail view lists every verse individually (headed by the primary
-    // verse); only the compact previews (Notes list, reader sheet) group
-    // verses into ranges.
-    final referenceLabel =
-        '${displayBookNameForReference(books, primary.bookId)} '
-        '${primary.chapter}:${primary.verse}';
+    // Verses read as sections ("Luke 15:5-7") or single verses: the range
+    // holding the primary verse is the heading, the rest are chips. Only the
+    // new/edit note screens list every verse individually (so each can be
+    // removed).
+    final verseRanges = annotation.verseRanges;
+    final referenceLabel = verseRanges.first.label(
+      displayBookNameForReference(books, verseRanges.first.bookId),
+    );
+    final linkedRanges = verseRanges.skip(1).toList(growable: false);
 
     return Scaffold(
       appBar: AppBar(
@@ -125,11 +128,11 @@ class AnnotationDetailScreen extends StatelessWidget {
                     ),
                   ),
                 ),
-                if (annotation.linkedVerses.isNotEmpty) ...[
+                if (linkedRanges.isNotEmpty) ...[
                   const SizedBox(height: 16),
-                  LinkedVersesSection(
+                  LinkedVersesSection.grouped(
                     books: books,
-                    links: annotation.linkedVerses,
+                    ranges: linkedRanges,
                     onPreviewVerses: onPreviewVerses,
                   ),
                 ],
