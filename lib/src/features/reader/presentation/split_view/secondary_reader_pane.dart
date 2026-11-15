@@ -1,6 +1,7 @@
 import 'package:basic_bible/src/features/reader/application/view_models/bible_library_view_models.dart';
 import 'package:basic_bible/src/features/reader/application/view_models/split_view_view_models.dart';
 import 'package:basic_bible/src/features/reader/presentation/reference_picker/chapter_bar.dart';
+import 'package:basic_bible/src/features/settings/application/view_models/reader_display_preferences_view_models.dart';
 import 'package:basic_bible/src/models/bible_models.dart';
 import 'package:basic_bible/src/services/font_size_service.dart';
 import 'package:basic_bible/src/utils/reference_utils.dart';
@@ -72,6 +73,7 @@ class _SecondaryReaderPaneState extends ConsumerState<SecondaryReaderPane> {
                         content: content,
                         controller: _scrollController,
                         fontSize: fontSize,
+                        boldWordsOfJesus: ref.watch(boldWordsOfJesusProvider),
                       ),
                     ),
             ),
@@ -149,11 +151,15 @@ class _PaneText extends StatelessWidget {
     required this.content,
     required this.controller,
     required this.fontSize,
+    required this.boldWordsOfJesus,
   });
 
   final SecondaryPaneContent content;
   final ScrollController controller;
   final double fontSize;
+
+  /// Same setting as the main reader, so a verse looks the same in both.
+  final bool boldWordsOfJesus;
 
   @override
   Widget build(BuildContext context) {
@@ -237,6 +243,7 @@ class _PaneText extends StatelessWidget {
           style: switch (span.kind) {
             BibleVerseSpanKind.wordsOfJesus => TextStyle(
               color: Colors.red.shade700,
+              fontWeight: boldWordsOfJesus ? FontWeight.w600 : null,
             ),
             BibleVerseSpanKind.translatorAddition => const TextStyle(
               fontStyle: FontStyle.italic,

@@ -29,6 +29,7 @@ class SettingsScreen extends ConsumerWidget {
       showNotesAcrossTranslationsProvider,
     );
     final boldDivineName = ref.watch(boldDivineNameProvider);
+    final boldWordsOfJesus = ref.watch(boldWordsOfJesusProvider);
     final underlineProperNames = ref.watch(underlineProperNamesProvider);
     final underlineWordMetadata = ref.watch(underlineWordMetadataProvider);
     final bracketTranslatorAdditions = ref.watch(
@@ -163,6 +164,17 @@ class SettingsScreen extends ConsumerWidget {
               value: boldDivineName,
               onChanged: (value) {
                 ref.read(boldDivineNameProvider.notifier).setEnabled(value);
+              },
+            ),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Bold Words of Jesus'),
+              subtitle: const Text(
+                'Show the words of Jesus in bold as well as red. Off by default, like most red-letter Bibles.',
+              ),
+              value: boldWordsOfJesus,
+              onChanged: (value) {
+                ref.read(boldWordsOfJesusProvider.notifier).setEnabled(value);
               },
             ),
             SwitchListTile(

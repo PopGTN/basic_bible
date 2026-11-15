@@ -22,6 +22,7 @@ class _VerseDetailsSheet extends ConsumerWidget {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
     final boldDivineName = ref.watch(boldDivineNameProvider);
+    final boldWordsOfJesus = ref.watch(boldWordsOfJesusProvider);
     final underlineProperNames = ref.watch(underlineProperNamesProvider);
     final underlineWordMetadata = ref.watch(underlineWordMetadataProvider);
     final bracketTranslatorAdditions = ref.watch(
@@ -80,6 +81,7 @@ class _VerseDetailsSheet extends ConsumerWidget {
                   children: versePreview.inlineSpans(
                     colors,
                     boldDivineName: boldDivineName,
+                    boldWordsOfJesus: boldWordsOfJesus,
                     bracketTranslatorAdditions: bracketTranslatorAdditions,
                     underlineProperNames: underlineProperNames,
                     underlineWordMetadata: underlineWordMetadata,
@@ -331,6 +333,7 @@ class _VersePreviewText {
   List<InlineSpan> inlineSpans(
     ColorScheme colors, {
     bool boldDivineName = false,
+    bool boldWordsOfJesus = false,
     bool bracketTranslatorAdditions = true,
     bool underlineProperNames = true,
     bool underlineWordMetadata = false,
@@ -357,6 +360,7 @@ class _VersePreviewText {
             fontWeight: _spanFontWeight(
               span.kind,
               boldDivineName: boldDivineName,
+              boldWordsOfJesus: boldWordsOfJesus,
               useSourceBoldStyling: useSourceBoldStyling,
             ),
             decoration: _spanDecoration(
@@ -521,11 +525,12 @@ class _VersePreviewText {
   FontWeight _spanFontWeight(
     BibleVerseSpanKind kind, {
     bool boldDivineName = false,
+    bool boldWordsOfJesus = false,
     bool useSourceBoldStyling = true,
   }) {
     switch (kind) {
       case BibleVerseSpanKind.wordsOfJesus:
-        return FontWeight.w600;
+        return boldWordsOfJesus ? FontWeight.w600 : FontWeight.normal;
       case BibleVerseSpanKind.divineNameTag:
         return boldDivineName ? FontWeight.w700 : FontWeight.normal;
       case BibleVerseSpanKind.acrosticHeading:

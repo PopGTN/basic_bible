@@ -262,6 +262,7 @@ extension _BibleTextViewStateAnnotations on _BibleTextViewState {
     final baseColor = bodyColor ?? Theme.of(context).textTheme.bodyLarge?.color;
     final secondaryColor = Theme.of(context).colorScheme.secondary;
     final boldDivineName = ref.watch(boldDivineNameProvider);
+    final boldWordsOfJesus = ref.watch(boldWordsOfJesusProvider);
     final underlineProperNames = ref.watch(underlineProperNamesProvider);
     final underlineWordMetadata = ref.watch(underlineWordMetadataProvider);
     final bracketTranslatorAdditions = ref.watch(
@@ -285,6 +286,7 @@ extension _BibleTextViewStateAnnotations on _BibleTextViewState {
             fontWeight: _spanFontWeight(
               span.kind,
               boldDivineName: boldDivineName,
+              boldWordsOfJesus: boldWordsOfJesus,
               useSourceBoldStyling: useSourceBoldStyling,
             ),
             decoration: _spanDecoration(
@@ -438,11 +440,12 @@ extension _BibleTextViewStateAnnotations on _BibleTextViewState {
   FontWeight _spanFontWeight(
     BibleVerseSpanKind kind, {
     bool boldDivineName = false,
+    bool boldWordsOfJesus = false,
     bool useSourceBoldStyling = true,
   }) {
     switch (kind) {
       case BibleVerseSpanKind.wordsOfJesus:
-        return FontWeight.w600;
+        return boldWordsOfJesus ? FontWeight.w600 : FontWeight.normal;
       case BibleVerseSpanKind.divineNameTag:
         return boldDivineName ? FontWeight.w700 : FontWeight.normal;
       case BibleVerseSpanKind.acrosticHeading:
