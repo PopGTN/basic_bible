@@ -1,3 +1,4 @@
+import 'package:basic_bible/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:basic_bible/src/widgets/app_back_button.dart';
 
@@ -9,9 +10,9 @@ class OtherScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         leading: const AppBackButton(),
-        title: const Text('Other Page'),
+        title: Text(AppLocalizations.of(context)!.otherPageTitle),
       ),
-      body: Center(child: Text('This page is not part of the bottom tabs')),
+      body: Center(child: Text(AppLocalizations.of(context)!.otherPageBody)),
     );
   }
 }

@@ -1,3 +1,4 @@
+import 'package:basic_bible/l10n/app_localizations.dart';
 import 'package:basic_bible/src/features/reader/presentation/reference_picker/reference_picker_screen.dart';
 import 'package:basic_bible/src/models/bible_models.dart';
 import 'package:basic_bible/src/utils/reference_utils.dart';
@@ -40,7 +41,7 @@ class ChapterBar extends StatelessWidget {
         _BarActionButton(
           icon: Icons.arrow_back_ios_new,
           onPressed: onPreviousChapter,
-          tooltip: 'Previous chapter',
+          tooltip: AppLocalizations.of(context)!.previousChapterTooltip,
         ),
         Expanded(
           child: InkWell(
@@ -63,7 +64,7 @@ class ChapterBar extends StatelessWidget {
         _BarActionButton(
           icon: Icons.arrow_forward_ios,
           onPressed: onNextChapter,
-          tooltip: 'Next chapter',
+          tooltip: AppLocalizations.of(context)!.nextChapterTooltip,
         ),
       ],
     );

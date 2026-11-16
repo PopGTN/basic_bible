@@ -1,3 +1,4 @@
+import 'package:basic_bible/l10n/app_localizations.dart';
 import 'package:basic_bible/src/features/sync/application/view_models/sync_view_models.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,11 +9,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 class SyncSettingsSection extends ConsumerWidget {
   const SyncSettingsSection({super.key});
 
-  String _formatLastSynced(DateTime time) {
+  String _formatLastSynced(AppLocalizations t, DateTime time) {
     final delta = DateTime.now().difference(time);
-    if (delta.inMinutes < 1) return 'just now';
-    if (delta.inHours < 1) return '${delta.inMinutes} min ago';
-    if (delta.inDays < 1) return '${delta.inHours} h ago';
+    if (delta.inMinutes < 1) return t.syncJustNow;
+    if (delta.inHours < 1) return t.syncMinutesAgo(delta.inMinutes);
+    if (delta.inDays < 1) return t.syncHoursAgo(delta.inHours);
     return '${time.year}-${time.month.toString().padLeft(2, '0')}-'
         '${time.day.toString().padLeft(2, '0')}';
   }
@@ -27,7 +28,7 @@ class SyncSettingsSection extends ConsumerWidget {
 
     final children = <Widget>[
       Text(
-        'Sync',
+        AppLocalizations.of(context)!.syncTitle,
         style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
       ),
       const SizedBox(height: 10),
@@ -35,22 +36,22 @@ class SyncSettingsSection extends ConsumerWidget {
 
     if (!auth.isSupported) {
       children.add(
-        const ListTile(
+        ListTile(
           contentPadding: EdgeInsets.zero,
           leading: Icon(Icons.cloud_off_outlined),
-          title: Text('Google sync is not available in the browser'),
-          subtitle: Text('Use the mobile or desktop app to sync notes.'),
+          title: Text(AppLocalizations.of(context)!.syncUnavailableWeb),
+          subtitle: Text(AppLocalizations.of(context)!.syncUnavailableWebDesc),
           enabled: false,
         ),
       );
     } else if (!auth.isConfigured) {
       children.add(
-        const ListTile(
+        ListTile(
           contentPadding: EdgeInsets.zero,
           leading: Icon(Icons.cloud_off_outlined),
-          title: Text('Google sync is not configured for this build'),
+          title: Text(AppLocalizations.of(context)!.syncNotConfigured),
           subtitle: Text(
-            'OAuth client ids are missing — see docs/google_sync_setup.md.',
+            AppLocalizations.of(context)!.syncNotConfiguredDesc,
           ),
           enabled: false,
         ),
@@ -60,11 +61,8 @@ class SyncSettingsSection extends ConsumerWidget {
         ListTile(
           contentPadding: EdgeInsets.zero,
           leading: const Icon(Icons.cloud_outlined),
-          title: const Text('Sign in with Google'),
-          subtitle: const Text(
-            'Back up notes and highlights to your own Google Drive and sync '
-            'them across your devices.',
-          ),
+          title: Text(AppLocalizations.of(context)!.signInWithGoogle),
+          subtitle: Text(AppLocalizations.of(context)!.syncSignInDesc),
           onTap: sync.isSyncing ? null : controller.signIn,
         ),
       );
@@ -72,22 +70,22 @@ class SyncSettingsSection extends ConsumerWidget {
       children.addAll([
         ListTile(
           contentPadding: EdgeInsets.zero,
-          title: const Text('Sync mode'),
-          subtitle: const Text(
-            'Automatic syncs after note changes and on app resume. Manual sync only runs when you tap Sync now.',
+          title: Text(AppLocalizations.of(context)!.syncModeTitle),
+          subtitle: Text(
+            AppLocalizations.of(context)!.syncModeDesc,
           ),
         ),
         SegmentedButton<SyncMode>(
-          segments: const [
+          segments: [
             ButtonSegment(
               value: SyncMode.automatic,
               icon: Icon(Icons.auto_awesome_motion_outlined),
-              label: Text('Automatic'),
+              label: Text(AppLocalizations.of(context)!.syncModeAutomatic),
             ),
             ButtonSegment(
               value: SyncMode.manual,
               icon: Icon(Icons.touch_app_outlined),
-              label: Text('Manual'),
+              label: Text(AppLocalizations.of(context)!.syncModeManual),
             ),
           ],
           selected: {syncMode},
@@ -103,10 +101,12 @@ class SyncSettingsSection extends ConsumerWidget {
           title: Text(sync.account!.email),
           subtitle: Text(
             sync.isSyncing
-                ? 'Syncing…'
+                ? AppLocalizations.of(context)!.syncing
                 : sync.lastSyncedAt == null
-                ? 'Not synced yet'
-                : 'Last synced ${_formatLastSynced(sync.lastSyncedAt!)}',
+                ? AppLocalizations.of(context)!.notSyncedYet
+                : AppLocalizations.of(context)!.lastSynced(
+                    _formatLastSynced(AppLocalizations.of(context)!, sync.lastSyncedAt!),
+                  ),
           ),
           trailing: sync.isSyncing
               ? const SizedBox(
@@ -121,11 +121,11 @@ class SyncSettingsSection extends ConsumerWidget {
           children: [
             FilledButton.tonal(
               onPressed: sync.isSyncing ? null : controller.triggerSync,
-              child: const Text('Sync now'),
+              child: Text(AppLocalizations.of(context)!.syncNowAction),
             ),
             TextButton(
               onPressed: sync.isSyncing ? null : controller.signOut,
-              child: const Text('Sign out'),
+              child: Text(AppLocalizations.of(context)!.signOutAction),
             ),
           ],
         ),

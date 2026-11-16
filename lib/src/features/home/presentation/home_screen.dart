@@ -357,7 +357,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             IconButton(
               icon: const Icon(Icons.volume_up),
               onPressed: () {},
-              tooltip: 'Play Audio',
+              tooltip: AppLocalizations.of(context)!.playAudioTooltip,
             ),
             IconButton(
               icon: const Icon(Icons.search),
@@ -366,14 +366,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                   builder: (_) => const BibleSearchScreen(),
                 ),
               ),
-              tooltip: 'Search',
+              tooltip: AppLocalizations.of(context)!.searchTooltip,
             ),
             Consumer(
               builder: (context, ref, child) {
                 final colors = Theme.of(context).colorScheme;
                 return PopupMenuButton<_BibleViewerMenuAction>(
                   color: colors.surfaceContainerHigh,
-                  tooltip: 'Reader options',
+                  tooltip: AppLocalizations.of(context)!.readerOptionsTooltip,
                   style: IconButton.styleFrom(
                     backgroundColor: colors.surfaceContainerHighest,
                     foregroundColor: colors.onSurface,
@@ -397,7 +397,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                           ),
                           const SizedBox(width: 12),
                           Text(
-                            'Related Content',
+                            AppLocalizations.of(context)!.relatedContentAction,
                             style: TextStyle(color: colors.onSurface),
                           ),
                         ],
@@ -410,7 +410,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                           Icon(Icons.text_fields, color: colors.onSurface),
                           const SizedBox(width: 12),
                           Text(
-                            'Fonts & Settings',
+                            AppLocalizations.of(context)!.fontsAndSettingsAction,
                             style: TextStyle(color: colors.onSurface),
                           ),
                         ],
@@ -591,8 +591,8 @@ class _BibleViewerSettingsSheet extends StatelessWidget {
               child: Column(
                 children: [
                   _SettingsRow(
-                    title: 'Font',
-                    value: 'System Default',
+                    title: AppLocalizations.of(context)!.fontLabel,
+                    value: AppLocalizations.of(context)!.fontSystemDefault,
                     icon: Icons.chevron_right,
                     onTap: onOpenAllSettings,
                   ),
@@ -601,7 +601,7 @@ class _BibleViewerSettingsSheet extends StatelessWidget {
                     color: colors.outlineVariant.withValues(alpha: 0.7),
                   ),
                   _ToggleSettingsRow(
-                    title: 'Continuous Scrolling',
+                    title: AppLocalizations.of(context)!.continuousScrollingLabel,
                     value: continuousScrolling,
                     onChanged: onContinuousScrollingChanged,
                   ),
@@ -610,7 +610,7 @@ class _BibleViewerSettingsSheet extends StatelessWidget {
                     color: colors.outlineVariant.withValues(alpha: 0.7),
                   ),
                   _ToggleSettingsRow(
-                    title: 'Document Mode',
+                    title: AppLocalizations.of(context)!.documentModeLabel,
                     value: layoutMode == ReaderLayoutMode.document,
                     onChanged: (value) {
                       onLayoutSelected(
@@ -625,7 +625,7 @@ class _BibleViewerSettingsSheet extends StatelessWidget {
                     color: colors.outlineVariant.withValues(alpha: 0.7),
                   ),
                   _ToggleSettingsRow(
-                    title: 'Show Notes On Other Translations',
+                    title: AppLocalizations.of(context)!.settingsNotesAcrossTranslations,
                     value: showNotesAcrossTranslations,
                     onChanged: onShowNotesAcrossTranslationsChanged,
                   ),
@@ -633,7 +633,7 @@ class _BibleViewerSettingsSheet extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 22),
-            Text('Theme', style: Theme.of(context).textTheme.titleMedium),
+            Text(AppLocalizations.of(context)!.theme, style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 14),
             SizedBox(
               height: 146,
@@ -656,7 +656,7 @@ class _BibleViewerSettingsSheet extends StatelessWidget {
               child: TextButton.icon(
                 onPressed: onOpenAllSettings,
                 icon: const Icon(Icons.settings),
-                label: const Text('All Settings'),
+                label: Text(AppLocalizations.of(context)!.allSettingsAction),
               ),
             ),
           ],

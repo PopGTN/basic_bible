@@ -1,3 +1,4 @@
+import 'package:basic_bible/l10n/app_localizations.dart';
 import 'package:basic_bible/src/features/annotations/models/annotation_verse_ranges.dart';
 import 'package:basic_bible/src/features/annotations/models/user_annotations.dart';
 import 'package:basic_bible/src/features/annotations/presentation/annotation_theme.dart';
@@ -53,12 +54,12 @@ class AnnotationDetailScreen extends StatelessWidget {
           IconButton(
             onPressed: () async => onEdit(),
             icon: const Icon(Icons.edit_outlined),
-            tooltip: 'Edit',
+            tooltip: AppLocalizations.of(context)!.editAction,
           ),
           IconButton(
             onPressed: () async => onDelete(),
             icon: const Icon(Icons.delete_outline),
-            tooltip: 'Delete',
+            tooltip: AppLocalizations.of(context)!.deleteAction,
           ),
         ],
       ),
@@ -81,7 +82,7 @@ class AnnotationDetailScreen extends StatelessWidget {
                   crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
                     _TypePill(
-                      label: annotation.hasNoteText ? 'Note' : 'Highlight',
+                      label: annotation.hasNoteText ? AppLocalizations.of(context)!.noteTypeNote : AppLocalizations.of(context)!.noteTypeHighlight,
                     ),
                     if (highlightColor != null)
                       Container(
@@ -139,7 +140,7 @@ class AnnotationDetailScreen extends StatelessWidget {
                 if (annotation.labels.isNotEmpty) ...[
                   const SizedBox(height: 16),
                   Text(
-                    'Labels',
+                    AppLocalizations.of(context)!.labelsLabel,
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w700,
                     ),
@@ -160,13 +161,13 @@ class AnnotationDetailScreen extends StatelessWidget {
                     TextButton.icon(
                       onPressed: () async => onOpenReference(),
                       icon: const Icon(Icons.menu_book_outlined),
-                      label: const Text('Open in Reader'),
+                      label: Text(AppLocalizations.of(context)!.openInReaderAction),
                     ),
                     const SizedBox(width: 8),
                     TextButton.icon(
                       onPressed: () async => onEdit(),
                       icon: const Icon(Icons.edit_outlined),
-                      label: const Text('Edit'),
+                      label: Text(AppLocalizations.of(context)!.editAction),
                     ),
                   ],
                 ),

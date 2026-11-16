@@ -217,7 +217,7 @@ class _VerseMetadataSection extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Source details',
+            AppLocalizations.of(context)!.sourceDetailsTitle,
             style: theme.textTheme.titleSmall?.copyWith(
               fontWeight: FontWeight.w700,
               color: colors.onSurface,
@@ -226,7 +226,7 @@ class _VerseMetadataSection extends StatelessWidget {
           const SizedBox(height: 10),
           if (summary.quoteSpeakers.isNotEmpty)
             _VerseMetadataGroup(
-              label: 'Quote speaker',
+              label: AppLocalizations.of(context)!.quoteSpeakerLabel,
               values: summary.quoteSpeakers,
               icon: Icons.record_voice_over_outlined,
             ),
@@ -238,13 +238,13 @@ class _VerseMetadataSection extends StatelessWidget {
             ),
           if (summary.lemmas.isNotEmpty)
             _VerseMetadataGroup(
-              label: 'Lemma',
+              label: AppLocalizations.of(context)!.lemmaLabel,
               values: summary.lemmas,
               icon: Icons.translate_outlined,
             ),
           if (summary.morphologies.isNotEmpty)
             _VerseMetadataGroup(
-              label: 'Morphology',
+              label: AppLocalizations.of(context)!.morphologyLabel,
               values: summary.morphologies,
               icon: Icons.account_tree_outlined,
             ),

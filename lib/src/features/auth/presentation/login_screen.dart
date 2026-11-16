@@ -22,7 +22,7 @@ class LoginScreen extends ConsumerWidget {
             if (canUseGoogle) ...[
               FilledButton.icon(
                 icon: const Icon(Icons.cloud_outlined),
-                label: const Text('Sign in with Google'),
+                label: Text(AppLocalizations.of(context)!.signInWithGoogle),
                 onPressed: sync.isSyncing
                     ? null
                     : () async {

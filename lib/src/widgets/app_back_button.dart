@@ -1,3 +1,4 @@
+import 'package:basic_bible/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -10,7 +11,7 @@ class AppBackButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return IconButton(
       icon: const Icon(Icons.arrow_back),
-      tooltip: 'Back',
+      tooltip: AppLocalizations.of(context)!.backTooltip,
       onPressed: () {
         if (context.canPop()) {
           context.pop();

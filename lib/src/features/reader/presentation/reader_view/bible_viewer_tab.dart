@@ -343,13 +343,13 @@ class _BibleViewerTabState extends ConsumerState<BibleViewerTab> {
                       },
                     ),
                   )
-                : const _ErrorView(message: 'Chapter not found'),
+                : _ErrorView(message: AppLocalizations.of(context)!.chapterNotFound),
             loading: () => const _LoadingView(),
-            error: (error, stack) => _ErrorView(message: 'Error: $error'),
+            error: (error, stack) => _ErrorView(message: AppLocalizations.of(context)!.errorMessage(error)),
           ),
           loading: () => const _LoadingView(),
           error: (error, stack) =>
-              _ErrorView(message: 'Failed to load Bible: $error'),
+              _ErrorView(message: AppLocalizations.of(context)!.failedToLoadBible(error)),
         );
       },
     );

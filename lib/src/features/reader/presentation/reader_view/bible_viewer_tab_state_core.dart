@@ -683,18 +683,18 @@ extension _BibleTextViewStateCore on _BibleTextViewState {
                         final confirmed = await showDialog<bool>(
                           context: context,
                           builder: (ctx) => AlertDialog(
-                            title: const Text('Delete?'),
-                            content: const Text(
-                              'This note or highlight will be permanently removed.',
+                            title: Text(AppLocalizations.of(context)!.deleteConfirmTitle),
+                            content: Text(
+                              AppLocalizations.of(context)!.deleteNoteOrHighlightBody,
                             ),
                             actions: [
                               TextButton(
                                 onPressed: () => Navigator.of(ctx).pop(false),
-                                child: const Text('Cancel'),
+                                child: Text(AppLocalizations.of(context)!.cancelAction),
                               ),
                               TextButton(
                                 onPressed: () => Navigator.of(ctx).pop(true),
-                                child: const Text('Delete'),
+                                child: Text(AppLocalizations.of(context)!.deleteAction),
                               ),
                             ],
                           ),
@@ -726,18 +726,18 @@ extension _BibleTextViewStateCore on _BibleTextViewState {
                 final confirmed = await showDialog<bool>(
                   context: sheetContext,
                   builder: (ctx) => AlertDialog(
-                    title: const Text('Delete?'),
-                    content: const Text(
-                      'This note or highlight will be permanently removed.',
+                    title: Text(AppLocalizations.of(context)!.deleteConfirmTitle),
+                    content: Text(
+                      AppLocalizations.of(context)!.deleteNoteOrHighlightBody,
                     ),
                     actions: [
                       TextButton(
                         onPressed: () => Navigator.of(ctx).pop(false),
-                        child: const Text('Cancel'),
+                        child: Text(AppLocalizations.of(context)!.cancelAction),
                       ),
                       TextButton(
                         onPressed: () => Navigator.of(ctx).pop(true),
-                        child: const Text('Delete'),
+                        child: Text(AppLocalizations.of(context)!.deleteAction),
                       ),
                     ],
                   ),

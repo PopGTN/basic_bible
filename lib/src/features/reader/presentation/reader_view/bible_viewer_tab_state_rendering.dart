@@ -107,7 +107,7 @@ extension _BibleTextViewStateRendering on _BibleTextViewState {
     // repeating long front-matter blocks on every chapter view.
     return [
       _DocumentBlockSection(
-        eyebrow: 'Introduction',
+        eyebrow: AppLocalizations.of(context)!.introductionLabel,
         blocks: visibleBlocks,
         fontSize: widget.fontSize,
       ),

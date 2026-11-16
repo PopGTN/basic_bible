@@ -1,3 +1,4 @@
+import 'package:basic_bible/l10n/app_localizations.dart';
 import 'package:basic_bible/src/features/sync/application/view_models/notes_backup_view_models.dart';
 import 'package:basic_bible/src/features/sync/application/view_models/sync_view_models.dart';
 import 'package:basic_bible/src/platform/runtime_support.dart';
@@ -56,10 +57,10 @@ class _NotesBackupTilesState extends ConsumerState<NotesBackupTiles> {
     try {
       final saved = await ref.read(notesBackupServiceProvider).exportNotes();
       if (mounted && saved && !isMobileRuntime) {
-        _showMessage('Notes exported.');
+        _showMessage(AppLocalizations.of(context)!.notesExported);
       }
     } catch (e) {
-      if (mounted) _showMessage('Export failed: $e');
+      if (mounted) _showMessage(AppLocalizations.of(context)!.exportFailed(e));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -74,15 +75,19 @@ class _NotesBackupTilesState extends ConsumerState<NotesBackupTiles> {
         final upToDate = result.total - result.applied;
         _showMessage(
           result.applied == 0
-              ? 'Import finished — all ${result.total} notes were already up '
-                    'to date.'
-              : 'Imported ${result.applied} of ${result.total} notes'
-                    '${upToDate > 0 ? ' ($upToDate already up to date)' : ''}.',
+              ? AppLocalizations.of(context)!.importUpToDate(result.total)
+              : upToDate > 0
+              ? AppLocalizations.of(context)!.importedNotesCountWithUpToDate(
+                  result.applied,
+                  result.total,
+                  upToDate,
+                )
+              : AppLocalizations.of(context)!.importedNotesCount(result.applied, result.total),
         );
       }
       await _refreshStorageSummary();
     } catch (e) {
-      if (mounted) _showMessage('Import failed: $e');
+      if (mounted) _showMessage(AppLocalizations.of(context)!.importFailedShort(e));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -98,13 +103,13 @@ class _NotesBackupTilesState extends ConsumerState<NotesBackupTiles> {
       if (mounted) {
         _showMessage(
           removed > 0
-              ? 'Removed $removed old deleted notes.'
-              : 'No old deleted notes needed cleanup yet.',
+              ? AppLocalizations.of(context)!.cleanupRemoved(removed)
+              : AppLocalizations.of(context)!.cleanupNothing,
         );
         await _refreshStorageSummary();
       }
     } catch (e) {
-      if (mounted) _showMessage('Cleanup failed: $e');
+      if (mounted) _showMessage(AppLocalizations.of(context)!.cleanupFailed(e));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -118,23 +123,20 @@ class _NotesBackupTilesState extends ConsumerState<NotesBackupTiles> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Reset all notes?'),
+        title: Text(AppLocalizations.of(context)!.resetAllNotesTitle),
         content: Text(
           isSignedIn
-              ? 'This removes every saved note and highlight from this device '
-                    'only. Notes synced to Google Drive will download again on '
-                    'the next sync — sign out first to keep this device empty.'
-              : 'This permanently deletes every saved note and highlight on '
-                    'this device.',
+              ? AppLocalizations.of(context)!.resetAllNotesSignedIn
+              : AppLocalizations.of(context)!.resetAllNotesLocal,
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
+            child: Text(AppLocalizations.of(context)!.cancelAction),
           ),
           FilledButton.tonal(
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Delete all'),
+            child: Text(AppLocalizations.of(context)!.deleteAllAction),
           ),
         ],
       ),
@@ -146,11 +148,11 @@ class _NotesBackupTilesState extends ConsumerState<NotesBackupTiles> {
     try {
       await ref.read(appDatabaseProvider).deleteAllUserAnnotations();
       if (mounted) {
-        _showMessage('All notes deleted from this device.');
+        _showMessage(AppLocalizations.of(context)!.allNotesDeleted);
         await _refreshStorageSummary();
       }
     } catch (e) {
-      if (mounted) _showMessage('Reset failed: $e');
+      if (mounted) _showMessage(AppLocalizations.of(context)!.resetFailed(e));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -167,14 +169,16 @@ class _NotesBackupTilesState extends ConsumerState<NotesBackupTiles> {
           builder: (context, snapshot) {
             final summary = snapshot.data;
             final detailText = summary == null
-                ? 'Calculating local note database size…'
-                : '${summary.activeNotes} active • '
-                      '${summary.deletedNotes} deleted tombstones';
+                ? AppLocalizations.of(context)!.noteStorageCalculating
+                : AppLocalizations.of(context)!.noteStorageDetail(
+                    summary.activeNotes,
+                    summary.deletedNotes,
+                  );
 
             return ListTile(
               contentPadding: EdgeInsets.zero,
               leading: const Icon(Icons.storage_outlined),
-              title: const Text('Note storage'),
+              title: Text(AppLocalizations.of(context)!.noteStorageTitle),
               subtitle: Text(detailText),
               trailing: Text(
                 summary == null
@@ -188,31 +192,27 @@ class _NotesBackupTilesState extends ConsumerState<NotesBackupTiles> {
         ListTile(
           contentPadding: EdgeInsets.zero,
           leading: const Icon(Icons.cleaning_services_outlined),
-          title: const Text('Delete old deleted notes'),
-          subtitle: const Text(
-            'Removes tombstones older than 30 days so storage stays tidy without deleting active notes.',
-          ),
+          title: Text(AppLocalizations.of(context)!.purgeDeletedNotesTitle),
+          subtitle: Text(AppLocalizations.of(context)!.purgeDeletedNotesDesc),
           enabled: enabled,
           onTap: _purgeDeletedNotes,
         ),
         ListTile(
           contentPadding: EdgeInsets.zero,
           leading: const Icon(Icons.delete_forever_outlined),
-          title: const Text('Reset all saved notes'),
-          subtitle: const Text(
-            'Clears every note and highlight from this device.',
-          ),
+          title: Text(AppLocalizations.of(context)!.resetAllSavedNotesTitle),
+          subtitle: Text(AppLocalizations.of(context)!.resetAllSavedNotesDesc),
           enabled: enabled,
           onTap: _resetAllNotes,
         ),
         ListTile(
           contentPadding: EdgeInsets.zero,
           leading: const Icon(Icons.upload_file_outlined),
-          title: const Text('Export Notes'),
+          title: Text(AppLocalizations.of(context)!.exportNotesTitle),
           subtitle: Text(
             isWebRuntime
-                ? 'Not available in the browser.'
-                : 'Save all notes and highlights as a SQLite backup file.',
+                ? AppLocalizations.of(context)!.notAvailableInBrowser
+                : AppLocalizations.of(context)!.exportNotesDesc,
           ),
           enabled: enabled,
           onTap: _export,
@@ -220,12 +220,11 @@ class _NotesBackupTilesState extends ConsumerState<NotesBackupTiles> {
         ListTile(
           contentPadding: EdgeInsets.zero,
           leading: const Icon(Icons.download_outlined),
-          title: const Text('Import Notes'),
+          title: Text(AppLocalizations.of(context)!.importNotesTitle),
           subtitle: Text(
             isWebRuntime
-                ? 'Not available in the browser.'
-                : 'Merge notes from a backup file. Never overwrites newer '
-                      'local edits.',
+                ? AppLocalizations.of(context)!.notAvailableInBrowser
+                : AppLocalizations.of(context)!.importNotesDesc,
           ),
           enabled: enabled,
           onTap: _import,

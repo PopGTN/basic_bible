@@ -49,21 +49,21 @@ class MenuTab extends ConsumerWidget {
         // Notes
         ListTile(
           leading: const Icon(Icons.note),
-          title: Text("Notes"),
+          title: Text(t.notesTitle),
           onTap: () => context.go('/home/notes'),
         ),
 
         // Prayer List
         ListTile(
           leading: const Icon(Icons.list_alt),
-          title: Text("Prayer List"),
+          title: Text(t.menuPrayerList),
           onTap: () => context.go('/coming-soon/prayer'),
         ),
 
         // Verses of the Day
         ListTile(
           leading: const Icon(Icons.auto_stories),
-          title: Text("Verses of the Day"),
+          title: Text(t.menuVersesOfTheDay),
           onTap: () => context.go('/coming-soon/verses'),
         ),
 
@@ -85,14 +85,14 @@ class MenuTab extends ConsumerWidget {
         // Help
         ListTile(
           leading: const Icon(Icons.help_outline),
-          title: Text("Help"),
+          title: Text(t.menuHelp),
           onTap: () => context.go('/coming-soon/help'),
         ),
 
         // GitHub Repo
         ListTile(
           leading: const Icon(Icons.code),
-          title: const Text("GitHub Repository"),
+          title: Text(t.menuGithubRepository),
           onTap: () => _openLink("https://github.com/PopGTN/basic_bible"),
         ),
 
@@ -100,8 +100,8 @@ class MenuTab extends ConsumerWidget {
         // Language
         ListTile(
           leading: const Icon(Icons.language),
-          title: Text("Language"),
-          onTap: () => context.go('/coming-soon/language'),
+          title: Text(t.language),
+          onTap: () => context.go('/home/settings/language'),
         ),
         // Settings
         ListTile(

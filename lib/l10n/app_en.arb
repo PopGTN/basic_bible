@@ -226,5 +226,383 @@
   "settingsAdvanced": "Advanced",
   "settingsAdvancedDesc": "Developer tools — export translation databases",
   "settingsLicenses": "Open-source licenses",
-  "settingsLicensesDesc": "Libraries and code used by this app"
+  "settingsLicensesDesc": "Libraries and code used by this app",
+  "saveAction": "Save",
+  "clearAction": "Clear",
+  "backTooltip": "Back",
+  "comingSoonTitle": "{title} is not built yet.",
+  "@comingSoonTitle": {
+    "placeholders": {
+      "title": {}
+    }
+  },
+  "comingSoonBody": "This menu entry is now routed intentionally instead of pointing to a missing screen.",
+  "otherPageTitle": "Other Page",
+  "otherPageBody": "This page is not part of the bottom tabs",
+  "signInWithGoogle": "Sign in with Google",
+  "previousChapterTooltip": "Previous chapter",
+  "nextChapterTooltip": "Next chapter",
+  "previewUnavailable": "Preview unavailable for this reference.",
+  "openInBibleAction": "Open in Bible",
+  "crossReferencesTitle": "Cross-References",
+  "noCrossReferences": "No cross-references available for this verse.",
+  "couldNotParseReference": "Could not parse reference: {reference}",
+  "@couldNotParseReference": {
+    "placeholders": {
+      "reference": {}
+    }
+  },
+  "noReferenceHistory": "No reference history yet.",
+  "recentReferencesTitle": "Recent References",
+  "referencesTitle": "References",
+  "historyTooltip": "History",
+  "searchBooksHint": "Search books",
+  "pickChapterPrompt": "Pick a chapter.",
+  "pickChapterOrVersePrompt": "Pick a chapter and optionally a verse.",
+  "chaptersLabel": "Chapters",
+  "goToReferenceAction": "Go to {reference}",
+  "@goToReferenceAction": {
+    "placeholders": {
+      "reference": {}
+    }
+  },
+  "versesInChapterLabel": "Verses in {chapter}",
+  "@versesInChapterLabel": {
+    "placeholders": {
+      "chapter": {}
+    }
+  },
+  "readLabel": "Read",
+  "searchBibleHint": "Search the Bible",
+  "searchPrompt": "Type a word or phrase to search.",
+  "searchFailed": "Search failed: {error}",
+  "@searchFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "noVersesFound": "No verses found.",
+  "searchShowingFirst": "Showing the first {count} verses. Add words to narrow it down.",
+  "@searchShowingFirst": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "searchVerseCountOne": "{count} verse",
+  "@searchVerseCountOne": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "searchVerseCountMany": "{count} verses",
+  "@searchVerseCountMany": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "themeSystem": "System",
+  "themeLight": "Light",
+  "themeDark": "Dark",
+  "themeSoft": "Soft",
+  "themeBlack": "Black",
+  "themeWhite": "White",
+  "themeBlue": "Blue",
+  "themeRed": "Red",
+  "translationNotAvailable": "Translation not available.",
+  "onlyStandaloneHighlightsRemovable": "Only standalone highlights can be removed here. Edit a note to change its highlight.",
+  "noteVerseLimit": "Notes can be linked to up to {max} verses at once. Please select a smaller range.",
+  "@noteVerseLimit": {
+    "placeholders": {
+      "max": {}
+    }
+  },
+  "highlightAction": "Highlight",
+  "noteAction": "Note",
+  "copyAction": "Copy",
+  "shareAction": "Share",
+  "noteHighlightsEditedFromNote": "Note highlights are edited from the note itself.",
+  "chapterNotFound": "Chapter not found",
+  "errorMessage": "Error: {error}",
+  "@errorMessage": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "failedToLoadBible": "Failed to load Bible: {error}",
+  "@failedToLoadBible": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "couldNotLoadTranslation": "Could not load this translation: {error}",
+  "@couldNotLoadTranslation": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "translationForPaneTooltip": "Translation for this pane",
+  "sourceDetailsTitle": "Source details",
+  "quoteSpeakerLabel": "Quote speaker",
+  "lemmaLabel": "Lemma",
+  "morphologyLabel": "Morphology",
+  "licenseLabel": "License",
+  "sourceLabel": "Source",
+  "deleteConfirmTitle": "Delete?",
+  "deleteNoteOrHighlightBody": "This note or highlight will be permanently removed.",
+  "addNoteAction": "Add Note",
+  "viewAction": "View",
+  "introductionLabel": "Introduction",
+  "notesOpeningFallbackNamed": "\"{preferred}\" is not installed. Opening in {fallback}.",
+  "@notesOpeningFallbackNamed": {
+    "placeholders": {
+      "preferred": {},
+      "fallback": {}
+    }
+  },
+  "notesOpeningFallbackCurrent": "\"{preferred}\" is not installed. Opening in current translation.",
+  "@notesOpeningFallbackCurrent": {
+    "placeholders": {
+      "preferred": {}
+    }
+  },
+  "theCurrentTranslation": "the current translation",
+  "failedToOpenReference": "Failed to open reference.",
+  "notesEmpty": "No saved notes or highlights yet. Select a verse in the reader to create one.",
+  "notesNoMatches": "No notes match your search or filters.",
+  "clearFiltersAction": "Clear filters",
+  "deleteNoteBody": "This note and all its linked verses will be permanently removed.",
+  "failedToDeleteNote": "Failed to delete note.",
+  "failedToLoadNotes": "Failed to load notes: {error}",
+  "@failedToLoadNotes": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "notesTitle": "Notes",
+  "searchNotesTooltip": "Search notes",
+  "searchNotesHint": "Search notes, tags, or a verse like John 3:16",
+  "filterTypeLabel": "Type",
+  "filterTranslationLabel": "Translation",
+  "filterTagsLabel": "Tags",
+  "openInReaderAction": "Open in Reader",
+  "noteTypeNote": "Note",
+  "noteTypeHighlight": "Highlight",
+  "noteTypeHighlightOnly": "Highlight only",
+  "dateLastModified": "Last modified",
+  "dateCreated": "Created",
+  "dateAnyTime": "Any time",
+  "dateToday": "Today",
+  "datePastWeek": "Past week",
+  "datePastMonth": "Past month",
+  "datePastYear": "Past year",
+  "dateButtonCreatedRange": "Created: {range}",
+  "@dateButtonCreatedRange": {
+    "placeholders": {
+      "range": {}
+    }
+  },
+  "dateButtonCreated": "Date: Created",
+  "dateButton": "Date",
+  "dateMenuShow": "Show",
+  "dateMenuSortBy": "By date (newest first)",
+  "currentTranslationUnavailable": "Current translation is not available.",
+  "failedToSaveNote": "Failed to save note. Please try again.",
+  "noteFieldLabel": "Note",
+  "noteFieldHint": "Write your note here.",
+  "linkedVersesTitle": "Linked Verses",
+  "primaryVerseTitle": "Primary Verse",
+  "removeVerseTitle": "Remove verse?",
+  "removeVerseBody": "{reference} will be unlinked from this note.",
+  "@removeVerseBody": {
+    "placeholders": {
+      "reference": {}
+    }
+  },
+  "addVerseAction": "Add Verse",
+  "connectedHighlightTitle": "Connected Highlight",
+  "highlightNone": "None",
+  "connectedHighlightBody": "This note will keep a connected verse highlight on its primary verse.",
+  "labelsLabel": "Labels",
+  "labelsHint": "Comma separated labels",
+  "showLessAction": "Show less",
+  "showAllAction": "Show all (+{count})",
+  "@showAllAction": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "menuPrayerList": "Prayer List",
+  "menuVersesOfTheDay": "Verses of the Day",
+  "menuDonate": "Donate",
+  "menuHelp": "Help",
+  "menuGithubRepository": "GitHub Repository",
+  "featureDefaultName": "Feature",
+  "playAudioTooltip": "Play Audio",
+  "searchTooltip": "Search",
+  "readerOptionsTooltip": "Reader options",
+  "relatedContentAction": "Related Content",
+  "fontsAndSettingsAction": "Fonts & Settings",
+  "fontLabel": "Font",
+  "fontSystemDefault": "System Default",
+  "continuousScrollingLabel": "Continuous Scrolling",
+  "documentModeLabel": "Document Mode",
+  "allSettingsAction": "All Settings",
+  "openSettingsAction": "Open Settings",
+  "syncTitle": "Sync",
+  "syncUnavailableWeb": "Google sync is not available in the browser",
+  "syncUnavailableWebDesc": "Use the mobile or desktop app to sync notes.",
+  "syncNotConfigured": "Google sync is not configured for this build",
+  "syncNotConfiguredDesc": "OAuth client ids are missing — see docs/google_sync_setup.md.",
+  "syncSignInDesc": "Back up notes and highlights to your own Google Drive and sync them across your devices.",
+  "syncModeTitle": "Sync mode",
+  "syncModeDesc": "Automatic syncs after note changes and on app resume. Manual sync only runs when you tap Sync now.",
+  "syncModeAutomatic": "Automatic",
+  "syncModeManual": "Manual",
+  "syncing": "Syncing…",
+  "notSyncedYet": "Not synced yet",
+  "lastSynced": "Last synced {when}",
+  "@lastSynced": {
+    "placeholders": {
+      "when": {}
+    }
+  },
+  "syncJustNow": "just now",
+  "syncMinutesAgo": "{count} min ago",
+  "@syncMinutesAgo": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "syncHoursAgo": "{count} h ago",
+  "@syncHoursAgo": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "syncNowAction": "Sync now",
+  "signOutAction": "Sign out",
+  "notesExported": "Notes exported.",
+  "exportFailed": "Export failed: {error}",
+  "@exportFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "importUpToDate": "Import finished — all {total} notes were already up to date.",
+  "@importUpToDate": {
+    "placeholders": {
+      "total": {}
+    }
+  },
+  "importedNotesCount": "Imported {applied} of {total} notes.",
+  "@importedNotesCount": {
+    "placeholders": {
+      "applied": {},
+      "total": {}
+    }
+  },
+  "importedNotesCountWithUpToDate": "Imported {applied} of {total} notes ({upToDate} already up to date).",
+  "@importedNotesCountWithUpToDate": {
+    "placeholders": {
+      "applied": {},
+      "total": {},
+      "upToDate": {}
+    }
+  },
+  "cleanupRemoved": "Removed {count} old deleted notes.",
+  "@cleanupRemoved": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "cleanupNothing": "No old deleted notes needed cleanup yet.",
+  "cleanupFailed": "Cleanup failed: {error}",
+  "@cleanupFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "resetAllNotesTitle": "Reset all notes?",
+  "resetAllNotesSignedIn": "This removes every saved note and highlight from this device only. Notes synced to Google Drive will download again on the next sync — sign out first to keep this device empty.",
+  "resetAllNotesLocal": "This permanently deletes every saved note and highlight on this device.",
+  "deleteAllAction": "Delete all",
+  "allNotesDeleted": "All notes deleted from this device.",
+  "resetFailed": "Reset failed: {error}",
+  "@resetFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "importFailedShort": "Import failed: {error}",
+  "@importFailedShort": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "noteStorageCalculating": "Calculating local note database size…",
+  "noteStorageDetail": "{active} active • {deleted} deleted tombstones",
+  "@noteStorageDetail": {
+    "placeholders": {
+      "active": {},
+      "deleted": {}
+    }
+  },
+  "noteStorageTitle": "Note storage",
+  "purgeDeletedNotesTitle": "Delete old deleted notes",
+  "purgeDeletedNotesDesc": "Removes tombstones older than 30 days so storage stays tidy without deleting active notes.",
+  "resetAllSavedNotesTitle": "Reset all saved notes",
+  "resetAllSavedNotesDesc": "Clears every note and highlight from this device.",
+  "exportNotesTitle": "Export Notes",
+  "importNotesTitle": "Import Notes",
+  "notAvailableInBrowser": "Not available in the browser.",
+  "exportNotesDesc": "Save all notes and highlights as a SQLite backup file.",
+  "importNotesDesc": "Merge notes from a backup file. Never overwrites newer local edits.",
+  "catalogUrlInvalid": "Enter a full URL like https://example.com/catalog.json",
+  "catalogUrlMustBeHttps": "Catalog URLs must use https:// (http:// is only allowed for localhost).",
+  "catalogUrlReset": "Translation catalog URL reset to default.",
+  "catalogUrlSaved": "Translation catalog URL saved.",
+  "couldNotSaveCatalogUrl": "Could not save catalog URL: {error}",
+  "@couldNotSaveCatalogUrl": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "couldNotResetCatalogUrl": "Could not reset catalog URL: {error}",
+  "@couldNotResetCatalogUrl": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "advancedTitle": "Advanced",
+  "advancedWarning": "These tools are intended for development and debugging. Exported database files contain parsed Bible content — verify you have the right to redistribute a translation before sharing it.",
+  "exportDatabasesTitle": "Export Translation Databases",
+  "exportDatabasesDesc": "Exports the SQLite file for a translation stored on this device. Download a translation from Translations to export it.",
+  "exportWebUnavailable": "Browser builds can read and cache translations, but exporting cached database files is not available on web yet.",
+  "noDownloadedToExport": "No downloaded translations to export.",
+  "failedToLoadTranslationsShort": "Failed to load translations: {error}",
+  "@failedToLoadTranslationsShort": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "catalogUrlTitle": "Translation Catalog URL",
+  "catalogUrlDesc": "Override the remote JSON catalog used to load available translations. Leave blank or tap Reset to go back to the built-in default source.",
+  "catalogUrlLabel": "Catalog URL",
+  "catalogUrlUsingDefault": "Using built-in default catalog endpoint.",
+  "catalogUrlUsingCustom": "Using custom catalog endpoint override.",
+  "catalogUrlDefaultLine": "Default: {url}",
+  "@catalogUrlDefaultLine": {
+    "placeholders": {
+      "url": {}
+    }
+  },
+  "resetToDefaultAction": "Reset To Default",
+  "exportCompletedFor": "Export completed for {name}.",
+  "@exportCompletedFor": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "exportAction": "Export",
+  "aboutLegalese": "Free and open source under the Apache License 2.0.\nBible texts are public domain; see the notice at the end of each chapter."
 }

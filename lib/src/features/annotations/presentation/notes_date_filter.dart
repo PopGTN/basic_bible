@@ -1,3 +1,5 @@
+import 'package:basic_bible/src/features/annotations/presentation/note_filter_labels.dart';
+import 'package:basic_bible/l10n/app_localizations.dart';
 import 'package:basic_bible/src/features/annotations/models/note_filters.dart';
 import 'package:flutter/material.dart';
 
@@ -20,13 +22,13 @@ class NotesDateFilterDropdown extends StatelessWidget {
   bool get _isActive =>
       range != NoteDateRange.any || field != NoteDateField.modified;
 
-  String get _buttonLabel {
+  String _buttonLabel(AppLocalizations t) {
     if (range != NoteDateRange.any) {
       return field == NoteDateField.created
-          ? 'Created: ${range.label}'
-          : range.label;
+          ? t.dateButtonCreatedRange(range.localized(t))
+          : range.localized(t);
     }
-    return field == NoteDateField.created ? 'Date: Created' : 'Date';
+    return field == NoteDateField.created ? t.dateButtonCreated : t.dateButton;
   }
 
   @override
@@ -40,7 +42,7 @@ class NotesDateFilterDropdown extends StatelessWidget {
         onPressed: () =>
             controller.isOpen ? controller.close() : controller.open(),
         icon: const Icon(Icons.arrow_drop_down),
-        label: Text(_buttonLabel, overflow: TextOverflow.ellipsis),
+        label: Text(_buttonLabel(AppLocalizations.of(context)!), overflow: TextOverflow.ellipsis),
         style: OutlinedButton.styleFrom(
           foregroundColor: _isActive ? colors.onSurface : colors.onSurfaceVariant,
           backgroundColor: _isActive ? colors.surfaceContainerHighest : null,
@@ -50,22 +52,22 @@ class NotesDateFilterDropdown extends StatelessWidget {
         ),
       ),
       menuChildren: [
-        const _MenuSectionLabel('Show'),
+        _MenuSectionLabel(AppLocalizations.of(context)!.dateMenuShow),
         for (final option in NoteDateRange.values)
           MenuItemButton(
             closeOnActivate: false,
             leadingIcon: radio(option == range),
             onPressed: () => onRangeChanged(option),
-            child: Text(option.label),
+            child: Text(option.localized(AppLocalizations.of(context)!)),
           ),
         const Divider(height: 8),
-        const _MenuSectionLabel('By date (newest first)'),
+        _MenuSectionLabel(AppLocalizations.of(context)!.dateMenuSortBy),
         for (final option in NoteDateField.values)
           MenuItemButton(
             closeOnActivate: false,
             leadingIcon: radio(option == field),
             onPressed: () => onFieldChanged(option),
-            child: Text(option.label),
+            child: Text(option.localized(AppLocalizations.of(context)!)),
           ),
       ],
     );

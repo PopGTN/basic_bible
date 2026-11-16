@@ -1,3 +1,4 @@
+import 'package:basic_bible/l10n/app_localizations.dart';
 import 'package:basic_bible/src/features/reader/application/view_models/reader_session_view_models.dart';
 import 'package:flutter/material.dart';
 import 'package:basic_bible/src/models/bible_models.dart';
@@ -24,11 +25,11 @@ class _ReferenceScreenState extends ConsumerState<ReferenceScreen> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Cross-References')),
+      appBar: AppBar(title: Text(AppLocalizations.of(context)!.crossReferencesTitle)),
       body: widget.references.isEmpty
           ? Center(
               child: Text(
-                'No cross-references available for this verse.',
+                AppLocalizations.of(context)!.noCrossReferences,
                 style: theme.textTheme.bodyLarge,
               ),
             )
@@ -55,7 +56,7 @@ class _ReferenceScreenState extends ConsumerState<ReferenceScreen> {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text(
-                            'Could not parse reference: ${reference.label}',
+                            AppLocalizations.of(context)!.couldNotParseReference(reference.label),
                           ),
                         ),
                       );

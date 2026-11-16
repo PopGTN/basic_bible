@@ -1,3 +1,4 @@
+import 'package:basic_bible/l10n/app_localizations.dart';
 import 'package:basic_bible/src/features/annotations/models/annotation_verse_ranges.dart';
 import 'package:basic_bible/src/features/annotations/models/user_annotations.dart';
 import 'package:basic_bible/src/models/bible_models.dart';
@@ -103,7 +104,7 @@ class _LinkedVersesSectionState extends State<LinkedVersesSection> {
                   label: Text(labelFor(range)),
                   onDeleted: () => onDeleteLink(range.first),
                   deleteIcon: const Icon(Icons.close, size: 16),
-                  deleteButtonTooltipMessage: 'Remove',
+                  deleteButtonTooltipMessage: AppLocalizations.of(context)!.removeAction,
                 )
               else
                 ActionChip(
@@ -117,7 +118,7 @@ class _LinkedVersesSectionState extends State<LinkedVersesSection> {
                   _expanded ? Icons.expand_less : Icons.expand_more,
                   size: 18,
                 ),
-                label: Text(_expanded ? 'Show less' : 'Show all (+$hiddenCount)'),
+                label: Text(_expanded ? AppLocalizations.of(context)!.showLessAction : AppLocalizations.of(context)!.showAllAction(hiddenCount)),
                 onPressed: () => setState(() => _expanded = !_expanded),
               ),
           ],

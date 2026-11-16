@@ -1,3 +1,4 @@
+import 'package:basic_bible/l10n/app_localizations.dart';
 import 'package:basic_bible/src/features/reader/application/view_models/bible_library_view_models.dart';
 import 'package:basic_bible/src/features/settings/application/view_models/advanced_preferences_view_models.dart';
 import 'package:basic_bible/src/features/settings/application/view_models/translation_export_view_models.dart';
@@ -59,14 +60,14 @@ class _AdvancedSettingsScreenState
 
     final uri = Uri.tryParse(value);
     if (uri == null || !uri.hasScheme || !uri.hasAuthority) {
-      return 'Enter a full URL like https://example.com/catalog.json';
+      return AppLocalizations.of(context)!.catalogUrlInvalid;
     }
     // Plain http would let anyone on the same network swap the catalog (and
     // with it every download URL), so it is only allowed for local testing.
     final isLoopback =
         uri.host == 'localhost' || uri.host == '127.0.0.1' || uri.host == '::1';
     if (uri.scheme != 'https' && !(uri.scheme == 'http' && isLoopback)) {
-      return 'Catalog URLs must use https:// (http:// is only allowed for localhost).';
+      return AppLocalizations.of(context)!.catalogUrlMustBeHttps;
     }
     return null;
   }
@@ -96,15 +97,15 @@ class _AdvancedSettingsScreenState
         SnackBar(
           content: Text(
             _lastSyncedOverride == null
-                ? 'Translation catalog URL reset to default.'
-                : 'Translation catalog URL saved.',
+                ? AppLocalizations.of(context)!.catalogUrlReset
+                : AppLocalizations.of(context)!.catalogUrlSaved,
           ),
         ),
       );
     } catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not save catalog URL: $error')),
+        SnackBar(content: Text(AppLocalizations.of(context)!.couldNotSaveCatalogUrl(error))),
       );
     } finally {
       if (mounted) {
@@ -131,14 +132,14 @@ class _AdvancedSettingsScreenState
       ref.invalidate(availableTranslationsProvider);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Translation catalog URL reset to default.'),
+        SnackBar(
+          content: Text(AppLocalizations.of(context)!.catalogUrlReset),
         ),
       );
     } catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not reset catalog URL: $error')),
+        SnackBar(content: Text(AppLocalizations.of(context)!.couldNotResetCatalogUrl(error))),
       );
     } finally {
       if (mounted) {
@@ -169,7 +170,7 @@ class _AdvancedSettingsScreenState
     return Scaffold(
       appBar: AppBar(
         leading: const AppBackButton(),
-        title: const Text('Advanced'),
+        title: Text(AppLocalizations.of(context)!.advancedTitle),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -192,9 +193,7 @@ class _AdvancedSettingsScreenState
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      'These tools are intended for development and debugging. '
-                      'Exported database files contain parsed Bible content — '
-                      'verify you have the right to redistribute a translation before sharing it.',
+                      AppLocalizations.of(context)!.advancedWarning,
                       style: TextStyle(
                         color: Theme.of(context).colorScheme.onErrorContainer,
                       ),
@@ -215,15 +214,14 @@ class _AdvancedSettingsScreenState
             ),
             const SizedBox(height: 24),
             Text(
-              'Export Translation Databases',
+              AppLocalizations.of(context)!.exportDatabasesTitle,
               style: Theme.of(
                 context,
               ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 4),
             Text(
-              'Exports the SQLite file for a translation stored on this '
-              'device. Download a translation from Translations to export it.',
+              AppLocalizations.of(context)!.exportDatabasesDesc,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
@@ -233,7 +231,7 @@ class _AdvancedSettingsScreenState
               Padding(
                 padding: const EdgeInsets.only(bottom: 12),
                 child: Text(
-                  'Browser builds can read and cache translations, but exporting cached database files is not available on web yet.',
+                  AppLocalizations.of(context)!.exportWebUnavailable,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
@@ -242,9 +240,9 @@ class _AdvancedSettingsScreenState
             translationsAsync.when(
               data: (translations) {
                 if (translations.isEmpty) {
-                  return const Padding(
+                  return Padding(
                     padding: EdgeInsets.symmetric(vertical: 16),
-                    child: Text('No downloaded translations to export.'),
+                    child: Text(AppLocalizations.of(context)!.noDownloadedToExport),
                   );
                 }
                 return Column(
@@ -263,7 +261,7 @@ class _AdvancedSettingsScreenState
                   child: CircularProgressIndicator(),
                 ),
               ),
-              error: (e, _) => Text('Failed to load translations: $e'),
+              error: (e, _) => Text(AppLocalizations.of(context)!.failedToLoadTranslationsShort(e)),
             ),
           ],
         ),
@@ -307,15 +305,14 @@ class _TranslationCatalogUrlCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Translation Catalog URL',
+            AppLocalizations.of(context)!.catalogUrlTitle,
             style: theme.textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.w700,
             ),
           ),
           const SizedBox(height: 4),
           Text(
-            'Override the remote JSON catalog used to load available translations. '
-            'Leave blank or tap Reset to go back to the built-in default source.',
+            AppLocalizations.of(context)!.catalogUrlDesc,
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),
@@ -327,18 +324,18 @@ class _TranslationCatalogUrlCard extends StatelessWidget {
             keyboardType: TextInputType.url,
             textInputAction: TextInputAction.done,
             decoration: InputDecoration(
-              labelText: 'Catalog URL',
+              labelText: AppLocalizations.of(context)!.catalogUrlLabel,
               hintText: 'https://raw.githubusercontent.com/.../bibles.json',
               errorText: validationError,
               helperText: usingDefault
-                  ? 'Using built-in default catalog endpoint.'
-                  : 'Using custom catalog endpoint override.',
+                  ? AppLocalizations.of(context)!.catalogUrlUsingDefault
+                  : AppLocalizations.of(context)!.catalogUrlUsingCustom,
               border: const OutlineInputBorder(),
             ),
           ),
           const SizedBox(height: 8),
           SelectableText(
-            'Default: ${RemoteTranslationCatalogService.defaultCatalogUrl}',
+            AppLocalizations.of(context)!.catalogUrlDefaultLine(RemoteTranslationCatalogService.defaultCatalogUrl),
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),
@@ -359,11 +356,11 @@ class _TranslationCatalogUrlCard extends StatelessWidget {
                         height: 18,
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
-                    : const Text('Save'),
+                    : Text(AppLocalizations.of(context)!.saveAction),
               ),
               OutlinedButton(
                 onPressed: isSaving || usingDefault ? null : onReset,
-                child: const Text('Reset To Default'),
+                child: Text(AppLocalizations.of(context)!.resetToDefaultAction),
               ),
             ],
           ),
@@ -408,7 +405,7 @@ class _TranslationExportTileState extends State<_TranslationExportTile> {
       if (mounted && !isMobileRuntime) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Export completed for ${widget.translation.name}.'),
+            content: Text(AppLocalizations.of(context)!.exportCompletedFor(widget.translation.name)),
             duration: const Duration(seconds: 4),
           ),
         );
@@ -417,7 +414,7 @@ class _TranslationExportTileState extends State<_TranslationExportTile> {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('Export failed: $e')));
+        ).showSnackBar(SnackBar(content: Text(AppLocalizations.of(context)!.exportFailed(e))));
       }
     } finally {
       if (mounted) setState(() => _exporting = false);
@@ -464,7 +461,7 @@ class _TranslationExportTileState extends State<_TranslationExportTile> {
                 )
               : FilledButton.tonal(
                   onPressed: widget.enabled ? _export : null,
-                  child: const Text('Export'),
+                  child: Text(AppLocalizations.of(context)!.exportAction),
                 ),
         ],
       ),

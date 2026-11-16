@@ -1,3 +1,4 @@
+import 'package:basic_bible/l10n/app_localizations.dart';
 import 'package:basic_bible/src/features/reader/application/view_models/bible_library_view_models.dart';
 import 'package:basic_bible/src/models/bible_models.dart';
 import 'package:flutter/material.dart';
@@ -86,14 +87,14 @@ class TranslationRightsSheet extends StatelessWidget {
                   OutlinedButton.icon(
                     onPressed: () => _open(rights.licenseUrl!),
                     icon: const Icon(Icons.gavel_outlined),
-                    label: const Text('License'),
+                    label: Text(AppLocalizations.of(context)!.licenseLabel),
                   ),
                 if (rights.sourceUrl != null &&
                     rights.sourceUrl != rights.licenseUrl)
                   OutlinedButton.icon(
                     onPressed: () => _open(rights.sourceUrl!),
                     icon: const Icon(Icons.open_in_new),
-                    label: const Text('Source'),
+                    label: Text(AppLocalizations.of(context)!.sourceLabel),
                   ),
               ],
             ),

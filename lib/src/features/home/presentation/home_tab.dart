@@ -1,3 +1,4 @@
+import 'package:basic_bible/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -18,7 +19,7 @@ class HomeTab extends StatelessWidget {
               onPressed: () {
                 GoRouter.of(context).go('/home/other');
               },
-              child: const Text('Go to Other Page'),
+              child: Text(AppLocalizations.of(context)!.goToOther),
             ),
             SizedBox(height: 20),
             ElevatedButton.icon(
@@ -28,7 +29,7 @@ class HomeTab extends StatelessWidget {
               ),
               onPressed: () => context.go('/home/settings'),
               icon: const Icon(Icons.settings),
-              label: const Text('Open Settings'),
+              label: Text(AppLocalizations.of(context)!.openSettingsAction),
               iconAlignment: IconAlignment.start,
             ),
           ],

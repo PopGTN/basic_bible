@@ -1,3 +1,5 @@
+import 'package:basic_bible/src/features/annotations/presentation/note_filter_labels.dart';
+import 'package:basic_bible/l10n/app_localizations.dart';
 import 'package:basic_bible/src/features/annotations/application/view_models/annotation_data_view_models.dart';
 import 'package:basic_bible/src/features/annotations/models/annotation_verse_ranges.dart';
 import 'package:basic_bible/src/features/annotations/models/note_filters.dart';
@@ -104,8 +106,10 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                '"$preferredTranslationName" is not installed. '
-                'Opening in ${fallbackTranslationName ?? 'the current translation'}.',
+                AppLocalizations.of(context)!.notesOpeningFallbackNamed(
+                  preferredTranslationName,
+                  fallbackTranslationName ?? AppLocalizations.of(context)!.theCurrentTranslation,
+                ),
               ),
             ),
           );
@@ -114,7 +118,7 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              '"$preferredTranslationName" is not installed. Opening in current translation.',
+              AppLocalizations.of(context)!.notesOpeningFallbackCurrent(preferredTranslationName),
             ),
           ),
         );
@@ -126,7 +130,7 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
     } catch (_) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to open reference.')),
+          SnackBar(content: Text(AppLocalizations.of(context)!.failedToOpenReference)),
         );
       }
     }
@@ -191,11 +195,11 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
       body: annotationsAsync.when(
         data: (annotations) {
           if (annotations.isEmpty) {
-            return const Center(
+            return Center(
               child: Padding(
                 padding: EdgeInsets.all(24),
                 child: Text(
-                  'No saved notes or highlights yet. Select a verse in the reader to create one.',
+                  AppLocalizations.of(context)!.notesEmpty,
                   textAlign: TextAlign.center,
                 ),
               ),
@@ -290,14 +294,14 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Text(
-                                'No notes match your search or filters.',
+                              Text(
+                                AppLocalizations.of(context)!.notesNoMatches,
                                 textAlign: TextAlign.center,
                               ),
                               const SizedBox(height: 12),
                               TextButton(
                                 onPressed: _clearAllFilters,
-                                child: const Text('Clear filters'),
+                                child: Text(AppLocalizations.of(context)!.clearFiltersAction),
                               ),
                             ],
                           ),
@@ -354,20 +358,20 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
                                       final confirmed = await showDialog<bool>(
                                         context: context,
                                         builder: (ctx) => AlertDialog(
-                                          title: const Text('Delete?'),
-                                          content: const Text(
-                                            'This note and all its linked verses will be permanently removed.',
+                                          title: Text(AppLocalizations.of(context)!.deleteConfirmTitle),
+                                          content: Text(
+                                            AppLocalizations.of(context)!.deleteNoteBody,
                                           ),
                                           actions: [
                                             TextButton(
                                               onPressed: () =>
                                                   Navigator.of(ctx).pop(false),
-                                              child: const Text('Cancel'),
+                                              child: Text(AppLocalizations.of(context)!.cancelAction),
                                             ),
                                             TextButton(
                                               onPressed: () =>
                                                   Navigator.of(ctx).pop(true),
-                                              child: const Text('Delete'),
+                                              child: Text(AppLocalizations.of(context)!.deleteAction),
                                             ),
                                           ],
                                         ),
@@ -387,9 +391,9 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
                                           ScaffoldMessenger.of(
                                             context,
                                           ).showSnackBar(
-                                            const SnackBar(
+                                            SnackBar(
                                               content: Text(
-                                                'Failed to delete note.',
+                                                AppLocalizations.of(context)!.failedToDeleteNote,
                                               ),
                                             ),
                                           );
@@ -429,20 +433,20 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
                               final confirmed = await showDialog<bool>(
                                 context: context,
                                 builder: (ctx) => AlertDialog(
-                                  title: const Text('Delete?'),
-                                  content: const Text(
-                                    'This note and all its linked verses will be permanently removed.',
+                                  title: Text(AppLocalizations.of(context)!.deleteConfirmTitle),
+                                  content: Text(
+                                    AppLocalizations.of(context)!.deleteNoteBody,
                                   ),
                                   actions: [
                                     TextButton(
                                       onPressed: () =>
                                           Navigator.of(ctx).pop(false),
-                                      child: const Text('Cancel'),
+                                      child: Text(AppLocalizations.of(context)!.cancelAction),
                                     ),
                                     TextButton(
                                       onPressed: () =>
                                           Navigator.of(ctx).pop(true),
-                                      child: const Text('Delete'),
+                                      child: Text(AppLocalizations.of(context)!.deleteAction),
                                     ),
                                   ],
                                 ),
@@ -455,8 +459,8 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
                               } catch (_) {
                                 if (context.mounted) {
                                   ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('Failed to delete note.'),
+                                    SnackBar(
+                                      content: Text(AppLocalizations.of(context)!.failedToDeleteNote),
                                     ),
                                   );
                                 }
@@ -477,19 +481,19 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
         },
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, stack) =>
-            Center(child: Text('Failed to load notes: $error')),
+            Center(child: Text(AppLocalizations.of(context)!.failedToLoadNotes(error))),
       ),
     );
   }
 
   AppBar _buildNormalAppBar() {
     return AppBar(
-      title: const Text('Notes'),
+      title: Text(AppLocalizations.of(context)!.notesTitle),
       actions: [
         IconButton(
           onPressed: _startSearch,
           icon: const Icon(Icons.search),
-          tooltip: 'Search notes',
+          tooltip: AppLocalizations.of(context)!.searchNotesTooltip,
         ),
       ],
     );
@@ -504,8 +508,8 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
       title: TextField(
         controller: _searchController,
         autofocus: true,
-        decoration: const InputDecoration(
-          hintText: 'Search notes, tags, or a verse like John 3:16',
+        decoration: InputDecoration(
+          hintText: AppLocalizations.of(context)!.searchNotesHint,
           border: InputBorder.none,
         ),
         onChanged: (value) => setState(() => _searchQuery = value.trim()),
@@ -602,9 +606,9 @@ class _NotesFilterBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final dropdowns = [
       _MultiSelectDropdown(
-        label: 'Type',
+        label: AppLocalizations.of(context)!.filterTypeLabel,
         options: [
-          for (final type in NoteTypeFilter.values) MapEntry(type.name, type.label),
+          for (final type in NoteTypeFilter.values) MapEntry(type.name, type.localized(AppLocalizations.of(context)!)),
         ],
         selectedValues: {for (final type in selectedTypes) type.name},
         onToggled: (name, selected) =>
@@ -613,14 +617,14 @@ class _NotesFilterBar extends StatelessWidget {
       dateFilter,
       if (translationOptions.isNotEmpty)
         _MultiSelectDropdown(
-          label: 'Translation',
+          label: AppLocalizations.of(context)!.filterTranslationLabel,
           options: translationOptions,
           selectedValues: selectedTranslationIds,
           onToggled: onTranslationToggled,
         ),
       if (tagOptions.isNotEmpty)
         _MultiSelectDropdown(
-          label: 'Tags',
+          label: AppLocalizations.of(context)!.filterTagsLabel,
           options: [for (final tag in tagOptions) MapEntry(tag, tag)],
           selectedValues: selectedTags,
           onToggled: onTagToggled,
@@ -640,7 +644,7 @@ class _NotesFilterBar extends StatelessWidget {
             ),
           ),
           if (onClearAll != null)
-            TextButton(onPressed: onClearAll, child: const Text('Clear filters')),
+            TextButton(onPressed: onClearAll, child: Text(AppLocalizations.of(context)!.clearFiltersAction)),
         ],
       ),
     );
@@ -768,7 +772,7 @@ class _AnnotationListCard extends StatelessWidget {
                   crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
                     _TypePill(
-                      label: annotation.hasNoteText ? 'Note' : 'Highlight',
+                      label: annotation.hasNoteText ? AppLocalizations.of(context)!.noteTypeNote : AppLocalizations.of(context)!.noteTypeHighlight,
                     ),
                     if (highlightColor != null)
                       Container(
@@ -797,9 +801,9 @@ class _AnnotationListCard extends StatelessWidget {
                       await onDelete();
                   }
                 },
-                itemBuilder: (context) => const [
-                  PopupMenuItem(value: 'edit', child: Text('Edit')),
-                  PopupMenuItem(value: 'delete', child: Text('Delete')),
+                itemBuilder: (context) => [
+                  PopupMenuItem(value: 'edit', child: Text(AppLocalizations.of(context)!.editAction)),
+                  PopupMenuItem(value: 'delete', child: Text(AppLocalizations.of(context)!.deleteAction)),
                 ],
               ),
             ],
@@ -859,13 +863,13 @@ class _AnnotationListCard extends StatelessWidget {
               TextButton.icon(
                 onPressed: onOpenReference,
                 icon: const Icon(Icons.menu_book_outlined),
-                label: const Text('Open in Reader'),
+                label: Text(AppLocalizations.of(context)!.openInReaderAction),
               ),
               const SizedBox(width: 8),
               TextButton.icon(
                 onPressed: onEdit,
                 icon: const Icon(Icons.edit_outlined),
-                label: const Text('Edit'),
+                label: Text(AppLocalizations.of(context)!.editAction),
               ),
             ],
           ),

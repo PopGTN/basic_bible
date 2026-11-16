@@ -57,7 +57,7 @@ extension _BibleViewerTabStateSelection on _BibleViewerTabState {
       if (!mounted) return;
       if (translation == null) {
         messenger.showSnackBar(
-          const SnackBar(content: Text('Translation not available.')),
+          SnackBar(content: Text(AppLocalizations.of(context)!.translationNotAvailable)),
         );
         return;
       }
@@ -174,9 +174,9 @@ extension _BibleViewerTabStateSelection on _BibleViewerTabState {
     if (highlightAnnotations.isEmpty) {
       ref.read(highlightPaletteExpandedProvider.notifier).state = false;
       messenger.showSnackBar(
-        const SnackBar(
+        SnackBar(
           content: Text(
-            'Only standalone highlights can be removed here. Edit a note to change its highlight.',
+            AppLocalizations.of(context)!.onlyStandaloneHighlightsRemovable,
           ),
         ),
       );
@@ -219,8 +219,7 @@ extension _BibleViewerTabStateSelection on _BibleViewerTabState {
         messenger.showSnackBar(
           SnackBar(
             content: Text(
-              'Notes can be linked to up to $_maxVersesPerNoteSelection verses at once. '
-              'Please select a smaller range.',
+              AppLocalizations.of(context)!.noteVerseLimit(_maxVersesPerNoteSelection),
             ),
           ),
         );
@@ -231,7 +230,7 @@ extension _BibleViewerTabStateSelection on _BibleViewerTabState {
       if (!mounted) return;
       if (translation == null) {
         messenger.showSnackBar(
-          const SnackBar(content: Text('Translation not available.')),
+          SnackBar(content: Text(AppLocalizations.of(context)!.translationNotAvailable)),
         );
         return;
       }

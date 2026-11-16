@@ -1,9 +1,13 @@
 import 'package:basic_bible/l10n/app_localizations.dart';
+import 'package:basic_bible/src/features/localization/language_pack_store.dart';
 import 'package:basic_bible/src/widgets/app_about.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+  setUpAll(LanguagePackStore.loadBundledEnglish);
+
   testWidgets('About shows the app and opens the licenses page', (tester) async {
     await tester.pumpWidget(
       MaterialApp(

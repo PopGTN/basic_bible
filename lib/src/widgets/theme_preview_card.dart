@@ -1,3 +1,4 @@
+import 'package:basic_bible/l10n/app_localizations.dart';
 import 'package:basic_bible/src/features/settings/application/view_models/theme_view_model.dart';
 import 'package:flutter/material.dart';
 
@@ -20,7 +21,7 @@ class ThemePreviewCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final preview = themePreviewForMode(mode);
+    final preview = themePreviewForMode(mode, AppLocalizations.of(context)!);
     final colors = Theme.of(context).colorScheme;
     final labelStyle = Theme.of(context).textTheme.labelMedium?.copyWith(
       color: colors.onSurfaceVariant,
@@ -121,48 +122,48 @@ class ThemePreview {
   final Color? outline;
 }
 
-ThemePreview themePreviewForMode(AppThemeMode mode) {
+ThemePreview themePreviewForMode(AppThemeMode mode, AppLocalizations t) {
   return switch (mode) {
-    AppThemeMode.system => const ThemePreview(
-      label: 'System',
+    AppThemeMode.system => ThemePreview(
+      label: t.themeSystem,
       background: Color(0xFFF8F6F1),
       foreground: Color(0xFF1C1A17),
       outline: Color(0x22000000),
     ),
-    AppThemeMode.light => const ThemePreview(
-      label: 'Light',
+    AppThemeMode.light => ThemePreview(
+      label: t.themeLight,
       background: Color(0xFFF4EEE6),
       foreground: Color(0xFF3A3028),
       outline: Color(0x22000000),
     ),
-    AppThemeMode.dark => const ThemePreview(
-      label: 'Dark',
+    AppThemeMode.dark => ThemePreview(
+      label: t.themeDark,
       background: Color(0xFF181614),
       foreground: Color(0xFFF3EEE8),
     ),
-    AppThemeMode.softDark => const ThemePreview(
-      label: 'Soft',
+    AppThemeMode.softDark => ThemePreview(
+      label: t.themeSoft,
       background: Color(0xFF1B1D22),
       foreground: Color(0xFFF2F4F7),
     ),
-    AppThemeMode.black => const ThemePreview(
-      label: 'Black',
+    AppThemeMode.black => ThemePreview(
+      label: t.themeBlack,
       background: Color(0xFF000000),
       foreground: Color(0xFFF5F5F5),
     ),
-    AppThemeMode.white => const ThemePreview(
-      label: 'White',
+    AppThemeMode.white => ThemePreview(
+      label: t.themeWhite,
       background: Color(0xFFFFFFFF),
       foreground: Color(0xFF111111),
       outline: Color(0x33000000),
     ),
-    AppThemeMode.blue => const ThemePreview(
-      label: 'Blue',
+    AppThemeMode.blue => ThemePreview(
+      label: t.themeBlue,
       background: Color(0xFF1E2D42),
       foreground: Color(0xFFF2F6FB),
     ),
-    AppThemeMode.red => const ThemePreview(
-      label: 'Red',
+    AppThemeMode.red => ThemePreview(
+      label: t.themeRed,
       background: Color(0xFF35211D),
       foreground: Color(0xFFFAF1EC),
     ),

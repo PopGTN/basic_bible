@@ -283,7 +283,7 @@ class _ErrorView extends StatelessWidget {
                     ref.invalidate(bibleBooksShellProvider);
                     ref.invalidate(currentChapterProvider);
                   },
-                  child: const Text('Retry'),
+                  child: Text(AppLocalizations.of(context)!.retryAction),
                 );
               },
             ),

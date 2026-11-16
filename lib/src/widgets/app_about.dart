@@ -2,11 +2,6 @@ import 'package:basic_bible/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 
 const String _appName = 'Basic Bible';
-const String _legalese =
-    'Free and open source under the Apache License 2.0.\n'
-    'Bible texts are public domain; see the notice at the end of each '
-    'chapter.';
-
 Widget _appIcon() => ClipRRect(
   borderRadius: BorderRadius.circular(12),
   child: Image.asset('assets/icon/app_icon.png', width: 48, height: 48),
@@ -19,7 +14,7 @@ void showAppAbout(BuildContext context) {
     context: context,
     applicationName: _appName,
     applicationIcon: _appIcon(),
-    applicationLegalese: _legalese,
+    applicationLegalese: AppLocalizations.of(context)!.aboutLegalese,
     children: [
       const SizedBox(height: 16),
       Text(t.aboutDescription),
@@ -37,6 +32,6 @@ void showAppLicenses(BuildContext context) {
       padding: const EdgeInsets.all(8),
       child: _appIcon(),
     ),
-    applicationLegalese: _legalese,
+    applicationLegalese: AppLocalizations.of(context)!.aboutLegalese,
   );
 }
