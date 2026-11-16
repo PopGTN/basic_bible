@@ -261,7 +261,7 @@ flutter run -d android --dart-define-from-file=dart_defines.json
 flutter build apk      --dart-define-from-file=dart_defines.json
 ```
 
-The VS Code launch configurations already pass `--dart-define-from-file`.
+In VS Code, add `"args": ["--dart-define-from-file=dart_defines.json"]` to your launch configuration.
 
 ### Language packs
 
