@@ -42,7 +42,9 @@ jobs:
 
       - name: Build web
         working-directory: .
-        run: flutter build web --release --base-href "/basic_bible/"
+        run: >
+          flutter build web --release --base-href "/basic_bible/"
+          --dart-define=LANGUAGE_PACK_REF=${{ github.sha }}
 
       - name: Configure Pages
         uses: actions/configure-pages@v5

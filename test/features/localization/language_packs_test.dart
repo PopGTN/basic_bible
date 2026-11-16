@@ -61,6 +61,26 @@ void main() {
     expect(LanguagePackStore.strings('fr')['home'], 'Accueil');
   });
 
+  test('a pack cached for a different build ref is re-downloaded', () async {
+    SharedPreferences.setMockInitialValues({
+      'l10n_pack_fr': _fr,
+      'l10n_pack_checked_fr': DateTime.now().millisecondsSinceEpoch,
+      'l10n_pack_ref_fr': 'some-older-ref',
+    });
+    final prefs = await SharedPreferences.getInstance();
+    var calls = 0;
+    final service = LanguagePackService(
+      prefs: prefs,
+      client: MockClient((_) async {
+        calls++;
+        return http.Response.bytes(_fr.codeUnits, 200);
+      }),
+      baseUrl: 'https://example.com/l10n',
+    );
+    await service.ensurePack('fr');
+    expect(calls, 1);
+  });
+
   test('ensurePack throws when offline with nothing cached', () async {
     final prefs = await SharedPreferences.getInstance();
     final service = LanguagePackService(

@@ -41,18 +41,33 @@ class LanguagePackService {
        _now = now ?? DateTime.now,
        _bundle = bundle ?? rootBundle;
 
-  static const defaultBaseUrl =
-      String.fromEnvironment(
-        'LANGUAGE_PACK_BASE_URL',
-        defaultValue:
-            'https://raw.githubusercontent.com/PopGTN/basic_bible/main/lib/l10n',
-      );
+  /// Git ref (commit SHA, tag or branch) the packs are fetched from. Release
+  /// builds should pass the commit they were built from so the app always gets
+  /// the strings that match its code:
+  ///   flutter build ... --dart-define=LANGUAGE_PACK_REF=$(git rev-parse HEAD)
+  /// Local/dev builds leave it unset and follow `main`.
+  static const packRef = String.fromEnvironment(
+    'LANGUAGE_PACK_REF',
+    defaultValue: 'main',
+  );
+
+  static const defaultBaseUrl = String.fromEnvironment(
+    'LANGUAGE_PACK_BASE_URL',
+    defaultValue:
+        'https://raw.githubusercontent.com/PopGTN/basic_bible/$packRef/lib/l10n',
+  );
+  static final _immutableRef = RegExp(r'^[0-9a-f]{40}$');
+
+  /// A commit SHA never changes, so a pack cached for it never goes stale.
+  static bool get refIsImmutable => _immutableRef.hasMatch(packRef);
+
   static const requestTimeout = Duration(seconds: 20);
   static const refreshAfter = Duration(days: 1);
 
   static const _indexKey = 'l10n_index_cache';
   static String _packKey(String code) => 'l10n_pack_$code';
   static String _checkedKey(String code) => 'l10n_pack_checked_$code';
+  static String _refKey(String code) => 'l10n_pack_ref_$code';
 
   final SharedPreferences _prefs;
   final http.Client _client;
@@ -118,6 +133,7 @@ class LanguagePackService {
       final parsed = LanguagePackStore.parseArb(body);
       await _prefs.setString(_packKey(code), body);
       await _prefs.setInt(_checkedKey(code), _now().millisecondsSinceEpoch);
+      await _prefs.setString(_refKey(code), packRef);
       LanguagePackStore.put(code, parsed);
     } catch (_) {
       if (!haveCached) rethrow;
@@ -125,6 +141,9 @@ class LanguagePackService {
   }
 
   bool _isStale(String code) {
+    // A pack fetched for a different build (ref) is always replaced.
+    if (_prefs.getString(_refKey(code)) != packRef) return true;
+    if (refIsImmutable) return false;
     final checked = _prefs.getInt(_checkedKey(code));
     if (checked == null) return true;
     final age = _now().difference(DateTime.fromMillisecondsSinceEpoch(checked));
