@@ -232,6 +232,63 @@ Notes:
 - Browser-persisted downloaded translations use the web database/cache path, so they should survive reloads after a successful build and load.
 - Local file import is still not available in the browser yet.
 
+## Running With Google Sign-In And Language Packs
+
+Both features are configured with build-time `--dart-define` values, and both
+are optional: with none of them set, the app runs normally (Google sync shows
+"not configured", and the UI language packs come from the `main` branch).
+
+### 1. Put the values in a gitignored file
+
+```bash
+cp dart_defines.example.json dart_defines.json   # already in .gitignore
+```
+
+| Key | Needed for | Notes |
+|---|---|---|
+| `GOOGLE_DESKTOP_CLIENT_ID`, `GOOGLE_DESKTOP_CLIENT_SECRET` | Google sign-in on desktop | See `docs/google_sync_setup.md` |
+| `GOOGLE_WEB_CLIENT_ID` | Google sign-in on Android | Used as the server client id |
+| `GOOGLE_IOS_CLIENT_ID` | Google sign-in on iOS | |
+| `LANGUAGE_PACK_REF` | Which git ref the UI language packs download from | Leave empty (or remove it) to use `main` |
+
+Never commit real client IDs; this repository is public.
+
+### 2. Run or build with it
+
+```bash
+flutter run -d linux   --dart-define-from-file=dart_defines.json
+flutter run -d android --dart-define-from-file=dart_defines.json
+flutter build apk      --dart-define-from-file=dart_defines.json
+```
+
+The VS Code launch configurations already pass `--dart-define-from-file`.
+
+### Language packs
+
+- English is bundled in the app (`lib/l10n/app_en.arb`). Other languages are
+  downloaded the first time they are needed (on first launch if the device
+  language is supported, otherwise when picked in Settings → Language) and
+  cached on the device, so they work offline afterwards.
+- Packs live in this repo as `lib/l10n/app_<code>.arb`, listed in
+  `lib/l10n/languages.json`. To add a language, add both files and open a PR.
+- **`LANGUAGE_PACK_REF` unset or empty: packs come from `main`** and are
+  re-checked about once a day. This is what `flutter run` and local builds use.
+- **Release builds should pin the commit they were built from**, so the app
+  always gets strings that match its code (a pinned pack never changes, so it
+  is cached permanently):
+
+  ```bash
+  flutter build apk --dart-define-from-file=dart_defines.json \
+    --dart-define=LANGUAGE_PACK_REF=$(git rev-parse HEAD)
+  ```
+
+  A tag such as `v1.2.0` also works. The GitHub Pages workflow
+  (`.github/workflows/deploy_web.yml`) already pins `github.sha`.
+- If the ref doesn't exist on GitHub (for example an unpushed commit), the
+  download fails and the app keeps its cached pack or falls back to English.
+- After editing `lib/l10n/app_en.arb`, run `python3 tool/gen_l10n.py` to
+  regenerate `lib/l10n/app_localizations.dart`.
+
 ## Near-Term Focus
 
 The current high-value work is still:

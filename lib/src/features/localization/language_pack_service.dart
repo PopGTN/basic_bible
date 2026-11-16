@@ -46,10 +46,10 @@ class LanguagePackService {
   /// the strings that match its code:
   ///   flutter build ... --dart-define=LANGUAGE_PACK_REF=$(git rev-parse HEAD)
   /// Local/dev builds leave it unset and follow `main`.
-  static const packRef = String.fromEnvironment(
-    'LANGUAGE_PACK_REF',
-    defaultValue: 'main',
-  );
+  static const _rawPackRef = String.fromEnvironment('LANGUAGE_PACK_REF');
+
+  /// Empty/unset (e.g. a blank value in dart_defines.json) means `main`.
+  static const packRef = _rawPackRef == '' ? 'main' : _rawPackRef;
 
   static const defaultBaseUrl = String.fromEnvironment(
     'LANGUAGE_PACK_BASE_URL',
