@@ -281,13 +281,19 @@ extension _BibleTextViewStateAnnotations on _BibleTextViewState {
           ),
           recognizer: recognizer,
           style: TextStyle(
-            color: _spanColor(span.kind, baseColor, secondaryColor),
+            color: _spanColor(
+              span.kind,
+              baseColor,
+              secondaryColor,
+              styleWordMetadata: underlineWordMetadata,
+            ),
             fontStyle: _spanFontStyle(span.kind),
             fontWeight: _spanFontWeight(
               span.kind,
               boldDivineName: boldDivineName,
               boldWordsOfJesus: boldWordsOfJesus,
               useSourceBoldStyling: useSourceBoldStyling,
+              styleWordMetadata: underlineWordMetadata,
             ),
             decoration: _spanDecoration(
               span.kind,
@@ -407,16 +413,20 @@ extension _BibleTextViewStateAnnotations on _BibleTextViewState {
   Color? _spanColor(
     BibleVerseSpanKind kind,
     Color? baseColor,
-    Color secondaryColor,
-  ) {
+    Color secondaryColor, {
+    bool styleWordMetadata = false,
+  }) {
     // Carry the dimming alpha from baseColor so verse-focus fading applies
     // uniformly to all span kinds, including red-letter and word spans.
     final alpha = baseColor?.a ?? 1.0;
     switch (kind) {
       case BibleVerseSpanKind.wordsOfJesus:
         return Colors.red.shade700.withValues(alpha: alpha);
+      // Strong's-tagged words: accent colour only with "Highlight Strong's Words".
       case BibleVerseSpanKind.word:
-        return secondaryColor.withValues(alpha: alpha);
+        return styleWordMetadata
+            ? secondaryColor.withValues(alpha: alpha)
+            : baseColor;
       default:
         return baseColor;
     }
@@ -442,6 +452,7 @@ extension _BibleTextViewStateAnnotations on _BibleTextViewState {
     bool boldDivineName = false,
     bool boldWordsOfJesus = false,
     bool useSourceBoldStyling = true,
+    bool styleWordMetadata = false,
   }) {
     switch (kind) {
       case BibleVerseSpanKind.wordsOfJesus:
@@ -453,7 +464,7 @@ extension _BibleTextViewStateAnnotations on _BibleTextViewState {
       case BibleVerseSpanKind.keyword:
         return useSourceBoldStyling ? FontWeight.w700 : FontWeight.normal;
       case BibleVerseSpanKind.word:
-        return FontWeight.w500;
+        return styleWordMetadata ? FontWeight.w500 : FontWeight.normal;
       default:
         return FontWeight.normal;
     }

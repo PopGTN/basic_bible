@@ -355,13 +355,18 @@ class _VersePreviewText {
             bracketTranslatorAdditions: bracketTranslatorAdditions,
           ),
           style: TextStyle(
-            color: _spanColor(span.kind, colors),
+            color: _spanColor(
+              span.kind,
+              colors,
+              styleWordMetadata: underlineWordMetadata,
+            ),
             fontStyle: _spanFontStyle(span.kind),
             fontWeight: _spanFontWeight(
               span.kind,
               boldDivineName: boldDivineName,
               boldWordsOfJesus: boldWordsOfJesus,
               useSourceBoldStyling: useSourceBoldStyling,
+              styleWordMetadata: underlineWordMetadata,
             ),
             decoration: _spanDecoration(
               span.kind,
@@ -496,12 +501,17 @@ class _VersePreviewText {
         .toList();
   }
 
-  Color? _spanColor(BibleVerseSpanKind kind, ColorScheme colors) {
+  Color? _spanColor(
+    BibleVerseSpanKind kind,
+    ColorScheme colors, {
+    bool styleWordMetadata = false,
+  }) {
     switch (kind) {
       case BibleVerseSpanKind.wordsOfJesus:
         return Colors.red.shade700;
+      // Strong's-tagged words: accent colour only with "Highlight Strong's Words".
       case BibleVerseSpanKind.word:
-        return colors.secondary;
+        return styleWordMetadata ? colors.secondary : colors.onSurface;
       default:
         return colors.onSurface;
     }
@@ -527,6 +537,7 @@ class _VersePreviewText {
     bool boldDivineName = false,
     bool boldWordsOfJesus = false,
     bool useSourceBoldStyling = true,
+    bool styleWordMetadata = false,
   }) {
     switch (kind) {
       case BibleVerseSpanKind.wordsOfJesus:
@@ -538,7 +549,7 @@ class _VersePreviewText {
       case BibleVerseSpanKind.keyword:
         return useSourceBoldStyling ? FontWeight.w700 : FontWeight.normal;
       case BibleVerseSpanKind.word:
-        return FontWeight.w500;
+        return styleWordMetadata ? FontWeight.w500 : FontWeight.normal;
       default:
         return FontWeight.normal;
     }

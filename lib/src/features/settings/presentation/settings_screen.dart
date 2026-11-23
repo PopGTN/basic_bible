@@ -194,9 +194,9 @@ class SettingsScreen extends ConsumerWidget {
             ),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
-              title: const Text('Underline Word Tags'),
+              title: const Text('Highlight Strong\'s Words'),
               subtitle: const Text(
-                'Underline source-tagged word metadata such as Strong\'s-linked words. Off by default.',
+                'Underline and colour words the source links to Strong\'s numbers or other word tags. Off by default.',
               ),
               value: underlineWordMetadata,
               onChanged: (value) {
