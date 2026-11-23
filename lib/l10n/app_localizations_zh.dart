@@ -36,22 +36,22 @@ class AppLocalizationsZh extends AppLocalizations {
   String get theme => '主题';
 
   @override
-  String get login => 'Login';
+  String get login => '登录';
 
   @override
-  String get english => 'English';
+  String get english => '英语';
 
   @override
-  String get spanish => 'Spanish';
+  String get spanish => '西班牙语';
 
   @override
-  String get french => 'French';
+  String get french => '法语';
 
   @override
-  String get german => 'German';
+  String get german => '德语';
 
   @override
-  String get menu => 'Menu';
+  String get menu => '菜单';
 
   @override
   String get readerFootnotesTooltip => '查看脚注和参考资料';
@@ -72,202 +72,202 @@ class AppLocalizationsZh extends AppLocalizations {
   String get editAction => '编辑';
 
   @override
-  String get versionsTitle => 'Versions';
+  String get versionsTitle => '版本';
 
   @override
-  String get searchTranslationsTooltip => 'Search translations';
+  String get searchTranslationsTooltip => '搜索译本';
 
   @override
-  String get importBibleFileAction => 'Import Bible File';
+  String get importBibleFileAction => '导入圣经文件';
 
   @override
-  String get clearTranslationCacheAction => 'Clear translation cache';
+  String get clearTranslationCacheAction => '清除译本缓存';
 
   @override
-  String get clearTranslationCacheTitle => 'Clear translation cache?';
+  String get clearTranslationCacheTitle => '清除译本缓存？';
 
   @override
-  String get clearTranslationCacheDescription => 'This removes downloaded translation files, imported source snapshots, and stale translation registry entries from local app storage. Bundled translations will remain available.';
+  String get clearTranslationCacheDescription => '这将从本地应用存储中删除已下载的译本文件、导入的源文件快照和过时的译本注册条目。内置译本仍可使用。';
 
   @override
-  String get clearCacheAction => 'Clear cache';
+  String get clearCacheAction => '清除缓存';
 
   @override
-  String get clearedTranslationCacheMessage => 'Translation cache cleared.';
+  String get clearedTranslationCacheMessage => '译本缓存已清除。';
 
   @override
   String couldNotClearTranslationCache(Object error) {
-    return 'Could not clear translation cache: $error';
+    return '无法清除译本缓存：$error';
   }
 
   @override
-  String get translationsFileTypeLabel => 'Bible files';
+  String get translationsFileTypeLabel => '圣经文件';
 
   @override
   String unableToLoadTranslations(Object error) {
-    return 'Unable to load translations: $error';
+    return '无法加载译本：$error';
   }
 
   @override
   String couldNotSwitchTranslation(Object error) {
-    return 'Could not switch translation: $error';
+    return '无法切换译本：$error';
   }
 
   @override
   String importedTranslationMessage(Object name) {
-    return 'Imported $name.';
+    return '已导入 $name。';
   }
 
   @override
   String importFailedMessage(Object error) {
-    return 'Import failed: $error';
+    return '导入失败：$error';
   }
 
   @override
   String deleteTranslationTitle(Object name) {
-    return 'Delete $name?';
+    return '删除 $name？';
   }
 
   @override
-  String get deleteImportedTranslationDescription => 'This removes the imported Bible from the app library and cache. The original file on disk will not be deleted.';
+  String get deleteImportedTranslationDescription => '这将从应用资料库和缓存中删除导入的圣经。磁盘上的原始文件不会被删除。';
 
   @override
-  String get cancelAction => 'Cancel';
+  String get cancelAction => '取消';
 
   @override
-  String get deleteAction => 'Delete';
+  String get deleteAction => '删除';
 
   @override
   String deletedTranslationMessage(Object name) {
-    return 'Deleted $name.';
+    return '已删除 $name。';
   }
 
   @override
   String couldNotDeleteTranslation(Object error) {
-    return 'Could not delete translation: $error';
+    return '无法删除译本：$error';
   }
 
   @override
   String removeDownloadedTranslationTitle(Object name) {
-    return 'Remove $name download?';
+    return '移除 $name 的下载？';
   }
 
   @override
-  String get removeDownloadedTranslationDescription => 'This removes the downloaded Bible from local app storage. It will stay in the library as a downloadable option so you can download it again later.';
+  String get removeDownloadedTranslationDescription => '这将从本地应用存储中删除已下载的圣经。它仍会作为可下载项保留在资料库中，以便日后重新下载。';
 
   @override
-  String get removeAction => 'Remove';
+  String get removeAction => '移除';
 
   @override
   String removedLocalDownloadMessage(Object name) {
-    return 'Removed local download for $name.';
+    return '已移除 $name 的本地下载。';
   }
 
   @override
   String couldNotRemoveDownload(Object error) {
-    return 'Could not remove download: $error';
+    return '无法移除下载：$error';
   }
 
   @override
-  String get moreActionsTooltip => 'More actions';
+  String get moreActionsTooltip => '更多操作';
 
   @override
-  String get deleteImportAction => 'Delete import';
+  String get deleteImportAction => '删除导入';
 
   @override
-  String get removeDownloadAction => 'Remove download';
+  String get removeDownloadAction => '移除下载';
 
   @override
-  String get availableOfflineTooltip => 'Available offline';
+  String get availableOfflineTooltip => '可离线使用';
 
   @override
-  String get downloadTranslationTooltip => 'Download translation';
+  String get downloadTranslationTooltip => '下载译本';
 
   @override
-  String get audioOptionsTooltip => 'Audio options';
+  String get audioOptionsTooltip => '音频选项';
 
   @override
-  String get bundledTranslationSource => 'Bundled';
+  String get bundledTranslationSource => '内置';
 
   @override
-  String get downloadedTranslationSource => 'Downloaded';
+  String get downloadedTranslationSource => '已下载';
 
   @override
-  String get downloadableTranslationSource => 'Downloadable';
+  String get downloadableTranslationSource => '可下载';
 
   @override
-  String get importedTranslationSource => 'Imported';
+  String get importedTranslationSource => '已导入';
 
   @override
-  String get importBibleTitle => 'Import Bible';
+  String get importBibleTitle => '导入圣经';
 
   @override
   String unableToPrepareImport(Object error) {
-    return 'Unable to prepare import: $error';
+    return '无法准备导入：$error';
   }
 
   @override
-  String get translationDetailsTitle => 'Translation Details';
+  String get translationDetailsTitle => '译本详情';
 
   @override
-  String get translationDetailsDescription => 'Set the library name, abbreviation, language code, and description before the import is saved.';
+  String get translationDetailsDescription => '保存导入前，请设置名称、缩写、语言代码和描述。';
 
   @override
-  String get translationNameLabel => 'Name';
+  String get translationNameLabel => '名称';
 
   @override
   String get translationNameHint => 'World English Bible';
 
   @override
-  String get translationNameRequired => 'Enter a translation name.';
+  String get translationNameRequired => '请输入译本名称。';
 
   @override
-  String get translationAbbreviationLabel => 'Abbreviation';
+  String get translationAbbreviationLabel => '缩写';
 
   @override
   String get translationAbbreviationHint => 'WEB';
 
   @override
-  String get translationAbbreviationHelp => 'Used the same way built-in abbreviations like KJV and ASV are used.';
+  String get translationAbbreviationHelp => '用法与内置缩写（如 KJV 和 ASV）相同。';
 
   @override
-  String get translationAbbreviationRequired => 'Enter an abbreviation.';
+  String get translationAbbreviationRequired => '请输入缩写。';
 
   @override
-  String get translationAbbreviationTaken => 'That abbreviation is already in use.';
+  String get translationAbbreviationTaken => '该缩写已被使用。';
 
   @override
-  String get translationLanguageCodeLabel => 'Language code';
+  String get translationLanguageCodeLabel => '语言代码';
 
   @override
-  String get translationLanguageCodeHint => 'en';
+  String get translationLanguageCodeHint => 'zh';
 
   @override
-  String get translationLanguageCodeHelp => 'Use a short code like en, es, fr, or de.';
+  String get translationLanguageCodeHelp => '请使用简短代码，如 en、es、fr 或 de。';
 
   @override
-  String get translationLanguageCodeRequired => 'Enter a language code.';
+  String get translationLanguageCodeRequired => '请输入语言代码。';
 
   @override
-  String get translationDescriptionLabel => 'Description';
+  String get translationDescriptionLabel => '描述';
 
   @override
-  String get translationDescriptionHint => 'Imported from my_local_bible.xml or my_translation.sqlite';
+  String get translationDescriptionHint => '从 my_local_bible.xml 或 my_translation.sqlite 导入';
 
   @override
-  String get importingAction => 'Importing...';
+  String get importingAction => '正在导入...';
 
   @override
-  String get importTranslationAction => 'Import Translation';
+  String get importTranslationAction => '导入译本';
 
   @override
   String detectedFormatLabel(Object format) {
-    return 'Detected format: $format';
+    return '检测到的格式：$format';
   }
 
   @override
   String booksFoundLabel(int count) {
-    return 'Books found: $count';
+    return '找到的书卷：$count';
   }
 
   @override
@@ -455,4 +455,177 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get translationRightsUnknownImported => '此译本是您从文件导入的，应用没有它的版权或许可信息。请确认您有权使用它。';
+
+  @override
+  String get searchBibleHint => '搜索圣经';
+
+  @override
+  String get clearAction => '清除';
+
+  @override
+  String get searchTypePrompt => '输入要搜索的字词或短语。';
+
+  @override
+  String searchFailed(Object error) {
+    return '搜索失败：$error';
+  }
+
+  @override
+  String get searchNoResults => '未找到经文。';
+
+  @override
+  String searchResultsCapped(int limit) {
+    return '仅显示前 $limit 节经文。添加更多字词以缩小范围。';
+  }
+
+  @override
+  String searchResultCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count 节经文',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get searchScopeAll => '整本圣经';
+
+  @override
+  String get searchScopeOldTestament => '旧约';
+
+  @override
+  String get searchScopeNewTestament => '新约';
+
+  @override
+  String get searchScopeCurrentBook => '本卷书';
+
+  @override
+  String get searchScopeCurrentChapter => '本章';
+
+  @override
+  String get splitViewTooltip => '分屏视图';
+
+  @override
+  String get closeSplitViewTooltip => '关闭分屏视图';
+
+  @override
+  String get paneTranslationTooltip => '此窗格的译本';
+
+  @override
+  String couldNotLoadTranslation(Object error) {
+    return '无法加载此译本：$error';
+  }
+
+  @override
+  String get chapterNotFound => '未找到该章';
+
+  @override
+  String get noteDateFieldModified => '最后修改';
+
+  @override
+  String get noteDateFieldCreated => '创建时间';
+
+  @override
+  String get noteDateRangeAny => '任何时间';
+
+  @override
+  String get noteDateRangeToday => '今天';
+
+  @override
+  String get noteDateRangePastWeek => '过去一周';
+
+  @override
+  String get noteDateRangePastMonth => '过去一个月';
+
+  @override
+  String get noteDateRangePastYear => '过去一年';
+
+  @override
+  String get noteTypeNote => '笔记';
+
+  @override
+  String get noteTypeHighlightOnly => '仅高亮';
+
+  @override
+  String get notesDateButton => '日期';
+
+  @override
+  String get notesDateButtonCreated => '日期：创建时间';
+
+  @override
+  String notesDateCreatedRange(Object range) {
+    return '创建时间：$range';
+  }
+
+  @override
+  String get notesDateShowSection => '显示';
+
+  @override
+  String get notesDateSortSection => '按日期（最新优先）';
+
+  @override
+  String get linkedVersesTitle => '关联经文';
+
+  @override
+  String get showLessAction => '收起';
+
+  @override
+  String showAllCountAction(int count) {
+    return '显示全部（+$count）';
+  }
+
+  @override
+  String get readFrontMatterAction => '阅读';
+
+  @override
+  String get boldWordsOfJesusTitle => '耶稣的话加粗';
+
+  @override
+  String get boldWordsOfJesusSubtitle => '除红色外，还以粗体显示耶稣的话。默认关闭，与大多数红字版圣经一致。';
+
+  @override
+  String get openSourceLicensesTitle => '开源许可';
+
+  @override
+  String get openSourceLicensesSubtitle => '本应用使用的库和代码';
+
+  @override
+  String get exportTranslationHelp => '导出存储在此设备上的译本的 SQLite 文件。请先在“译本”中下载译本再导出。';
+
+  @override
+  String get noDownloadedTranslationsToExport => '没有可导出的已下载译本。';
+
+  @override
+  String get downloadNotificationChannelName => '圣经下载';
+
+  @override
+  String get downloadNotificationChannelDescription => '圣经译本下载进度';
+
+  @override
+  String get downloadNotificationStarting => '正在开始…';
+
+  @override
+  String get downloadNotificationInstalling => '正在安装…';
+
+  @override
+  String downloadNotificationProgressTitle(Object name) {
+    return '正在下载 $name';
+  }
+
+  @override
+  String downloadNotificationDoneTitle(Object name) {
+    return '$name 已下载';
+  }
+
+  @override
+  String get downloadNotificationDoneBody => '可离线阅读。';
+
+  @override
+  String get downloadNotificationFailedTitle => '下载失败';
+
+  @override
+  String downloadNotificationFailedBody(Object name) {
+    return '无法下载 $name。';
+  }
 }

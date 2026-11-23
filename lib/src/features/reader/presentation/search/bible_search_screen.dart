@@ -1,3 +1,5 @@
+import 'package:basic_bible/src/utils/localized_labels.dart';
+import 'package:basic_bible/l10n/app_localizations.dart';
 import 'dart:async';
 
 import 'package:basic_bible/src/features/reader/application/view_models/bible_library_view_models.dart';
@@ -63,13 +65,14 @@ class _BibleSearchScreenState extends ConsumerState<BibleSearchScreen> {
       currentReference.bookId,
     );
     // Chip labels name the actual book/chapter being read, e.g. "John 3".
+    final t = AppLocalizations.of(context)!;
     String scopeLabel(BibleSearchScope scope) => switch (scope) {
       BibleSearchScope.currentBook => currentBookName,
       BibleSearchScope.currentChapter => chapterReferenceLabel(
         currentBookName,
         currentReference.chapter,
       ),
-      _ => scope.label,
+      _ => scope.localizedLabel(t),
     };
     final terms = bibleSearchTerms(_query);
     final results = terms.isEmpty
@@ -88,12 +91,12 @@ class _BibleSearchScreenState extends ConsumerState<BibleSearchScreen> {
           autofocus: true,
           textInputAction: TextInputAction.search,
           decoration: InputDecoration(
-            hintText: 'Search the Bible',
+            hintText: t.searchBibleHint,
             border: InputBorder.none,
             suffixIcon: _controller.text.isEmpty
                 ? null
                 : IconButton(
-                    tooltip: 'Clear',
+                    tooltip: t.clearAction,
                     icon: const Icon(Icons.clear),
                     onPressed: () {
                       _controller.clear();
@@ -134,14 +137,14 @@ class _BibleSearchScreenState extends ConsumerState<BibleSearchScreen> {
           const Divider(height: 1),
           Expanded(
             child: results == null
-                ? const _Message('Type a word or phrase to search.')
+                ? _Message(t.searchTypePrompt)
                 : results.when(
                     loading: () =>
                         const Center(child: CircularProgressIndicator()),
-                    error: (error, _) => _Message('Search failed: $error'),
+                    error: (error, _) => _Message(t.searchFailed('$error')),
                     data: (hits) {
                       if (hits.isEmpty) {
-                        return const _Message('No verses found.');
+                        return _Message(t.searchNoResults);
                       }
                       final capped = hits.length >= kBibleSearchLimit;
                       return ListView.separated(
@@ -153,10 +156,8 @@ class _BibleSearchScreenState extends ConsumerState<BibleSearchScreen> {
                               padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
                               child: Text(
                                 capped
-                                    ? 'Showing the first $kBibleSearchLimit '
-                                          'verses. Add words to narrow it down.'
-                                    : '${hits.length} '
-                                          '${hits.length == 1 ? 'verse' : 'verses'}',
+                                    ? t.searchResultsCapped(kBibleSearchLimit)
+                                    : t.searchResultCount(hits.length),
                                 style: theme.textTheme.labelLarge?.copyWith(
                                   color: theme.colorScheme.onSurfaceVariant,
                                 ),

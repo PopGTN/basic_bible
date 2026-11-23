@@ -1,3 +1,4 @@
+import 'package:basic_bible/l10n/app_localizations.dart';
 import 'package:basic_bible/src/features/library/presentation/translation_rights_sheet.dart';
 import 'package:basic_bible/src/features/reader/application/view_models/bible_library_view_models.dart';
 import 'package:flutter/material.dart';
@@ -22,7 +23,7 @@ class TranslationRightsFooter extends ConsumerWidget {
     final license = rights.license.trim().isNotEmpty
         ? rights.license.trim()
         : rights.isPublicDomain
-        ? 'Public Domain'
+        ? AppLocalizations.of(context)!.translationRightsPublicDomain
         : null;
     final label = [
       translation.id.toUpperCase(),

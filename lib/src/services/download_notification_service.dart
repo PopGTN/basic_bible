@@ -1,4 +1,7 @@
+import 'package:basic_bible/l10n/app_localizations.dart';
+import 'package:basic_bible/src/features/settings/application/view_models/language_view_model.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -17,12 +20,21 @@ abstract class DownloadNotifications {
     double? fraction, {
     bool installing = false,
   });
-  Future<void> showFinished(String translationId, String name, {required bool success});
+  Future<void> showFinished(
+    String translationId,
+    String name, {
+    required bool success,
+  });
 }
 
 final downloadNotificationsProvider = Provider<DownloadNotifications>((ref) {
   // flutter_local_notifications 20.x has no web implementation.
-  return kIsWeb ? const _NoDownloadNotifications() : LocalDownloadNotifications();
+  if (kIsWeb) return const _NoDownloadNotifications();
+  // Read the language at show time so a change in Settings applies to the
+  // next notification without rebuilding this provider.
+  return LocalDownloadNotifications(
+    strings: () => _stringsFor(ref.read(languageProvider)),
+  );
 });
 
 class _NoDownloadNotifications implements DownloadNotifications {
@@ -37,19 +49,25 @@ class _NoDownloadNotifications implements DownloadNotifications {
   }) async {}
 
   @override
-  Future<void> showFinished(String translationId, String name, {required bool success}) async {}
+  Future<void> showFinished(
+    String translationId,
+    String name, {
+    required bool success,
+  }) async {}
 }
 
 class LocalDownloadNotifications implements DownloadNotifications {
-  LocalDownloadNotifications({FlutterLocalNotificationsPlugin? plugin})
-    : _plugin = plugin ?? FlutterLocalNotificationsPlugin();
+  LocalDownloadNotifications({
+    FlutterLocalNotificationsPlugin? plugin,
+    AppLocalizations Function()? strings,
+  }) : _plugin = plugin ?? FlutterLocalNotificationsPlugin(),
+       _strings = strings ?? (() => _stringsFor('en'));
 
   final FlutterLocalNotificationsPlugin _plugin;
+  final AppLocalizations Function() _strings;
   Future<bool>? _ready;
 
   static const _channelId = 'translation_downloads';
-  static const _channelName = 'Bible downloads';
-  static const _channelDescription = 'Progress of Bible translation downloads';
 
   /// Initialises once and asks for permission on first use (Android 13+,
   /// Apple platforms) rather than at app start. Never throws: a missing
@@ -57,7 +75,7 @@ class LocalDownloadNotifications implements DownloadNotifications {
   Future<bool> _ensureReady() => _ready ??= () async {
     try {
       await _plugin.initialize(
-        settings: const InitializationSettings(
+        settings: InitializationSettings(
           android: AndroidInitializationSettings('@mipmap/launcher_icon'),
           iOS: DarwinInitializationSettings(
             requestAlertPermission: false,
@@ -69,7 +87,9 @@ class LocalDownloadNotifications implements DownloadNotifications {
             requestBadgePermission: false,
             requestSoundPermission: false,
           ),
-          linux: LinuxInitializationSettings(defaultActionName: 'Open'),
+          linux: LinuxInitializationSettings(
+            defaultActionName: _strings().openAction,
+          ),
           windows: WindowsInitializationSettings(
             appName: 'Basic Bible',
             appUserModelId: 'ca.joshuamc.basic_bible',
@@ -111,22 +131,23 @@ class LocalDownloadNotifications implements DownloadNotifications {
     bool installing = false,
   }) async {
     if (!await _ensureReady()) return;
+    final t = _strings();
     final percent = fraction == null ? 0 : (fraction * 100).round();
     final body = installing
-        ? 'Installing…'
+        ? t.downloadNotificationInstalling
         : fraction == null
-        ? 'Starting…'
+        ? t.downloadNotificationStarting
         : '$percent%';
     try {
       await _plugin.show(
         id: _idFor(translationId),
-        title: 'Downloading $name',
+        title: t.downloadNotificationProgressTitle(name),
         body: body,
         notificationDetails: NotificationDetails(
           android: AndroidNotificationDetails(
             _channelId,
-            _channelName,
-            channelDescription: _channelDescription,
+            t.downloadNotificationChannelName,
+            channelDescription: t.downloadNotificationChannelDescription,
             importance: Importance.low,
             priority: Priority.low,
             onlyAlertOnce: true,
@@ -147,18 +168,27 @@ class LocalDownloadNotifications implements DownloadNotifications {
   }
 
   @override
-  Future<void> showFinished(String translationId, String name, {required bool success}) async {
+  Future<void> showFinished(
+    String translationId,
+    String name, {
+    required bool success,
+  }) async {
     if (!await _ensureReady()) return;
+    final t = _strings();
     try {
       await _plugin.show(
         id: _idFor(translationId),
-        title: success ? '$name downloaded' : 'Download failed',
-        body: success ? 'Ready to read offline.' : 'Could not download $name.',
-        notificationDetails: const NotificationDetails(
+        title: success
+            ? t.downloadNotificationDoneTitle(name)
+            : t.downloadNotificationFailedTitle,
+        body: success
+            ? t.downloadNotificationDoneBody
+            : t.downloadNotificationFailedBody(name),
+        notificationDetails: NotificationDetails(
           android: AndroidNotificationDetails(
             _channelId,
-            _channelName,
-            channelDescription: _channelDescription,
+            t.downloadNotificationChannelName,
+            channelDescription: t.downloadNotificationChannelDescription,
             importance: Importance.low,
             priority: Priority.low,
           ),
@@ -170,4 +200,13 @@ class LocalDownloadNotifications implements DownloadNotifications {
       debugPrint('[DownloadNotifications] show failed: $error');
     }
   }
+}
+
+/// Strings for [languageCode], falling back to English for a language the
+/// app has no translation for.
+AppLocalizations _stringsFor(String languageCode) {
+  final locale = Locale(languageCode);
+  return AppLocalizations.delegate.isSupported(locale)
+      ? lookupAppLocalizations(locale)
+      : lookupAppLocalizations(const Locale('en'));
 }

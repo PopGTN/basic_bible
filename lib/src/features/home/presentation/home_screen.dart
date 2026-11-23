@@ -377,7 +377,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                   isSelected: split,
                   icon: const Icon(Icons.vertical_split_outlined),
                   selectedIcon: const Icon(Icons.vertical_split),
-                  tooltip: split ? 'Close split view' : 'Split view',
+                  tooltip: split
+                      ? AppLocalizations.of(context)!.closeSplitViewTooltip
+                      : AppLocalizations.of(context)!.splitViewTooltip,
                   onPressed: () =>
                       ref.read(splitViewEnabledProvider.notifier).toggle(),
                 );

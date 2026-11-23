@@ -170,9 +170,9 @@ class SettingsScreen extends ConsumerWidget {
             ),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
-              title: const Text('Bold Words of Jesus'),
-              subtitle: const Text(
-                'Show the words of Jesus in bold as well as red. Off by default, like most red-letter Bibles.',
+              title: Text(AppLocalizations.of(context)!.boldWordsOfJesusTitle),
+              subtitle: Text(
+                AppLocalizations.of(context)!.boldWordsOfJesusSubtitle,
               ),
               value: boldWordsOfJesus,
               onChanged: (value) {
@@ -307,8 +307,12 @@ class SettingsScreen extends ConsumerWidget {
             ListTile(
               contentPadding: EdgeInsets.zero,
               leading: const Icon(Icons.description_outlined),
-              title: const Text('Open-source licenses'),
-              subtitle: const Text('Libraries and code used by this app'),
+              title: Text(
+                AppLocalizations.of(context)!.openSourceLicensesTitle,
+              ),
+              subtitle: Text(
+                AppLocalizations.of(context)!.openSourceLicensesSubtitle,
+              ),
               trailing: const Icon(Icons.chevron_right),
               onTap: () => showAppLicenses(context),
             ),

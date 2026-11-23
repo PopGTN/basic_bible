@@ -1,3 +1,4 @@
+import 'package:basic_bible/l10n/app_localizations.dart';
 // Note Details shows verses as sections or single verses (range chips);
 // only the new/edit note screens list every verse individually.
 
@@ -22,6 +23,8 @@ void main() {
     AnnotationVerseRange? previewed;
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: AnnotationDetailScreen(
           annotation: UserAnnotation(
             type: UserAnnotationType.note,

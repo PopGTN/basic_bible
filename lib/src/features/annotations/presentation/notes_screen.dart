@@ -1,3 +1,5 @@
+import 'package:basic_bible/l10n/app_localizations.dart';
+import 'package:basic_bible/src/utils/localized_labels.dart';
 import 'package:basic_bible/src/features/annotations/application/view_models/annotation_data_view_models.dart';
 import 'package:basic_bible/src/features/annotations/models/annotation_verse_ranges.dart';
 import 'package:basic_bible/src/features/annotations/models/note_filters.dart';
@@ -604,7 +606,11 @@ class _NotesFilterBar extends StatelessWidget {
       _MultiSelectDropdown(
         label: 'Type',
         options: [
-          for (final type in NoteTypeFilter.values) MapEntry(type.name, type.label),
+          for (final type in NoteTypeFilter.values)
+            MapEntry(
+              type.name,
+              type.localizedLabel(AppLocalizations.of(context)!),
+            ),
         ],
         selectedValues: {for (final type in selectedTypes) type.name},
         onToggled: (name, selected) =>

@@ -1,3 +1,4 @@
+import 'package:basic_bible/l10n/app_localizations.dart';
 // "+N more" used to be a dead label: verses past the limit could not be seen
 // (or removed in the editor). It is now a Show all / Show less toggle.
 
@@ -23,6 +24,8 @@ void main() {
     final removed = <int>[];
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: SingleChildScrollView(
             child: LinkedVersesSection(
@@ -69,6 +72,8 @@ void main() {
   testWidgets('no toggle when everything fits', (tester) async {
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: LinkedVersesSection(
             books: const [],
@@ -87,6 +92,8 @@ void main() {
     final range = AnnotationVerseRange([_v(5), _v(6), _v(7)]);
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: LinkedVersesSection.grouped(
             books: const [],

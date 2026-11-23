@@ -1,3 +1,4 @@
+import 'package:basic_bible/l10n/app_localizations.dart';
 import 'package:basic_bible/src/features/library/data/app_bible_repository.dart';
 import 'package:basic_bible/src/features/reader/application/view_models/bible_library_view_models.dart';
 import 'package:basic_bible/src/features/reader/application/view_models/reader_session_view_models.dart';
@@ -67,7 +68,8 @@ class _ReferencePickerScreenState extends ConsumerState<ReferencePickerScreen> {
         Scrollable.ensureVisible(bookContext, alignment: 0.3);
       }
       final selectionContext =
-          _selectedVerseKey.currentContext ?? _selectedChapterKey.currentContext;
+          _selectedVerseKey.currentContext ??
+          _selectedChapterKey.currentContext;
       if (selectionContext != null) {
         Scrollable.ensureVisible(selectionContext, alignment: 0.3);
       }
@@ -197,8 +199,10 @@ class _ReferencePickerScreenState extends ConsumerState<ReferencePickerScreen> {
                               Navigator.of(sheetContext).pop();
                             }
                           },
-                          icon: const Icon(Icons.delete_sweep_outlined,
-                              size: 18),
+                          icon: const Icon(
+                            Icons.delete_sweep_outlined,
+                            size: 18,
+                          ),
                           label: const Text('Clear'),
                         ),
                       ],
@@ -790,7 +794,7 @@ class _ReferenceSelectionPanel extends StatelessWidget {
               key: isSelected ? selectedChapterKey : null,
               // A front-matter book's single page (#87) has no number.
               label: isFrontMatterChapter(chapter.number)
-                  ? 'Read'
+                  ? AppLocalizations.of(context)!.readFrontMatterAction
                   : '${chapter.number}',
               isSelected: isSelected,
               colors: colors,

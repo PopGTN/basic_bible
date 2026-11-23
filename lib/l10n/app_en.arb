@@ -283,5 +283,109 @@
   "translationRightsUnknownImported": "You imported this translation from a file, so the app has no copyright or license information for it. Make sure you have the right to use it.",
   "@translationRightsUnknownImported": {
     "description": "Translation copyright/license sheet in the Bible versions library."
+  },
+  "searchBibleHint": "Search the Bible",
+  "clearAction": "Clear",
+  "searchTypePrompt": "Type a word or phrase to search.",
+  "searchFailed": "Search failed: {error}",
+  "@searchFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "searchNoResults": "No verses found.",
+  "searchResultsCapped": "Showing the first {limit} verses. Add words to narrow it down.",
+  "@searchResultsCapped": {
+    "placeholders": {
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "searchResultCount": "{count, plural, =1{1 verse} other{{count} verses}}",
+  "@searchResultCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "searchScopeAll": "Whole Bible",
+  "searchScopeOldTestament": "Old Testament",
+  "searchScopeNewTestament": "New Testament",
+  "searchScopeCurrentBook": "This book",
+  "searchScopeCurrentChapter": "This chapter",
+  "splitViewTooltip": "Split view",
+  "closeSplitViewTooltip": "Close split view",
+  "paneTranslationTooltip": "Translation for this pane",
+  "couldNotLoadTranslation": "Could not load this translation: {error}",
+  "@couldNotLoadTranslation": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "chapterNotFound": "Chapter not found",
+  "noteDateFieldModified": "Last modified",
+  "noteDateFieldCreated": "Created",
+  "noteDateRangeAny": "Any time",
+  "noteDateRangeToday": "Today",
+  "noteDateRangePastWeek": "Past week",
+  "noteDateRangePastMonth": "Past month",
+  "noteDateRangePastYear": "Past year",
+  "noteTypeNote": "Note",
+  "noteTypeHighlightOnly": "Highlight only",
+  "notesDateButton": "Date",
+  "notesDateButtonCreated": "Date: Created",
+  "notesDateCreatedRange": "Created: {range}",
+  "@notesDateCreatedRange": {
+    "placeholders": {
+      "range": {}
+    }
+  },
+  "notesDateShowSection": "Show",
+  "notesDateSortSection": "By date (newest first)",
+  "linkedVersesTitle": "Linked Verses",
+  "showLessAction": "Show less",
+  "showAllCountAction": "Show all (+{count})",
+  "@showAllCountAction": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "readFrontMatterAction": "Read",
+  "@readFrontMatterAction": {
+    "description": "Tile for a book's single front-matter page (preface, glossary), which has no chapter number."
+  },
+  "boldWordsOfJesusTitle": "Bold Words of Jesus",
+  "boldWordsOfJesusSubtitle": "Show the words of Jesus in bold as well as red. Off by default, like most red-letter Bibles.",
+  "openSourceLicensesTitle": "Open-source licenses",
+  "openSourceLicensesSubtitle": "Libraries and code used by this app",
+  "exportTranslationHelp": "Exports the SQLite file for a translation stored on this device. Download a translation from Translations to export it.",
+  "noDownloadedTranslationsToExport": "No downloaded translations to export.",
+  "downloadNotificationChannelName": "Bible downloads",
+  "downloadNotificationChannelDescription": "Progress of Bible translation downloads",
+  "downloadNotificationStarting": "Starting…",
+  "downloadNotificationInstalling": "Installing…",
+  "downloadNotificationProgressTitle": "Downloading {name}",
+  "@downloadNotificationProgressTitle": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "downloadNotificationDoneTitle": "{name} downloaded",
+  "@downloadNotificationDoneTitle": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "downloadNotificationDoneBody": "Ready to read offline.",
+  "downloadNotificationFailedTitle": "Download failed",
+  "downloadNotificationFailedBody": "Could not download {name}.",
+  "@downloadNotificationFailedBody": {
+    "placeholders": {
+      "name": {}
+    }
   }
 }

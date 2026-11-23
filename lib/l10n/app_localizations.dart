@@ -904,6 +904,306 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'You imported this translation from a file, so the app has no copyright or license information for it. Make sure you have the right to use it.'**
   String get translationRightsUnknownImported;
+
+  /// No description provided for @searchBibleHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search the Bible'**
+  String get searchBibleHint;
+
+  /// No description provided for @clearAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear'**
+  String get clearAction;
+
+  /// No description provided for @searchTypePrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Type a word or phrase to search.'**
+  String get searchTypePrompt;
+
+  /// No description provided for @searchFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Search failed: {error}'**
+  String searchFailed(Object error);
+
+  /// No description provided for @searchNoResults.
+  ///
+  /// In en, this message translates to:
+  /// **'No verses found.'**
+  String get searchNoResults;
+
+  /// No description provided for @searchResultsCapped.
+  ///
+  /// In en, this message translates to:
+  /// **'Showing the first {limit} verses. Add words to narrow it down.'**
+  String searchResultsCapped(int limit);
+
+  /// No description provided for @searchResultCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 verse} other{{count} verses}}'**
+  String searchResultCount(int count);
+
+  /// No description provided for @searchScopeAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Whole Bible'**
+  String get searchScopeAll;
+
+  /// No description provided for @searchScopeOldTestament.
+  ///
+  /// In en, this message translates to:
+  /// **'Old Testament'**
+  String get searchScopeOldTestament;
+
+  /// No description provided for @searchScopeNewTestament.
+  ///
+  /// In en, this message translates to:
+  /// **'New Testament'**
+  String get searchScopeNewTestament;
+
+  /// No description provided for @searchScopeCurrentBook.
+  ///
+  /// In en, this message translates to:
+  /// **'This book'**
+  String get searchScopeCurrentBook;
+
+  /// No description provided for @searchScopeCurrentChapter.
+  ///
+  /// In en, this message translates to:
+  /// **'This chapter'**
+  String get searchScopeCurrentChapter;
+
+  /// No description provided for @splitViewTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Split view'**
+  String get splitViewTooltip;
+
+  /// No description provided for @closeSplitViewTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Close split view'**
+  String get closeSplitViewTooltip;
+
+  /// No description provided for @paneTranslationTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Translation for this pane'**
+  String get paneTranslationTooltip;
+
+  /// No description provided for @couldNotLoadTranslation.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load this translation: {error}'**
+  String couldNotLoadTranslation(Object error);
+
+  /// No description provided for @chapterNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'Chapter not found'**
+  String get chapterNotFound;
+
+  /// No description provided for @noteDateFieldModified.
+  ///
+  /// In en, this message translates to:
+  /// **'Last modified'**
+  String get noteDateFieldModified;
+
+  /// No description provided for @noteDateFieldCreated.
+  ///
+  /// In en, this message translates to:
+  /// **'Created'**
+  String get noteDateFieldCreated;
+
+  /// No description provided for @noteDateRangeAny.
+  ///
+  /// In en, this message translates to:
+  /// **'Any time'**
+  String get noteDateRangeAny;
+
+  /// No description provided for @noteDateRangeToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get noteDateRangeToday;
+
+  /// No description provided for @noteDateRangePastWeek.
+  ///
+  /// In en, this message translates to:
+  /// **'Past week'**
+  String get noteDateRangePastWeek;
+
+  /// No description provided for @noteDateRangePastMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'Past month'**
+  String get noteDateRangePastMonth;
+
+  /// No description provided for @noteDateRangePastYear.
+  ///
+  /// In en, this message translates to:
+  /// **'Past year'**
+  String get noteDateRangePastYear;
+
+  /// No description provided for @noteTypeNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Note'**
+  String get noteTypeNote;
+
+  /// No description provided for @noteTypeHighlightOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Highlight only'**
+  String get noteTypeHighlightOnly;
+
+  /// No description provided for @notesDateButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Date'**
+  String get notesDateButton;
+
+  /// No description provided for @notesDateButtonCreated.
+  ///
+  /// In en, this message translates to:
+  /// **'Date: Created'**
+  String get notesDateButtonCreated;
+
+  /// No description provided for @notesDateCreatedRange.
+  ///
+  /// In en, this message translates to:
+  /// **'Created: {range}'**
+  String notesDateCreatedRange(Object range);
+
+  /// No description provided for @notesDateShowSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Show'**
+  String get notesDateShowSection;
+
+  /// No description provided for @notesDateSortSection.
+  ///
+  /// In en, this message translates to:
+  /// **'By date (newest first)'**
+  String get notesDateSortSection;
+
+  /// No description provided for @linkedVersesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Linked Verses'**
+  String get linkedVersesTitle;
+
+  /// No description provided for @showLessAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Show less'**
+  String get showLessAction;
+
+  /// No description provided for @showAllCountAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Show all (+{count})'**
+  String showAllCountAction(int count);
+
+  /// Tile for a book's single front-matter page (preface, glossary), which has no chapter number.
+  ///
+  /// In en, this message translates to:
+  /// **'Read'**
+  String get readFrontMatterAction;
+
+  /// No description provided for @boldWordsOfJesusTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Bold Words of Jesus'**
+  String get boldWordsOfJesusTitle;
+
+  /// No description provided for @boldWordsOfJesusSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Show the words of Jesus in bold as well as red. Off by default, like most red-letter Bibles.'**
+  String get boldWordsOfJesusSubtitle;
+
+  /// No description provided for @openSourceLicensesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Open-source licenses'**
+  String get openSourceLicensesTitle;
+
+  /// No description provided for @openSourceLicensesSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Libraries and code used by this app'**
+  String get openSourceLicensesSubtitle;
+
+  /// No description provided for @exportTranslationHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Exports the SQLite file for a translation stored on this device. Download a translation from Translations to export it.'**
+  String get exportTranslationHelp;
+
+  /// No description provided for @noDownloadedTranslationsToExport.
+  ///
+  /// In en, this message translates to:
+  /// **'No downloaded translations to export.'**
+  String get noDownloadedTranslationsToExport;
+
+  /// No description provided for @downloadNotificationChannelName.
+  ///
+  /// In en, this message translates to:
+  /// **'Bible downloads'**
+  String get downloadNotificationChannelName;
+
+  /// No description provided for @downloadNotificationChannelDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Progress of Bible translation downloads'**
+  String get downloadNotificationChannelDescription;
+
+  /// No description provided for @downloadNotificationStarting.
+  ///
+  /// In en, this message translates to:
+  /// **'Starting…'**
+  String get downloadNotificationStarting;
+
+  /// No description provided for @downloadNotificationInstalling.
+  ///
+  /// In en, this message translates to:
+  /// **'Installing…'**
+  String get downloadNotificationInstalling;
+
+  /// No description provided for @downloadNotificationProgressTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Downloading {name}'**
+  String downloadNotificationProgressTitle(Object name);
+
+  /// No description provided for @downloadNotificationDoneTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} downloaded'**
+  String downloadNotificationDoneTitle(Object name);
+
+  /// No description provided for @downloadNotificationDoneBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Ready to read offline.'**
+  String get downloadNotificationDoneBody;
+
+  /// No description provided for @downloadNotificationFailedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Download failed'**
+  String get downloadNotificationFailedTitle;
+
+  /// No description provided for @downloadNotificationFailedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not download {name}.'**
+  String downloadNotificationFailedBody(Object name);
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

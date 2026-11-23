@@ -1,3 +1,4 @@
+import 'package:basic_bible/l10n/app_localizations.dart';
 import 'package:basic_bible/src/features/reader/application/view_models/bible_library_view_models.dart';
 import 'package:basic_bible/src/features/settings/application/view_models/advanced_preferences_view_models.dart';
 import 'package:basic_bible/src/features/settings/application/view_models/translation_export_view_models.dart';
@@ -222,8 +223,7 @@ class _AdvancedSettingsScreenState
             ),
             const SizedBox(height: 4),
             Text(
-              'Exports the SQLite file for a translation stored on this '
-              'device. Download a translation from Translations to export it.',
+              AppLocalizations.of(context)!.exportTranslationHelp,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
@@ -242,9 +242,13 @@ class _AdvancedSettingsScreenState
             translationsAsync.when(
               data: (translations) {
                 if (translations.isEmpty) {
-                  return const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 16),
-                    child: Text('No downloaded translations to export.'),
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    child: Text(
+                      AppLocalizations.of(
+                        context,
+                      )!.noDownloadedTranslationsToExport,
+                    ),
                   );
                 }
                 return Column(

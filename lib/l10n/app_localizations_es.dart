@@ -51,7 +51,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get german => 'Alemán';
 
   @override
-  String get menu => 'Menu';
+  String get menu => 'Menú';
 
   @override
   String get readerFootnotesTooltip => 'Ver notas al pie y referencias';
@@ -72,202 +72,202 @@ class AppLocalizationsEs extends AppLocalizations {
   String get editAction => 'Editar';
 
   @override
-  String get versionsTitle => 'Versions';
+  String get versionsTitle => 'Versiones';
 
   @override
-  String get searchTranslationsTooltip => 'Search translations';
+  String get searchTranslationsTooltip => 'Buscar traducciones';
 
   @override
-  String get importBibleFileAction => 'Import Bible File';
+  String get importBibleFileAction => 'Importar archivo de la Biblia';
 
   @override
-  String get clearTranslationCacheAction => 'Clear translation cache';
+  String get clearTranslationCacheAction => 'Borrar caché de traducciones';
 
   @override
-  String get clearTranslationCacheTitle => 'Clear translation cache?';
+  String get clearTranslationCacheTitle => '¿Borrar caché de traducciones?';
 
   @override
-  String get clearTranslationCacheDescription => 'This removes downloaded translation files, imported source snapshots, and stale translation registry entries from local app storage. Bundled translations will remain available.';
+  String get clearTranslationCacheDescription => 'Esto elimina del almacenamiento local de la app los archivos de traducciones descargadas, las copias de fuentes importadas y las entradas obsoletas del registro de traducciones. Las traducciones incluidas seguirán disponibles.';
 
   @override
-  String get clearCacheAction => 'Clear cache';
+  String get clearCacheAction => 'Borrar caché';
 
   @override
-  String get clearedTranslationCacheMessage => 'Translation cache cleared.';
+  String get clearedTranslationCacheMessage => 'Caché de traducciones borrada.';
 
   @override
   String couldNotClearTranslationCache(Object error) {
-    return 'Could not clear translation cache: $error';
+    return 'No se pudo borrar la caché de traducciones: $error';
   }
 
   @override
-  String get translationsFileTypeLabel => 'Bible files';
+  String get translationsFileTypeLabel => 'Archivos de la Biblia';
 
   @override
   String unableToLoadTranslations(Object error) {
-    return 'Unable to load translations: $error';
+    return 'No se pudieron cargar las traducciones: $error';
   }
 
   @override
   String couldNotSwitchTranslation(Object error) {
-    return 'Could not switch translation: $error';
+    return 'No se pudo cambiar de traducción: $error';
   }
 
   @override
   String importedTranslationMessage(Object name) {
-    return 'Imported $name.';
+    return '$name importada.';
   }
 
   @override
   String importFailedMessage(Object error) {
-    return 'Import failed: $error';
+    return 'La importación falló: $error';
   }
 
   @override
   String deleteTranslationTitle(Object name) {
-    return 'Delete $name?';
+    return '¿Eliminar $name?';
   }
 
   @override
-  String get deleteImportedTranslationDescription => 'This removes the imported Bible from the app library and cache. The original file on disk will not be deleted.';
+  String get deleteImportedTranslationDescription => 'Esto elimina la Biblia importada de la biblioteca y la caché de la app. El archivo original del disco no se eliminará.';
 
   @override
-  String get cancelAction => 'Cancel';
+  String get cancelAction => 'Cancelar';
 
   @override
-  String get deleteAction => 'Delete';
+  String get deleteAction => 'Eliminar';
 
   @override
   String deletedTranslationMessage(Object name) {
-    return 'Deleted $name.';
+    return '$name eliminada.';
   }
 
   @override
   String couldNotDeleteTranslation(Object error) {
-    return 'Could not delete translation: $error';
+    return 'No se pudo eliminar la traducción: $error';
   }
 
   @override
   String removeDownloadedTranslationTitle(Object name) {
-    return 'Remove $name download?';
+    return '¿Quitar la descarga de $name?';
   }
 
   @override
-  String get removeDownloadedTranslationDescription => 'This removes the downloaded Bible from local app storage. It will stay in the library as a downloadable option so you can download it again later.';
+  String get removeDownloadedTranslationDescription => 'Esto elimina la Biblia descargada del almacenamiento local de la app. Seguirá en la biblioteca como opción descargable para que puedas volver a descargarla más tarde.';
 
   @override
-  String get removeAction => 'Remove';
+  String get removeAction => 'Quitar';
 
   @override
   String removedLocalDownloadMessage(Object name) {
-    return 'Removed local download for $name.';
+    return 'Se quitó la descarga local de $name.';
   }
 
   @override
   String couldNotRemoveDownload(Object error) {
-    return 'Could not remove download: $error';
+    return 'No se pudo quitar la descarga: $error';
   }
 
   @override
-  String get moreActionsTooltip => 'More actions';
+  String get moreActionsTooltip => 'Más acciones';
 
   @override
-  String get deleteImportAction => 'Delete import';
+  String get deleteImportAction => 'Eliminar importación';
 
   @override
-  String get removeDownloadAction => 'Remove download';
+  String get removeDownloadAction => 'Quitar descarga';
 
   @override
-  String get availableOfflineTooltip => 'Available offline';
+  String get availableOfflineTooltip => 'Disponible sin conexión';
 
   @override
-  String get downloadTranslationTooltip => 'Download translation';
+  String get downloadTranslationTooltip => 'Descargar traducción';
 
   @override
-  String get audioOptionsTooltip => 'Audio options';
+  String get audioOptionsTooltip => 'Opciones de audio';
 
   @override
-  String get bundledTranslationSource => 'Bundled';
+  String get bundledTranslationSource => 'Incluida';
 
   @override
-  String get downloadedTranslationSource => 'Downloaded';
+  String get downloadedTranslationSource => 'Descargada';
 
   @override
-  String get downloadableTranslationSource => 'Downloadable';
+  String get downloadableTranslationSource => 'Descargable';
 
   @override
-  String get importedTranslationSource => 'Imported';
+  String get importedTranslationSource => 'Importada';
 
   @override
-  String get importBibleTitle => 'Import Bible';
+  String get importBibleTitle => 'Importar Biblia';
 
   @override
   String unableToPrepareImport(Object error) {
-    return 'Unable to prepare import: $error';
+    return 'No se pudo preparar la importación: $error';
   }
 
   @override
-  String get translationDetailsTitle => 'Translation Details';
+  String get translationDetailsTitle => 'Detalles de la traducción';
 
   @override
-  String get translationDetailsDescription => 'Set the library name, abbreviation, language code, and description before the import is saved.';
+  String get translationDetailsDescription => 'Define el nombre, la abreviatura, el código de idioma y la descripción antes de guardar la importación.';
 
   @override
-  String get translationNameLabel => 'Name';
+  String get translationNameLabel => 'Nombre';
 
   @override
   String get translationNameHint => 'World English Bible';
 
   @override
-  String get translationNameRequired => 'Enter a translation name.';
+  String get translationNameRequired => 'Introduce un nombre para la traducción.';
 
   @override
-  String get translationAbbreviationLabel => 'Abbreviation';
+  String get translationAbbreviationLabel => 'Abreviatura';
 
   @override
   String get translationAbbreviationHint => 'WEB';
 
   @override
-  String get translationAbbreviationHelp => 'Used the same way built-in abbreviations like KJV and ASV are used.';
+  String get translationAbbreviationHelp => 'Se usa igual que las abreviaturas incluidas, como KJV y ASV.';
 
   @override
-  String get translationAbbreviationRequired => 'Enter an abbreviation.';
+  String get translationAbbreviationRequired => 'Introduce una abreviatura.';
 
   @override
-  String get translationAbbreviationTaken => 'That abbreviation is already in use.';
+  String get translationAbbreviationTaken => 'Esa abreviatura ya está en uso.';
 
   @override
-  String get translationLanguageCodeLabel => 'Language code';
+  String get translationLanguageCodeLabel => 'Código de idioma';
 
   @override
-  String get translationLanguageCodeHint => 'en';
+  String get translationLanguageCodeHint => 'es';
 
   @override
-  String get translationLanguageCodeHelp => 'Use a short code like en, es, fr, or de.';
+  String get translationLanguageCodeHelp => 'Usa un código corto como en, es, fr o de.';
 
   @override
-  String get translationLanguageCodeRequired => 'Enter a language code.';
+  String get translationLanguageCodeRequired => 'Introduce un código de idioma.';
 
   @override
-  String get translationDescriptionLabel => 'Description';
+  String get translationDescriptionLabel => 'Descripción';
 
   @override
-  String get translationDescriptionHint => 'Imported from my_local_bible.xml or my_translation.sqlite';
+  String get translationDescriptionHint => 'Importada de my_local_bible.xml o my_translation.sqlite';
 
   @override
-  String get importingAction => 'Importing...';
+  String get importingAction => 'Importando...';
 
   @override
-  String get importTranslationAction => 'Import Translation';
+  String get importTranslationAction => 'Importar traducción';
 
   @override
   String detectedFormatLabel(Object format) {
-    return 'Detected format: $format';
+    return 'Formato detectado: $format';
   }
 
   @override
   String booksFoundLabel(int count) {
-    return 'Books found: $count';
+    return 'Libros encontrados: $count';
   }
 
   @override
@@ -455,4 +455,178 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get translationRightsUnknownImported => 'Importaste esta traducción desde un archivo, por lo que la aplicación no tiene información de derechos de autor ni de licencia. Asegúrate de tener derecho a usarla.';
+
+  @override
+  String get searchBibleHint => 'Buscar en la Biblia';
+
+  @override
+  String get clearAction => 'Borrar';
+
+  @override
+  String get searchTypePrompt => 'Escribe una palabra o frase para buscar.';
+
+  @override
+  String searchFailed(Object error) {
+    return 'La búsqueda falló: $error';
+  }
+
+  @override
+  String get searchNoResults => 'No se encontraron versículos.';
+
+  @override
+  String searchResultsCapped(int limit) {
+    return 'Se muestran los primeros $limit versículos. Añade palabras para acotar la búsqueda.';
+  }
+
+  @override
+  String searchResultCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count versículos',
+      one: '1 versículo',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get searchScopeAll => 'Toda la Biblia';
+
+  @override
+  String get searchScopeOldTestament => 'Antiguo Testamento';
+
+  @override
+  String get searchScopeNewTestament => 'Nuevo Testamento';
+
+  @override
+  String get searchScopeCurrentBook => 'Este libro';
+
+  @override
+  String get searchScopeCurrentChapter => 'Este capítulo';
+
+  @override
+  String get splitViewTooltip => 'Vista dividida';
+
+  @override
+  String get closeSplitViewTooltip => 'Cerrar vista dividida';
+
+  @override
+  String get paneTranslationTooltip => 'Traducción para este panel';
+
+  @override
+  String couldNotLoadTranslation(Object error) {
+    return 'No se pudo cargar esta traducción: $error';
+  }
+
+  @override
+  String get chapterNotFound => 'Capítulo no encontrado';
+
+  @override
+  String get noteDateFieldModified => 'Última modificación';
+
+  @override
+  String get noteDateFieldCreated => 'Creación';
+
+  @override
+  String get noteDateRangeAny => 'Cualquier fecha';
+
+  @override
+  String get noteDateRangeToday => 'Hoy';
+
+  @override
+  String get noteDateRangePastWeek => 'Última semana';
+
+  @override
+  String get noteDateRangePastMonth => 'Último mes';
+
+  @override
+  String get noteDateRangePastYear => 'Último año';
+
+  @override
+  String get noteTypeNote => 'Nota';
+
+  @override
+  String get noteTypeHighlightOnly => 'Solo resaltado';
+
+  @override
+  String get notesDateButton => 'Fecha';
+
+  @override
+  String get notesDateButtonCreated => 'Fecha: creación';
+
+  @override
+  String notesDateCreatedRange(Object range) {
+    return 'Creación: $range';
+  }
+
+  @override
+  String get notesDateShowSection => 'Mostrar';
+
+  @override
+  String get notesDateSortSection => 'Por fecha (más recientes primero)';
+
+  @override
+  String get linkedVersesTitle => 'Versículos vinculados';
+
+  @override
+  String get showLessAction => 'Mostrar menos';
+
+  @override
+  String showAllCountAction(int count) {
+    return 'Mostrar todo (+$count)';
+  }
+
+  @override
+  String get readFrontMatterAction => 'Leer';
+
+  @override
+  String get boldWordsOfJesusTitle => 'Palabras de Jesús en negrita';
+
+  @override
+  String get boldWordsOfJesusSubtitle => 'Muestra las palabras de Jesús en negrita además de en rojo. Desactivado por defecto, como en la mayoría de las Biblias con letra roja.';
+
+  @override
+  String get openSourceLicensesTitle => 'Licencias de código abierto';
+
+  @override
+  String get openSourceLicensesSubtitle => 'Bibliotecas y código que usa esta app';
+
+  @override
+  String get exportTranslationHelp => 'Exporta el archivo SQLite de una traducción guardada en este dispositivo. Descarga una traducción desde Traducciones para exportarla.';
+
+  @override
+  String get noDownloadedTranslationsToExport => 'No hay traducciones descargadas para exportar.';
+
+  @override
+  String get downloadNotificationChannelName => 'Descargas de la Biblia';
+
+  @override
+  String get downloadNotificationChannelDescription => 'Progreso de las descargas de traducciones de la Biblia';
+
+  @override
+  String get downloadNotificationStarting => 'Iniciando…';
+
+  @override
+  String get downloadNotificationInstalling => 'Instalando…';
+
+  @override
+  String downloadNotificationProgressTitle(Object name) {
+    return 'Descargando $name';
+  }
+
+  @override
+  String downloadNotificationDoneTitle(Object name) {
+    return '$name descargada';
+  }
+
+  @override
+  String get downloadNotificationDoneBody => 'Lista para leer sin conexión.';
+
+  @override
+  String get downloadNotificationFailedTitle => 'La descarga falló';
+
+  @override
+  String downloadNotificationFailedBody(Object name) {
+    return 'No se pudo descargar $name.';
+  }
 }

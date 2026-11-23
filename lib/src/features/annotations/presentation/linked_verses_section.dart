@@ -1,3 +1,4 @@
+import 'package:basic_bible/l10n/app_localizations.dart';
 import 'package:basic_bible/src/features/annotations/models/annotation_verse_ranges.dart';
 import 'package:basic_bible/src/features/annotations/models/user_annotations.dart';
 import 'package:basic_bible/src/models/bible_models.dart';
@@ -18,7 +19,7 @@ class LinkedVersesSection extends StatefulWidget {
     required List<AnnotationVerseLink> links,
     required this.onPreviewVerses,
     this.onDeleteLink,
-    this.title = 'Linked Verses',
+    this.title,
     this.maxVisible = 24,
     this.emptyMessage,
   }) : ranges = [
@@ -33,13 +34,14 @@ class LinkedVersesSection extends StatefulWidget {
     required this.books,
     required this.ranges,
     required this.onPreviewVerses,
-    this.title = 'Linked Verses',
+    this.title,
     this.maxVisible = 24,
     this.emptyMessage,
   }) : onDeleteLink = null;
 
   final List<BibleBook> books;
   final List<AnnotationVerseRange> ranges;
+
   /// Called with the tapped chip's verses (one verse, or a range like
   /// "Luke 15:5-7") so the preview shows all of them.
   final Future<void> Function(AnnotationVerseRange verses) onPreviewVerses;
@@ -47,7 +49,9 @@ class LinkedVersesSection extends StatefulWidget {
   /// When provided, each chip shows a delete icon. Tapping it calls this
   /// callback — the caller decides whether to confirm before removing.
   final void Function(AnnotationVerseLink link)? onDeleteLink;
-  final String title;
+
+  /// Defaults to the localized "Linked Verses".
+  final String? title;
 
   /// Chips shown before the rest collapse behind "Show all".
   final int maxVisible;
@@ -85,7 +89,7 @@ class _LinkedVersesSectionState extends State<LinkedVersesSection> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          widget.title,
+          widget.title ?? AppLocalizations.of(context)!.linkedVersesTitle,
           style: theme.textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.w700,
           ),
@@ -117,7 +121,13 @@ class _LinkedVersesSectionState extends State<LinkedVersesSection> {
                   _expanded ? Icons.expand_less : Icons.expand_more,
                   size: 18,
                 ),
-                label: Text(_expanded ? 'Show less' : 'Show all (+$hiddenCount)'),
+                label: Text(
+                  _expanded
+                      ? AppLocalizations.of(context)!.showLessAction
+                      : AppLocalizations.of(
+                          context,
+                        )!.showAllCountAction(hiddenCount),
+                ),
                 onPressed: () => setState(() => _expanded = !_expanded),
               ),
           ],

@@ -1,3 +1,5 @@
+import 'package:basic_bible/src/utils/localized_labels.dart';
+import 'package:basic_bible/l10n/app_localizations.dart';
 import 'package:basic_bible/src/features/annotations/models/note_filters.dart';
 import 'package:flutter/material.dart';
 
@@ -20,17 +22,21 @@ class NotesDateFilterDropdown extends StatelessWidget {
   bool get _isActive =>
       range != NoteDateRange.any || field != NoteDateField.modified;
 
-  String get _buttonLabel {
+  String _buttonLabel(AppLocalizations t) {
     if (range != NoteDateRange.any) {
+      final rangeLabel = range.localizedLabel(t);
       return field == NoteDateField.created
-          ? 'Created: ${range.label}'
-          : range.label;
+          ? t.notesDateCreatedRange(rangeLabel)
+          : rangeLabel;
     }
-    return field == NoteDateField.created ? 'Date: Created' : 'Date';
+    return field == NoteDateField.created
+        ? t.notesDateButtonCreated
+        : t.notesDateButton;
   }
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
     final colors = Theme.of(context).colorScheme;
     Icon radio(bool on) =>
         Icon(on ? Icons.radio_button_checked : Icons.radio_button_unchecked);
@@ -40,9 +46,11 @@ class NotesDateFilterDropdown extends StatelessWidget {
         onPressed: () =>
             controller.isOpen ? controller.close() : controller.open(),
         icon: const Icon(Icons.arrow_drop_down),
-        label: Text(_buttonLabel, overflow: TextOverflow.ellipsis),
+        label: Text(_buttonLabel(t), overflow: TextOverflow.ellipsis),
         style: OutlinedButton.styleFrom(
-          foregroundColor: _isActive ? colors.onSurface : colors.onSurfaceVariant,
+          foregroundColor: _isActive
+              ? colors.onSurface
+              : colors.onSurfaceVariant,
           backgroundColor: _isActive ? colors.surfaceContainerHighest : null,
           side: BorderSide(
             color: _isActive ? colors.onSurface : colors.outlineVariant,
@@ -50,22 +58,22 @@ class NotesDateFilterDropdown extends StatelessWidget {
         ),
       ),
       menuChildren: [
-        const _MenuSectionLabel('Show'),
+        _MenuSectionLabel(t.notesDateShowSection),
         for (final option in NoteDateRange.values)
           MenuItemButton(
             closeOnActivate: false,
             leadingIcon: radio(option == range),
             onPressed: () => onRangeChanged(option),
-            child: Text(option.label),
+            child: Text(option.localizedLabel(t)),
           ),
         const Divider(height: 8),
-        const _MenuSectionLabel('By date (newest first)'),
+        _MenuSectionLabel(t.notesDateSortSection),
         for (final option in NoteDateField.values)
           MenuItemButton(
             closeOnActivate: false,
             leadingIcon: radio(option == field),
             onPressed: () => onFieldChanged(option),
-            child: Text(option.label),
+            child: Text(option.localizedLabel(t)),
           ),
       ],
     );

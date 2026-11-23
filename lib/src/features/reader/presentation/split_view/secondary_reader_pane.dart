@@ -1,3 +1,4 @@
+import 'package:basic_bible/l10n/app_localizations.dart';
 import 'package:basic_bible/src/features/reader/application/view_models/bible_library_view_models.dart';
 import 'package:basic_bible/src/features/reader/application/view_models/split_view_view_models.dart';
 import 'package:basic_bible/src/features/reader/presentation/reference_picker/chapter_bar.dart';
@@ -61,11 +62,19 @@ class _SecondaryReaderPaneState extends ConsumerState<SecondaryReaderPane> {
               error: (error, _) => Center(
                 child: Padding(
                   padding: const EdgeInsets.all(24),
-                  child: Text('Could not load this translation: $error'),
+                  child: Text(
+                    AppLocalizations.of(
+                      context,
+                    )!.couldNotLoadTranslation('$error'),
+                  ),
                 ),
               ),
               data: (content) => content == null
-                  ? const Center(child: Text('Chapter not found'))
+                  ? Center(
+                      child: Text(
+                        AppLocalizations.of(context)!.chapterNotFound,
+                      ),
+                    )
                   : ValueListenableBuilder<double>(
                       // Follow the reader's text size setting live.
                       valueListenable: FontSizeService.instance.notifier,
@@ -122,7 +131,7 @@ class _PaneHeader extends ConsumerWidget {
           builder: (context, controller, _) => ActionChip(
             avatar: const Icon(Icons.language, size: 18),
             label: Text(translationId.toUpperCase()),
-            tooltip: 'Translation for this pane',
+            tooltip: AppLocalizations.of(context)!.paneTranslationTooltip,
             onPressed: () =>
                 controller.isOpen ? controller.close() : controller.open(),
           ),

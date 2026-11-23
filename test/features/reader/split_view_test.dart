@@ -1,3 +1,4 @@
+import 'package:basic_bible/l10n/app_localizations.dart';
 // Issue #84: split view — a second, independent reading pane.
 
 import 'package:basic_bible/src/features/reader/application/view_models/bible_library_view_models.dart';
@@ -91,7 +92,9 @@ void main() {
               ),
             ),
           ],
-          child: const MaterialApp(
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(body: SplitReaderLayout(primary: Text('MAIN'))),
           ),
         ),

@@ -455,4 +455,178 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get translationRightsUnknownImported => 'You imported this translation from a file, so the app has no copyright or license information for it. Make sure you have the right to use it.';
+
+  @override
+  String get searchBibleHint => 'Search the Bible';
+
+  @override
+  String get clearAction => 'Clear';
+
+  @override
+  String get searchTypePrompt => 'Type a word or phrase to search.';
+
+  @override
+  String searchFailed(Object error) {
+    return 'Search failed: $error';
+  }
+
+  @override
+  String get searchNoResults => 'No verses found.';
+
+  @override
+  String searchResultsCapped(int limit) {
+    return 'Showing the first $limit verses. Add words to narrow it down.';
+  }
+
+  @override
+  String searchResultCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count verses',
+      one: '1 verse',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get searchScopeAll => 'Whole Bible';
+
+  @override
+  String get searchScopeOldTestament => 'Old Testament';
+
+  @override
+  String get searchScopeNewTestament => 'New Testament';
+
+  @override
+  String get searchScopeCurrentBook => 'This book';
+
+  @override
+  String get searchScopeCurrentChapter => 'This chapter';
+
+  @override
+  String get splitViewTooltip => 'Split view';
+
+  @override
+  String get closeSplitViewTooltip => 'Close split view';
+
+  @override
+  String get paneTranslationTooltip => 'Translation for this pane';
+
+  @override
+  String couldNotLoadTranslation(Object error) {
+    return 'Could not load this translation: $error';
+  }
+
+  @override
+  String get chapterNotFound => 'Chapter not found';
+
+  @override
+  String get noteDateFieldModified => 'Last modified';
+
+  @override
+  String get noteDateFieldCreated => 'Created';
+
+  @override
+  String get noteDateRangeAny => 'Any time';
+
+  @override
+  String get noteDateRangeToday => 'Today';
+
+  @override
+  String get noteDateRangePastWeek => 'Past week';
+
+  @override
+  String get noteDateRangePastMonth => 'Past month';
+
+  @override
+  String get noteDateRangePastYear => 'Past year';
+
+  @override
+  String get noteTypeNote => 'Note';
+
+  @override
+  String get noteTypeHighlightOnly => 'Highlight only';
+
+  @override
+  String get notesDateButton => 'Date';
+
+  @override
+  String get notesDateButtonCreated => 'Date: Created';
+
+  @override
+  String notesDateCreatedRange(Object range) {
+    return 'Created: $range';
+  }
+
+  @override
+  String get notesDateShowSection => 'Show';
+
+  @override
+  String get notesDateSortSection => 'By date (newest first)';
+
+  @override
+  String get linkedVersesTitle => 'Linked Verses';
+
+  @override
+  String get showLessAction => 'Show less';
+
+  @override
+  String showAllCountAction(int count) {
+    return 'Show all (+$count)';
+  }
+
+  @override
+  String get readFrontMatterAction => 'Read';
+
+  @override
+  String get boldWordsOfJesusTitle => 'Bold Words of Jesus';
+
+  @override
+  String get boldWordsOfJesusSubtitle => 'Show the words of Jesus in bold as well as red. Off by default, like most red-letter Bibles.';
+
+  @override
+  String get openSourceLicensesTitle => 'Open-source licenses';
+
+  @override
+  String get openSourceLicensesSubtitle => 'Libraries and code used by this app';
+
+  @override
+  String get exportTranslationHelp => 'Exports the SQLite file for a translation stored on this device. Download a translation from Translations to export it.';
+
+  @override
+  String get noDownloadedTranslationsToExport => 'No downloaded translations to export.';
+
+  @override
+  String get downloadNotificationChannelName => 'Bible downloads';
+
+  @override
+  String get downloadNotificationChannelDescription => 'Progress of Bible translation downloads';
+
+  @override
+  String get downloadNotificationStarting => 'Starting…';
+
+  @override
+  String get downloadNotificationInstalling => 'Installing…';
+
+  @override
+  String downloadNotificationProgressTitle(Object name) {
+    return 'Downloading $name';
+  }
+
+  @override
+  String downloadNotificationDoneTitle(Object name) {
+    return '$name downloaded';
+  }
+
+  @override
+  String get downloadNotificationDoneBody => 'Ready to read offline.';
+
+  @override
+  String get downloadNotificationFailedTitle => 'Download failed';
+
+  @override
+  String downloadNotificationFailedBody(Object name) {
+    return 'Could not download $name.';
+  }
 }
