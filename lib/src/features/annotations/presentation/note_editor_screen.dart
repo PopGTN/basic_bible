@@ -200,7 +200,7 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final booksAsync = ref.watch(bibleBooksShellProvider);
+    final booksAsync = ref.watch(readableBibleBooksProvider);
     final theme = Theme.of(context);
     final highlightColor = annotationColorFromValue(
       _draft.highlightColorValue,
@@ -258,7 +258,7 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
               links: _draft.linkedVerses,
               maxVisible: 20,
               emptyMessage: null,
-              onPreviewLinkedVerse: (link) async {},
+              onPreviewVerses: (_) async {},
               onDeleteLink: (link) async {
                 final confirm = ref.read(confirmRemoveLinkedVerseProvider);
                 if (confirm) {

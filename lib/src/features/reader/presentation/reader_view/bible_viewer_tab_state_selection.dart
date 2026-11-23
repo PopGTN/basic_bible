@@ -235,8 +235,12 @@ extension _BibleViewerTabStateSelection on _BibleViewerTabState {
         );
         return;
       }
+      // Selection is kept in tap order; store the note in reading order so
+      // the earliest verse is the primary one and the rest read as ranges.
+      final orderedReferences = [...selectedReferences]
+        ..sort(compareReferencesInReadingOrder);
       final selectedLinks = [
-        for (final reference in selectedReferences)
+        for (final reference in orderedReferences)
           buildAnnotationVerseLink(
             reference: reference,
             translation: translation,

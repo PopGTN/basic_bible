@@ -13,9 +13,11 @@ import 'package:basic_bible/src/features/library/data/bible_parser_worker.dart';
 import 'package:basic_bible/src/features/library/data/bible_archive_support.dart';
 import 'package:basic_bible/src/features/library/data/bible_source_parser.dart';
 import 'package:basic_bible/src/features/library/data/bible_translation_catalog.dart';
+import 'package:basic_bible/src/features/library/data/in_flight_requests.dart';
 import 'package:basic_bible/src/features/library/data/remote_translation_catalog_service.dart';
 import 'package:basic_bible/src/models/bible_models.dart';
 import 'package:basic_bible/src/services/app_database.dart';
+import 'package:basic_bible/src/services/translation_database_executor.dart';
 import 'package:basic_bible/src/services/translation_database_manager.dart';
 
 import 'library_source_io.dart';
@@ -25,6 +27,9 @@ export 'bible_import_service.dart' show BibleImportDraft, BibleImportRequest;
 
 part 'app_bible_repository_loading.dart';
 part 'app_bible_repository_network.dart';
+
+/// Bytes received so far and the expected total (null when unknown).
+typedef DownloadProgressCallback = void Function(int received, int? total);
 
 class AppBibleRepository {
   AppBibleRepository(this._db, this._dbManager, this._catalogService)
@@ -51,9 +56,9 @@ class AppBibleRepository {
 
   // In-flight guards: shared Futures prevent concurrent parses/downloads of
   // the same translation racing to write the same SQLite file.
-  final Map<String, Future<List<BibleBook>>> _inFlight = {};
-  final Map<String, Future<List<BibleBook>>> _downloadInFlight = {};
-  final Map<String, Future<List<BibleBook>>> _sessionReadInFlight = {};
+  final _inFlight = InFlightRequests<String, List<BibleBook>>();
+  final _downloadInFlight = InFlightRequests<String, List<BibleBook>>();
+  final _sessionReadInFlight = InFlightRequests<String, List<BibleBook>>();
 
   static const Duration _remoteRequestTimeout = Duration(seconds: 20);
   static const int _maxFullTranslationCacheCount = 2;

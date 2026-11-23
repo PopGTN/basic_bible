@@ -51,13 +51,13 @@ class _VersionsScreenState extends ConsumerState<VersionsScreen>
     final t = AppLocalizations.of(context)!;
     final translationsAsync = ref.watch(availableTranslationsProvider);
     final currentTranslationId = ref.watch(currentTranslationProvider);
-    final loadingIds = ref.watch(translationDownloadsProvider);
+    final downloads = ref.watch(translationDownloadsProvider);
 
     return Scaffold(
       appBar: _isSearching ? _buildSearchBar(t) : _buildNormalBar(t),
       body: translationsAsync.when(
         data: (translations) =>
-            _buildList(context, translations, currentTranslationId, loadingIds),
+            _buildList(context, translations, currentTranslationId, downloads),
         error: (error, _) => Center(
           child: Padding(
             padding: const EdgeInsets.all(24),
@@ -155,7 +155,7 @@ class _VersionsScreenState extends ConsumerState<VersionsScreen>
     BuildContext context,
     List<BibleTranslation> translations,
     String currentTranslationId,
-    Set<String> loadingIds,
+    Map<String, TranslationDownloadStatus> downloads,
   ) {
     final languages = _uniqueLanguages(translations);
 
@@ -214,7 +214,8 @@ class _VersionsScreenState extends ConsumerState<VersionsScreen>
             TranslationTile(
               translation: tr,
               isSelected: tr.id == currentTranslationId,
-              isLoading: loadingIds.contains(tr.id),
+              isLoading: downloads.containsKey(tr.id),
+              progress: downloads[tr.id]?.fraction,
               onShowInfo: () => showTranslationRightsSheet(context, tr),
               onTap: () => selectTranslation(
                 context,
@@ -251,7 +252,8 @@ class _VersionsScreenState extends ConsumerState<VersionsScreen>
             TranslationTile(
               translation: tr,
               isSelected: tr.id == currentTranslationId,
-              isLoading: loadingIds.contains(tr.id),
+              isLoading: downloads.containsKey(tr.id),
+              progress: downloads[tr.id]?.fraction,
               onShowInfo: () => showTranslationRightsSheet(context, tr),
               onTap: tr.availability == BibleTranslationAvailability.session
                   ? () => selectTranslation(context, tr.id, persist: false)
@@ -259,7 +261,8 @@ class _VersionsScreenState extends ConsumerState<VersionsScreen>
               onOpenForSession: _canDownload(tr)
                   ? () => openTranslationForSession(context, tr)
                   : null,
-              onDownload: _canDownload(tr)
+              // Session-only reads can be kept by downloading them (#28).
+              onDownload: _canDownloadToDevice(tr)
                   ? () => downloadTranslation(context, tr)
                   : null,
               onRemoveDownloaded: null,
@@ -278,6 +281,12 @@ class _VersionsScreenState extends ConsumerState<VersionsScreen>
   /// Downloadable, and the rights holder permits in-app download.
   static bool _canDownload(BibleTranslation tr) =>
       tr.availability == BibleTranslationAvailability.downloadable &&
+      (tr.rights?.allowDownload ?? true);
+
+  /// Like [_canDownload], but also lets a session-only read be kept (#28).
+  static bool _canDownloadToDevice(BibleTranslation tr) =>
+      (tr.availability == BibleTranslationAvailability.downloadable ||
+          tr.availability == BibleTranslationAvailability.session) &&
       (tr.rights?.allowDownload ?? true);
 
   List<String> _uniqueLanguages(List<BibleTranslation> translations) {

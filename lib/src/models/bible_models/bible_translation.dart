@@ -82,6 +82,16 @@ class BibleTranslationRights extends Equatable {
 
   bool get isPublicDomain => status == 'public_domain';
 
+  /// True when there is nothing to show (no text, links or restrictions).
+  bool get isEmpty =>
+      status.trim().isEmpty &&
+      license.trim().isEmpty &&
+      copyrightNotice.trim().isEmpty &&
+      (licenseUrl?.trim().isEmpty ?? true) &&
+      (sourceUrl?.trim().isEmpty ?? true) &&
+      (notesUrl?.trim().isEmpty ?? true) &&
+      allowDownload;
+
   @override
   List<Object?> get props => [
     status,

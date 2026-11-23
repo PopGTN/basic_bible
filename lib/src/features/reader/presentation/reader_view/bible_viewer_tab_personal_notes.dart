@@ -11,7 +11,7 @@ class _PersonalNotesSheet extends StatelessWidget {
     required this.books,
     required this.annotations,
     required this.onCreate,
-    required this.onPreviewLinkedVerse,
+    required this.onPreviewVerses,
     required this.onOpenReference,
     required this.onViewDetails,
     required this.onEdit,
@@ -23,7 +23,7 @@ class _PersonalNotesSheet extends StatelessWidget {
   final List<BibleBook> books;
   final List<UserAnnotation> annotations;
   final Future<void> Function() onCreate;
-  final Future<void> Function(AnnotationVerseLink link) onPreviewLinkedVerse;
+  final Future<void> Function(AnnotationVerseRange verses) onPreviewVerses;
   final ValueChanged<UserAnnotation> onOpenReference;
   final ValueChanged<UserAnnotation> onViewDetails;
   final ValueChanged<UserAnnotation> onEdit;
@@ -95,7 +95,7 @@ class _PersonalNotesSheet extends StatelessWidget {
                   _PersonalNoteCard(
                     annotation: annotation,
                     books: books,
-                    onPreviewLinkedVerse: onPreviewLinkedVerse,
+                    onPreviewVerses: onPreviewVerses,
                     onOpenReference: () => onOpenReference(annotation),
                     onViewDetails: () => onViewDetails(annotation),
                     onEdit: () => onEdit(annotation),
@@ -116,7 +116,7 @@ class _PersonalNoteCard extends StatelessWidget {
   const _PersonalNoteCard({
     required this.annotation,
     required this.books,
-    required this.onPreviewLinkedVerse,
+    required this.onPreviewVerses,
     required this.onOpenReference,
     required this.onViewDetails,
     required this.onEdit,
@@ -125,7 +125,7 @@ class _PersonalNoteCard extends StatelessWidget {
 
   final UserAnnotation annotation;
   final List<BibleBook> books;
-  final Future<void> Function(AnnotationVerseLink link) onPreviewLinkedVerse;
+  final Future<void> Function(AnnotationVerseRange verses) onPreviewVerses;
   final VoidCallback onOpenReference;
   final VoidCallback onViewDetails;
   final VoidCallback onEdit;
@@ -136,10 +136,12 @@ class _PersonalNoteCard extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
-    final primaryVerse = annotation.primaryVerse;
-    final primaryReferenceLabel =
-        '${displayBookNameForReference(books, primaryVerse.bookId)} '
-        '${primaryVerse.chapter}:${primaryVerse.verse}';
+    // Same heading + grouped-chip layout as the Notes list card (#50 / #82).
+    final verseRanges = annotation.verseRanges;
+    final primaryReferenceLabel = verseRanges.first.label(
+      displayBookNameForReference(books, verseRanges.first.bookId),
+    );
+    final linkedRanges = verseRanges.skip(1).toList(growable: false);
     final highlightColor = annotation.highlightColorValue == null
         ? null
         : annotationColorFromValue(
@@ -216,13 +218,13 @@ class _PersonalNoteCard extends StatelessWidget {
                   ),
                 ),
               ),
-              if (annotation.linkedVerses.isNotEmpty) ...[
+              if (linkedRanges.isNotEmpty) ...[
                 const SizedBox(height: 12),
-                LinkedVersesSection(
+                LinkedVersesSection.grouped(
                   books: books,
-                  links: annotation.linkedVerses,
-                  onPreviewLinkedVerse: onPreviewLinkedVerse,
-                  maxVisible: 3,
+                  ranges: linkedRanges,
+                  onPreviewVerses: onPreviewVerses,
+                  maxVisible: kLinkedReferencesPreviewLimit,
                 ),
               ],
               const SizedBox(height: 12),

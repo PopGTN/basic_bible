@@ -65,12 +65,12 @@ final List<BibleTranslation> kBuiltInTranslations = [
     languageName: 'English',
     description: 'The classic English Bible translation',
     isLocal: true,
-    filePath: kIsWeb
-        ? 'assets/bible/eng-kjv2006_usfx.xml.gz'
-        : 'assets/bible/kjv.sqlite.gz',
+    // Every platform, web included, opens the prebuilt database directly
+    // (see seedTranslationDatabase) instead of parsing the XML on device.
+    filePath: 'assets/bible/kjv.sqlite.gz',
     githubUrl:
         'https://raw.githubusercontent.com/PopGTN/bible-data/main/English/kjv/eng-kjv2006_usfx.xml',
-    format: kIsWeb ? BibleFormat.usfx : BibleFormat.sqlite,
+    format: BibleFormat.sqlite,
     sourceType: BibleSourceType.asset,
     bundledByDefault: true,
     displayOrder: 10,
@@ -150,11 +150,11 @@ BibleTranslation mergeCatalogTranslation({
     languageName: remote.languageName,
     description: remote.description,
     githubUrl: remote.githubUrl ?? builtIn.githubUrl,
-    rights: remote.rights ?? builtIn.rights,
     format: remote.format == BibleFormat.auto ? builtIn.format : remote.format,
     bundledByDefault: remote.bundledByDefault || builtIn.bundledByDefault,
     displayOrder: remote.displayOrder,
     artifacts: remote.artifacts.isEmpty ? builtIn.artifacts : remote.artifacts,
+    rights: remote.rights ?? builtIn.rights,
   );
 }
 
@@ -195,8 +195,8 @@ BibleTranslation mergeStoredTranslation({
     bundledByDefault: base.bundledByDefault,
     displayOrder: base.displayOrder,
     artifacts: base.artifacts,
-    // Not stored in the DB; always from the catalog or built-in definition.
-    rights: base.rights,
+    // Not stored in the DB; from the catalog or built-in definition.
+    rights: base.rights ?? stored.rights,
   );
 }
 

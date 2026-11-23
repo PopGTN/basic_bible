@@ -59,6 +59,7 @@ class _ChapterSectionView extends StatelessWidget {
     this.headerBuilder,
     this.buildInlineHeading,
     this.fallbackBody,
+    this.footer,
   });
 
   final BibleBook book;
@@ -72,6 +73,9 @@ class _ChapterSectionView extends StatelessWidget {
   final Widget Function()? introBuilder;
   final Widget Function()? headerBuilder;
   final Widget? fallbackBody;
+
+  /// Shown after the chapter's text (copyright line, #18).
+  final Widget? footer;
 
   /// Called for each heading block that precedes a specific verse in
   /// verse-list mode. If null, inline headings are not rendered.
@@ -91,6 +95,7 @@ class _ChapterSectionView extends StatelessWidget {
           ..._verseList()
         else
           buildDocumentView(),
+        ?footer,
       ],
     );
   }

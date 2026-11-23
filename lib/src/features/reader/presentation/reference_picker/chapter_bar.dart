@@ -50,7 +50,7 @@ class ChapterBar extends StatelessWidget {
             borderRadius: BorderRadius.circular(20),
             child: Center(
               child: Text(
-                '$referenceBookName ${reference.chapter}',
+                chapterReferenceLabel(referenceBookName, reference.chapter),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(

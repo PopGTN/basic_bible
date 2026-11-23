@@ -55,7 +55,7 @@ Separate from feature backlog — these affect correctness, safety, and maintain
 | SharedPreferences async loading not exposed | Medium | Each Riverpod `StateNotifier` loads from `SharedPreferences` asynchronously in `_loadSavedValue()` but exposes no loading state. This can cause brief UI glitches on startup before saved values are applied. |
 | Generic error handling | Low | `AppBibleRepository` throws `Exception('...')` with plain context strings instead of structured error types. Makes error handling and user-facing messaging harder to improve. |
 | Hardcoded download URLs | Low | Built-in translation GitHub URLs are hardcoded with no version pinning or fallback mirrors. If the source repo moves or renames a file, downloads silently fail. |
-| Web storage still in-memory | Low | Non-web platforms use file-backed SQLite. Web still falls back to in-memory storage, so cached Bibles are lost on every page reload. |
+| Web storage uses deprecated drift API | Low | Web translation caches persist in IndexedDB through drift's legacy `WebDatabase`, which is deprecated in favour of `package:drift/wasm.dart`. |
 | Reader presentation still centered on one large state object | Medium | The reader refactor split files by responsibility, but much of the orchestration still lives on a single `_BibleTextViewState`. Future cleanup should extract more standalone widgets/controllers so the reader does not drift back into a giant mixed-responsibility state class. |
 
 ---
@@ -79,7 +79,7 @@ Separate from feature backlog — these affect correctness, safety, and maintain
 - `done` Personal notes and highlights now exist as a real user-data feature with dedicated models, repository/provider plumbing, additive Drift storage, a note editor, and a Notes screen.
 - `done` The reader now has working verse-list and document modes with comprehensive span rendering: red-letter, emphasis/bold/italic, divine names, proper names, selah, acrostic headings, structured footnotes and cross-references with inline markers, and source-driven introductions/tables.
 - `done` Parser/app pipeline preserves rich content: footnotes and cross-references now include spanIndex anchors; poetry/quote structure is consistent across all three formats with stanza groups and indentation; document-mode rendering reflects all preserved parser structures.
-- `partial` Non-web Bible caching is persistent; web still falls back to in-memory storage.
+- `done` Bible caching is persistent on every platform: verified in a production web build that the translation database (drift `WebDatabase` on IndexedDB) survives a page reload.
 - `done` Built-in, downloaded, and imported translations share one metadata-driven resolution path with user-facing removal for downloaded Bibles.
 - `partial` Active app code is mostly organized under `lib/src/features/`, but some shared providers/services still sit outside that feature-first structure.
 
@@ -89,6 +89,8 @@ Separate from feature backlog — these affect correctness, safety, and maintain
 
 - `done` Reader line spacing (closes #19): Compact/Normal/Relaxed/Loose presets in Bible viewer settings, persisted via `LineSpacingService` and applied as a multiplier on every reader line height (verse text, headings/intros, tables), so Normal matches the previous look. The settings sheet now opens at half height over a light scrim with the text controls on top (plus a live size readout) so changes can be judged on the reader behind it. README reminder: mention line spacing.
 - `done` Reader font picker (Bible viewer settings → Font): System Default, bundled fonts in `assets/fonts/` (auto-detected, none shipped yet), imported .ttf/.otf files, and fonts installed on the device (Android/desktop; scanned off the UI thread). Split into `models/reader_font.dart`, `ReaderFontRepository` (choice/bundled/imports), `ReaderFontLoader` (deduped engine loads, queued + budgeted previews) and `DeviceFontScanner`; picker rows are fixed-extent to avoid layout-cycle errors; all strings localized (en/de/es/fr/zh). The continuous reader now only shrinks its viewport by the constant bar height, so selecting verses no longer resizes it. README reminder: mention custom reader fonts.
+- `done` Beta features batch: Bible text search with testament/book scope behind the reader search button (#69); Notes date filter + fixed "Note" type filter (#39); copyright line at the end of each chapter from catalog rights (#18); `basicbible://bible/JHN/3/16?translation=kjv` deep links on Android/iOS/web (#40); download progress ring + system notification via flutter_local_notifications 20.x (#55, not device-tested: Android SDK unavailable in CI sandbox); session-only translations can be downloaded (#28); split view with an independent second reading pane (#84); chapterless front matter (FRT/GLO) readable (#87); verse jumps below the fold now scroll in single-chapter view. README reminder: list search, split view, deep links, download notifications and copyright notices as shipped features.
+- `done` Beta-release bug sweep, one commit per issue with regression tests: first-run Bible load / download / session-open futures self-deadlocked in `AppBibleRepository`'s in-flight dedup (#52, #91), now `InFlightRequests`; translation downloads finish even after leaving the Versions screen (#91); interrupted re-downloads are no longer treated as installed (#55); reader settings sheet follows theme changes (#83); consecutive note verses group into ranges and both note previews truncate identically (#50, #82); cross-references show every passage they name, with range previews (#35, #75); footnote markers run per chapter instead of restarting each verse (#74); export only lists on-device translations (#64); switching to a translation without the current book updates the reference (#46); a verse is emphasised only right after navigating to it (#22); regression test for System + dark device theme (#8).
 - `done` Notes sync + backup landed on `google-sync`: schema v8 gives every annotation a stable uuid and soft-delete tombstone; a pure per-uuid last-write-wins merge engine is shared by both paths; Settings → Notes gained SQLite export/import (merge-safe restore); Settings → Sync gained Google sign-in (google_sign_in on Android/iOS, OAuth loopback + secure storage on desktop) syncing one JSON file per note to the user's own Drive appDataFolder, with listing-only no-op syncs. Web is excluded from both in v1. README reminder: mention notes backup + Google sync once shipped.
 - `done` Added Bible-viewer-only desktop/web range selection: `Shift+Click` now selects verse ranges from a local reader anchor without changing picker/editor behavior, keeping future split-view note/document surfaces free from implicit desktop selection rules.
 - `done` Added reader display toggles for translator-addition brackets, word-tag underlines, proper-name underlines, and source bold styling; verse-selector preference now defaults to off.
@@ -196,12 +198,12 @@ Scope:
 
 ### 8. Finish web storage behavior
 
-Status: `todo`
+Status: `in_progress`
 
 Scope:
 
-- Replace the in-memory web fallback with a real persistent web storage path.
-- Verify imports and cached translations survive reloads on web the same way they do on desktop/mobile.
+- Translation caches already persist on web via drift's legacy `WebDatabase` + IndexedDB (verified across a reload). That API is deprecated; migrate to `package:drift/wasm.dart`.
+- Verify imports survive reloads on web the same way they do on desktop/mobile.
 
 ### 9. Finish remaining architecture cleanup
 

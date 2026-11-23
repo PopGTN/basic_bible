@@ -47,6 +47,84 @@ BibleReference? parseStructuredReferenceTarget(String? target) {
   return BibleReference(bookId: bookId, chapter: chapter, verse: verse);
 }
 
+/// Resolves a human-written book name or abbreviation to a canonical book ID.
+///
+/// Accepts full names ("Genesis", "1 Samuel"), OSIS/USFM-style codes
+/// ("GEN", "Matt", "1Chr") and — as used in source cross-reference labels —
+/// any unambiguous prefix of a canonical name ("Ps", "Is", "Mat", "Luk",
+/// "1 Cor"). Returns null when the name is unknown or ambiguous ("Jo").
+String? resolveBookIdFromName(String rawName) {
+  final name = rawName.trim().replaceAll(RegExp(r'\.$'), '');
+  if (name.isEmpty) return null;
+
+  final exact = _mapBookNameToId(name);
+  if (exact != null) return exact;
+
+  final compact = name.replaceAll(RegExp(r'[^A-Za-z0-9]'), '').toUpperCase();
+  if (compact.isEmpty) return null;
+  final structured = _normalizeStructuredBookId(compact);
+  if (structured != null) return structured;
+
+  final matches = _canonicalBookIdsByCompactName.keys.where(
+    (canonical) => canonical.startsWith(compact),
+  );
+  if (matches.length == 1) return _canonicalBookIdsByCompactName[matches.first];
+  return null;
+}
+
+/// "1SAMUEL" -> "1SA" etc., built once from the canonical name table.
+final Map<String, String> _canonicalBookIdsByCompactName = {
+  for (final id in _canonicalBookIdOrder)
+    _canonicalBookNameOrNull(id)!
+            .replaceAll(RegExp(r'[^A-Za-z0-9]'), '')
+            .toUpperCase():
+        id,
+};
+
+const _canonicalBookIdOrder = [
+  'GEN', 'EXO', 'LEV', 'NUM', 'DEU', 'JOS', 'JDG', 'RUT', '1SA', '2SA', //
+  '1KI', '2KI', '1CH', '2CH', 'EZR', 'NEH', 'EST', 'JOB', 'PSA', 'PRO', //
+  'ECC', 'SNG', 'ISA', 'JER', 'LAM', 'EZK', 'DAN', 'HOS', 'JOL', 'AMO', //
+  'OBA', 'JON', 'MIC', 'NAM', 'HAB', 'ZEP', 'HAG', 'ZEC', 'MAL', 'MAT', //
+  'MRK', 'LUK', 'JHN', 'ACT', 'ROM', '1CO', '2CO', 'GAL', 'EPH', 'PHP', //
+  'COL', '1TH', '2TH', '1TI', '2TI', 'TIT', 'PHM', 'HEB', 'JAS', '1PE', //
+  '2PE', '1JN', '2JN', '3JN', 'JUD', 'REV',
+];
+
+/// Chapter number of the single synthetic page given to a book that has text
+/// but no chapters, such as a USFX `FRT` preface or `GLO` glossary (#87).
+/// Real chapters start at 1, so 0 can never collide with one.
+const int kFrontMatterChapter = 0;
+
+bool isFrontMatterChapter(int chapterNumber) =>
+    chapterNumber == kFrontMatterChapter;
+
+/// "Genesis 3", or just "Preface" for a front-matter page.
+String chapterReferenceLabel(String bookName, int chapterNumber) =>
+    isFrontMatterChapter(chapterNumber) ? bookName : '$bookName $chapterNumber';
+
+/// Position of a book in the canonical 66-book order (Genesis = 0). Accepts
+/// IDs or names. Unknown books sort after the canon, alphabetically.
+int canonicalBookIndex(String bookId) {
+  final id = resolveBookIdFromName(bookId) ?? bookId.toUpperCase();
+  final index = _canonicalBookIdOrder.indexOf(id);
+  return index < 0 ? _canonicalBookIdOrder.length : index;
+}
+
+/// Reading order: book (canonical), then chapter, then verse; a reference
+/// without a verse (whole chapter) sorts before its verses.
+int compareReferencesInReadingOrder(BibleReference a, BibleReference b) {
+  final byBook = canonicalBookIndex(a.bookId).compareTo(
+    canonicalBookIndex(b.bookId),
+  );
+  if (byBook != 0) return byBook;
+  final byId = a.bookId.compareTo(b.bookId); // only matters for unknown books
+  if (byId != 0) return byId;
+  final byChapter = a.chapter.compareTo(b.chapter);
+  if (byChapter != 0) return byChapter;
+  return (a.verse ?? 0).compareTo(b.verse ?? 0);
+}
+
 /// Prefer parser-provided targets and only fall back to display-label parsing.
 BibleReference? parseAnyReference({String? target, required String label}) {
   return parseStructuredReferenceTarget(target) ?? parseReferenceString(label);

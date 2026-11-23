@@ -1,3 +1,4 @@
+import 'package:basic_bible/src/features/annotations/models/annotation_verse_ranges.dart';
 import 'package:basic_bible/src/features/annotations/models/user_annotations.dart';
 import 'package:basic_bible/src/features/annotations/presentation/annotation_theme.dart';
 import 'package:basic_bible/src/features/annotations/presentation/linked_verses_section.dart';
@@ -10,7 +11,7 @@ class AnnotationDetailScreen extends StatelessWidget {
     super.key,
     required this.annotation,
     required this.books,
-    required this.onPreviewLinkedVerse,
+    required this.onPreviewVerses,
     required this.onOpenReference,
     required this.onEdit,
     required this.onDelete,
@@ -18,7 +19,7 @@ class AnnotationDetailScreen extends StatelessWidget {
 
   final UserAnnotation annotation;
   final List<BibleBook> books;
-  final Future<void> Function(AnnotationVerseLink link) onPreviewLinkedVerse;
+  final Future<void> Function(AnnotationVerseRange verses) onPreviewVerses;
   final Future<void> Function() onOpenReference;
   final Future<void> Function() onEdit;
   final Future<void> Function() onDelete;
@@ -33,9 +34,15 @@ class AnnotationDetailScreen extends StatelessWidget {
             theme.colorScheme.primary,
           );
     final primary = annotation.primaryVerse;
-    final referenceLabel =
-        '${displayBookNameForReference(books, primary.bookId)} '
-        '${primary.chapter}:${primary.verse}';
+    // Verses read as sections ("Luke 15:5-7") or single verses: the range
+    // holding the primary verse is the heading, the rest are chips. Only the
+    // new/edit note screens list every verse individually (so each can be
+    // removed).
+    final verseRanges = annotation.verseRanges;
+    final referenceLabel = verseRanges.first.label(
+      displayBookNameForReference(books, verseRanges.first.bookId),
+    );
+    final linkedRanges = verseRanges.skip(1).toList(growable: false);
 
     return Scaffold(
       appBar: AppBar(
@@ -121,12 +128,12 @@ class AnnotationDetailScreen extends StatelessWidget {
                     ),
                   ),
                 ),
-                if (annotation.linkedVerses.isNotEmpty) ...[
+                if (linkedRanges.isNotEmpty) ...[
                   const SizedBox(height: 16),
-                  LinkedVersesSection(
+                  LinkedVersesSection.grouped(
                     books: books,
-                    links: annotation.linkedVerses,
-                    onPreviewLinkedVerse: onPreviewLinkedVerse,
+                    ranges: linkedRanges,
+                    onPreviewVerses: onPreviewVerses,
                   ),
                 ],
                 if (annotation.labels.isNotEmpty) ...[

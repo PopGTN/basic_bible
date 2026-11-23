@@ -1,3 +1,4 @@
+import 'package:basic_bible/src/features/library/data/annotation_marker_normalizer.dart';
 import 'package:drift/drift.dart';
 
 import '../models/bible_models.dart';
@@ -234,7 +235,9 @@ class TranslationDatabase extends _$TranslationDatabase {
           .add(
             BibleChapter(
               number: c.number,
-              verses: versesByChapterId[c.id] ?? const [],
+              verses: normalizeChapterAnnotationMarkers(
+                versesByChapterId[c.id] ?? const [],
+              ),
               blocks: c.blocks ?? const [],
             ),
           );
@@ -281,9 +284,68 @@ class TranslationDatabase extends _$TranslationDatabase {
 
     return BibleChapter(
       number: chapterRow.number,
-      verses: verseRows.map(_mapVerse).toList(),
+      verses: normalizeChapterAnnotationMarkers(
+        verseRows.map(_mapVerse).toList(),
+      ),
       blocks: chapterRow.blocks ?? const [],
     );
+  }
+
+  // -------------------------------------------------------------------------
+  // Search (#69)
+  // -------------------------------------------------------------------------
+
+  /// Verses containing every term (case-insensitive substring), in canonical
+  /// order, optionally limited to [bookIds] (and, with [chapter], to that
+  /// chapter number). At most [limit] rows.
+  Future<List<BibleSearchHit>> searchVerses(
+    List<String> terms, {
+    Set<String>? bookIds,
+    int? chapter,
+    int limit = 500,
+  }) async {
+    if (terms.isEmpty || (bookIds != null && bookIds.isEmpty)) return const [];
+
+    String escape(String term) => term
+        .replaceAll(r'\', r'\\')
+        .replaceAll('%', r'\%')
+        .replaceAll('_', r'\_');
+
+    Expression<bool> where = tVerses.verseText.lower().like(
+      '%${escape(terms.first)}%',
+      escapeChar: r'\',
+    );
+    for (final term in terms.skip(1)) {
+      where =
+          where &
+          tVerses.verseText.lower().like('%${escape(term)}%', escapeChar: r'\');
+    }
+    if (bookIds != null) where = where & tBooks.id.isIn(bookIds);
+    if (chapter != null) where = where & tChapters.number.equals(chapter);
+
+    final rows =
+        await (select(tVerses).join([
+                innerJoin(tChapters, tChapters.id.equalsExp(tVerses.chapterId)),
+                innerJoin(tBooks, tBooks.id.equalsExp(tChapters.bookId)),
+              ])
+              ..where(where)
+              ..orderBy([
+                OrderingTerm(expression: tBooks.bookNumber),
+                OrderingTerm(expression: tChapters.number),
+                OrderingTerm(expression: tVerses.number),
+              ])
+              ..limit(limit))
+            .get();
+
+    return [
+      for (final row in rows)
+        BibleSearchHit(
+          bookId: row.readTable(tBooks).id,
+          chapter: row.readTable(tChapters).number,
+          verse: row.readTable(tVerses).number,
+          text: row.readTable(tVerses).verseText,
+        ),
+    ];
   }
 
   // -------------------------------------------------------------------------

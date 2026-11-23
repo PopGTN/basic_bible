@@ -37,21 +37,17 @@ extension _BibleTextViewStateAnnotations on _BibleTextViewState {
 
   Future<void> _previewReferenceFromSheet(
     BuildContext sheetContext,
-    BibleCrossReference referenceEntry,
+    _ReferenceTarget target,
   ) async {
-    final parsedReference = parseAnyReference(
-      target: referenceEntry.target,
-      label: referenceEntry.label,
-    );
-
     await showModalBottomSheet<void>(
       context: sheetContext,
       isScrollControlled: true,
       showDragHandle: true,
       builder: (previewContext) {
         return ReferencePreviewSheet(
-          referenceLabel: referenceEntry.label,
-          reference: parsedReference,
+          referenceLabel: target.label,
+          reference: target.range?.start,
+          range: target.range,
           preferredTranslationId: ref.read(currentTranslationProvider),
           preferredTranslationName:
               ref
@@ -141,10 +137,11 @@ extension _BibleTextViewStateAnnotations on _BibleTextViewState {
           originRef: labelIsRef ? footnote.label!.trim() : null,
           bodyText: footnote.bodyText,
           quotedText: footnote.quotedText,
-          reference: footnote.references.isNotEmpty
-              ? footnote.references.first
-              : null,
-          relatedReferences: footnote.references,
+          targets: [
+            for (final reference in footnote.references)
+              ..._referenceTargets(reference),
+          ],
+          alwaysShowTargetChips: true,
         ),
       );
     }
@@ -161,7 +158,7 @@ extension _BibleTextViewStateAnnotations on _BibleTextViewState {
           body: reference.label,
           originRef: refOrigin,
           bodyText: refOrigin != null ? reference.label : null,
-          reference: reference,
+          targets: _referenceTargets(reference),
         ),
       );
     }
@@ -169,8 +166,43 @@ extension _BibleTextViewStateAnnotations on _BibleTextViewState {
     return entries;
   }
 
+  /// Expands one source cross-reference into every passage it names
+  /// ("Ps 33:6; 104:30" -> two targets). Previously only the first verse of
+  /// the label survived (#35 / #75). An unparseable label still yields one
+  /// target so the user sees it, with the preview reporting it unavailable.
+  List<_ReferenceTarget> _referenceTargets(BibleCrossReference reference) {
+    final ranges = parseReferenceRanges(
+      target: reference.target,
+      label: reference.label,
+    );
+    if (ranges.isEmpty) {
+      return [_ReferenceTarget(label: reference.label, range: null)];
+    }
+    if (ranges.length == 1) {
+      // Keep the source's own wording when it is a single passage.
+      return [_ReferenceTarget(label: reference.label, range: ranges.single)];
+    }
+    return [
+      for (final range in ranges)
+        _ReferenceTarget(
+          label: range.label(
+            displayBookNameForReference(widget.books, range.bookId),
+          ),
+          range: range,
+        ),
+    ];
+  }
+
   String _annotationMarker(BibleFootnote footnote, {required String fallback}) {
-    final candidates = [footnote.marker?.trim(), footnote.label?.trim()];
+    // Markers are normalized chapter-wide at load time (#74) and can run past
+    // "z" to "aa", so trust any alphanumeric marker as-is: it is exactly what
+    // the inline text shows.
+    final marker = footnote.marker?.trim();
+    if (marker != null && RegExp(r'^[a-z0-9]+$').hasMatch(marker)) {
+      return marker;
+    }
+
+    final candidates = [marker, footnote.label?.trim()];
 
     for (final candidate in candidates) {
       if (candidate == null || candidate.isEmpty) continue;
@@ -230,6 +262,7 @@ extension _BibleTextViewStateAnnotations on _BibleTextViewState {
     final baseColor = bodyColor ?? Theme.of(context).textTheme.bodyLarge?.color;
     final secondaryColor = Theme.of(context).colorScheme.secondary;
     final boldDivineName = ref.watch(boldDivineNameProvider);
+    final boldWordsOfJesus = ref.watch(boldWordsOfJesusProvider);
     final underlineProperNames = ref.watch(underlineProperNamesProvider);
     final underlineWordMetadata = ref.watch(underlineWordMetadataProvider);
     final bracketTranslatorAdditions = ref.watch(
@@ -253,6 +286,7 @@ extension _BibleTextViewStateAnnotations on _BibleTextViewState {
             fontWeight: _spanFontWeight(
               span.kind,
               boldDivineName: boldDivineName,
+              boldWordsOfJesus: boldWordsOfJesus,
               useSourceBoldStyling: useSourceBoldStyling,
             ),
             decoration: _spanDecoration(
@@ -406,11 +440,12 @@ extension _BibleTextViewStateAnnotations on _BibleTextViewState {
   FontWeight _spanFontWeight(
     BibleVerseSpanKind kind, {
     bool boldDivineName = false,
+    bool boldWordsOfJesus = false,
     bool useSourceBoldStyling = true,
   }) {
     switch (kind) {
       case BibleVerseSpanKind.wordsOfJesus:
-        return FontWeight.w600;
+        return boldWordsOfJesus ? FontWeight.w600 : FontWeight.normal;
       case BibleVerseSpanKind.divineNameTag:
         return boldDivineName ? FontWeight.w700 : FontWeight.normal;
       case BibleVerseSpanKind.acrosticHeading:
