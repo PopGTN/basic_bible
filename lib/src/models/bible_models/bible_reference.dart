@@ -68,7 +68,8 @@ class BibleReferenceRange extends Equatable {
     if (startVerse == null) return true;
     if (chapter == start.chapter && verse < startVerse) return false;
     if (chapter == endChapter) {
-      final last = endVerse ?? (endChapter == start.chapter ? startVerse : null);
+      final last =
+          endVerse ?? (endChapter == start.chapter ? startVerse : null);
       if (last != null && verse > last) return false;
     }
     return true;
@@ -84,7 +85,8 @@ class BibleReferenceRange extends Equatable {
     }
     final head = '$bookName ${start.chapter}:$startVerse';
     if (isSingleVerse) return head;
-    if (endChapter != start.chapter) return '$head-$endChapter:${endVerse ?? 1}';
+    if (endChapter != start.chapter)
+      return '$head-$endChapter:${endVerse ?? 1}';
     return '$head-$endVerse';
   }
 

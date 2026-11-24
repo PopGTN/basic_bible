@@ -65,14 +65,12 @@ void main() {
     });
 
     test('target wins over label only when it parses', () {
-      expect(
-        _labels(parseReferenceRanges(target: 'GEN.1.1', label: 'Ps 23')),
-        ['GEN 1:1'],
-      );
-      expect(
-        _labels(parseReferenceRanges(target: '???', label: 'Ps 23:1')),
-        ['PSA 23:1'],
-      );
+      expect(_labels(parseReferenceRanges(target: 'GEN.1.1', label: 'Ps 23')), [
+        'GEN 1:1',
+      ]);
+      expect(_labels(parseReferenceRanges(target: '???', label: 'Ps 23:1')), [
+        'PSA 23:1',
+      ]);
     });
   });
 

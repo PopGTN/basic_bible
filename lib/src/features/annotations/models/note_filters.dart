@@ -48,7 +48,8 @@ enum NoteTypeFilter {
     // Any annotation with note text, with or without a highlight colour.
     // (Previously only notes that *also* had a highlight matched "Note".)
     NoteTypeFilter.note => annotation.hasNoteText,
-    NoteTypeFilter.highlight => annotation.hasHighlight && !annotation.hasNoteText,
+    NoteTypeFilter.highlight =>
+      annotation.hasHighlight && !annotation.hasNoteText,
   };
 }
 

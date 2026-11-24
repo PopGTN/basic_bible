@@ -20,10 +20,7 @@ void showAppAbout(BuildContext context) {
     applicationName: _appName,
     applicationIcon: _appIcon(),
     applicationLegalese: _legalese,
-    children: [
-      const SizedBox(height: 16),
-      Text(t.aboutDescription),
-    ],
+    children: [const SizedBox(height: 16), Text(t.aboutDescription)],
   );
 }
 

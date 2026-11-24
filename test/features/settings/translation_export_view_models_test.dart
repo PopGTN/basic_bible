@@ -35,30 +35,33 @@ BibleTranslation _t(String id, BibleSourceType source, {bool local = false}) =>
     );
 
 void main() {
-  test('only translations with a database on the device are exportable', () async {
-    final repository = _FakeRepository({'kjv', 'web', 'mine'});
-    final container = ProviderContainer(
-      overrides: [
-        bibleRepositoryProvider.overrideWithValue(repository),
-        availableTranslationsProvider.overrideWith(
-          (ref) async => [
-            _t('kjv', BibleSourceType.asset),
-            _t('web', BibleSourceType.download, local: true),
-            _t('asv', BibleSourceType.download), // catalog only
-            _t('bsb', BibleSourceType.session), // opened, never saved
-            _t('mine', BibleSourceType.import),
-          ],
-        ),
-      ],
-    );
-    addTearDown(container.dispose);
+  test(
+    'only translations with a database on the device are exportable',
+    () async {
+      final repository = _FakeRepository({'kjv', 'web', 'mine'});
+      final container = ProviderContainer(
+        overrides: [
+          bibleRepositoryProvider.overrideWithValue(repository),
+          availableTranslationsProvider.overrideWith(
+            (ref) async => [
+              _t('kjv', BibleSourceType.asset),
+              _t('web', BibleSourceType.download, local: true),
+              _t('asv', BibleSourceType.download), // catalog only
+              _t('bsb', BibleSourceType.session), // opened, never saved
+              _t('mine', BibleSourceType.import),
+            ],
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
 
-    final exportable = await container.read(
-      exportableTranslationsProvider.future,
-    );
+      final exportable = await container.read(
+        exportableTranslationsProvider.future,
+      );
 
-    expect(exportable.map((t) => t.id), ['kjv', 'web', 'mine']);
-    // Catalog-only entries are filtered without touching the disk.
-    expect(repository.checkedIds, isNot(contains('asv')));
-  });
+      expect(exportable.map((t) => t.id), ['kjv', 'web', 'mine']);
+      // Catalog-only entries are filtered without touching the disk.
+      expect(repository.checkedIds, isNot(contains('asv')));
+    },
+  );
 }

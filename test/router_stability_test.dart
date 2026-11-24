@@ -87,10 +87,7 @@ void main() {
       container.read(_loggedInProvider.notifier).state = true;
 
       await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
-          child: const _App(),
-        ),
+        UncontrolledProviderScope(container: container, child: const _App()),
       );
       await tester.pumpAndSettle();
       expect(find.text('Home'), findsOneWidget);
@@ -121,10 +118,7 @@ void main() {
       container.read(_loggedInProvider.notifier).state = true;
 
       await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
-          child: const _App(),
-        ),
+        UncontrolledProviderScope(container: container, child: const _App()),
       );
       await tester.pumpAndSettle();
 
