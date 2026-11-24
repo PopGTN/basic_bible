@@ -2,7 +2,8 @@ import 'dart:typed_data';
 
 import 'package:archive/archive.dart' show GZipEncoder;
 import 'package:crypto/crypto.dart';
-import 'package:flutter/services.dart' show AssetBundle, rootBundle;
+import 'package:flutter/services.dart'
+    show AssetBundle, AssetManifest, rootBundle;
 import 'package:http/http.dart' as http;
 
 import '../../../services/verified_download.dart';
@@ -79,8 +80,28 @@ class HymnalRepository {
 
   bool isBundled(String id) => _bundled.any((b) => b.id == id);
 
+  Future<List<BundledHymnal>>? _present;
+
+  /// Bundled books whose asset is actually in this build. The assets are
+  /// generated from a private repository (`make hymnals`), so a build from a
+  /// public clone has none — those books are then simply not listed.
+  Future<List<BundledHymnal>> _presentBundled() => _present ??= () async {
+    try {
+      final manifest = await AssetManifest.loadFromAssetBundle(_bundle);
+      final assets = manifest.listAssets().toSet();
+      return [
+        for (final book in _bundled)
+          if (assets.contains(book.assetPath)) book,
+      ];
+    } catch (_) {
+      // No manifest (e.g. a test bundle): assume everything is present.
+      return _bundled;
+    }
+  }();
+
   Future<List<HymnalInfo>> listHymnals() async => [
-    for (final book in _bundled) _cache[book.id]?.info ?? book.info,
+    for (final book in await _presentBundled())
+      _cache[book.id]?.info ?? book.info,
     ...await _store.listInfos(),
   ];
 

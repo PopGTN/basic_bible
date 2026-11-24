@@ -59,8 +59,11 @@ final currentHymnalProvider = FutureProvider<Hymnal>((ref) async {
   try {
     return await repository.load(id);
   } catch (_) {
-    if (id == kDefaultHymnalId) rethrow;
-    return repository.load(kDefaultHymnalId);
+    // Fall back to the first book this build actually has.
+    final available = await repository.listHymnals();
+    final fallback = available.where((b) => b.id != id).firstOrNull;
+    if (fallback == null) rethrow;
+    return repository.load(fallback.id);
   }
 });
 

@@ -1,0 +1,3 @@
+[submodule "tool/hymnals/sources"]
+	path = tool/hymnals/sources
+	url = https://github.com/PopGTN/basic_bible_hymnals.git

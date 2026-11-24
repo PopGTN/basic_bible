@@ -314,3 +314,7 @@ dart_defines.json
 
 # Stray Flutter screenshots
 flutter_*.png
+
+# Built hymnal assets contain the full hymn text: generated from the private
+# tool/hymnals/sources submodule, never committed to this public repo.
+/assets/hymnals/*.json.gz

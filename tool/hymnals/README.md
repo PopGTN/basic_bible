@@ -1,15 +1,24 @@
 # Bundled hymnals
 
 The app ships pre-built hymnal assets in `assets/hymnals/<id>.json.gz`. **Never
-edit those by hand.** Rebuild them from the files here:
+edit those by hand.** Build them with:
 
 ```sh
-dart run tool/hymnals/build_hymnal.dart bhb nbhb
+make hymnals   # = git submodule update --init tool/hymnals/sources
+               #   + dart run tool/hymnals/build_hymnal.dart bhb nbhb
 ```
+
+**The hymn text is private.** `sources/` is a submodule pointing at the private
+repo `PopGTN/basic_bible_hymnals`, and the built `*.json.gz` assets are
+gitignored. The publisher's permission covers the app, not republishing the
+books in this public repo, and the NBHB text comes from a PDF supplied on
+condition it isn't shared. Never commit either. Without access to the
+submodule, the app builds fine with no bundled hymn books and the bundled
+tests are skipped. `make deploy` builds the hymnals first.
 
 | File | Purpose |
 |---|---|
-| `sources/<id>.source.json` | Raw hymn data (legacy bare-array format). |
+| `sources/<id>.source.json` | Raw hymn data (legacy bare-array format), in the private submodule. |
 | `<id>.meta.json` | The `book` block (title, publisher, copyright, permission wording), optional `rightsRules` for groups of hymns, and an optional `draftSource` used only while `source` is missing (draft builds go to `build/hymnals/`, never `assets/`). |
 | `<id>.overrides.json` | Hand-reviewed per-hymn fixes (typos, line splits, editor notes, per-hymn copyright). |
 

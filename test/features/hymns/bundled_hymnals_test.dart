@@ -6,6 +6,8 @@
 // it fails until the real publisher copyright and permission wording is
 // filled into tool/hymnals/<id>.meta.json and the asset is rebuilt.
 
+import 'dart:io';
+
 import 'package:basic_bible/src/features/hymns/data/hymnal_json_codec.dart';
 import 'package:basic_bible/src/features/hymns/data/hymnal_repository.dart';
 import 'package:basic_bible/src/features/hymns/models/hymnal.dart';
@@ -24,10 +26,17 @@ Future<Hymnal> _load(BundledHymnal book) async {
   );
 }
 
+/// The assets are built from the private hymnal sources (`make hymnals`).
+/// In a clone without access, skip instead of failing.
+String? _skipIfMissing(BundledHymnal book) => File(book.assetPath).existsSync()
+    ? null
+    : '${book.assetPath} not built (needs the private submodule; run make hymnals)';
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   for (final book in kBundledHymnals) {
+    final skip = _skipIfMissing(book);
     test(
       '${book.id}: asset parses as a hymnal v1 book with metadata',
       () async {
@@ -58,6 +67,7 @@ void main() {
           );
         }
       },
+      skip: skip,
     );
 
     test('${book.id}: no TODO_ placeholders remain (release gate)', () async {
@@ -75,7 +85,7 @@ void main() {
             'Fill in the real publisher wording in tool/hymnals/${book.id}.meta.json '
             'and rebuild with: dart run tool/hymnals/build_hymnal.dart ${book.id}',
       );
-    });
+    }, skip: skip);
   }
 
   test('the default book is bundled', () {

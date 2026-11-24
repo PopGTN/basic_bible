@@ -12,9 +12,19 @@ else
 BASE_HREF := /
 endif
 
+# Builds assets/hymnals/*.json.gz from the private hymnal sources submodule
+# (PopGTN/basic_bible_hymnals). The built files hold full hymn text, so they
+# are gitignored here and generated before every build that ships them.
+hymnals:
+	git submodule update --init tool/hymnals/sources
+	dart run tool/hymnals/build_hymnal.dart bhb nbhb
+
 deploy:
 	@echo "Cleaning previous build artifacts..."
 	flutter clean
+
+	@echo "Building bundled hymnals..."
+	$(MAKE) hymnals
 
 	@echo "Getting packages..."
 	flutter pub get
@@ -46,4 +56,4 @@ deploy:
 	@echo "Finished deploy: $(GITHUB_REPO)"
 	@echo "Flutter web URL: https://$(GITHUB_USER).github.io/$(OUTPUT)/"
 
-.PHONY: deploy
+.PHONY: deploy hymnals

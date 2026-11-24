@@ -240,6 +240,11 @@ This split is a structural maintenance improvement, not a feature change. Treat 
   turns `tool/hymnals/sources/*.json` + `<id>.meta.json` + `<id>.overrides.json`
   into `assets/hymnals/<id>.json.gz`. `bundled_hymnals_test.dart` is the release
   gate for the legal text (fails while `TODO_` placeholders remain).
+- **Hymn text never goes in this public repo.** `tool/hymnals/sources` is a
+  submodule of the private `PopGTN/basic_bible_hymnals`; built assets are
+  gitignored and made by `make hymnals` (also run by `make deploy`). Without
+  the submodule the app lists no bundled books (asset-manifest check in
+  `HymnalRepository`) and the bundled tests skip.
 - Imported/downloaded books live in a separate drift DB (`hymnals.sqlite`,
   IndexedDB `basic_bible_hymnals` on web) opened with plain SQL — no codegen,
   and `AppDatabase` migrations are untouched. Favorites and display settings

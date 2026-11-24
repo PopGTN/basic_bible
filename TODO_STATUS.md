@@ -62,11 +62,11 @@ Separate from feature backlog — these affect correctness, safety, and maintain
 
 ## Recommended Next Step
 
-- `next` Get John Ritchie Ltd's exact permission wording for both bundled hymnals and fill the `TODO_` fields (`tool/hymnals/bhb.meta.json`: edition, ISBN, copyright, permissionNotice, permissionDate; `nbhb.meta.json`: permissionNotice, permissionDate), confirm whether that permission covers the 38 Remembrance Hymns (Isaac Y. Ewan) in NBHB and the 13 flagged BHB hymns, then rebuild with `dart run tool/hymnals/build_hymnal.dart bhb nbhb`.
+- `next` Email John Ritchie Ltd (the thread from 2025-11-06) to confirm the permission also covers the web, iOS and Linux versions (the request named Android, Windows and Mac), the 38 Remembrance Hymns by Isaac Y. Ewan in NBHB and the 13 flagged BHB hymns, and the light clean-ups (typo fixes, line breaks, normal-case first words) given the "without alteration" wording. Until web is confirmed, don't `make deploy`.
 
 **Why this first:**
 
-- The Hymns feature is built on branch `Hymnbooks-added`, but `test/features/hymns/bundled_hymnals_test.dart` deliberately fails (release gate) while any `TODO_` placeholder remains, the 13 BHB hymns listed as "rights to confirm" and the 38 NBHB Remembrance Hymns listed as third-party (see the build reports and `bible-data/licenses/hymnals/`) must be confirmed as covered. NBHB is now bundled from the clean 2021 source (678 hymns; the other publishers' songs are already left out). Only the project owner can get that wording from John Ritchie Ltd.
+- Everything else for Hymns is done on branch `Hymnbooks-added`: permission wording is in, the release gates pass, and the hymn text lives in the private `PopGTN/basic_bible_hymnals` submodule. A web deploy publishes the hymn files on a public site, so it needs the publisher's OK first.
 
 ---
 
