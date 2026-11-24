@@ -4,6 +4,11 @@
 
 This README is intentionally status-focused. It should reflect what the repo actually does now.
 
+To Start
+```
+flutter run --profile -d linux --dart-define-from-file=dart_defines.json
+
+```
 ## Current App Status
 
 ### Working now
@@ -11,7 +16,14 @@ This README is intentionally status-focused. It should reflect what the repo act
 - Read Bible content inside the app.
 - Switch between bundled, cached, downloaded, and imported translations.
 - Import local Bible XML files in USFX, OSIS, and Zefania formats.
-- Use the dedicated `Versions` screen to select translations.
+- Use the dedicated `Versions` screen to select translations, with:
+  - download progress on the screen and a system notification per download (Android/iOS/desktop; not on web)
+  - session-only translations that can be downloaded to keep them
+  - a copyright/license sheet per translation (info button)
+- See the translation's copyright line at the end of every chapter; tapping it opens the same copyright/license sheet.
+- Search the Bible text from the reader's search button, limited to the whole Bible, either testament, the current book, or the current chapter.
+- Read a second, independent translation/passage side by side in split view (tablets, computers, and phones in landscape; rotating a phone upright hides it until it turns back), with every reader feature in both panes: highlights, notes, verse details, continuous scrolling. Each pane has its own translation button and chapter bar; split view opens where the main reader is and remembers the second pane's place until the app is relaunched (Settings → "Open Split View At The Current Chapter" to always follow the main reader).
+- Open the reader from links such as `basicbible://bible/JHN/3/16?translation=kjv` (Android/iOS/web).
 - Control startup behavior from Settings, including:
   - opening directly on the Bible tab by default
   - turning the sample login gate on or off
@@ -24,6 +36,11 @@ This README is intentionally status-focused. It should reflect what the repo act
   - `Verse List` mode
   - `Document` mode
   - `Continuous Scrolling` mode
+- Adjust reading in the Bible viewer settings:
+  - text size and line spacing (Compact / Normal / Relaxed / Loose)
+  - reader font: System Default, bundled fonts in `assets/fonts/`, imported `.ttf`/`.otf` files, or fonts installed on the device
+  - words of Jesus in red, optionally bold
+  - `Highlight Strong's Words` (off by default): underlines and colours words the source links to Strong's numbers
 - Render partial rich Bible formatting from supported files, including:
   - words of Jesus
   - footnotes
@@ -39,7 +56,7 @@ This README is intentionally status-focused. It should reflect what the repo act
   - personal notes
   - notes with connected highlight colors
 - Link extra verses to a personal note and preserve the translation label used when each verse was added.
-- Browse and edit saved personal notes/highlights from a dedicated `Notes` screen.
+- Browse and edit saved personal notes/highlights from a dedicated `Notes` screen, filtered by type, tag, translation, and date (created or last modified).
 - Use multiple themes, including:
   - system
   - light
@@ -49,7 +66,7 @@ This README is intentionally status-focused. It should reflect what the repo act
   - pure white
   - blue
   - red
-- Change app language with the current localization setup.
+- Change the app language in Settings: English, German, Spanish, French, or Chinese. It follows the device language on first launch. Some older reader, notes, and settings screens still show English text.
 - Persist parsed Bible content locally on non-web platforms.
 - Build and read bundled or downloaded Bible content in the browser with the web target.
 
@@ -100,7 +117,7 @@ The goal is to support **every meaningful feature** each format can express — 
 | Cross-ref origin (`<xo>`) | ✅ Supported — preserved as origin metadata in the app |
 | Quote attribution (`<q who="...">`) | ✅ Supported — preserved in verse metadata and surfaced in source details |
 | Poetry / quote lines (`<q level="...">`) | ✅ Supported — quote level and poetry structure drive reader layout |
-| Strong's word metadata (`<w s="...">`) | ✅ Supported — preserved in span metadata and surfaced in source details |
+| Strong's word metadata (`<w s="...">`) | ✅ Supported — preserved in span metadata, surfaced in source details, and optionally underlined/coloured in the reader (`Highlight Strong's Words`, off by default) |
 | Word morphology (`<w m="...">`) and lemma (`<w l="...">`) | ✅ Supported — preserved in span metadata and surfaced in source details |
 | Book heading (`<h>`) | ✅ |
 | TOC labels (`<toc>`) | ✅ |

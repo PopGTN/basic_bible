@@ -75,10 +75,9 @@ String? resolveBookIdFromName(String rawName) {
 /// "1SAMUEL" -> "1SA" etc., built once from the canonical name table.
 final Map<String, String> _canonicalBookIdsByCompactName = {
   for (final id in _canonicalBookIdOrder)
-    _canonicalBookNameOrNull(id)!
-            .replaceAll(RegExp(r'[^A-Za-z0-9]'), '')
-            .toUpperCase():
-        id,
+    _canonicalBookNameOrNull(
+      id,
+    )!.replaceAll(RegExp(r'[^A-Za-z0-9]'), '').toUpperCase(): id,
 };
 
 const _canonicalBookIdOrder = [
@@ -114,9 +113,9 @@ int canonicalBookIndex(String bookId) {
 /// Reading order: book (canonical), then chapter, then verse; a reference
 /// without a verse (whole chapter) sorts before its verses.
 int compareReferencesInReadingOrder(BibleReference a, BibleReference b) {
-  final byBook = canonicalBookIndex(a.bookId).compareTo(
-    canonicalBookIndex(b.bookId),
-  );
+  final byBook = canonicalBookIndex(
+    a.bookId,
+  ).compareTo(canonicalBookIndex(b.bookId));
   if (byBook != 0) return byBook;
   final byId = a.bookId.compareTo(b.bookId); // only matters for unknown books
   if (byId != 0) return byId;
@@ -129,6 +128,44 @@ int compareReferencesInReadingOrder(BibleReference a, BibleReference b) {
 BibleReference? parseAnyReference({String? target, required String label}) {
   return parseStructuredReferenceTarget(target) ?? parseReferenceString(label);
 }
+
+/// The chapter [direction] steps (+1 next, -1 previous) from [from], crossing
+/// book boundaries and skipping chapterless books. A book missing from
+/// [books] falls back to the first book and an unknown chapter to the book's
+/// first, matching what the reader displays. Null at either end of [books].
+BibleReference? adjacentChapterReference(
+  List<BibleBook> books,
+  BibleReference from,
+  int direction,
+) {
+  if (books.isEmpty) return null;
+  final book = resolveBookFromReference(books, from.bookId) ?? books.first;
+  var bookIndex = books.indexOf(book);
+  final found = book.chapters.indexWhere((c) => c.number == from.chapter);
+  var chapterIndex = (found < 0 ? 0 : found) + direction;
+  while (chapterIndex < 0 || chapterIndex >= books[bookIndex].chapters.length) {
+    bookIndex += direction;
+    if (bookIndex < 0 || bookIndex >= books.length) return null;
+    chapterIndex = direction > 0 ? 0 : books[bookIndex].chapters.length - 1;
+  }
+  final target = books[bookIndex];
+  return BibleReference(
+    bookId: target.id,
+    chapter: target.chapters[chapterIndex].number,
+  );
+}
+
+// Compiled once: this runs per span per verse per frame, and building the
+// RegExps inside it showed up as allocation churn.
+final _leadingNoSpace = RegExp(r"^[.,;:!?)}\]”’]");
+final _trailingNoSpace = RegExp(r"[(\[{“‘/]$");
+
+/// Whether a space belongs between two adjacent verse spans, so punctuation
+/// hugs its word ("word," not "word ,").
+bool needsSpaceBetweenSpans(String previous, String current) =>
+    previous.isNotEmpty &&
+    !current.startsWith(_leadingNoSpace) &&
+    !_trailingNoSpace.hasMatch(previous);
 
 /// Resolve a reference book ID against the books currently available in the
 /// loaded translation. This keeps the reader usable when translations expose

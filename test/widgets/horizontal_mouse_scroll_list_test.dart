@@ -21,7 +21,11 @@ void main() {
             child: HorizontalMouseScrollList(
               children: [
                 for (var i = 0; i < 30; i++)
-                  Container(width: 100, height: 100, color: Colors.primaries[i % Colors.primaries.length]),
+                  Container(
+                    width: 100,
+                    height: 100,
+                    color: Colors.primaries[i % Colors.primaries.length],
+                  ),
               ],
             ),
           ),
@@ -55,5 +59,59 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(controller.offset, 0);
+  });
+
+  testWidgets('mouse wheel scrolls a content-sized horizontal row', (
+    tester,
+  ) async {
+    // The reader's verse-selection action bar (Highlight / Note / Copy /
+    // Share) uses this; on a narrow window its buttons overflow sideways.
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Center(
+            child: SizedBox(
+              width: 200,
+              child: HorizontalMouseScrollView(
+                child: Row(
+                  children: [
+                    for (var i = 0; i < 10; i++)
+                      SizedBox(width: 100, height: 40, child: Text('$i')),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    final scrollFinder = find.byType(SingleChildScrollView);
+    final controller = tester
+        .widget<SingleChildScrollView>(scrollFinder)
+        .controller!;
+    // Sizes to its content instead of needing a fixed height.
+    expect(tester.getSize(scrollFinder).height, 40);
+    expect(controller.offset, 0);
+
+    final gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
+    await gesture.addPointer(location: tester.getCenter(scrollFinder));
+    await tester.sendEventToBinding(
+      PointerScrollEvent(
+        position: tester.getCenter(scrollFinder),
+        scrollDelta: const Offset(0, 150),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(controller.offset, 150);
+
+    // Mouse drag scrolls too.
+    await tester.dragFrom(
+      tester.getCenter(scrollFinder),
+      const Offset(-100, 0),
+      kind: PointerDeviceKind.mouse,
+    );
+    await tester.pumpAndSettle();
+    expect(controller.offset, greaterThan(150));
   });
 }

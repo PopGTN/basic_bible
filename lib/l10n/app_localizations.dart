@@ -65,7 +65,8 @@ import 'app_localizations_zh.dart';
 /// be consistent with the languages listed in the AppLocalizations.supportedLocales
 /// property.
 abstract class AppLocalizations {
-  AppLocalizations(String locale) : localeName = intl.Intl.canonicalizedLocale(locale.toString());
+  AppLocalizations(String locale)
+    : localeName = intl.Intl.canonicalizedLocale(locale.toString());
 
   final String localeName;
 
@@ -73,7 +74,8 @@ abstract class AppLocalizations {
     return Localizations.of<AppLocalizations>(context, AppLocalizations);
   }
 
-  static const LocalizationsDelegate<AppLocalizations> delegate = _AppLocalizationsDelegate();
+  static const LocalizationsDelegate<AppLocalizations> delegate =
+      _AppLocalizationsDelegate();
 
   /// A list of this localizations delegate along with the default localizations
   /// delegates.
@@ -85,12 +87,13 @@ abstract class AppLocalizations {
   /// Additional delegates can be added by appending to this list in
   /// MaterialApp. This list does not have to be used at all if a custom list
   /// of delegates is preferred or required.
-  static const List<LocalizationsDelegate<dynamic>> localizationsDelegates = <LocalizationsDelegate<dynamic>>[
-    delegate,
-    GlobalMaterialLocalizations.delegate,
-    GlobalCupertinoLocalizations.delegate,
-    GlobalWidgetsLocalizations.delegate,
-  ];
+  static const List<LocalizationsDelegate<dynamic>> localizationsDelegates =
+      <LocalizationsDelegate<dynamic>>[
+        delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+      ];
 
   /// A list of this localizations delegate's supported locales.
   static const List<Locale> supportedLocales = <Locale>[
@@ -98,7 +101,7 @@ abstract class AppLocalizations {
     Locale('en'),
     Locale('es'),
     Locale('fr'),
-    Locale('zh')
+    Locale('zh'),
   ];
 
   /// No description provided for @home.
@@ -1204,9 +1207,388 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Could not download {name}.'**
   String downloadNotificationFailedBody(Object name);
+
+  /// No description provided for @playAudioTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Play audio'**
+  String get playAudioTooltip;
+
+  /// No description provided for @splitFollowMainTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Split View At The Current Chapter'**
+  String get splitFollowMainTitle;
+
+  /// No description provided for @splitFollowMainSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Each time split view opens, start the second pane at the chapter the main reader is on. Off by default: the pane stays where you left it until the app is relaunched.'**
+  String get splitFollowMainSubtitle;
+
+  /// No description provided for @searchTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Search'**
+  String get searchTooltip;
+
+  /// No description provided for @readerOptionsTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Reader options'**
+  String get readerOptionsTooltip;
+
+  /// No description provided for @relatedContentAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Related Content'**
+  String get relatedContentAction;
+
+  /// No description provided for @fontsAndSettingsAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Fonts & Settings'**
+  String get fontsAndSettingsAction;
+
+  /// No description provided for @continuousScrollingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Continuous Scrolling'**
+  String get continuousScrollingTitle;
+
+  /// No description provided for @documentModeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Document Mode'**
+  String get documentModeTitle;
+
+  /// No description provided for @showNotesAcrossTranslationsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Show Notes On Other Translations'**
+  String get showNotesAcrossTranslationsTitle;
+
+  /// No description provided for @allSettingsAction.
+  ///
+  /// In en, this message translates to:
+  /// **'All Settings'**
+  String get allSettingsAction;
+
+  /// No description provided for @retryAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get retryAction;
+
+  /// No description provided for @addNoteAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Note'**
+  String get addNoteAction;
+
+  /// No description provided for @viewAction.
+  ///
+  /// In en, this message translates to:
+  /// **'View'**
+  String get viewAction;
+
+  /// No description provided for @crossReferencesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Cross-References'**
+  String get crossReferencesTitle;
+
+  /// No description provided for @noCrossReferences.
+  ///
+  /// In en, this message translates to:
+  /// **'No cross-references available for this verse.'**
+  String get noCrossReferences;
+
+  /// No description provided for @couldNotParseReference.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not parse reference: {label}'**
+  String couldNotParseReference(Object label);
+
+  /// No description provided for @currentTranslationLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Current translation'**
+  String get currentTranslationLabel;
+
+  /// No description provided for @backToDetailsAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to Details'**
+  String get backToDetailsAction;
+
+  /// No description provided for @backToNoteAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to Note'**
+  String get backToNoteAction;
+
+  /// No description provided for @readerErrorMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Error: {error}'**
+  String readerErrorMessage(Object error);
+
+  /// No description provided for @failedToLoadBible.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load Bible: {error}'**
+  String failedToLoadBible(Object error);
+
+  /// No description provided for @shareTextCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Share text copied. Native share can be added later without changing your notes data.'**
+  String get shareTextCopied;
+
+  /// No description provided for @highlightAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Highlight'**
+  String get highlightAction;
+
+  /// No description provided for @noteAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Note'**
+  String get noteAction;
+
+  /// No description provided for @copyAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy'**
+  String get copyAction;
+
+  /// No description provided for @shareAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Share'**
+  String get shareAction;
+
+  /// No description provided for @noteHighlightsEditedFromNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Note highlights are edited from the note itself.'**
+  String get noteHighlightsEditedFromNote;
+
+  /// No description provided for @previewUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Preview unavailable for this reference.'**
+  String get previewUnavailable;
+
+  /// No description provided for @openInBibleAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Open in Bible'**
+  String get openInBibleAction;
+
+  /// No description provided for @previousChapterTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous chapter'**
+  String get previousChapterTooltip;
+
+  /// No description provided for @nextChapterTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Next chapter'**
+  String get nextChapterTooltip;
+
+  /// No description provided for @sourceDetailsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Source details'**
+  String get sourceDetailsTitle;
+
+  /// No description provided for @quoteSpeakerLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Quote speaker'**
+  String get quoteSpeakerLabel;
+
+  /// No description provided for @lemmaLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Lemma'**
+  String get lemmaLabel;
+
+  /// No description provided for @morphologyLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Morphology'**
+  String get morphologyLabel;
+
+  /// No description provided for @translationNotAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Translation not available.'**
+  String get translationNotAvailable;
+
+  /// No description provided for @currentTranslationNotAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Current translation is not available.'**
+  String get currentTranslationNotAvailable;
+
+  /// No description provided for @saveNoteFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to save note. Please try again.'**
+  String get saveNoteFailed;
+
+  /// No description provided for @saveAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get saveAction;
+
+  /// No description provided for @noteFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Note'**
+  String get noteFieldLabel;
+
+  /// No description provided for @noteFieldHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Write your note here.'**
+  String get noteFieldHint;
+
+  /// No description provided for @primaryVerseTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Primary Verse'**
+  String get primaryVerseTitle;
+
+  /// No description provided for @removeVerseTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove verse?'**
+  String get removeVerseTitle;
+
+  /// No description provided for @addVerseAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Verse'**
+  String get addVerseAction;
+
+  /// No description provided for @connectedHighlightTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Connected Highlight'**
+  String get connectedHighlightTitle;
+
+  /// No description provided for @noneOption.
+  ///
+  /// In en, this message translates to:
+  /// **'None'**
+  String get noneOption;
+
+  /// No description provided for @connectedHighlightDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'This note will keep a connected verse highlight on its primary verse.'**
+  String get connectedHighlightDescription;
+
+  /// No description provided for @labelsFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Labels'**
+  String get labelsFieldLabel;
+
+  /// No description provided for @labelsFieldHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Comma separated labels'**
+  String get labelsFieldHint;
+
+  /// No description provided for @onlyStandaloneHighlightsRemovable.
+  ///
+  /// In en, this message translates to:
+  /// **'Only standalone highlights can be removed here. Edit a note to change its highlight.'**
+  String get onlyStandaloneHighlightsRemovable;
+
+  /// No description provided for @noteVerseLimit.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes can be linked to up to {count} verses at once. Please select a smaller range.'**
+  String noteVerseLimit(int count);
+
+  /// No description provided for @deleteAnnotationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete?'**
+  String get deleteAnnotationTitle;
+
+  /// No description provided for @deleteAnnotationDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'This note or highlight will be permanently removed.'**
+  String get deleteAnnotationDescription;
+
+  /// No description provided for @noReferenceHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'No reference history yet.'**
+  String get noReferenceHistory;
+
+  /// No description provided for @recentReferencesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent References'**
+  String get recentReferencesTitle;
+
+  /// No description provided for @referencesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'References'**
+  String get referencesTitle;
+
+  /// No description provided for @historyTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'History'**
+  String get historyTooltip;
+
+  /// No description provided for @searchBooksHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search books'**
+  String get searchBooksHint;
+
+  /// No description provided for @chaptersLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Chapters'**
+  String get chaptersLabel;
+
+  /// No description provided for @goToReference.
+  ///
+  /// In en, this message translates to:
+  /// **'Go to {reference}'**
+  String goToReference(Object reference);
+
+  /// No description provided for @versesInChapter.
+  ///
+  /// In en, this message translates to:
+  /// **'Verses in {chapter}'**
+  String versesInChapter(Object chapter);
+
+  /// No description provided for @keepOneTranslationMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep at least one translation on this device. Download or import another one before removing this one.'**
+  String get keepOneTranslationMessage;
 }
 
-class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {
+class _AppLocalizationsDelegate
+    extends LocalizationsDelegate<AppLocalizations> {
   const _AppLocalizationsDelegate();
 
   @override
@@ -1215,28 +1597,32 @@ class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> 
   }
 
   @override
-  bool isSupported(Locale locale) => <String>['de', 'en', 'es', 'fr', 'zh'].contains(locale.languageCode);
+  bool isSupported(Locale locale) =>
+      <String>['de', 'en', 'es', 'fr', 'zh'].contains(locale.languageCode);
 
   @override
   bool shouldReload(_AppLocalizationsDelegate old) => false;
 }
 
 AppLocalizations lookupAppLocalizations(Locale locale) {
-
-
   // Lookup logic when only language code is specified.
   switch (locale.languageCode) {
-    case 'de': return AppLocalizationsDe();
-    case 'en': return AppLocalizationsEn();
-    case 'es': return AppLocalizationsEs();
-    case 'fr': return AppLocalizationsFr();
-    case 'zh': return AppLocalizationsZh();
+    case 'de':
+      return AppLocalizationsDe();
+    case 'en':
+      return AppLocalizationsEn();
+    case 'es':
+      return AppLocalizationsEs();
+    case 'fr':
+      return AppLocalizationsFr();
+    case 'zh':
+      return AppLocalizationsZh();
   }
 
   throw FlutterError(
     'AppLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
     'an issue with the localizations generation tool. Please file an issue '
     'on GitHub with a reproducible sample app and the gen-l10n configuration '
-    'that was used.'
+    'that was used.',
   );
 }

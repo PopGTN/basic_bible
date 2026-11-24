@@ -1,6 +1,7 @@
 import 'package:basic_bible/l10n/app_localizations.dart';
 import 'package:basic_bible/src/features/annotations/application/view_models/annotation_preferences_view_models.dart';
 import 'package:basic_bible/src/features/reader/application/view_models/reader_preferences_view_models.dart';
+import 'package:basic_bible/src/features/reader/application/view_models/split_view_view_models.dart';
 import 'package:basic_bible/src/features/settings/application/view_models/app_launch_preferences_view_models.dart';
 import 'package:basic_bible/src/features/settings/application/view_models/reader_display_preferences_view_models.dart';
 import 'package:basic_bible/src/features/sync/presentation/notes_backup_tiles.dart';
@@ -252,6 +253,17 @@ class SettingsScreen extends ConsumerWidget {
               onChanged: (value) {
                 ref.read(showVerseSelectorProvider.notifier).setEnabled(value);
               },
+            ),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text(AppLocalizations.of(context)!.splitFollowMainTitle),
+              subtitle: Text(
+                AppLocalizations.of(context)!.splitFollowMainSubtitle,
+              ),
+              value: ref.watch(splitPaneFollowsMainProvider),
+              onChanged: (value) => ref
+                  .read(splitPaneFollowsMainProvider.notifier)
+                  .setEnabled(value),
             ),
             const SizedBox(height: 20),
 

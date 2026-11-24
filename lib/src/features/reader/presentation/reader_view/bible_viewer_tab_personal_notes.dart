@@ -87,7 +87,7 @@ class _PersonalNotesSheet extends StatelessWidget {
                   child: OutlinedButton.icon(
                     onPressed: () => onCreate(),
                     icon: const Icon(Icons.note_add_outlined),
-                    label: const Text('Add Note'),
+                    label: Text(AppLocalizations.of(context)!.addNoteAction),
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -240,7 +240,7 @@ class _PersonalNoteCard extends StatelessWidget {
                   TextButton.icon(
                     onPressed: onViewDetails,
                     icon: const Icon(Icons.visibility_outlined),
-                    label: const Text('View'),
+                    label: Text(AppLocalizations.of(context)!.viewAction),
                   ),
                   TextButton.icon(
                     onPressed: onEdit,
@@ -250,7 +250,7 @@ class _PersonalNoteCard extends StatelessWidget {
                   TextButton.icon(
                     onPressed: onDelete,
                     icon: const Icon(Icons.delete_outline),
-                    label: const Text('Delete'),
+                    label: Text(AppLocalizations.of(context)!.deleteAction),
                   ),
                 ],
               ),

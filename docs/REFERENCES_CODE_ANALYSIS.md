@@ -1,5 +1,10 @@
 # References Screen Code Flow Analysis
 
+> Point-in-time analysis; line numbers below are historical. Updated
+> 2026-11-23: the visible chapter is now set through `_setVisibleReference`
+> (a `ValueNotifier` plus `visibleReaderReferenceProvider`) instead of
+> `setState(_continuousVisibleReference = ...)`.
+
 ## Data Flow Diagram
 
 ```
@@ -10,7 +15,7 @@ Navigator.pop(reference) returns to ChapterBar
 onReferenceChanged(reference) callback
         ↓
 Parallel updates:
-  ├→ setState(_continuousVisibleReference = reference) [if continuous mode]
+  ├→ _setVisibleReference(reference) [if continuous mode]
   └→ ref.read(currentReferenceProvider.notifier).setReference(reference)
         ↓
 BibleViewerTab rebuild triggered
@@ -31,7 +36,7 @@ Reference bar updates (shows displayReference)
 
 ### BibleViewerTab._BibleTextViewState
 
-- `_continuousVisibleReference`: Tracks which chapter is currently visible during scrolling
+- `_visibleReference` (outer reader state): `ValueNotifier` with the chapter currently visible during scrolling; only the chapter bar listens
 - `_scrollController`: Controls the ListView/continuous view scroll
 - `_showSelectedVerseFocus`: Highlights the focused verse with dimmed other verses
 - `_suppressNextChapterAutoScroll`: Flag to prevent auto-scroll after manual scroll triggers visible-chapter sync
@@ -66,8 +71,8 @@ Reference bar updates (shows displayReference)
 
 1. `onReferenceChanged()` is called with Genesis 15
 2. **First update (state-based):**
-   - `setState(_continuousVisibleReference = Genesis 15)` schedules rebuild
-   - Reference bar immediately shows Genesis 15
+   - `_setVisibleReference(Genesis 15)` updates the notifier (and provider)
+   - Reference bar immediately shows Genesis 15; nothing else rebuilds
 3. **Second update (provider-based):**
    - `setReference(Genesis 15)` updates currentReferenceProvider
    - BibleViewerTab rebuilds with new currentReference
@@ -87,7 +92,7 @@ Reference bar updates (shows displayReference)
 **Potential Issues:**
 - **Race condition in Path 1/2**: If `_scheduleVerseFocus()` is called but verse widget not yet mounted, scroll silently fails. Recovery happens when chapter hydration completes and triggers widget rebuild.
 - **Sync lag in Path 2**: During scroll animation, `_syncVisibleChapterFromViewport()` might report a different "visible" chapter than the programmatically-scrolling-to chapter. This causes reference bar to flicker or show intermediate chapters.
-- **Double rebuild coordination**: The `setState()` for `_continuousVisibleReference` and the `ref.read()` for provider update happen sequentially. If timing is off, two separate rebuilds could cause transient misalignment.
+- ~~**Double rebuild coordination**~~ Resolved: the notifier and the provider are set together in `_setVisibleReference`, and only the chapter bar rebuilds for it.
 
 ---
 

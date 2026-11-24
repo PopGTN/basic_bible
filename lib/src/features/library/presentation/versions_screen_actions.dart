@@ -3,6 +3,7 @@ import 'package:basic_bible/src/features/library/data/app_bible_repository.dart'
 import 'package:basic_bible/src/features/library/presentation/import_translation_screen.dart';
 import 'package:basic_bible/src/features/library/presentation/versions_screen.dart';
 import 'package:basic_bible/src/features/reader/application/view_models/bible_library_view_models.dart';
+import 'package:basic_bible/src/features/reader/application/view_models/split_view_view_models.dart';
 import 'package:basic_bible/src/features/reader/application/view_models/translation_actions_view_model.dart';
 import 'package:basic_bible/src/models/bible_models.dart';
 import 'package:basic_bible/src/platform/runtime_support.dart';
@@ -193,7 +194,10 @@ mixin VersionsScreenActions on ConsumerState<VersionsScreen> {
     try {
       await ref.read(bibleBooksProvider.notifier).clearAllTranslationCache();
       final defaultId = AppBibleRepository.builtInTranslations.first.id;
-      await _translations.switchTo(defaultId);
+      // Both readers (split view), not just the one that opened this screen.
+      await ref
+          .read(readerTranslationFallbackProvider)
+          .moveReadersOff((id) => id != defaultId, defaultId);
       ref.invalidate(availableTranslationsProvider);
       if (!context.mounted) return;
       ScaffoldMessenger.of(
@@ -209,6 +213,27 @@ mixin VersionsScreenActions on ConsumerState<VersionsScreen> {
     }
   }
 
+  /// Where readers go when [translation] is removed (see
+  /// [localFallbackTranslation]). Null, after telling the user, when it is
+  /// the last translation on the device: one must always remain.
+  BibleTranslation? _fallbackOrWarn(
+    BuildContext context,
+    List<BibleTranslation> allTranslations,
+    BibleTranslation translation,
+  ) {
+    final fallback = localFallbackTranslation(allTranslations, translation.id);
+    if (fallback == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            AppLocalizations.of(context)!.keepOneTranslationMessage,
+          ),
+        ),
+      );
+    }
+    return fallback;
+  }
+
   // ---------------------------------------------------------------------------
   // Delete imported
   // ---------------------------------------------------------------------------
@@ -216,10 +241,11 @@ mixin VersionsScreenActions on ConsumerState<VersionsScreen> {
   Future<void> deleteImportedTranslation(
     BuildContext context, {
     required BibleTranslation translation,
-    required String currentTranslationId,
     required List<BibleTranslation> allTranslations,
   }) async {
     final t = AppLocalizations.of(context)!;
+    final fallback = _fallbackOrWarn(context, allTranslations, translation);
+    if (fallback == null) return;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -240,13 +266,10 @@ mixin VersionsScreenActions on ConsumerState<VersionsScreen> {
     if (confirmed != true || !context.mounted) return;
 
     try {
-      if (currentTranslationId == translation.id) {
-        final fallback = allTranslations.firstWhere(
-          (c) => c.id != translation.id,
-          orElse: () => AppBibleRepository.builtInTranslations.first,
-        );
-        await _translations.switchTo(fallback.id);
-      }
+      // Every reader on it (main and split pane) moves off first.
+      await ref
+          .read(readerTranslationFallbackProvider)
+          .moveReadersOff((id) => id == translation.id, fallback.id);
       await ref
           .read(bibleBooksProvider.notifier)
           .deleteImportedTranslation(translation.id);
@@ -270,10 +293,11 @@ mixin VersionsScreenActions on ConsumerState<VersionsScreen> {
   Future<void> removeDownloadedTranslation(
     BuildContext context, {
     required BibleTranslation translation,
-    required String currentTranslationId,
     required List<BibleTranslation> allTranslations,
   }) async {
     final t = AppLocalizations.of(context)!;
+    final fallback = _fallbackOrWarn(context, allTranslations, translation);
+    if (fallback == null) return;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -294,13 +318,10 @@ mixin VersionsScreenActions on ConsumerState<VersionsScreen> {
     if (confirmed != true || !context.mounted) return;
 
     try {
-      if (currentTranslationId == translation.id) {
-        final fallback = allTranslations.firstWhere(
-          (c) => c.id != translation.id,
-          orElse: () => AppBibleRepository.builtInTranslations.first,
-        );
-        await _translations.switchTo(fallback.id);
-      }
+      // Every reader on it (main and split pane) moves off first.
+      await ref
+          .read(readerTranslationFallbackProvider)
+          .moveReadersOff((id) => id == translation.id, fallback.id);
       await ref
           .read(bibleBooksProvider.notifier)
           .removeDownloadedTranslation(translation.id);

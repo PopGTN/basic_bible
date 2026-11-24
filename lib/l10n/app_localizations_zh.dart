@@ -27,7 +27,8 @@ class AppLocalizationsZh extends AppLocalizations {
   String get goToOther => '前往其他页面';
 
   @override
-  String get aboutDescription => '这个圣经应用是 PopGTN 的免费项目。它是学习 Flutter 和 Dart 的练习项目。该应用允许阅读圣经、做笔记、支持 TTS 等功能。它的灵感来自 YouVersion 圣经等应用，但具有额外功能和改进的界面。';
+  String get aboutDescription =>
+      '这个圣经应用是 PopGTN 的免费项目。它是学习 Flutter 和 Dart 的练习项目。该应用允许阅读圣经、做笔记、支持 TTS 等功能。它的灵感来自 YouVersion 圣经等应用，但具有额外功能和改进的界面。';
 
   @override
   String get language => '语言';
@@ -87,7 +88,8 @@ class AppLocalizationsZh extends AppLocalizations {
   String get clearTranslationCacheTitle => '清除译本缓存？';
 
   @override
-  String get clearTranslationCacheDescription => '这将从本地应用存储中删除已下载的译本文件、导入的源文件快照和过时的译本注册条目。内置译本仍可使用。';
+  String get clearTranslationCacheDescription =>
+      '这将从本地应用存储中删除已下载的译本文件、导入的源文件快照和过时的译本注册条目。内置译本仍可使用。';
 
   @override
   String get clearCacheAction => '清除缓存';
@@ -129,7 +131,8 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get deleteImportedTranslationDescription => '这将从应用资料库和缓存中删除导入的圣经。磁盘上的原始文件不会被删除。';
+  String get deleteImportedTranslationDescription =>
+      '这将从应用资料库和缓存中删除导入的圣经。磁盘上的原始文件不会被删除。';
 
   @override
   String get cancelAction => '取消';
@@ -153,7 +156,8 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get removeDownloadedTranslationDescription => '这将从本地应用存储中删除已下载的圣经。它仍会作为可下载项保留在资料库中，以便日后重新下载。';
+  String get removeDownloadedTranslationDescription =>
+      '这将从本地应用存储中删除已下载的圣经。它仍会作为可下载项保留在资料库中，以便日后重新下载。';
 
   @override
   String get removeAction => '移除';
@@ -252,7 +256,8 @@ class AppLocalizationsZh extends AppLocalizations {
   String get translationDescriptionLabel => '描述';
 
   @override
-  String get translationDescriptionHint => '从 my_local_bible.xml 或 my_translation.sqlite 导入';
+  String get translationDescriptionHint =>
+      '从 my_local_bible.xml 或 my_translation.sqlite 导入';
 
   @override
   String get importingAction => '正在导入...';
@@ -306,7 +311,8 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get importNotAvailableOnWeb => 'Importing local Bible files is not available in the browser yet.';
+  String get importNotAvailableOnWeb =>
+      'Importing local Bible files is not available in the browser yet.';
 
   @override
   String get languageFilterLabel => '语言';
@@ -454,7 +460,8 @@ class AppLocalizationsZh extends AppLocalizations {
   String get translationRightsUnknown => '此译本没有可用的版权或许可信息。';
 
   @override
-  String get translationRightsUnknownImported => '此译本是您从文件导入的，应用没有它的版权或许可信息。请确认您有权使用它。';
+  String get translationRightsUnknownImported =>
+      '此译本是您从文件导入的，应用没有它的版权或许可信息。请确认您有权使用它。';
 
   @override
   String get searchBibleHint => '搜索圣经';
@@ -591,7 +598,8 @@ class AppLocalizationsZh extends AppLocalizations {
   String get openSourceLicensesSubtitle => '本应用使用的库和代码';
 
   @override
-  String get exportTranslationHelp => '导出存储在此设备上的译本的 SQLite 文件。请先在“译本”中下载译本再导出。';
+  String get exportTranslationHelp =>
+      '导出存储在此设备上的译本的 SQLite 文件。请先在“译本”中下载译本再导出。';
 
   @override
   String get noDownloadedTranslationsToExport => '没有可导出的已下载译本。';
@@ -628,4 +636,207 @@ class AppLocalizationsZh extends AppLocalizations {
   String downloadNotificationFailedBody(Object name) {
     return '无法下载 $name。';
   }
+
+  @override
+  String get playAudioTooltip => '播放音频';
+
+  @override
+  String get splitFollowMainTitle => '分屏打开时跳到当前章节';
+
+  @override
+  String get splitFollowMainSubtitle =>
+      '每次打开分屏时，第二个窗格从主阅读器所在的章节开始。默认关闭：窗格会停留在你离开的位置，直到重新启动应用。';
+
+  @override
+  String get searchTooltip => '搜索';
+
+  @override
+  String get readerOptionsTooltip => '阅读选项';
+
+  @override
+  String get relatedContentAction => '相关内容';
+
+  @override
+  String get fontsAndSettingsAction => '字体与设置';
+
+  @override
+  String get continuousScrollingTitle => '连续滚动';
+
+  @override
+  String get documentModeTitle => '文档模式';
+
+  @override
+  String get showNotesAcrossTranslationsTitle => '在其他译本中显示笔记';
+
+  @override
+  String get allSettingsAction => '所有设置';
+
+  @override
+  String get retryAction => '重试';
+
+  @override
+  String get addNoteAction => '添加笔记';
+
+  @override
+  String get viewAction => '查看';
+
+  @override
+  String get crossReferencesTitle => '交叉引用';
+
+  @override
+  String get noCrossReferences => '此经文没有交叉引用。';
+
+  @override
+  String couldNotParseReference(Object label) {
+    return '无法解析引用：$label';
+  }
+
+  @override
+  String get currentTranslationLabel => '当前译本';
+
+  @override
+  String get backToDetailsAction => '返回详情';
+
+  @override
+  String get backToNoteAction => '返回笔记';
+
+  @override
+  String readerErrorMessage(Object error) {
+    return '错误：$error';
+  }
+
+  @override
+  String failedToLoadBible(Object error) {
+    return '无法加载圣经：$error';
+  }
+
+  @override
+  String get shareTextCopied => '已复制分享文本。以后可添加系统分享功能，不会更改你的笔记数据。';
+
+  @override
+  String get highlightAction => '高亮';
+
+  @override
+  String get noteAction => '笔记';
+
+  @override
+  String get copyAction => '复制';
+
+  @override
+  String get shareAction => '分享';
+
+  @override
+  String get noteHighlightsEditedFromNote => '笔记的高亮需在笔记中编辑。';
+
+  @override
+  String get previewUnavailable => '此引用无法预览。';
+
+  @override
+  String get openInBibleAction => '在圣经中打开';
+
+  @override
+  String get previousChapterTooltip => '上一章';
+
+  @override
+  String get nextChapterTooltip => '下一章';
+
+  @override
+  String get sourceDetailsTitle => '来源详情';
+
+  @override
+  String get quoteSpeakerLabel => '说话者';
+
+  @override
+  String get lemmaLabel => '词元';
+
+  @override
+  String get morphologyLabel => '词法';
+
+  @override
+  String get translationNotAvailable => '译本不可用。';
+
+  @override
+  String get currentTranslationNotAvailable => '当前译本不可用。';
+
+  @override
+  String get saveNoteFailed => '笔记保存失败，请重试。';
+
+  @override
+  String get saveAction => '保存';
+
+  @override
+  String get noteFieldLabel => '笔记';
+
+  @override
+  String get noteFieldHint => '在此写下你的笔记。';
+
+  @override
+  String get primaryVerseTitle => '主经文';
+
+  @override
+  String get removeVerseTitle => '移除经文？';
+
+  @override
+  String get addVerseAction => '添加经文';
+
+  @override
+  String get connectedHighlightTitle => '关联高亮';
+
+  @override
+  String get noneOption => '无';
+
+  @override
+  String get connectedHighlightDescription => '此笔记会在其主经文上保留关联高亮。';
+
+  @override
+  String get labelsFieldLabel => '标签';
+
+  @override
+  String get labelsFieldHint => '用逗号分隔标签';
+
+  @override
+  String get onlyStandaloneHighlightsRemovable =>
+      '此处只能移除独立高亮。如需更改笔记的高亮，请编辑该笔记。';
+
+  @override
+  String noteVerseLimit(int count) {
+    return '笔记一次最多可关联 $count 节经文。请选择更小的范围。';
+  }
+
+  @override
+  String get deleteAnnotationTitle => '删除？';
+
+  @override
+  String get deleteAnnotationDescription => '此笔记或高亮将被永久删除。';
+
+  @override
+  String get noReferenceHistory => '暂无引用历史。';
+
+  @override
+  String get recentReferencesTitle => '最近的引用';
+
+  @override
+  String get referencesTitle => '经文位置';
+
+  @override
+  String get historyTooltip => '历史';
+
+  @override
+  String get searchBooksHint => '搜索书卷';
+
+  @override
+  String get chaptersLabel => '章';
+
+  @override
+  String goToReference(Object reference) {
+    return '前往 $reference';
+  }
+
+  @override
+  String versesInChapter(Object chapter) {
+    return '第 $chapter 章的经文';
+  }
+
+  @override
+  String get keepOneTranslationMessage => '此设备上必须至少保留一个译本。请先下载或导入其他译本，再移除此译本。';
 }

@@ -22,6 +22,11 @@ Use `TODO_STATUS.md` beside this file as the execution tracker:
 - Personal notes/highlights now exist as a separate user-data feature with a reader selection bar, note editor, and Notes screen.
 - Several non-reader features are still placeholders, "coming soon" destinations, or partially scaffolded.
 - Localization support exists in code/assets for English, French, Spanish, German, and Chinese.
+  - `lib/l10n/app_en.arb` is the template; `flutter gen-l10n` (via `generate: true`) writes `AppLocalizations` into `lib/l10n/`. Every key in `app_en.arb` must also be in the other four ARB files; check with `flutter gen-l10n --untranslated-messages-file=<file>`.
+  - The chosen language is `languageProvider` (`settings/application/view_models/language_view_model.dart`), saved as `languageCode` in SharedPreferences. It defaults to the device language and feeds `MaterialApp.locale` in `app.dart`.
+  - New user-facing text goes in the ARB files, not inline literals. Enum display names (notes filters, search scope) are localized via `lib/src/utils/localized_labels.dart`. Code without a `BuildContext` (download notifications) uses `lookupAppLocalizations` with the saved language.
+  - Widget tests that pump localized widgets must pass `AppLocalizations.localizationsDelegates` and `supportedLocales` to `MaterialApp`.
+  - Older reader, notes, reference-picker, and settings screens still contain hard-coded English that has not been moved to ARB yet.
 
 ## Architecture Overview
 
@@ -89,6 +94,19 @@ Use `TODO_STATUS.md` beside this file as the execution tracker:
 - Source-study metadata in the verse details sheet such as `Strong's`, lemma,
   morphology, and quote-speaker values is controlled by the reader setting
   `Show Source Details` and is intentionally off by default for cleaner reading.
+- Strong's-tagged words (`BibleVerseSpanKind.word`) render as plain text unless
+  `Highlight Strong's Words` is on (stored as `reader_underline_word_metadata`,
+  off by default). That one switch controls their underline, accent colour, and
+  medium weight in both the reader and the verse details sheet.
+
+### Split view
+- Split view (#84) runs a second `BibleViewerTab` (the same reader widget, not a copy) inside a child Riverpod scope, `splitPaneContainerProvider` in `reader/application/view_models/split_view_view_models.dart`. The pane gets its own translation, chapter and verse selection; settings, fonts and notes storage are shared.
+- Riverpod 3.0.3 does not give the child scope its own copy of a derived provider the main reader already used, so derived providers are listed explicitly in `_derivedReaderProviders`. `test/features/reader/split_view_scoping_guard_test.dart` fails if one is missing.
+- Screens and sheets the reader opens must wrap their builder in `inReaderScope(context, ...)` (`reader/presentation/reader_scope.dart`), or from the second pane they act on the main reader.
+- Split view is offered in landscape or on screens 700px wide or more (`SplitReaderLayout.isAvailable`). A phone held upright hides the split button, and rotating upright hides split view without turning it off.
+- On the desktop app each reader in split view opens its screens inside its own half; on phones, tablets and the web they open full page.
+- Full details and maintenance rules: `lib/src/features/reader/presentation/split_view/README.md`.
+- Continuous-scrolling rebuild rules (keep per-scroll and per-load work off the reader's `setState`): `lib/src/features/reader/presentation/reader_view/README.md` and `docs/READER_STATE_MEMORY.md`.
 
 This split is a structural maintenance improvement, not a feature change. Treat the current priority as regression confidence, not more reader-surface expansion.
 

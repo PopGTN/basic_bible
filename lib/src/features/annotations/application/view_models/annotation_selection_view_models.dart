@@ -35,16 +35,17 @@ final selectedVersesProvider =
     StateNotifierProvider.autoDispose<
       SelectedVersesNotifier,
       List<BibleReference>
-    >((ref) => SelectedVersesNotifier());
+    >((ref) => SelectedVersesNotifier(), dependencies: const []);
 
 final selectedVerseProvider = Provider.autoDispose<BibleReference?>((ref) {
   final selected = ref.watch(selectedVersesProvider);
   if (selected.isEmpty) return null;
   return selected.first;
-});
+}, dependencies: [selectedVersesProvider]);
 
 final highlightPaletteExpandedProvider = StateProvider.autoDispose<bool>(
   (ref) => false,
+  dependencies: const [],
 );
 
 final selectedVerseAnnotationsProvider = Provider<List<UserAnnotation>>((ref) {
@@ -65,4 +66,4 @@ final selectedVerseAnnotationsProvider = Provider<List<UserAnnotation>>((ref) {
       ),
     );
   }).toList();
-});
+}, dependencies: [selectedVersesProvider, annotationTranslationFilterProvider]);

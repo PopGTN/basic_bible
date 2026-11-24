@@ -58,9 +58,9 @@ Inside `_BibleTextViewState`, the following are widget-local and not durable:
 
 - `ItemScrollController`
 - `ItemPositionsListener`
-- `_continuousSections`
-- `_continuousChapterFutures`
-- `_hydratedContinuousChapters`
+- `_continuousController` (`ContinuousReaderController`: the chapter list,
+  memoized chapter loads, the 48-chapter hydrated cache, prefetch)
+- `_lastSyncedSectionIndex` (last chapter the viewport sync reported)
 - `_verseKeys`
 - `_scrollableListKey`
 - `_scrollableListInitialIndex`
@@ -93,6 +93,30 @@ Continuous mode depends on:
 Continuous mode uses more memory because it tracks the current viewport and
 keeps surrounding chapter data around the reading position.
 
+### Rebuild rules (performance)
+
+Rebuilding the reader re-renders every verse of every visible chapter, so
+continuous mode avoids it on the paths that fire while reading:
+
+- **A chapter's verses finish loading:** only that chapter's `FutureBuilder`
+  rebuilds. `ContinuousReaderController` does not notify the reader (it used
+  to, and a jump re-rendered the screen up to ~11 times as nearby chapters
+  loaded).
+- **A new chapter scrolls into view:** the outer reader keeps the visible
+  chapter in a `ValueNotifier` (`_visibleReference`, set through
+  `_setVisibleReference`), and only the chapter bar listens to it.
+- **Every frame while scrolling:** `_syncVisibleChapterFromViewport` returns
+  early unless the chapters in view changed, so prefetching and reporting run
+  once per chapter, not once per frame.
+- **Prefetch runs ahead of the scroll direction** (`_prefetchAheadOfScroll`):
+  the 4 chapters past the bottom-most visible chapter when scrolling down, past
+  the top-most when scrolling up. It used to be centred on the top chapter, so
+  half the window was spent on chapters just read (already cached) and the
+  ones coming up from the bottom loaded only as they appeared: scrolling down
+  showed placeholders while scrolling up was instant.
+
+Keep new per-scroll or per-load work off `setState` on the reader states.
+
 ## Important Bug Pattern
 
 The main issue was not that both reader layouts were loaded and fighting each
@@ -112,7 +136,9 @@ That is why the behavior felt inconsistent.
 ## Current Fix Strategy
 
 The code now uses `visibleReaderReferenceProvider` as the viewport anchor for
-continuous mode.
+continuous mode. The outer reader sets it together with its own
+`_visibleReference` notifier in `_setVisibleReference` (one place, applied
+after the frame if reported mid-build).
 
 The visible reference is updated from the continuous reader when:
 
@@ -143,4 +169,10 @@ In continuous mode, there are effectively two useful references:
 
 If a feature should follow what the user is actually looking at, it usually
 needs to consider the visible reference before relying on `currentReference`
-alone.
+alone. `searchContextReferenceProvider` already does this (visible chapter in
+continuous mode, `currentReference` otherwise); prefer reading it over
+combining the two by hand, because `visibleReaderReference` is not cleared when
+continuous mode is turned off.
+
+In split view the second reader has its own copies of all of these (see
+`lib/src/features/reader/presentation/split_view/README.md`).

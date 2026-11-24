@@ -25,12 +25,10 @@ final userAnnotationsProvider = StreamProvider<List<UserAnnotation>>((ref) {
 /// when [showNotesAcrossTranslationsProvider] is enabled and matches should
 /// ignore translation entirely (book/chapter/verse only).
 final annotationTranslationFilterProvider = Provider<String?>((ref) {
-  final showAcrossTranslations = ref.watch(
-    showNotesAcrossTranslationsProvider,
-  );
+  final showAcrossTranslations = ref.watch(showNotesAcrossTranslationsProvider);
   if (showAcrossTranslations) return null;
   return ref.watch(currentTranslationProvider);
-});
+}, dependencies: [currentTranslationProvider]);
 
 /// Annotations matching [annotationTranslationFilterProvider] indexed by
 /// `"bookId:chapter"`.
@@ -39,28 +37,28 @@ final annotationTranslationFilterProvider = Provider<String?>((ref) {
 /// per frame in continuous mode; looking each verse up in its chapter bucket
 /// is O(annotations-in-chapter) instead of scanning the entire annotation
 /// list per verse.
-final annotationsByChapterProvider = Provider<Map<String, List<UserAnnotation>>>(
-  (ref) {
-    final annotations = ref.watch(userAnnotationsProvider).value ?? const [];
-    final translationFilter = ref.watch(annotationTranslationFilterProvider);
-    final index = <String, List<UserAnnotation>>{};
-    for (final annotation in annotations) {
-      // A multi-verse annotation can span chapters; register it in each
-      // chapter bucket exactly once.
-      final seenChapters = <String>{};
-      for (final link in annotation.allVerses) {
-        if (translationFilter != null && link.translationId != translationFilter) {
-          continue;
-        }
-        final key = annotationChapterKey(link.bookId, link.chapter);
-        if (seenChapters.add(key)) {
-          index.putIfAbsent(key, () => []).add(annotation);
+final annotationsByChapterProvider =
+    Provider<Map<String, List<UserAnnotation>>>((ref) {
+      final annotations = ref.watch(userAnnotationsProvider).value ?? const [];
+      final translationFilter = ref.watch(annotationTranslationFilterProvider);
+      final index = <String, List<UserAnnotation>>{};
+      for (final annotation in annotations) {
+        // A multi-verse annotation can span chapters; register it in each
+        // chapter bucket exactly once.
+        final seenChapters = <String>{};
+        for (final link in annotation.allVerses) {
+          if (translationFilter != null &&
+              link.translationId != translationFilter) {
+            continue;
+          }
+          final key = annotationChapterKey(link.bookId, link.chapter);
+          if (seenChapters.add(key)) {
+            index.putIfAbsent(key, () => []).add(annotation);
+          }
         }
       }
-    }
-    return index;
-  },
-);
+      return index;
+    }, dependencies: [annotationTranslationFilterProvider]);
 
 /// Key format used by [annotationsByChapterProvider].
 String annotationChapterKey(String bookId, int chapter) => '$bookId:$chapter';
@@ -75,7 +73,7 @@ final visibleChapterAnnotationsProvider = Provider<List<UserAnnotation>>((ref) {
         currentReference.chapter,
       )] ??
       const [];
-});
+}, dependencies: [currentReferenceProvider, annotationsByChapterProvider]);
 
 AnnotationVerseLink buildAnnotationVerseLink({
   required BibleReference reference,

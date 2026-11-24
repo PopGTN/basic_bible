@@ -108,17 +108,19 @@ void main() {
     );
   });
 
-  test('"This chapter" uses the current book (chapter filtered separately)',
-      () {
-    expect(
-      bookIdsForSearchScope(
-        BibleSearchScope.currentChapter,
-        _books,
-        currentBookId: 'JHN',
-      ),
-      {'JHN'},
-    );
-  });
+  test(
+    '"This chapter" uses the current book (chapter filtered separately)',
+    () {
+      expect(
+        bookIdsForSearchScope(
+          BibleSearchScope.currentChapter,
+          _books,
+          currentBookId: 'JHN',
+        ),
+        {'JHN'},
+      );
+    },
+  );
 
   test('testament scopes', () {
     expect(
@@ -145,7 +147,10 @@ void main() {
 
   test('matches are highlighted case-insensitively', () {
     const bold = TextStyle(fontWeight: FontWeight.bold);
-    final span = highlightSearchTerms('God is love', ['love', 'god'], highlight: bold);
+    final span = highlightSearchTerms('God is love', [
+      'love',
+      'god',
+    ], highlight: bold);
     final parts = [
       for (final child in span.children!.cast<TextSpan>())
         (child.text, child.style == bold),

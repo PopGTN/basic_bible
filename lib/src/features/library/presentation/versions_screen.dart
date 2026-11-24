@@ -230,7 +230,6 @@ class _VersionsScreenState extends ConsumerState<VersionsScreen>
                   ? () => removeDownloadedTranslation(
                       context,
                       translation: tr,
-                      currentTranslationId: currentTranslationId,
                       allTranslations: translations,
                     )
                   : null,
@@ -238,7 +237,6 @@ class _VersionsScreenState extends ConsumerState<VersionsScreen>
                   ? () => deleteImportedTranslation(
                       context,
                       translation: tr,
-                      currentTranslationId: currentTranslationId,
                       allTranslations: translations,
                     )
                   : null,

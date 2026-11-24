@@ -7,25 +7,32 @@ import 'package:shared_preferences/shared_preferences.dart';
 final currentTranslationProvider =
     StateNotifierProvider<TranslationNotifier, String>((ref) {
       return TranslationNotifier(ref.read(sharedPreferencesProvider));
-    });
+    }, dependencies: const []);
 
 final currentReferenceProvider =
     StateNotifierProvider<ReferenceNotifier, BibleReference>((ref) {
       return ReferenceNotifier(ref.read(sharedPreferencesProvider));
-    });
+    }, dependencies: const []);
 
 final visibleReaderReferenceProvider = StateProvider<BibleReference?>(
   (ref) => null,
+  dependencies: const [],
 );
 
+/// [keyPrefix] names where the translation is saved: `bible` for the main
+/// reader, another prefix for a second reading pane (split view, #84).
 class TranslationNotifier extends StateNotifier<String> {
-  TranslationNotifier(this._prefs)
+  TranslationNotifier(this._prefs, {this.keyPrefix = 'bible', String? fallback})
     // KJV remains the built-in default translation so the app has a guaranteed
     // local Bible available on first launch even before any remote catalog or
     // downloads are configured.
-    : super(_prefs.getString('bible_translation') ?? 'kjv');
+    : super(_prefs.getString(storageKey(keyPrefix)) ?? fallback ?? 'kjv');
 
   final SharedPreferences _prefs;
+  final String keyPrefix;
+
+  /// Where a reader with [keyPrefix] saves its translation.
+  static String storageKey(String keyPrefix) => '${keyPrefix}_translation';
 
   Future<void> setTranslation(
     String translationId, {
@@ -33,7 +40,7 @@ class TranslationNotifier extends StateNotifier<String> {
   }) async {
     state = translationId;
     if (persist) {
-      await _prefs.setString('bible_translation', translationId);
+      await _prefs.setString(storageKey(keyPrefix), translationId);
     }
   }
 }
@@ -71,7 +78,8 @@ BibleReference? readerFallbackReference(
 
 /// ViewModel for the reader's current translation and location.
 class ReferenceNotifier extends StateNotifier<BibleReference> {
-  ReferenceNotifier(this._prefs)
+  /// The main reader's location, saved across launches.
+  ReferenceNotifier(SharedPreferences this._prefs)
     : super(
         BibleReference(
           bookId: _prefs.getString('bible_book') ?? 'GEN',
@@ -80,7 +88,11 @@ class ReferenceNotifier extends StateNotifier<BibleReference> {
         ),
       );
 
-  final SharedPreferences _prefs;
+  /// A location that starts at [initial] and is never saved (the split-view
+  /// pane, which always opens at a chapter it is given).
+  ReferenceNotifier.unsaved(super.initial) : _prefs = null;
+
+  final SharedPreferences? _prefs;
 
   /// A verse the user just navigated to and has not been shown yet.
   ///
@@ -116,71 +128,24 @@ class ReferenceNotifier extends StateNotifier<BibleReference> {
     // event-loop turn as this call. SharedPreferences writes are persistence
     // only; the UI must not wait for disk I/O before navigating.
     state = reference;
+    final prefs = _prefs;
+    if (prefs == null) return;
     // Persist all three fields in parallel rather than sequentially.
     await Future.wait<bool>([
-      _prefs.setString('bible_book', reference.bookId),
-      _prefs.setInt('bible_chapter', reference.chapter),
+      prefs.setString('bible_book', reference.bookId),
+      prefs.setInt('bible_chapter', reference.chapter),
       reference.verse != null
-          ? _prefs.setInt('bible_verse', reference.verse!)
-          : _prefs.remove('bible_verse'),
+          ? prefs.setInt('bible_verse', reference.verse!)
+          : prefs.remove('bible_verse'),
     ]);
   }
 
-  void goToNextChapter(List<BibleBook> books) {
-    if (books.isEmpty) return;
-    final currentBook =
-        resolveBookFromReference(books, state.bookId) ?? books.first;
-    final currentChapterIndex = currentBook.chapters.indexWhere(
-      (c) => c.number == state.chapter,
-    );
+  void goToNextChapter(List<BibleBook> books) => _step(books, 1);
 
-    if (currentChapterIndex < currentBook.chapters.length - 1) {
-      final nextChapter = currentBook.chapters[currentChapterIndex + 1];
-      setReference(
-        BibleReference(bookId: currentBook.id, chapter: nextChapter.number),
-      );
-    } else {
-      final currentBookIndex = books.indexWhere((b) => b.id == currentBook.id);
-      if (currentBookIndex < books.length - 1) {
-        final nextBook = books[currentBookIndex + 1];
-        if (nextBook.chapters.isNotEmpty) {
-          setReference(
-            BibleReference(
-              bookId: nextBook.id,
-              chapter: nextBook.chapters.first.number,
-            ),
-          );
-        }
-      }
-    }
-  }
+  void goToPreviousChapter(List<BibleBook> books) => _step(books, -1);
 
-  void goToPreviousChapter(List<BibleBook> books) {
-    if (books.isEmpty) return;
-    final currentBook =
-        resolveBookFromReference(books, state.bookId) ?? books.first;
-    final currentChapterIndex = currentBook.chapters.indexWhere(
-      (c) => c.number == state.chapter,
-    );
-
-    if (currentChapterIndex > 0) {
-      final prevChapter = currentBook.chapters[currentChapterIndex - 1];
-      setReference(
-        BibleReference(bookId: currentBook.id, chapter: prevChapter.number),
-      );
-    } else {
-      final currentBookIndex = books.indexWhere((b) => b.id == currentBook.id);
-      if (currentBookIndex > 0) {
-        final prevBook = books[currentBookIndex - 1];
-        if (prevBook.chapters.isNotEmpty) {
-          setReference(
-            BibleReference(
-              bookId: prevBook.id,
-              chapter: prevBook.chapters.last.number,
-            ),
-          );
-        }
-      }
-    }
+  void _step(List<BibleBook> books, int direction) {
+    final target = adjacentChapterReference(books, state, direction);
+    if (target != null) setReference(target);
   }
 }

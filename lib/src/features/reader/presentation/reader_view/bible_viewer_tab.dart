@@ -14,6 +14,7 @@ import 'package:basic_bible/src/features/reader/application/view_models/bible_li
 import 'package:basic_bible/src/features/reader/application/view_models/current_chapter_view_model.dart';
 import 'package:basic_bible/src/features/reader/application/view_models/reader_preferences_view_models.dart';
 import 'package:basic_bible/src/features/reader/application/view_models/reader_session_view_models.dart';
+import 'package:basic_bible/src/features/reader/presentation/reader_scope.dart';
 import 'package:basic_bible/src/features/reader/presentation/reference_picker/chapter_bar.dart';
 import 'package:basic_bible/src/features/reader/presentation/reference_picker/reference_preview_sheet.dart';
 import 'package:basic_bible/src/features/settings/application/view_models/reader_display_preferences_view_models.dart';
@@ -25,9 +26,12 @@ import 'package:basic_bible/src/services/line_spacing_service.dart';
 import 'package:basic_bible/src/features/reader/presentation/reader_view/translation_rights_footer.dart';
 import 'package:basic_bible/src/utils/reference_range_parser.dart';
 import 'package:basic_bible/src/utils/reference_utils.dart';
+import 'package:basic_bible/src/widgets/horizontal_mouse_scroll_list.dart';
+import 'package:flutter/foundation.dart' show ValueListenable;
 import 'package:flutter/gestures.dart'
     show PointerScrollEvent, TapGestureRecognizer;
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
@@ -84,27 +88,34 @@ class _BibleViewerTabState extends ConsumerState<BibleViewerTab> {
       _readerBarHeight + _readerBarBottomInset + 8;
   static const _chapterTransitionDuration = Duration(milliseconds: 140);
 
-  BibleReference? _continuousVisibleReference;
+  // The chapter on screen in continuous scrolling. A notifier, not State:
+  // it changes at every chapter boundary while scrolling, and only the chapter
+  // bar shows it. Rebuilding this whole screen for it rebuilt every visible
+  // chapter's verses each time.
+  final _visibleReference = ValueNotifier<BibleReference?>(null);
 
-  // Cached flat list of every chapter reference across all books.
-  // Rebuilt only when the books list reference changes, so prev/next taps
-  // don't allocate ~1189-entry lists on every press.
-  List<BibleBook>? _chapterRefCacheSource;
-  List<BibleReference> _chapterRefs = const [];
+  void _setVisibleReference(BibleReference reference) {
+    if (_visibleReference.value == reference) return;
+    // The reader also reports from didUpdateWidget, mid-build, when neither a
+    // listener nor a provider may be changed: apply it after the frame.
+    if (SchedulerBinding.instance.schedulerPhase ==
+        SchedulerPhase.persistentCallbacks) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _setVisibleReference(reference);
+      });
+      return;
+    }
+    _visibleReference.value = reference;
+    ref.read(visibleReaderReferenceProvider.notifier).state = reference;
+  }
 
-  List<BibleReference> _flatChapterRefs(List<BibleBook> books) {
-    if (identical(_chapterRefCacheSource, books)) return _chapterRefs;
-    _chapterRefCacheSource = books;
-    _chapterRefs = [
-      for (final book in books)
-        for (final chapter in book.chapters)
-          BibleReference(bookId: book.id, chapter: chapter.number),
-    ];
-    return _chapterRefs;
+  @override
+  void dispose() {
+    _visibleReference.dispose();
+    super.dispose();
   }
 
   double? _lastScroll;
-  bool _isHiding = false;
   bool _selectionActionInFlight = false;
 
   void _handleScrollNotification(ScrollNotification notification) {
@@ -121,17 +132,11 @@ class _BibleViewerTabState extends ConsumerState<BibleViewerTab> {
     // next/previous chapter.
     if (delta.abs() > 400) return;
 
-    // Always show bars when at the bottom.
-    if (current >= max) {
-      if (_isHiding) _toggleBars(show: true);
-      return;
-    }
-
-    if (delta > 0 && !_isHiding) {
-      _toggleBars(show: false); // scrolling down → hide
-    } else if (delta < 0 && _isHiding) {
-      _toggleBars(show: true); // scrolling up → show
-    }
+    // Scrolling down hides the bars; scrolling up, or reaching the bottom,
+    // shows them. The bars are shared by both split-view panes, so whether
+    // they are hidden is the home screen's to track (its show/hide calls are
+    // no-ops when already there), not this reader's.
+    _toggleBars(show: delta < 0 || current >= max);
   }
 
   void _toggleBars({required bool show}) {
@@ -142,7 +147,6 @@ class _BibleViewerTabState extends ConsumerState<BibleViewerTab> {
       widget.hideBottomNav();
       if (widget.isSmallDevice) widget.hideAppBar();
     }
-    _isHiding = !show;
   }
 
   void _setSelectionActionInFlight(bool value) {
@@ -159,11 +163,6 @@ class _BibleViewerTabState extends ConsumerState<BibleViewerTab> {
       hasSelection: readerState.selectedVerses.isNotEmpty,
       showHighlightPalette: readerState.showHighlightPalette,
     );
-    final displayReference = _displayReferenceFor(
-      currentReference: readerState.currentReference,
-      continuousScrolling: readerState.continuousScrolling,
-    );
-
     // Shell books are always available quickly (metadata only, no verses).
     // Use them for the nav bar and picker so they work instantly regardless
     // of whether the full verse data has finished loading in continuous mode.
@@ -175,23 +174,32 @@ class _BibleViewerTabState extends ConsumerState<BibleViewerTab> {
 
     return Stack(
       children: [
-        // Main Bible content layer.
-        _ReaderFontScope(
-          child: _buildReaderContentLayer(
-            readerState,
-            displayReference,
-            contentBottomPadding,
+        // Main Bible content layer, ending above the bottom safe area like
+        // the chapter bar does. That inset animates while the bars hide
+        // (CollapsingBottomBarInset); only this SafeArea depends on it, so
+        // the reader itself is not rebuilt on every frame of that animation.
+        SafeArea(
+          left: false,
+          top: false,
+          right: false,
+          child: _ReaderFontScope(
+            child: _buildReaderContentLayer(readerState, contentBottomPadding),
           ),
         ),
 
         // Floating chapter/reference controls.
-        _buildChapterNavigationBar(
-          readerBarHeight: _readerBarHeight,
-          displayReference: displayReference,
-          books: navBooks,
-          canOpenReferencePicker: canOpenReferencePicker,
-          showVerseSelector: readerState.showVerseSelector,
-          continuousScrolling: readerState.continuousScrolling,
+        ValueListenableBuilder(
+          valueListenable: _visibleReference,
+          builder: (context, visible, _) => _buildChapterNavigationBar(
+            readerBarHeight: _readerBarHeight,
+            displayReference:
+                (readerState.continuousScrolling ? visible : null) ??
+                readerState.currentReference,
+            books: navBooks,
+            canOpenReferencePicker: canOpenReferencePicker,
+            showVerseSelector: readerState.showVerseSelector,
+            continuousScrolling: readerState.continuousScrolling,
+          ),
         ),
 
         // Selection action tray for highlight / note / copy / share.
@@ -252,18 +260,8 @@ class _BibleViewerTabState extends ConsumerState<BibleViewerTab> {
         (hasSelection ? 12 : 0);
   }
 
-  BibleReference _displayReferenceFor({
-    required BibleReference currentReference,
-    required bool continuousScrolling,
-  }) {
-    return continuousScrolling && _continuousVisibleReference != null
-        ? _continuousVisibleReference!
-        : currentReference;
-  }
-
   Widget _buildReaderContentLayer(
     _ReaderShellStateSnapshot readerState,
-    BibleReference displayReference,
     double contentBottomPadding,
   ) {
     // The async content layer is isolated here so loading/error/data branching
@@ -333,7 +331,7 @@ class _BibleViewerTabState extends ConsumerState<BibleViewerTab> {
                       ),
                       chapter: chapter,
                       reference: readerState.currentReference,
-                      displayReference: displayReference,
+                      visibleReference: _visibleReference,
                       fontSize: size,
                       lineSpacing: lineSpacing,
                       layoutMode: readerState.layoutMode,
@@ -342,27 +340,23 @@ class _BibleViewerTabState extends ConsumerState<BibleViewerTab> {
                       isSmallDevice: widget.isSmallDevice,
                       bottomOverlayPadding: contentBottomPadding,
                       barOverlayPadding: _readerBarBottomPadding,
-                      onVisibleReferenceChanged: (reference) {
-                        if (_continuousVisibleReference == reference) return;
-                        setState(() {
-                          _continuousVisibleReference = reference;
-                        });
-                        ref
-                                .read(visibleReaderReferenceProvider.notifier)
-                                .state =
-                            reference;
-                      },
+                      onVisibleReferenceChanged: _setVisibleReference,
                     ),
                   )
                 : _ErrorView(
                     message: AppLocalizations.of(context)!.chapterNotFound,
                   ),
             loading: () => const _LoadingView(),
-            error: (error, stack) => _ErrorView(message: 'Error: $error'),
+            error: (error, stack) => _ErrorView(
+              message: AppLocalizations.of(
+                context,
+              )!.readerErrorMessage('$error'),
+            ),
           ),
           loading: () => const _LoadingView(),
-          error: (error, stack) =>
-              _ErrorView(message: 'Failed to load Bible: $error'),
+          error: (error, stack) => _ErrorView(
+            message: AppLocalizations.of(context)!.failedToLoadBible('$error'),
+          ),
         );
       },
     );
@@ -374,24 +368,14 @@ class _BibleViewerTabState extends ConsumerState<BibleViewerTab> {
     BibleReference baseReference, {
     required int direction,
   }) {
-    final chapterReferences = _flatChapterRefs(books);
-    if (chapterReferences.isEmpty) return;
-
-    final currentIndex = chapterReferences.indexWhere(
-      (reference) =>
-          reference.bookId == baseReference.bookId &&
-          reference.chapter == baseReference.chapter,
+    final targetReference = adjacentChapterReference(
+      books,
+      baseReference,
+      direction,
     );
-    final safeIndex = currentIndex >= 0 ? currentIndex : 0;
-    final targetIndex = safeIndex + direction;
-    if (targetIndex < 0 || targetIndex >= chapterReferences.length) return;
+    if (targetReference == null) return;
 
-    final targetReference = chapterReferences[targetIndex];
-
-    setState(() {
-      _continuousVisibleReference = targetReference;
-    });
-    ref.read(visibleReaderReferenceProvider.notifier).state = targetReference;
+    _setVisibleReference(targetReference);
     ref.read(currentReferenceProvider.notifier).setReference(targetReference);
   }
 
@@ -415,7 +399,6 @@ class _BibleViewerTabState extends ConsumerState<BibleViewerTab> {
         bottom: true,
         child: ChapterBar(
           barHeight: readerBarHeight,
-          isFloating: true,
           reference: displayReference,
           books: books,
           canOpenReferencePicker: canOpenReferencePicker,
@@ -446,12 +429,7 @@ class _BibleViewerTabState extends ConsumerState<BibleViewerTab> {
     required bool continuousScrolling,
   }) {
     _clearSelectionUi();
-    if (continuousScrolling) {
-      setState(() {
-        _continuousVisibleReference = reference;
-      });
-      ref.read(visibleReaderReferenceProvider.notifier).state = reference;
-    }
+    if (continuousScrolling) _setVisibleReference(reference);
     ref.read(currentReferenceProvider.notifier).setReference(reference);
   }
 
@@ -516,8 +494,7 @@ class _BibleViewerTabState extends ConsumerState<BibleViewerTab> {
                 _handleSelectionCopy(books, copiedMessage: 'Verse copied.'),
             onSharePressed: () => _handleSelectionCopy(
               books,
-              copiedMessage:
-                  'Share text copied. Native share can be added later without changing your notes data.',
+              copiedMessage: AppLocalizations.of(context)!.shareTextCopied,
             ),
           ),
         ),

@@ -23,21 +23,23 @@ class _NoDataRepository implements AppBibleRepository {
 }
 
 void main() {
-  test('creating the notifier and switching translations loads nothing',
-      () async {
-    final repository = _NoDataRepository();
-    final notifier = BibleBooksNotifier(
-      repository,
-      'kjv',
-      onResolvedTranslationChanged: (_, {persist = true}) async {},
-    );
-    addTearDown(notifier.dispose);
+  test(
+    'creating the notifier and switching translations loads nothing',
+    () async {
+      final repository = _NoDataRepository();
+      final notifier = BibleBooksNotifier(
+        repository,
+        'kjv',
+        onResolvedTranslationChanged: (_, {persist = true}) async {},
+      );
+      addTearDown(notifier.dispose);
 
-    await notifier.changeTranslation('web');
-    await Future<void>.delayed(Duration.zero);
+      await notifier.changeTranslation('web');
+      await Future<void>.delayed(Duration.zero);
 
-    // A load would have thrown inside the fake and surfaced as an error.
-    expect(notifier.debugState, isA<AsyncLoading<List<BibleBook>>>());
-    expect(repository.peeked, ['kjv', 'web']);
-  });
+      // A load would have thrown inside the fake and surfaced as an error.
+      expect(notifier.debugState, isA<AsyncLoading<List<BibleBook>>>());
+      expect(repository.peeked, ['kjv', 'web']);
+    },
+  );
 }

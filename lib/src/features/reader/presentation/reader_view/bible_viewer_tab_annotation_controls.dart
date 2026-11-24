@@ -279,28 +279,28 @@ class _VerseSelectionBar extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 8),
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
+            // Mouse wheel / drag scrolling on desktop too, not just touch.
+            HorizontalMouseScrollView(
               child: Row(
                 children: [
                   _SelectionActionButton(
                     icon: Icons.highlight_alt_rounded,
-                    label: 'Highlight',
+                    label: AppLocalizations.of(context)!.highlightAction,
                     onPressed: isBusy ? null : onHighlightPressed,
                   ),
                   _SelectionActionButton(
                     icon: Icons.note_alt_outlined,
-                    label: 'Note',
+                    label: AppLocalizations.of(context)!.noteAction,
                     onPressed: isBusy ? null : onNotePressed,
                   ),
                   _SelectionActionButton(
                     icon: Icons.copy_all_outlined,
-                    label: 'Copy',
+                    label: AppLocalizations.of(context)!.copyAction,
                     onPressed: isBusy ? null : onCopyPressed,
                   ),
                   _SelectionActionButton(
                     icon: Icons.share_outlined,
-                    label: 'Share',
+                    label: AppLocalizations.of(context)!.shareAction,
                     onPressed: isBusy ? null : onSharePressed,
                   ),
                 ],
@@ -356,7 +356,7 @@ class _VerseSelectionBar extends StatelessWidget {
               if (hasNoteHighlight && !hasStandaloneHighlight) ...[
                 const SizedBox(height: 8),
                 Text(
-                  'Note highlights are edited from the note itself.',
+                  AppLocalizations.of(context)!.noteHighlightsEditedFromNote,
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
                   ),

@@ -20,6 +20,12 @@ import 'reader_session_view_models.dart';
 /// from a widget and then ignore the widget's lifecycle for the result.
 final translationActionsProvider = Provider<TranslationActions>(
   TranslationActions.new,
+  dependencies: [
+    currentTranslationProvider,
+    currentReferenceProvider,
+    visibleReaderReferenceProvider,
+    bibleBooksProvider,
+  ],
 );
 
 class TranslationActions {
@@ -102,10 +108,18 @@ class TranslationActions {
     publish();
     try {
       await body(onProgress);
-      notifications?.showFinished(translationId, translation.name, success: true);
+      notifications?.showFinished(
+        translationId,
+        translation.name,
+        success: true,
+      );
       return true;
     } catch (_) {
-      notifications?.showFinished(translationId, translation.name, success: false);
+      notifications?.showFinished(
+        translationId,
+        translation.name,
+        success: false,
+      );
       rethrow;
     } finally {
       // Refresh on success *and* failure: a failed download may still have
@@ -134,4 +148,34 @@ class TranslationActions {
           focusVerse: false,
         );
   }
+}
+
+/// Whether [translation] is stored on this device (bundled, downloaded or
+/// imported), so it can be read offline and survives a relaunch. Session
+/// translations are in memory only and don't count.
+bool isTranslationOnDevice(BibleTranslation translation) =>
+    switch (translation.availability) {
+      BibleTranslationAvailability.bundled ||
+      BibleTranslationAvailability.downloaded ||
+      BibleTranslationAvailability.imported => true,
+      BibleTranslationAvailability.downloadable ||
+      BibleTranslationAvailability.session => false,
+    };
+
+/// The translation readers move to when [removedId] is removed: the next
+/// on-device translation after it in [translations], wrapping round to the
+/// start. Null when [removedId] is the only one on the device, which must
+/// then not be removed: the app always keeps at least one translation.
+BibleTranslation? localFallbackTranslation(
+  List<BibleTranslation> translations,
+  String removedId,
+) {
+  final index = translations.indexWhere((t) => t.id == removedId);
+  final ordered = [
+    ...translations.skip(index + 1),
+    ...translations.take(index + 1),
+  ];
+  return ordered
+      .where((t) => t.id != removedId && isTranslationOnDevice(t))
+      .firstOrNull;
 }

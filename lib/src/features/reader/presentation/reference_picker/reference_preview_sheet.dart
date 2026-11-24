@@ -1,3 +1,4 @@
+import 'package:basic_bible/l10n/app_localizations.dart';
 import 'package:basic_bible/src/features/library/data/app_bible_repository.dart';
 import 'package:basic_bible/src/features/reader/application/view_models/bible_library_view_models.dart';
 import 'package:basic_bible/src/models/bible_models.dart';
@@ -198,7 +199,7 @@ class _ReferencePreviewSheetState extends ConsumerState<ReferencePreviewSheet> {
                           border: Border.all(color: colors.outlineVariant),
                         ),
                         child: Text(
-                          'Preview unavailable for this reference.',
+                          AppLocalizations.of(context)!.previewUnavailable,
                           style: theme.textTheme.bodyLarge?.copyWith(
                             color: colors.onSurfaceVariant,
                           ),
@@ -275,7 +276,9 @@ class _ReferencePreviewSheetState extends ConsumerState<ReferencePreviewSheet> {
                               ? null
                               : () => widget.onOpenInBible(context, preview),
                           icon: const Icon(Icons.menu_book_outlined),
-                          label: const Text('Open in Bible'),
+                          label: Text(
+                            AppLocalizations.of(context)!.openInBibleAction,
+                          ),
                         ),
                       ],
                     );

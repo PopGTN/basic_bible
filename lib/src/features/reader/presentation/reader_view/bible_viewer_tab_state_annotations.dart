@@ -1,10 +1,5 @@
 part of 'bible_viewer_tab.dart';
 
-// Compiled once — _shouldInsertSpace runs per span per verse per frame, and
-// constructing RegExp objects inside it showed up as pure allocation churn.
-final RegExp _leadingNoSpacePattern = RegExp(r"^[.,;:!?)}\]”’]");
-final RegExp _trailingNoSpacePattern = RegExp(r"[(\[{“‘/]$");
-
 extension _BibleTextViewStateAnnotations on _BibleTextViewState {
   void _showVerseDetailsSheet(
     BuildContext context,
@@ -22,7 +17,7 @@ extension _BibleTextViewStateAnnotations on _BibleTextViewState {
       context: context,
       isScrollControlled: true,
       showDragHandle: true,
-      builder: (sheetContext) {
+      builder: inReaderScope(context, (sheetContext) {
         return _VerseDetailsSheet(
           referenceLabel:
               '${displayBookNameForReference(widget.books, widget.reference.bookId)} $chapterNumber:${verse.number}',
@@ -31,7 +26,7 @@ extension _BibleTextViewStateAnnotations on _BibleTextViewState {
           onReferenceTap: (referenceEntry) =>
               _previewReferenceFromSheet(sheetContext, referenceEntry),
         );
-      },
+      }),
     );
   }
 
@@ -43,7 +38,7 @@ extension _BibleTextViewStateAnnotations on _BibleTextViewState {
       context: sheetContext,
       isScrollControlled: true,
       showDragHandle: true,
-      builder: (previewContext) {
+      builder: inReaderScope(sheetContext, (previewContext) {
         return ReferencePreviewSheet(
           referenceLabel: target.label,
           reference: target.range?.start,
@@ -60,9 +55,9 @@ extension _BibleTextViewStateAnnotations on _BibleTextViewState {
                   )
                   .firstOrNull
                   ?.name ??
-              'Current translation',
+              AppLocalizations.of(context)!.currentTranslationLabel,
           books: widget.books,
-          returnLabel: 'Back to Details',
+          returnLabel: AppLocalizations.of(context)!.backToDetailsAction,
           onOpenInBible: (previewSheetContext, preview) async {
             await ref
                 .read(currentReferenceProvider.notifier)
@@ -75,7 +70,7 @@ extension _BibleTextViewStateAnnotations on _BibleTextViewState {
             }
           },
         );
-      },
+      }),
     );
   }
 
@@ -327,7 +322,7 @@ extension _BibleTextViewStateAnnotations on _BibleTextViewState {
       // collapse into "wordstucktogether" when rendered span-by-span.
       if (startsNewLine) {
         text = '\n$text';
-      } else if (_shouldInsertSpace(previousText, text)) {
+      } else if (needsSpaceBetweenSpans(previousText, text)) {
         text = ' $text';
       }
 
@@ -338,13 +333,6 @@ extension _BibleTextViewStateAnnotations on _BibleTextViewState {
     }
 
     return displaySpans;
-  }
-
-  bool _shouldInsertSpace(String previousText, String currentText) {
-    if (previousText.isEmpty) return false;
-    if (currentText.startsWith(_leadingNoSpacePattern)) return false;
-    if (_trailingNoSpacePattern.hasMatch(previousText)) return false;
-    return true;
   }
 
   String _spanText(

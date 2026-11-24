@@ -21,7 +21,7 @@ class _BibleTextView extends ConsumerStatefulWidget {
     required this.book,
     required this.chapter,
     required this.reference,
-    required this.displayReference,
+    required this.visibleReference,
     required this.fontSize,
     required this.lineSpacing,
     required this.layoutMode,
@@ -39,7 +39,11 @@ class _BibleTextView extends ConsumerStatefulWidget {
   final BibleBook book;
   final BibleChapter chapter;
   final BibleReference reference;
-  final BibleReference displayReference;
+
+  /// The chapter on screen in continuous scrolling (see [_displayReference]).
+  /// A listenable rather than a value so a new visible chapter doesn't rebuild
+  /// this widget.
+  final ValueListenable<BibleReference?> visibleReference;
   final double fontSize;
 
   /// Multiplier on each view's base line height (see [LineSpacing]).
@@ -94,6 +98,12 @@ class _BibleTextViewState extends ConsumerState<_BibleTextView> {
   bool _verseFocusRequested = false;
   bool _showSelectedVerseFocus = false;
   bool _visibleSyncQueued = false;
+  // Section the last viewport sync settled on (see
+  // _syncVisibleChapterFromViewport); null after the sections are rebuilt.
+  int? _lastSyncedSectionIndex;
+  // First and last chapter on screen at the last sync, to tell which way the
+  // user is scrolling (see _prefetchAheadOfScroll).
+  (int, int)? _lastVisibleRange;
   // True while an animated programmatic scroll (chapter navigation) is
   // running. Scroll notifications are not forwarded to the bar auto-hide
   // handler during that window, so tapping next/previous chapter doesn't
@@ -115,11 +125,11 @@ class _BibleTextViewState extends ConsumerState<_BibleTextView> {
   // scrolling works in continuous mode without hitting that crash.
   int? _armedVerseSectionIndex;
 
-  void _onContinuousControllerChanged() {
-    // Safe to setState directly: the controller defers notifications to the
-    // next frame, so this never fires while SPL is mid-layout.
-    if (mounted) setState(() {});
-  }
+  /// What the reader shows: in continuous scrolling the chapter on screen,
+  /// otherwise [_BibleTextView.reference].
+  BibleReference get _displayReference =>
+      (widget.continuousScrolling ? widget.visibleReference.value : null) ??
+      widget.reference;
 
   void _onContinuousChapterHydrated(String bookId, int chapterNumber) {
     if (!mounted) return;
@@ -137,20 +147,17 @@ class _BibleTextViewState extends ConsumerState<_BibleTextView> {
   @override
   void initState() {
     super.initState();
-    _continuousController =
-        ContinuousReaderController(
-            loadChapter: (bookId, chapterNumber) => ref
-                .read(bibleRepositoryProvider)
-                .loadChapterVerses(widget.translationId, bookId, chapterNumber),
-          )
-          ..onChapterHydrated = _onContinuousChapterHydrated
-          ..addListener(_onContinuousControllerChanged);
+    _continuousController = ContinuousReaderController(
+      loadChapter: (bookId, chapterNumber) => ref
+          .read(bibleRepositoryProvider)
+          .loadChapterVerses(widget.translationId, bookId, chapterNumber),
+    )..onChapterHydrated = _onContinuousChapterHydrated;
     _takeVerseFocusRequest();
     _rebuildContinuousSections();
     final initialReference =
         widget.continuousScrolling &&
-            _continuousSectionIndexFor(widget.displayReference) != null
-        ? widget.displayReference
+            _continuousSectionIndexFor(_displayReference) != null
+        ? _displayReference
         : widget.reference;
     // Seed the initial scroll position so the list opens at the right chapter
     // without any scrollTo animation (avoids position estimation error on first
@@ -175,8 +182,8 @@ class _BibleTextViewState extends ConsumerState<_BibleTextView> {
       _rebuildContinuousSections();
       final targetReference =
           widget.continuousScrolling &&
-              _continuousSectionIndexFor(widget.displayReference) != null
-          ? widget.displayReference
+              _continuousSectionIndexFor(_displayReference) != null
+          ? _displayReference
           : widget.reference;
       if (widget.continuousScrolling) {
         final targetIndex = _continuousSectionIndexFor(targetReference);
@@ -248,9 +255,7 @@ class _BibleTextViewState extends ConsumerState<_BibleTextView> {
 
   @override
   void dispose() {
-    _continuousController
-      ..removeListener(_onContinuousControllerChanged)
-      ..dispose();
+    _continuousController.dispose();
     _scrollController.dispose();
     _resetVerseTapRecognizers();
     super.dispose();

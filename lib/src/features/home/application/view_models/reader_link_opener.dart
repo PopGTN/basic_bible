@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final readerLinkOpenerProvider = Provider<ReaderLinkOpener>(
   ReaderLinkOpener.new,
+  dependencies: [currentTranslationProvider, currentReferenceProvider],
 );
 
 /// Applies a [ReaderDeepLink] (#40): optional translation, then the

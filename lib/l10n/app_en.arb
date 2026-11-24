@@ -387,5 +387,100 @@
     "placeholders": {
       "name": {}
     }
-  }
+  },
+  "playAudioTooltip": "Play audio",
+  "splitFollowMainTitle": "Open Split View At The Current Chapter",
+  "splitFollowMainSubtitle": "Each time split view opens, start the second pane at the chapter the main reader is on. Off by default: the pane stays where you left it until the app is relaunched.",
+  "searchTooltip": "Search",
+  "readerOptionsTooltip": "Reader options",
+  "relatedContentAction": "Related Content",
+  "fontsAndSettingsAction": "Fonts & Settings",
+  "continuousScrollingTitle": "Continuous Scrolling",
+  "documentModeTitle": "Document Mode",
+  "showNotesAcrossTranslationsTitle": "Show Notes On Other Translations",
+  "allSettingsAction": "All Settings",
+  "retryAction": "Retry",
+  "addNoteAction": "Add Note",
+  "viewAction": "View",
+  "crossReferencesTitle": "Cross-References",
+  "noCrossReferences": "No cross-references available for this verse.",
+  "couldNotParseReference": "Could not parse reference: {label}",
+  "@couldNotParseReference": {
+    "placeholders": {
+      "label": {}
+    }
+  },
+  "currentTranslationLabel": "Current translation",
+  "backToDetailsAction": "Back to Details",
+  "backToNoteAction": "Back to Note",
+  "readerErrorMessage": "Error: {error}",
+  "@readerErrorMessage": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "failedToLoadBible": "Failed to load Bible: {error}",
+  "@failedToLoadBible": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "shareTextCopied": "Share text copied. Native share can be added later without changing your notes data.",
+  "highlightAction": "Highlight",
+  "noteAction": "Note",
+  "copyAction": "Copy",
+  "shareAction": "Share",
+  "noteHighlightsEditedFromNote": "Note highlights are edited from the note itself.",
+  "previewUnavailable": "Preview unavailable for this reference.",
+  "openInBibleAction": "Open in Bible",
+  "previousChapterTooltip": "Previous chapter",
+  "nextChapterTooltip": "Next chapter",
+  "sourceDetailsTitle": "Source details",
+  "quoteSpeakerLabel": "Quote speaker",
+  "lemmaLabel": "Lemma",
+  "morphologyLabel": "Morphology",
+  "translationNotAvailable": "Translation not available.",
+  "currentTranslationNotAvailable": "Current translation is not available.",
+  "saveNoteFailed": "Failed to save note. Please try again.",
+  "saveAction": "Save",
+  "noteFieldLabel": "Note",
+  "noteFieldHint": "Write your note here.",
+  "primaryVerseTitle": "Primary Verse",
+  "removeVerseTitle": "Remove verse?",
+  "addVerseAction": "Add Verse",
+  "connectedHighlightTitle": "Connected Highlight",
+  "noneOption": "None",
+  "connectedHighlightDescription": "This note will keep a connected verse highlight on its primary verse.",
+  "labelsFieldLabel": "Labels",
+  "labelsFieldHint": "Comma separated labels",
+  "onlyStandaloneHighlightsRemovable": "Only standalone highlights can be removed here. Edit a note to change its highlight.",
+  "noteVerseLimit": "Notes can be linked to up to {count} verses at once. Please select a smaller range.",
+  "@noteVerseLimit": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "deleteAnnotationTitle": "Delete?",
+  "deleteAnnotationDescription": "This note or highlight will be permanently removed.",
+  "noReferenceHistory": "No reference history yet.",
+  "recentReferencesTitle": "Recent References",
+  "referencesTitle": "References",
+  "historyTooltip": "History",
+  "searchBooksHint": "Search books",
+  "chaptersLabel": "Chapters",
+  "goToReference": "Go to {reference}",
+  "@goToReference": {
+    "placeholders": {
+      "reference": {}
+    }
+  },
+  "versesInChapter": "Verses in {chapter}",
+  "@versesInChapter": {
+    "placeholders": {
+      "chapter": {}
+    }
+  },
+  "keepOneTranslationMessage": "Keep at least one translation on this device. Download or import another one before removing this one."
 }

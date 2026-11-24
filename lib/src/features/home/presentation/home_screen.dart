@@ -5,12 +5,12 @@ import 'package:basic_bible/l10n/app_localizations.dart';
 import 'package:basic_bible/src/features/annotations/application/view_models/annotation_preferences_view_models.dart';
 import 'package:basic_bible/src/features/settings/application/view_models/reader_font_view_models.dart';
 import 'package:basic_bible/src/features/settings/presentation/reader_font_screen.dart';
-import 'package:basic_bible/src/features/library/data/app_bible_repository.dart';
 import 'package:basic_bible/src/features/home/application/view_models/home_navigation_view_model.dart';
 import 'package:basic_bible/src/features/menu/presentation/menu_tab.dart';
 import 'package:basic_bible/src/features/reader/application/view_models/split_view_view_models.dart';
 import 'package:basic_bible/src/features/reader/presentation/split_view/split_reader_layout.dart';
 import 'package:basic_bible/src/features/reader/presentation/search/bible_search_screen.dart';
+import 'package:basic_bible/src/features/reader/presentation/translation_chip.dart';
 import 'package:basic_bible/src/features/reader/application/view_models/bible_library_view_models.dart';
 import 'package:basic_bible/src/features/reader/application/view_models/reader_preferences_view_models.dart';
 import 'package:basic_bible/src/features/reader/application/view_models/reader_session_view_models.dart';
@@ -19,6 +19,7 @@ import 'package:basic_bible/src/features/settings/application/view_models/theme_
 import 'package:basic_bible/src/models/bible_models.dart';
 import 'package:basic_bible/src/services/font_size_service.dart';
 import 'package:basic_bible/src/services/line_spacing_service.dart';
+import 'package:basic_bible/src/widgets/collapsing_bottom_bar_inset.dart';
 import 'package:basic_bible/src/widgets/horizontal_mouse_scroll_list.dart';
 import 'package:basic_bible/src/widgets/theme_preview_card.dart';
 
@@ -92,13 +93,24 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   }
 
   // === Animation helpers for child widgets (BibleViewerTab) ===
-  void showBottomNav() => _bottomNavController.forward();
+  // Safe to call repeatedly (readers call these on every scroll step, and in
+  // split view two readers share the bars): only starts an animation when the
+  // bar isn't already heading that way.
+  void showBottomNav() => _show(_bottomNavController);
 
-  void hideBottomNav() => _bottomNavController.reverse();
+  void hideBottomNav() => _hide(_bottomNavController);
 
-  void showAppBar() => _appBarController.forward();
+  void showAppBar() => _show(_appBarController);
 
-  void hideAppBar() => _appBarController.reverse();
+  void hideAppBar() => _hide(_appBarController);
+
+  static void _show(AnimationController bar) {
+    if (!bar.isForwardOrCompleted) bar.forward();
+  }
+
+  static void _hide(AnimationController bar) {
+    if (bar.isForwardOrCompleted) bar.reverse();
+  }
 
   Future<void> _anchorVisibleContinuousReferenceIfNeeded(WidgetRef ref) async {
     if (!ref.read(continuousScrollingProvider)) return;
@@ -236,7 +248,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     }
 
     // Responsive checks
-    final width = MediaQuery.of(context).size.width;
+    final width = MediaQuery.sizeOf(context).width;
     final isWide = width >= 1100; // large screen breakpoint
     final isSmall = !isWide;
 
@@ -290,7 +302,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                 Expanded(child: currentTab.widget),
               ],
             )
-          : currentTab.widget,
+          : CollapsingBottomBarInset(
+              barVisibility: _bottomNavController,
+              child: currentTab.widget,
+            ),
 
       // Bottom navigation only for small screens
       bottomNavigationBar: isWide
@@ -331,6 +346,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   }
 
   List<_HomeTabDefinition> _buildTabs(AppLocalizations t, bool isSmall) {
+    // Both split-view panes are the same reader (#84).
+    BibleViewerTab reader({Key? key}) => BibleViewerTab(
+      key: key,
+      showBottomNav: showBottomNav,
+      hideBottomNav: hideBottomNav,
+      showAppBar: showAppBar,
+      hideAppBar: hideAppBar,
+      isSmallDevice: isSmall,
+    );
     return [
       _HomeTabDefinition(
         widget: const HomeTab(),
@@ -339,14 +363,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       ),
       _HomeTabDefinition(
         widget: SplitReaderLayout(
-          primary: BibleViewerTab(
-            key: _bibleViewerKey,
-            showBottomNav: showBottomNav,
-            hideBottomNav: hideBottomNav,
-            showAppBar: showAppBar,
-            hideAppBar: hideAppBar,
-            isSmallDevice: isSmall,
-          ),
+          primary: reader(key: _bibleViewerKey),
+          secondary: reader(),
         ),
         title: t.bible,
         icon: Icons.menu_book,
@@ -359,6 +377,100 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     ];
   }
 
+  /// The reader toolbar. In split view (#84) it starts with the second
+  /// pane's translation chip, left of the tools as in YouVersion.
+  List<Widget> _readerActions() => [
+    const SplitPaneTranslationChip(),
+    Consumer(
+      builder: (context, ref, _) {
+        // Hidden where split view isn't offered (a phone held upright).
+        if (!SplitReaderLayout.isAvailable(context)) {
+          return const SizedBox.shrink();
+        }
+        final split = ref.watch(splitViewEnabledProvider);
+        return IconButton(
+          isSelected: split,
+          icon: const Icon(Icons.vertical_split_outlined),
+          selectedIcon: const Icon(Icons.vertical_split),
+          tooltip: split
+              ? AppLocalizations.of(context)!.closeSplitViewTooltip
+              : AppLocalizations.of(context)!.splitViewTooltip,
+          onPressed: () => ref.read(splitViewEnabledProvider.notifier).toggle(),
+        );
+      },
+    ),
+    // Audio settings: will open a sheet for playback speed, audio track,
+    // etc. Hidden until audio playback exists (the play button itself is in
+    // the chapter bar, also commented out).
+    // IconButton(
+    //   icon: const Icon(Icons.volume_up),
+    //   onPressed: () => _showAudioSettingsSheet(context),
+    //   tooltip: AppLocalizations.of(context)!.audioOptionsTooltip,
+    // ),
+    IconButton(
+      icon: const Icon(Icons.search),
+      onPressed: () => Navigator.of(context).push(
+        MaterialPageRoute<void>(builder: (_) => const BibleSearchScreen()),
+      ),
+      tooltip: AppLocalizations.of(context)!.searchTooltip,
+    ),
+    Consumer(
+      builder: (context, ref, child) {
+        final colors = Theme.of(context).colorScheme;
+        return PopupMenuButton<_BibleViewerMenuAction>(
+          color: colors.surfaceContainerHigh,
+          tooltip: AppLocalizations.of(context)!.readerOptionsTooltip,
+          style: IconButton.styleFrom(
+            backgroundColor: colors.surfaceContainerHighest,
+            foregroundColor: colors.onSurface,
+            minimumSize: const Size(40, 40),
+            padding: const EdgeInsets.all(8),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+              side: BorderSide(color: colors.outlineVariant),
+            ),
+          ),
+          onSelected: (action) =>
+              _handleBibleViewerMenuAction(context, ref, action),
+          itemBuilder: (context) => [
+            PopupMenuItem(
+              value: _BibleViewerMenuAction.relatedContent,
+              child: Row(
+                children: [
+                  Icon(Icons.library_books_outlined, color: colors.onSurface),
+                  const SizedBox(width: 12),
+                  Text(
+                    AppLocalizations.of(context)!.relatedContentAction,
+                    style: TextStyle(color: colors.onSurface),
+                  ),
+                ],
+              ),
+            ),
+            PopupMenuItem(
+              value: _BibleViewerMenuAction.fontsAndSettings,
+              child: Row(
+                children: [
+                  Icon(Icons.text_fields, color: colors.onSurface),
+                  const SizedBox(width: 12),
+                  Text(
+                    AppLocalizations.of(context)!.fontsAndSettingsAction,
+                    style: TextStyle(color: colors.onSurface),
+                  ),
+                ],
+              ),
+            ),
+          ],
+          // The overflow trigger needs its own surface so it remains
+          // legible on darker reader app bars instead of reading like
+          // a low-contrast floating glyph.
+          icon: Icon(Icons.more_horiz, color: colors.onSurface),
+        );
+      },
+    ),
+    // Translation entry point for the dedicated Versions screen.
+    TranslationChip(onPressed: () => context.push('/home/translations')),
+  ];
+
   /// Builds the AppBar depending on screen size & active tab
   PreferredSizeWidget _buildAppBar(
     _HomeTabDefinition tab,
@@ -368,145 +480,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     final title = Text(tab.title);
 
     // Extra buttons only appear on Bible tab
-    final actions = isBible
-        ? [
-            Consumer(
-              builder: (context, ref, _) {
-                final split = ref.watch(splitViewEnabledProvider);
-                return IconButton(
-                  isSelected: split,
-                  icon: const Icon(Icons.vertical_split_outlined),
-                  selectedIcon: const Icon(Icons.vertical_split),
-                  tooltip: split
-                      ? AppLocalizations.of(context)!.closeSplitViewTooltip
-                      : AppLocalizations.of(context)!.splitViewTooltip,
-                  onPressed: () =>
-                      ref.read(splitViewEnabledProvider.notifier).toggle(),
-                );
-              },
-            ),
-            IconButton(
-              icon: const Icon(Icons.volume_up),
-              onPressed: () {},
-              tooltip: 'Play Audio',
-            ),
-            IconButton(
-              icon: const Icon(Icons.search),
-              onPressed: () => Navigator.of(context).push(
-                MaterialPageRoute<void>(
-                  builder: (_) => const BibleSearchScreen(),
-                ),
-              ),
-              tooltip: 'Search',
-            ),
-            Consumer(
-              builder: (context, ref, child) {
-                final colors = Theme.of(context).colorScheme;
-                return PopupMenuButton<_BibleViewerMenuAction>(
-                  color: colors.surfaceContainerHigh,
-                  tooltip: 'Reader options',
-                  style: IconButton.styleFrom(
-                    backgroundColor: colors.surfaceContainerHighest,
-                    foregroundColor: colors.onSurface,
-                    minimumSize: const Size(40, 40),
-                    padding: const EdgeInsets.all(8),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                      side: BorderSide(color: colors.outlineVariant),
-                    ),
-                  ),
-                  onSelected: (action) =>
-                      _handleBibleViewerMenuAction(context, ref, action),
-                  itemBuilder: (context) => [
-                    PopupMenuItem(
-                      value: _BibleViewerMenuAction.relatedContent,
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.library_books_outlined,
-                            color: colors.onSurface,
-                          ),
-                          const SizedBox(width: 12),
-                          Text(
-                            'Related Content',
-                            style: TextStyle(color: colors.onSurface),
-                          ),
-                        ],
-                      ),
-                    ),
-                    PopupMenuItem(
-                      value: _BibleViewerMenuAction.fontsAndSettings,
-                      child: Row(
-                        children: [
-                          Icon(Icons.text_fields, color: colors.onSurface),
-                          const SizedBox(width: 12),
-                          Text(
-                            'Fonts & Settings',
-                            style: TextStyle(color: colors.onSurface),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                  // The overflow trigger needs its own surface so it remains
-                  // legible on darker reader app bars instead of reading like
-                  // a low-contrast floating glyph.
-                  icon: Icon(Icons.more_horiz, color: colors.onSurface),
-                );
-              },
-            ),
-            // Translation entry point for the dedicated Versions screen.
-            Consumer(
-              builder: (context, ref, child) {
-                final currentTranslation = ref.watch(
-                  currentTranslationProvider,
-                );
-                final translationsAsync = ref.watch(
-                  availableTranslationsProvider,
-                );
-                final colors = Theme.of(context).colorScheme;
-                final translations =
-                    translationsAsync.value ??
-                    AppBibleRepository.builtInTranslations;
-                String? currentTranslationLabel;
-                for (final translation in translations) {
-                  if (translation.id == currentTranslation) {
-                    currentTranslationLabel = translation.id.toUpperCase();
-                    break;
-                  }
-                }
-                return Card(
-                  color: colors.secondary,
-                  elevation: 2,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(20),
-                    onTap: () => context.push('/home/translations'),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.language, color: colors.onSecondary),
-                          const SizedBox(width: 6),
-                          Text(
-                            currentTranslationLabel ??
-                                currentTranslation.toUpperCase(),
-                            style: TextStyle(color: colors.onSecondary),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                );
-              },
-            ),
-          ]
+    final actions = isBible ? _readerActions() : null;
+    // Split view side by side: the second pane's chip, lined up with the
+    // divider instead of in the actions row (#84).
+    final flexibleSpace = isBible
+        ? const SplitPaneTranslationChip(alignToDivider: true)
         : null;
 
     // === Wide screen → static AppBar ===
@@ -515,6 +493,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         title: title,
         backgroundColor: Theme.of(context).colorScheme.primary,
         foregroundColor: Theme.of(context).colorScheme.onPrimary,
+        flexibleSpace: flexibleSpace,
         actions: actions,
       );
     }
@@ -531,6 +510,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           title: title,
           backgroundColor: Theme.of(context).colorScheme.primary,
           foregroundColor: Theme.of(context).colorScheme.onPrimary,
+          flexibleSpace: flexibleSpace,
           actions: actions,
         ),
       ),
@@ -667,7 +647,9 @@ class _BibleViewerSettingsSheet extends StatelessWidget {
                     color: colors.outlineVariant.withValues(alpha: 0.7),
                   ),
                   _ToggleSettingsRow(
-                    title: 'Continuous Scrolling',
+                    title: AppLocalizations.of(
+                      context,
+                    )!.continuousScrollingTitle,
                     value: continuousScrolling,
                     onChanged: onContinuousScrollingChanged,
                   ),
@@ -676,7 +658,7 @@ class _BibleViewerSettingsSheet extends StatelessWidget {
                     color: colors.outlineVariant.withValues(alpha: 0.7),
                   ),
                   _ToggleSettingsRow(
-                    title: 'Document Mode',
+                    title: AppLocalizations.of(context)!.documentModeTitle,
                     value: layoutMode == ReaderLayoutMode.document,
                     onChanged: (value) {
                       onLayoutSelected(
@@ -691,7 +673,9 @@ class _BibleViewerSettingsSheet extends StatelessWidget {
                     color: colors.outlineVariant.withValues(alpha: 0.7),
                   ),
                   _ToggleSettingsRow(
-                    title: 'Show Notes On Other Translations',
+                    title: AppLocalizations.of(
+                      context,
+                    )!.showNotesAcrossTranslationsTitle,
                     value: showNotesAcrossTranslations,
                     onChanged: onShowNotesAcrossTranslationsChanged,
                   ),
@@ -699,7 +683,10 @@ class _BibleViewerSettingsSheet extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 22),
-            Text('Theme', style: Theme.of(context).textTheme.titleMedium),
+            Text(
+              AppLocalizations.of(context)!.theme,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
             const SizedBox(height: 14),
             SizedBox(
               height: 146,
@@ -722,7 +709,7 @@ class _BibleViewerSettingsSheet extends StatelessWidget {
               child: TextButton.icon(
                 onPressed: onOpenAllSettings,
                 icon: const Icon(Icons.settings),
-                label: const Text('All Settings'),
+                label: Text(AppLocalizations.of(context)!.allSettingsAction),
               ),
             ),
           ],

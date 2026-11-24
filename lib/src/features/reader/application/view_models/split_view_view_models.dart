@@ -1,181 +1,202 @@
-import 'package:basic_bible/src/features/library/data/app_bible_repository.dart';
+import 'package:basic_bible/src/features/annotations/application/view_models/annotation_data_view_models.dart';
+import 'package:basic_bible/src/features/annotations/application/view_models/annotation_selection_view_models.dart';
 import 'package:basic_bible/src/models/bible_models.dart';
 import 'package:basic_bible/src/services/shared_preferences_provider.dart';
-import 'package:basic_bible/src/utils/reference_utils.dart';
-import 'package:equatable/equatable.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
+import 'package:flutter_riverpod/misc.dart' show Override, ProviderListenable;
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'bible_library_view_models.dart';
+import 'bible_search_view_models.dart';
+import 'current_chapter_view_model.dart';
 import 'reader_session_view_models.dart';
+import 'translation_actions_view_model.dart';
 
-// Split view (#84): a second, independent reading pane beside the main
-// reader. The pane has its own translation, book/chapter and scroll position
-// so two passages (or two translations) can be read side by side.
+// Split view (#84): a second reading pane beside the main reader. The pane is
+// the same reader widget as the main one, so every reader feature works in
+// both. It runs inside a nested ProviderScope that swaps in its own
+// translation, location and verse selection (see [splitPaneOverrides]).
 
-const _enabledKey = 'split_view_enabled';
-const _translationKey = 'split_view_translation';
-const _bookKey = 'split_view_book';
-const _chapterKey = 'split_view_chapter';
+/// Prefix the pane's translation is saved under.
+const splitPaneKeyPrefix = 'split_view';
 
-final splitViewEnabledProvider =
-    StateNotifierProvider<SplitViewEnabledNotifier, bool>((ref) {
-      return SplitViewEnabledNotifier(ref);
-    });
+/// Whether split view is on. Not saved: the app always opens on the single
+/// reader.
+final splitViewEnabledProvider = StateNotifierProvider<SplitViewNotifier, bool>(
+  SplitViewNotifier.new,
+  dependencies: [
+    splitPaneContainerProvider,
+    searchContextReferenceProvider,
+    currentReferenceProvider,
+    visibleReaderReferenceProvider,
+  ],
+);
 
-class SplitViewEnabledNotifier extends StateNotifier<bool> {
-  SplitViewEnabledNotifier(this._ref)
-    : super(_ref.read(sharedPreferencesProvider).getBool(_enabledKey) ?? false);
+class SplitViewNotifier extends StateNotifier<bool> {
+  SplitViewNotifier(this._ref) : super(false);
 
   final Ref _ref;
 
-  Future<void> toggle() async {
-    final enabling = !state;
-    // First time the pane opens, start it where the main reader is.
-    if (enabling) _ref.read(secondaryPaneProvider.notifier).seedIfUnset();
-    state = enabling;
-    await _ref.read(sharedPreferencesProvider).setBool(_enabledKey, state);
+  void toggle() {
+    final pane = _ref.read(splitPaneContainerProvider);
+    final target = state
+        // Closing: continuous scrolling only moves the visible reference, so
+        // pin the chapter on screen for the pane to reopen on.
+        ? _shownChapter(pane.read)
+        : _ref.read(splitPaneFollowsMainProvider)
+        ? _shownChapter(_ref.read)
+        : null;
+    if (target != null) {
+      pane.read(visibleReaderReferenceProvider.notifier).state = null;
+      pane
+          .read(currentReferenceProvider.notifier)
+          .setReference(target, focusVerse: false);
+    }
+    state = !state;
   }
 }
 
-class SecondaryPaneState extends Equatable {
-  const SecondaryPaneState({
-    required this.translationId,
-    required this.reference,
-  });
-
-  final String translationId;
-
-  /// Book + chapter only; the pane doesn't track a verse.
-  final BibleReference reference;
-
-  @override
-  List<Object?> get props => [translationId, reference];
+/// The chapter a reader shows: in continuous scrolling the one on screen
+/// rather than the last one picked. [read] is that reader's scope.
+BibleReference _shownChapter(
+  T Function<T>(ProviderListenable<T> provider) read,
+) {
+  final shown = read(searchContextReferenceProvider);
+  return BibleReference(bookId: shown.bookId, chapter: shown.chapter);
 }
 
-final secondaryPaneProvider =
-    StateNotifierProvider<SecondaryPaneNotifier, SecondaryPaneState>((ref) {
-      return SecondaryPaneNotifier(ref, ref.read(sharedPreferencesProvider));
-    });
+/// The second pane's provider scope. A provider rather than widget state so
+/// the app bar can show the pane's translation chip, and so the pane keeps its
+/// place while split view is closed. Created the first time split view opens,
+/// at the main reader's chapter; lives until the app is relaunched.
+final splitPaneContainerProvider = Provider<ProviderContainer>((ref) {
+  final container = ProviderContainer(
+    parent: ref.container,
+    overrides: splitPaneOverrides(
+      ref.read(sharedPreferencesProvider),
+      mainTranslation: ref.read(currentTranslationProvider),
+      mainReference: _shownChapter(ref.read),
+    ),
+  );
+  ref.onDispose(container.dispose);
+  return container;
+}, dependencies: [currentTranslationProvider, searchContextReferenceProvider]);
 
-class SecondaryPaneNotifier extends StateNotifier<SecondaryPaneState> {
-  SecondaryPaneNotifier(this._ref, this._prefs)
-    : super(
-        SecondaryPaneState(
-          translationId:
-              _prefs.getString(_translationKey) ??
-              _ref.read(currentTranslationProvider),
-          reference: BibleReference(
-            bookId:
-                _prefs.getString(_bookKey) ??
-                _ref.read(currentReferenceProvider).bookId,
-            chapter:
-                _prefs.getInt(_chapterKey) ??
-                _ref.read(currentReferenceProvider).chapter,
-          ),
-        ),
-      );
+/// Setting: open split view at the main reader's chapter every time, instead
+/// of where the pane was left (it always starts there after a relaunch).
+final splitPaneFollowsMainProvider =
+    StateNotifierProvider<SplitPaneFollowsMainNotifier, bool>(
+      (ref) =>
+          SplitPaneFollowsMainNotifier(ref.read(sharedPreferencesProvider)),
+    );
 
-  final Ref _ref;
+class SplitPaneFollowsMainNotifier extends StateNotifier<bool> {
+  SplitPaneFollowsMainNotifier(this._prefs)
+    : super(_prefs.getBool(_key) ?? false);
+
+  static const _key = 'split_view_follow_main';
   final SharedPreferences _prefs;
 
-  void seedIfUnset() {
-    if (_prefs.containsKey(_bookKey)) return;
-    final main = _ref.read(currentReferenceProvider);
-    setReference(BibleReference(bookId: main.bookId, chapter: main.chapter));
-    setTranslation(_ref.read(currentTranslationProvider));
+  Future<void> setEnabled(bool enabled) async {
+    state = enabled;
+    await _prefs.setBool(_key, enabled);
   }
+}
 
-  Future<void> setReference(BibleReference reference) async {
-    state = SecondaryPaneState(
-      translationId: state.translationId,
-      reference: BibleReference(
-        bookId: reference.bookId,
-        chapter: reference.chapter,
+/// Overrides that make a reader subtree the second pane: its own translation,
+/// location and selection. The pane starts at [mainReference]; its
+/// translation is its own, defaulting to [mainTranslation] the first time.
+List<Override> splitPaneOverrides(
+  SharedPreferences prefs, {
+  required String mainTranslation,
+  required BibleReference mainReference,
+}) => [
+  currentTranslationProvider.overrideWith(
+    (ref) => TranslationNotifier(
+      prefs,
+      keyPrefix: splitPaneKeyPrefix,
+      fallback: mainTranslation,
+    ),
+  ),
+  currentReferenceProvider.overrideWith(
+    (ref) => ReferenceNotifier.unsaved(
+      BibleReference(
+        bookId: mainReference.bookId,
+        chapter: mainReference.chapter,
       ),
-    );
-    await Future.wait([
-      _prefs.setString(_bookKey, reference.bookId),
-      _prefs.setInt(_chapterKey, reference.chapter),
-    ]);
-  }
+    ),
+  ),
+  visibleReaderReferenceProvider.overrideWith((ref) => null),
+  selectedVersesProvider.overrideWith((ref) => SelectedVersesNotifier()),
+  highlightPaletteExpandedProvider.overrideWith((ref) => false),
+  ..._derivedReaderProviders,
+];
 
-  Future<void> setTranslation(String translationId) async {
-    state = SecondaryPaneState(
-      translationId: translationId,
-      reference: state.reference,
-    );
-    await _prefs.setString(_translationKey, translationId);
-  }
+/// Every provider computed from the ones overridden above, listed so the pane
+/// gets its own copy. Riverpod is meant to scope these by itself through
+/// their `dependencies`, but (as of riverpod 3.0.3) a provider already
+/// created in the parent is copied into the child unscoped, and the pane would
+/// silently show the main reader's books/chapter/annotations, or switch the
+/// main reader's translation from the pane's Versions screen. Listing a
+/// provider as its own override scopes it explicitly.
+///
+/// A new provider that watches any of the above (directly or not) and is used
+/// inside the reader must be added here; split_view_scoping_guard_test fails
+/// (naming it) if one is missing.
+final _derivedReaderProviders = <Override>[
+  bibleBooksShellProvider,
+  readableBibleBooksProvider,
+  bibleBooksProvider,
+  currentChapterProvider,
+  currentTranslationInfoProvider,
+  searchContextReferenceProvider,
+  selectedVerseProvider,
+  selectedVerseAnnotationsProvider,
+  annotationTranslationFilterProvider,
+  annotationsByChapterProvider,
+  visibleChapterAnnotationsProvider,
+  translationActionsProvider,
+];
 
-  /// Next/previous chapter across book boundaries within [books].
-  void step(List<BibleBook> books, int direction) {
-    final chapters = [
-      for (final book in books)
-        for (final chapter in book.chapters)
-          BibleReference(bookId: book.id, chapter: chapter.number),
+/// Moves readers off translations that are going away (deleted, removed,
+/// cache cleared), for every reader: the main one and the split-view pane.
+/// Has no `dependencies`, so it always lives in the root scope and reaches
+/// both readers whichever one's Versions screen calls it.
+final readerTranslationFallbackProvider = Provider<ReaderTranslationFallback>(
+  (ref) => ReaderTranslationFallback(ref.container),
+);
+
+class ReaderTranslationFallback {
+  ReaderTranslationFallback(this._root);
+
+  final ProviderContainer _root;
+
+  /// Switches every reader whose translation [isGone] to [fallbackId], the
+  /// same way picking it on the Versions screen would. If split view has not
+  /// been opened since launch the pane only exists as its saved translation,
+  /// which is updated instead.
+  Future<void> moveReadersOff(
+    bool Function(String translationId) isGone,
+    String fallbackId,
+  ) async {
+    final paneCreated = _root.exists(splitPaneContainerProvider);
+    final readers = [
+      _root,
+      if (paneCreated) _root.read(splitPaneContainerProvider),
     ];
-    final book = resolveBookFromReference(books, state.reference.bookId);
-    final index = chapters.indexWhere(
-      (r) =>
-          r.bookId == (book?.id ?? state.reference.bookId) &&
-          r.chapter == state.reference.chapter,
-    );
-    final target = index + direction;
-    if (index < 0 || target < 0 || target >= chapters.length) return;
-    setReference(chapters[target]);
+    for (final reader in readers) {
+      if (isGone(reader.read(currentTranslationProvider))) {
+        await reader.read(translationActionsProvider).switchTo(fallbackId);
+      }
+    }
+    if (!paneCreated) {
+      final prefs = _root.read(sharedPreferencesProvider);
+      final key = TranslationNotifier.storageKey(splitPaneKeyPrefix);
+      final saved = prefs.getString(key);
+      if (saved != null && isGone(saved)) {
+        await prefs.setString(key, fallbackId);
+      }
+    }
   }
 }
-
-/// Navigable books of the pane's translation (same rules as the main
-/// reader: chapterless front matter becomes a readable page, #87).
-final secondaryPaneBooksProvider = FutureProvider.autoDispose<List<BibleBook>>((
-  ref,
-) async {
-  final translationId = ref.watch(
-    secondaryPaneProvider.select((s) => s.translationId),
-  );
-  final repository = ref.watch(bibleRepositoryProvider);
-  return readableBooks(
-    await repository.loadShellWithoutActivating(translationId),
-  );
-});
-
-/// What the pane shows: the resolved book and its hydrated chapter.
-class SecondaryPaneContent {
-  const SecondaryPaneContent({required this.book, required this.chapter});
-
-  final BibleBook book;
-  final BibleChapter chapter;
-}
-
-final secondaryPaneContentProvider =
-    FutureProvider.autoDispose<SecondaryPaneContent?>((ref) async {
-      final pane = ref.watch(secondaryPaneProvider);
-      final books = await ref.watch(secondaryPaneBooksProvider.future);
-      if (books.isEmpty) return null;
-
-      // Same fallback as the main reader when a translation lacks the book.
-      final book =
-          resolveBookFromReference(books, pane.reference.bookId) ??
-          books.first;
-      final chapter =
-          book.chapters
-              .where((c) => c.number == pane.reference.chapter)
-              .firstOrNull ??
-          book.chapters.firstOrNull;
-      if (chapter == null) return null;
-
-      final hydrated = chapter.verses.isNotEmpty
-          ? chapter
-          : await ref
-                    .watch(bibleRepositoryProvider)
-                    .loadChapterVerses(
-                      pane.translationId,
-                      book.id,
-                      chapter.number,
-                    ) ??
-                chapter;
-      return SecondaryPaneContent(book: book, chapter: hydrated);
-    });

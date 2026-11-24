@@ -22,12 +22,13 @@ typedef ChapterLoader =
 /// LRU cache of hydrated chapters, and the prefetch policy.
 ///
 /// Extracted from `_BibleTextViewState` so this logic is unit-testable
-/// without pumping widgets. The widget listens for changes and rebuilds;
-/// notifications are deferred to the next frame because chapter futures can
-/// complete while ScrollablePositionedList is mid-layout, and rebuilding the
-/// tree at that point trips "RenderIndexedSemantics was mutated in
-/// RenderSliverList.performLayout".
-class ContinuousReaderController extends ChangeNotifier {
+/// without pumping widgets.
+///
+/// It deliberately does not notify the reader when a chapter loads: each
+/// chapter's FutureBuilder already rebuilds just that chapter, and rebuilding
+/// the whole reader on every load re-rendered every visible chapter up to a
+/// dozen times per jump.
+class ContinuousReaderController {
   ContinuousReaderController({
     required ChapterLoader loadChapter,
     this.maxHydratedChapters = 48,
@@ -41,8 +42,9 @@ class ContinuousReaderController extends ChangeNotifier {
 
   final ChapterLoader _loadChapter;
 
-  /// How change notifications are scheduled. Defaults to the next frame (see
-  /// class comment); tests inject a synchronous version.
+  /// How [onChapterHydrated] is scheduled. Defaults to the next frame because
+  /// chapter futures can complete while ScrollablePositionedList is
+  /// mid-layout; tests inject their own.
   final void Function(VoidCallback) _deferNotify;
 
   /// Upper bound on chapters kept hydrated in memory. Big enough that the
@@ -51,7 +53,7 @@ class ContinuousReaderController extends ChangeNotifier {
   /// 1,189 chapters.
   final int maxHydratedChapters;
 
-  /// Called (deferred, like notifications) whenever a chapter's verses arrive.
+  /// Called (deferred to the next frame) whenever a chapter's verses arrive.
   /// The reader uses this to retry verse-level focus for deep links that
   /// landed before the target chapter was hydrated.
   void Function(String bookId, int chapterNumber)? onChapterHydrated;
@@ -60,7 +62,6 @@ class ContinuousReaderController extends ChangeNotifier {
   final Map<String, Future<BibleChapter?>> _chapterFutures = {};
   // Insertion-ordered map used as an LRU: oldest entries first.
   final Map<String, BibleChapter> _hydratedChapters = {};
-  bool _notifyQueued = false;
   bool _disposed = false;
 
   List<ContinuousChapterSection> get sections => _sections;
@@ -136,12 +137,16 @@ class ContinuousReaderController extends ChangeNotifier {
   /// Starts hydration for the chapters within [radius] sections of
   /// [reference] so they are ready before the user scrolls to them.
   void prefetchWindow(BibleReference reference, {int radius = 2}) {
-    if (_sections.isEmpty) return;
     final centerIndex = sectionIndexFor(reference);
     if (centerIndex == null) return;
-    final start = (centerIndex - radius).clamp(0, _sections.length - 1);
-    final end = (centerIndex + radius).clamp(0, _sections.length - 1);
-    for (var index = start; index <= end; index++) {
+    prefetchRange(centerIndex - radius, centerIndex + radius);
+  }
+
+  /// Starts hydration for sections [first]..[last]; the part of the range
+  /// outside the list is ignored (so the range may be empty).
+  void prefetchRange(int first, int last) {
+    final end = last < _sections.length ? last : _sections.length - 1;
+    for (var index = first < 0 ? 0 : first; index <= end; index++) {
       chapterFuture(_sections[index]);
     }
   }
@@ -157,21 +162,9 @@ class ContinuousReaderController extends ChangeNotifier {
       // evicted too or the memory is never actually released.
       _chapterFutures.remove(oldestKey);
     }
-    _queueNotify();
   }
 
-  void _queueNotify() {
-    if (_notifyQueued || _disposed) return;
-    _notifyQueued = true;
-    _deferNotify(() {
-      _notifyQueued = false;
-      if (!_disposed) notifyListeners();
-    });
-  }
-
-  @override
   void dispose() {
     _disposed = true;
-    super.dispose();
   }
 }

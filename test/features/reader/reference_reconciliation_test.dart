@@ -76,58 +76,60 @@ void main() {
 
     test('skips leading books without chapters (e.g. front matter)', () {
       expect(
-        readerFallbackReference(
-          [_book('FRT', []), ...books],
-          const BibleReference(bookId: 'GEN', chapter: 1),
-        ),
+        readerFallbackReference([
+          _book('FRT', []),
+          ...books,
+        ], const BibleReference(bookId: 'GEN', chapter: 1)),
         const BibleReference(bookId: 'MAT', chapter: 1),
       );
     });
   });
 
-  test('switching to a translation without the book updates the reference',
-      () async {
-    SharedPreferences.setMockInitialValues({
-      'bible_translation': 'full',
-      'bible_book': 'GEN',
-      'bible_chapter': 3,
-    });
-    final prefs = await SharedPreferences.getInstance();
-    final container = ProviderContainer(
-      overrides: [
-        sharedPreferencesProvider.overrideWithValue(prefs),
-        bibleRepositoryProvider.overrideWithValue(
-          _InMemoryRepository({
-            'full': [
-              _book('GEN', [1, 2, 3]),
-              _book('MAT', [1]),
-            ],
-            'nt': [
-              _book('MAT', [1, 2]),
-            ],
-          }),
-        ),
-      ],
-    );
-    addTearDown(container.dispose);
-    container.listen(bibleBooksShellProvider, (_, _) {});
-    await Future<void>.delayed(Duration.zero);
+  test(
+    'switching to a translation without the book updates the reference',
+    () async {
+      SharedPreferences.setMockInitialValues({
+        'bible_translation': 'full',
+        'bible_book': 'GEN',
+        'bible_chapter': 3,
+      });
+      final prefs = await SharedPreferences.getInstance();
+      final container = ProviderContainer(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(prefs),
+          bibleRepositoryProvider.overrideWithValue(
+            _InMemoryRepository({
+              'full': [
+                _book('GEN', [1, 2, 3]),
+                _book('MAT', [1]),
+              ],
+              'nt': [
+                _book('MAT', [1, 2]),
+              ],
+            }),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+      container.listen(bibleBooksShellProvider, (_, _) {});
+      await Future<void>.delayed(Duration.zero);
 
-    // Genesis 3 exists in the starting translation: nothing changes.
-    expect(
-      container.read(currentReferenceProvider),
-      const BibleReference(bookId: 'GEN', chapter: 3),
-    );
+      // Genesis 3 exists in the starting translation: nothing changes.
+      expect(
+        container.read(currentReferenceProvider),
+        const BibleReference(bookId: 'GEN', chapter: 3),
+      );
 
-    await container
-        .read(currentTranslationProvider.notifier)
-        .setTranslation('nt');
-    await Future<void>.delayed(Duration.zero);
+      await container
+          .read(currentTranslationProvider.notifier)
+          .setTranslation('nt');
+      await Future<void>.delayed(Duration.zero);
 
-    expect(
-      container.read(currentReferenceProvider),
-      const BibleReference(bookId: 'MAT', chapter: 1),
-    );
-    expect(prefs.getString('bible_book'), 'MAT');
-  });
+      expect(
+        container.read(currentReferenceProvider),
+        const BibleReference(bookId: 'MAT', chapter: 1),
+      );
+      expect(prefs.getString('bible_book'), 'MAT');
+    },
+  );
 }

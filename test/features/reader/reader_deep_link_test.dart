@@ -59,7 +59,10 @@ void main() {
         reference: BibleReference(bookId: 'PSA', chapter: 23, verse: 1),
         translationId: 'web',
       );
-      expect(link.toUri().toString(), 'basicbible://bible/PSA/23/1?translation=web');
+      expect(
+        link.toUri().toString(),
+        'basicbible://bible/PSA/23/1?translation=web',
+      );
       expect(ReaderDeepLink.tryParse(link.toUri()), link);
     });
   });

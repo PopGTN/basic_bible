@@ -27,7 +27,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String get goToOther => 'Zur anderen Seite gehen';
 
   @override
-  String get aboutDescription => 'Diese Bibel-App ist ein kostenloses Projekt von PopGTN. Es ist ein Übungsprojekt zum Lernen von Flutter und Dart. Die App ermöglicht das Lesen der Bibel, das Erstellen von Notizen, TTS-Unterstützung und mehr. Sie ist inspiriert von Apps wie YouVersion Bible, jedoch mit zusätzlichen Funktionen und einer verbesserten Benutzeroberfläche.';
+  String get aboutDescription =>
+      'Diese Bibel-App ist ein kostenloses Projekt von PopGTN. Es ist ein Übungsprojekt zum Lernen von Flutter und Dart. Die App ermöglicht das Lesen der Bibel, das Erstellen von Notizen, TTS-Unterstützung und mehr. Sie ist inspiriert von Apps wie YouVersion Bible, jedoch mit zusätzlichen Funktionen und einer verbesserten Benutzeroberfläche.';
 
   @override
   String get language => 'Sprache';
@@ -87,7 +88,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String get clearTranslationCacheTitle => 'Übersetzungs-Cache leeren?';
 
   @override
-  String get clearTranslationCacheDescription => 'Dadurch werden heruntergeladene Übersetzungsdateien, importierte Quellkopien und veraltete Registereinträge aus dem lokalen App-Speicher entfernt. Mitgelieferte Übersetzungen bleiben verfügbar.';
+  String get clearTranslationCacheDescription =>
+      'Dadurch werden heruntergeladene Übersetzungsdateien, importierte Quellkopien und veraltete Registereinträge aus dem lokalen App-Speicher entfernt. Mitgelieferte Übersetzungen bleiben verfügbar.';
 
   @override
   String get clearCacheAction => 'Cache leeren';
@@ -129,7 +131,8 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get deleteImportedTranslationDescription => 'Dadurch wird die importierte Bibel aus der App-Bibliothek und dem Cache entfernt. Die Originaldatei auf dem Datenträger wird nicht gelöscht.';
+  String get deleteImportedTranslationDescription =>
+      'Dadurch wird die importierte Bibel aus der App-Bibliothek und dem Cache entfernt. Die Originaldatei auf dem Datenträger wird nicht gelöscht.';
 
   @override
   String get cancelAction => 'Abbrechen';
@@ -153,7 +156,8 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get removeDownloadedTranslationDescription => 'Dadurch wird die heruntergeladene Bibel aus dem lokalen App-Speicher entfernt. Sie bleibt in der Bibliothek zum Herunterladen verfügbar, sodass du sie später erneut laden kannst.';
+  String get removeDownloadedTranslationDescription =>
+      'Dadurch wird die heruntergeladene Bibel aus dem lokalen App-Speicher entfernt. Sie bleibt in der Bibliothek zum Herunterladen verfügbar, sodass du sie später erneut laden kannst.';
 
   @override
   String get removeAction => 'Entfernen';
@@ -210,7 +214,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String get translationDetailsTitle => 'Übersetzungsdetails';
 
   @override
-  String get translationDetailsDescription => 'Lege Name, Abkürzung, Sprachcode und Beschreibung fest, bevor der Import gespeichert wird.';
+  String get translationDetailsDescription =>
+      'Lege Name, Abkürzung, Sprachcode und Beschreibung fest, bevor der Import gespeichert wird.';
 
   @override
   String get translationNameLabel => 'Name';
@@ -219,7 +224,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String get translationNameHint => 'World English Bible';
 
   @override
-  String get translationNameRequired => 'Gib einen Namen für die Übersetzung ein.';
+  String get translationNameRequired =>
+      'Gib einen Namen für die Übersetzung ein.';
 
   @override
   String get translationAbbreviationLabel => 'Abkürzung';
@@ -228,13 +234,15 @@ class AppLocalizationsDe extends AppLocalizations {
   String get translationAbbreviationHint => 'WEB';
 
   @override
-  String get translationAbbreviationHelp => 'Wird genauso verwendet wie die mitgelieferten Abkürzungen KJV und ASV.';
+  String get translationAbbreviationHelp =>
+      'Wird genauso verwendet wie die mitgelieferten Abkürzungen KJV und ASV.';
 
   @override
   String get translationAbbreviationRequired => 'Gib eine Abkürzung ein.';
 
   @override
-  String get translationAbbreviationTaken => 'Diese Abkürzung wird bereits verwendet.';
+  String get translationAbbreviationTaken =>
+      'Diese Abkürzung wird bereits verwendet.';
 
   @override
   String get translationLanguageCodeLabel => 'Sprachcode';
@@ -243,7 +251,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String get translationLanguageCodeHint => 'de';
 
   @override
-  String get translationLanguageCodeHelp => 'Verwende einen kurzen Code wie en, es, fr oder de.';
+  String get translationLanguageCodeHelp =>
+      'Verwende einen kurzen Code wie en, es, fr oder de.';
 
   @override
   String get translationLanguageCodeRequired => 'Gib einen Sprachcode ein.';
@@ -252,7 +261,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String get translationDescriptionLabel => 'Beschreibung';
 
   @override
-  String get translationDescriptionHint => 'Importiert aus my_local_bible.xml oder my_translation.sqlite';
+  String get translationDescriptionHint =>
+      'Importiert aus my_local_bible.xml oder my_translation.sqlite';
 
   @override
   String get importingAction => 'Wird importiert...';
@@ -306,7 +316,8 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get importNotAvailableOnWeb => 'Importing local Bible files is not available in the browser yet.';
+  String get importNotAvailableOnWeb =>
+      'Importing local Bible files is not available in the browser yet.';
 
   @override
   String get languageFilterLabel => 'Sprache';
@@ -353,13 +364,15 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get readerFontRemoveDescription => 'Die importierte Schriftartdatei wird von diesem Gerät gelöscht.';
+  String get readerFontRemoveDescription =>
+      'Die importierte Schriftartdatei wird von diesem Gerät gelöscht.';
 
   @override
   String get readerFontSearchHint => 'Installierte Schriftarten durchsuchen';
 
   @override
-  String get readerFontNoInstalled => 'Keine installierten Schriftarten gefunden.';
+  String get readerFontNoInstalled =>
+      'Keine installierten Schriftarten gefunden.';
 
   @override
   String readerFontNoMatches(Object query) {
@@ -367,10 +380,12 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get readerFontScanUnsupported => 'Installierte Schriftarten können auf dieser Plattform nicht aufgelistet werden';
+  String get readerFontScanUnsupported =>
+      'Installierte Schriftarten können auf dieser Plattform nicht aufgelistet werden';
 
   @override
-  String get readerFontScanUnsupportedHint => 'Importiere stattdessen eine Schriftartdatei.';
+  String get readerFontScanUnsupportedHint =>
+      'Importiere stattdessen eine Schriftartdatei.';
 
   @override
   String readerFontImported(Object fontName) {
@@ -383,16 +398,20 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get readerFontUnsupportedType => 'Nur .ttf- und .otf-Schriftartdateien können importiert werden.';
+  String get readerFontUnsupportedType =>
+      'Nur .ttf- und .otf-Schriftartdateien können importiert werden.';
 
   @override
-  String get readerFontNotAFont => 'Diese Datei scheint keine gültige Schriftart zu sein.';
+  String get readerFontNotAFont =>
+      'Diese Datei scheint keine gültige Schriftart zu sein.';
 
   @override
-  String get readerFontUnloadable => 'Diese Schriftartdatei konnte nicht geladen werden.';
+  String get readerFontUnloadable =>
+      'Diese Schriftartdatei konnte nicht geladen werden.';
 
   @override
-  String get readerFontImportFailed => 'Die Schriftart konnte nicht importiert werden.';
+  String get readerFontImportFailed =>
+      'Die Schriftart konnte nicht importiert werden.';
 
   @override
   String readerFontDeleteFailed(Object fontName) {
@@ -448,13 +467,16 @@ class AppLocalizationsDe extends AppLocalizations {
   String get translationRightsNotesAction => 'Vollständige Lizenzhinweise';
 
   @override
-  String get translationRightsDownloadNotPermitted => 'Der Rechteinhaber erlaubt nicht, diese Übersetzung in der App herunterzuladen.';
+  String get translationRightsDownloadNotPermitted =>
+      'Der Rechteinhaber erlaubt nicht, diese Übersetzung in der App herunterzuladen.';
 
   @override
-  String get translationRightsUnknown => 'Für diese Übersetzung sind keine Urheberrechts- oder Lizenzangaben verfügbar.';
+  String get translationRightsUnknown =>
+      'Für diese Übersetzung sind keine Urheberrechts- oder Lizenzangaben verfügbar.';
 
   @override
-  String get translationRightsUnknownImported => 'Sie haben diese Übersetzung aus einer Datei importiert, daher hat die App keine Urheberrechts- oder Lizenzangaben dazu. Stellen Sie sicher, dass Sie sie verwenden dürfen.';
+  String get translationRightsUnknownImported =>
+      'Sie haben diese Übersetzung aus einer Datei importiert, daher hat die App keine Urheberrechts- oder Lizenzangaben dazu. Stellen Sie sicher, dass Sie sie verwenden dürfen.';
 
   @override
   String get searchBibleHint => 'Bibel durchsuchen';
@@ -463,7 +485,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String get clearAction => 'Löschen';
 
   @override
-  String get searchTypePrompt => 'Gib ein Wort oder einen Ausdruck ein, um zu suchen.';
+  String get searchTypePrompt =>
+      'Gib ein Wort oder einen Ausdruck ein, um zu suchen.';
 
   @override
   String searchFailed(Object error) {
@@ -583,25 +606,30 @@ class AppLocalizationsDe extends AppLocalizations {
   String get boldWordsOfJesusTitle => 'Worte Jesu fett';
 
   @override
-  String get boldWordsOfJesusSubtitle => 'Zeigt die Worte Jesu fett und rot an. Standardmäßig aus, wie bei den meisten Bibeln mit roten Jesusworten.';
+  String get boldWordsOfJesusSubtitle =>
+      'Zeigt die Worte Jesu fett und rot an. Standardmäßig aus, wie bei den meisten Bibeln mit roten Jesusworten.';
 
   @override
   String get openSourceLicensesTitle => 'Open-Source-Lizenzen';
 
   @override
-  String get openSourceLicensesSubtitle => 'Von dieser App verwendete Bibliotheken und Code';
+  String get openSourceLicensesSubtitle =>
+      'Von dieser App verwendete Bibliotheken und Code';
 
   @override
-  String get exportTranslationHelp => 'Exportiert die SQLite-Datei einer auf diesem Gerät gespeicherten Übersetzung. Lade eine Übersetzung unter Übersetzungen herunter, um sie zu exportieren.';
+  String get exportTranslationHelp =>
+      'Exportiert die SQLite-Datei einer auf diesem Gerät gespeicherten Übersetzung. Lade eine Übersetzung unter Übersetzungen herunter, um sie zu exportieren.';
 
   @override
-  String get noDownloadedTranslationsToExport => 'Keine heruntergeladenen Übersetzungen zum Exportieren.';
+  String get noDownloadedTranslationsToExport =>
+      'Keine heruntergeladenen Übersetzungen zum Exportieren.';
 
   @override
   String get downloadNotificationChannelName => 'Bibel-Downloads';
 
   @override
-  String get downloadNotificationChannelDescription => 'Fortschritt beim Herunterladen von Bibelübersetzungen';
+  String get downloadNotificationChannelDescription =>
+      'Fortschritt beim Herunterladen von Bibelübersetzungen';
 
   @override
   String get downloadNotificationStarting => 'Wird gestartet…';
@@ -629,4 +657,218 @@ class AppLocalizationsDe extends AppLocalizations {
   String downloadNotificationFailedBody(Object name) {
     return '$name konnte nicht heruntergeladen werden.';
   }
+
+  @override
+  String get playAudioTooltip => 'Audio abspielen';
+
+  @override
+  String get splitFollowMainTitle =>
+      'Geteilte Ansicht beim aktuellen Kapitel öffnen';
+
+  @override
+  String get splitFollowMainSubtitle =>
+      'Beim Öffnen der geteilten Ansicht beginnt der zweite Bereich jedes Mal beim Kapitel des Hauptlesers. Standardmäßig aus: Der Bereich bleibt, wo du ihn verlassen hast, bis die App neu gestartet wird.';
+
+  @override
+  String get searchTooltip => 'Suchen';
+
+  @override
+  String get readerOptionsTooltip => 'Leseoptionen';
+
+  @override
+  String get relatedContentAction => 'Verwandte Inhalte';
+
+  @override
+  String get fontsAndSettingsAction => 'Schriften & Einstellungen';
+
+  @override
+  String get continuousScrollingTitle => 'Fortlaufendes Scrollen';
+
+  @override
+  String get documentModeTitle => 'Dokumentmodus';
+
+  @override
+  String get showNotesAcrossTranslationsTitle =>
+      'Notizen in anderen Übersetzungen anzeigen';
+
+  @override
+  String get allSettingsAction => 'Alle Einstellungen';
+
+  @override
+  String get retryAction => 'Erneut versuchen';
+
+  @override
+  String get addNoteAction => 'Notiz hinzufügen';
+
+  @override
+  String get viewAction => 'Ansehen';
+
+  @override
+  String get crossReferencesTitle => 'Querverweise';
+
+  @override
+  String get noCrossReferences =>
+      'Für diesen Vers sind keine Querverweise verfügbar.';
+
+  @override
+  String couldNotParseReference(Object label) {
+    return 'Verweis konnte nicht gelesen werden: $label';
+  }
+
+  @override
+  String get currentTranslationLabel => 'Aktuelle Übersetzung';
+
+  @override
+  String get backToDetailsAction => 'Zurück zu den Details';
+
+  @override
+  String get backToNoteAction => 'Zurück zur Notiz';
+
+  @override
+  String readerErrorMessage(Object error) {
+    return 'Fehler: $error';
+  }
+
+  @override
+  String failedToLoadBible(Object error) {
+    return 'Bibel konnte nicht geladen werden: $error';
+  }
+
+  @override
+  String get shareTextCopied =>
+      'Text zum Teilen kopiert. Natives Teilen kann später hinzugefügt werden, ohne deine Notizen zu ändern.';
+
+  @override
+  String get highlightAction => 'Markieren';
+
+  @override
+  String get noteAction => 'Notiz';
+
+  @override
+  String get copyAction => 'Kopieren';
+
+  @override
+  String get shareAction => 'Teilen';
+
+  @override
+  String get noteHighlightsEditedFromNote =>
+      'Notiz-Markierungen werden in der Notiz selbst bearbeitet.';
+
+  @override
+  String get previewUnavailable =>
+      'Für diesen Verweis ist keine Vorschau verfügbar.';
+
+  @override
+  String get openInBibleAction => 'In der Bibel öffnen';
+
+  @override
+  String get previousChapterTooltip => 'Vorheriges Kapitel';
+
+  @override
+  String get nextChapterTooltip => 'Nächstes Kapitel';
+
+  @override
+  String get sourceDetailsTitle => 'Quelldetails';
+
+  @override
+  String get quoteSpeakerLabel => 'Sprecher des Zitats';
+
+  @override
+  String get lemmaLabel => 'Lemma';
+
+  @override
+  String get morphologyLabel => 'Morphologie';
+
+  @override
+  String get translationNotAvailable => 'Übersetzung nicht verfügbar.';
+
+  @override
+  String get currentTranslationNotAvailable =>
+      'Die aktuelle Übersetzung ist nicht verfügbar.';
+
+  @override
+  String get saveNoteFailed =>
+      'Notiz konnte nicht gespeichert werden. Bitte versuche es erneut.';
+
+  @override
+  String get saveAction => 'Speichern';
+
+  @override
+  String get noteFieldLabel => 'Notiz';
+
+  @override
+  String get noteFieldHint => 'Schreibe hier deine Notiz.';
+
+  @override
+  String get primaryVerseTitle => 'Hauptvers';
+
+  @override
+  String get removeVerseTitle => 'Vers entfernen?';
+
+  @override
+  String get addVerseAction => 'Vers hinzufügen';
+
+  @override
+  String get connectedHighlightTitle => 'Verknüpfte Markierung';
+
+  @override
+  String get noneOption => 'Keine';
+
+  @override
+  String get connectedHighlightDescription =>
+      'Diese Notiz behält eine verknüpfte Markierung auf ihrem Hauptvers.';
+
+  @override
+  String get labelsFieldLabel => 'Labels';
+
+  @override
+  String get labelsFieldHint => 'Labels durch Kommas getrennt';
+
+  @override
+  String get onlyStandaloneHighlightsRemovable =>
+      'Hier können nur eigenständige Markierungen entfernt werden. Bearbeite eine Notiz, um ihre Markierung zu ändern.';
+
+  @override
+  String noteVerseLimit(int count) {
+    return 'Notizen können mit bis zu $count Versen gleichzeitig verknüpft werden. Bitte wähle einen kleineren Bereich.';
+  }
+
+  @override
+  String get deleteAnnotationTitle => 'Löschen?';
+
+  @override
+  String get deleteAnnotationDescription =>
+      'Diese Notiz oder Markierung wird dauerhaft entfernt.';
+
+  @override
+  String get noReferenceHistory => 'Noch kein Verlauf.';
+
+  @override
+  String get recentReferencesTitle => 'Zuletzt geöffnet';
+
+  @override
+  String get referencesTitle => 'Bibelstellen';
+
+  @override
+  String get historyTooltip => 'Verlauf';
+
+  @override
+  String get searchBooksHint => 'Bücher suchen';
+
+  @override
+  String get chaptersLabel => 'Kapitel';
+
+  @override
+  String goToReference(Object reference) {
+    return 'Gehe zu $reference';
+  }
+
+  @override
+  String versesInChapter(Object chapter) {
+    return 'Verse in $chapter';
+  }
+
+  @override
+  String get keepOneTranslationMessage =>
+      'Mindestens eine Übersetzung muss auf diesem Gerät bleiben. Lade eine andere herunter oder importiere sie, bevor du diese entfernst.';
 }

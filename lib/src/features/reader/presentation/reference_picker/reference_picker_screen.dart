@@ -1,3 +1,4 @@
+import 'package:basic_bible/src/features/reader/presentation/reader_scope.dart';
 import 'package:basic_bible/l10n/app_localizations.dart';
 import 'package:basic_bible/src/features/library/data/app_bible_repository.dart';
 import 'package:basic_bible/src/features/reader/application/view_models/bible_library_view_models.dart';
@@ -167,14 +168,16 @@ class _ReferencePickerScreenState extends ConsumerState<ReferencePickerScreen> {
   Future<void> _openHistorySheet() async {
     if (_history.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No reference history yet.')),
+        SnackBar(
+          content: Text(AppLocalizations.of(context)!.noReferenceHistory),
+        ),
       );
       return;
     }
 
     await showModalBottomSheet<void>(
       context: context,
-      builder: (sheetContext) {
+      builder: inReaderScope(context, (sheetContext) {
         return StatefulBuilder(
           builder: (sheetContext, setSheetState) {
             return SafeArea(
@@ -187,7 +190,7 @@ class _ReferencePickerScreenState extends ConsumerState<ReferencePickerScreen> {
                       children: [
                         Expanded(
                           child: Text(
-                            'Recent References',
+                            AppLocalizations.of(context)!.recentReferencesTitle,
                             style: Theme.of(sheetContext).textTheme.titleMedium
                                 ?.copyWith(fontWeight: FontWeight.w700),
                           ),
@@ -203,7 +206,9 @@ class _ReferencePickerScreenState extends ConsumerState<ReferencePickerScreen> {
                             Icons.delete_sweep_outlined,
                             size: 18,
                           ),
-                          label: const Text('Clear'),
+                          label: Text(
+                            AppLocalizations.of(context)!.clearAction,
+                          ),
                         ),
                       ],
                     ),
@@ -229,7 +234,7 @@ class _ReferencePickerScreenState extends ConsumerState<ReferencePickerScreen> {
             );
           },
         );
-      },
+      }),
     );
   }
 
@@ -296,7 +301,7 @@ class _ReferencePickerScreenState extends ConsumerState<ReferencePickerScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('References'),
+        title: Text(AppLocalizations.of(context)!.referencesTitle),
         actions: [
           IconButton(
             tooltip: _alphabeticalOrder
@@ -315,7 +320,7 @@ class _ReferencePickerScreenState extends ConsumerState<ReferencePickerScreen> {
             ),
           ),
           IconButton(
-            tooltip: 'History',
+            tooltip: AppLocalizations.of(context)!.historyTooltip,
             onPressed: _openHistorySheet,
             icon: const Icon(Icons.history),
           ),
@@ -537,7 +542,7 @@ class _ReferencePickerHeader extends StatelessWidget {
         TextField(
           controller: controller,
           decoration: InputDecoration(
-            hintText: 'Search books',
+            hintText: AppLocalizations.of(context)!.searchBooksHint,
             prefixIcon: const Icon(Icons.search),
             filled: true,
             fillColor: colors.surfaceContainerHighest,
@@ -782,7 +787,10 @@ class _ReferenceSelectionPanel extends StatelessWidget {
           ),
           const SizedBox(height: 18),
         ],
-        _ReferenceSectionLabel(label: 'Chapters', compact: compact),
+        _ReferenceSectionLabel(
+          label: AppLocalizations.of(context)!.chaptersLabel,
+          compact: compact,
+        ),
         const SizedBox(height: 10),
         _ReferenceNumberGrid(
           itemCount: book.chapters.length,
@@ -809,13 +817,17 @@ class _ReferenceSelectionPanel extends StatelessWidget {
             onPressed: onChapterSelect,
             icon: const Icon(Icons.arrow_forward, size: 18),
             label: Text(
-              'Go to ${chapterReferenceLabel(preferredBookName(book), selectedChapter)}',
+              AppLocalizations.of(context)!.goToReference(
+                chapterReferenceLabel(preferredBookName(book), selectedChapter),
+              ),
             ),
           ),
           if (selectedChapterModel.verses.isNotEmpty) ...[
             SizedBox(height: compact ? 10 : 14),
             _ReferenceSectionLabel(
-              label: 'Verses in $selectedChapter',
+              label: AppLocalizations.of(
+                context,
+              )!.versesInChapter(selectedChapter),
               compact: compact,
             ),
             const SizedBox(height: 10),

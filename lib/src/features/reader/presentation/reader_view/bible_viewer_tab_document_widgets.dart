@@ -256,7 +256,7 @@ class _SkeletonVerseRow extends StatelessWidget {
                     child: Container(
                       height: 14,
                       width: i == lineCount - 1
-                          ? MediaQuery.of(context).size.width * 0.55
+                          ? MediaQuery.sizeOf(context).width * 0.55
                           : double.infinity,
                       color: Colors.white,
                     ),
@@ -306,7 +306,7 @@ class _ErrorView extends StatelessWidget {
                     ref.invalidate(bibleBooksShellProvider);
                     ref.invalidate(currentChapterProvider);
                   },
-                  child: const Text('Retry'),
+                  child: Text(AppLocalizations.of(context)!.retryAction),
                 );
               },
             ),

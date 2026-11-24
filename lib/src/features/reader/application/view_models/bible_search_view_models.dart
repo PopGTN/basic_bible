@@ -41,7 +41,7 @@ final searchContextReferenceProvider = Provider<BibleReference>((ref) {
   final current = ref.watch(currentReferenceProvider);
   if (!ref.watch(continuousScrollingProvider)) return current;
   return ref.watch(visibleReaderReferenceProvider) ?? current;
-});
+}, dependencies: [currentReferenceProvider, visibleReaderReferenceProvider]);
 
 /// Book IDs a [scope] covers in [books], or null for no restriction.
 Set<String>? bookIdsForSearchScope(
@@ -66,26 +66,33 @@ Set<String>? bookIdsForSearchScope(
 
 /// Verses of the current translation matching a [BibleSearchRequest].
 final bibleSearchResultsProvider = FutureProvider.autoDispose
-    .family<List<BibleSearchHit>, BibleSearchRequest>((ref, request) async {
-      if (bibleSearchTerms(request.query).isEmpty) return const [];
-      final translationId = ref.watch(currentTranslationProvider);
-      final repository = ref.watch(bibleRepositoryProvider);
-      final books =
-          ref.watch(readableBibleBooksProvider).asData?.value ??
-          const <BibleBook>[];
-      final current = ref.read(searchContextReferenceProvider);
-      final bookIds = bookIdsForSearchScope(
-        request.scope,
-        books,
-        currentBookId: current.bookId,
-      );
-      return repository.searchVerses(
-        translationId,
-        request.query,
-        bookIds: bookIds,
-        chapter: request.scope == BibleSearchScope.currentChapter
-            ? current.chapter
-            : null,
-        limit: kBibleSearchLimit,
-      );
-    });
+    .family<List<BibleSearchHit>, BibleSearchRequest>(
+      (ref, request) async {
+        if (bibleSearchTerms(request.query).isEmpty) return const [];
+        final translationId = ref.watch(currentTranslationProvider);
+        final repository = ref.watch(bibleRepositoryProvider);
+        final books =
+            ref.watch(readableBibleBooksProvider).asData?.value ??
+            const <BibleBook>[];
+        final current = ref.read(searchContextReferenceProvider);
+        final bookIds = bookIdsForSearchScope(
+          request.scope,
+          books,
+          currentBookId: current.bookId,
+        );
+        return repository.searchVerses(
+          translationId,
+          request.query,
+          bookIds: bookIds,
+          chapter: request.scope == BibleSearchScope.currentChapter
+              ? current.chapter
+              : null,
+          limit: kBibleSearchLimit,
+        );
+      },
+      dependencies: [
+        currentTranslationProvider,
+        readableBibleBooksProvider,
+        searchContextReferenceProvider,
+      ],
+    );

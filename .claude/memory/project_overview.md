@@ -45,6 +45,7 @@ type: project
 
 ## Localization
 - `lib/l10n/` — English, German, Spanish, French, Chinese (`.arb` + generated `.dart`)
+- `app_en.arb` is the template; all five ARBs should have every key. Language choice lives in `languageProvider` (device language on first launch). Enum labels are localized in `lib/src/utils/localized_labels.dart`.
 
 ## Git branches
 - Active dev: `development-work`

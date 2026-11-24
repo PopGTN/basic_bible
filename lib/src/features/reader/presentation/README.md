@@ -10,6 +10,11 @@ This folder holds the user-facing reader UI.
 - `reference_picker/`
   - Reference-picking and reference-navigation UI.
   - Used by the reader and by note editing when the app needs to return a chosen verse reference.
+- `split_view/`
+  - Split view: a second, independent reader beside the main one.
+  - Read its `README.md` before changing reader providers or adding screens the reader opens.
+- `reader_scope.dart`
+  - `inReaderScope`: keeps the opening reader's provider scope for screens and sheets it opens (needed for split view).
 
 ## Working Rule
 

@@ -1,3 +1,5 @@
+import 'package:basic_bible/l10n/app_localizations.dart';
+import 'package:basic_bible/src/features/reader/presentation/reader_scope.dart';
 import 'package:basic_bible/src/features/annotations/application/view_models/annotation_data_view_models.dart';
 import 'package:basic_bible/src/features/annotations/application/view_models/annotation_preferences_view_models.dart';
 import 'package:basic_bible/src/features/annotations/models/user_annotations.dart';
@@ -136,10 +138,13 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
   Future<void> _addVerse(BuildContext context, List<BibleBook> books) async {
     final pickedReference = await Navigator.of(context).push<BibleReference>(
       MaterialPageRoute(
-        builder: (context) => ReferencePickerScreen(
-          books: books,
-          currentReference: _draft.primaryVerse.reference,
-          showVerseSelector: true,
+        builder: inReaderScope(
+          context,
+          (context) => ReferencePickerScreen(
+            books: books,
+            currentReference: _draft.primaryVerse.reference,
+            showVerseSelector: true,
+          ),
         ),
       ),
     );
@@ -150,8 +155,10 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
     if (translation == null) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Current translation is not available.'),
+          SnackBar(
+            content: Text(
+              AppLocalizations.of(context)!.currentTranslationNotAvailable,
+            ),
           ),
         );
       }
@@ -179,9 +186,7 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
       if (mounted && context.mounted) {
         setState(() => _isSaving = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Failed to save note. Please try again.'),
-          ),
+          SnackBar(content: Text(AppLocalizations.of(context)!.saveNoteFailed)),
         );
       }
       return;
@@ -217,7 +222,7 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
         actions: [
           TextButton(
             onPressed: (canSave && !_isSaving) ? () => _save(context) : null,
-            child: const Text('Save'),
+            child: Text(AppLocalizations.of(context)!.saveAction),
           ),
         ],
       ),
@@ -228,23 +233,23 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
             controller: _noteController,
             maxLines: 8,
             minLines: 6,
-            decoration: const InputDecoration(
-              labelText: 'Note',
+            decoration: InputDecoration(
+              labelText: AppLocalizations.of(context)!.noteFieldLabel,
               alignLabelWithHint: true,
-              hintText: 'Write your note here.',
+              hintText: AppLocalizations.of(context)!.noteFieldHint,
             ),
             onChanged: _setNoteText,
           ),
           const SizedBox(height: 16),
           Text(
-            'Linked Verses',
+            AppLocalizations.of(context)!.linkedVersesTitle,
             style: theme.textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.w700,
             ),
           ),
           const SizedBox(height: 10),
           _LinkedVerseCard(
-            title: 'Primary Verse',
+            title: AppLocalizations.of(context)!.primaryVerseTitle,
             link: _draft.primaryVerse,
             books: booksAsync.value ?? const [],
             onRemove: _draft.linkedVerses.isNotEmpty
@@ -266,7 +271,9 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
                   final ok = await showDialog<bool>(
                     context: context,
                     builder: (ctx) => AlertDialog(
-                      title: const Text('Remove verse?'),
+                      title: Text(
+                        AppLocalizations.of(context)!.removeVerseTitle,
+                      ),
                       content: Text(
                         '${displayBookNameForReference(allBooks, link.bookId)} '
                         '${link.chapter}:${link.verse} will be unlinked from this note.',
@@ -274,11 +281,15 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
                       actions: [
                         TextButton(
                           onPressed: () => Navigator.of(ctx).pop(false),
-                          child: const Text('Cancel'),
+                          child: Text(
+                            AppLocalizations.of(context)!.cancelAction,
+                          ),
                         ),
                         TextButton(
                           onPressed: () => Navigator.of(ctx).pop(true),
-                          child: const Text('Remove'),
+                          child: Text(
+                            AppLocalizations.of(context)!.removeAction,
+                          ),
                         ),
                       ],
                     ),
@@ -295,11 +306,11 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
                 ? null
                 : () => _addVerse(context, booksAsync.value!),
             icon: const Icon(Icons.add_circle_outline),
-            label: const Text('Add Verse'),
+            label: Text(AppLocalizations.of(context)!.addVerseAction),
           ),
           const SizedBox(height: 20),
           Text(
-            'Connected Highlight',
+            AppLocalizations.of(context)!.connectedHighlightTitle,
             style: theme.textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.w700,
             ),
@@ -311,7 +322,7 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
             children: [
               _HighlightChoice(
                 isSelected: _draft.highlightColorValue == null,
-                label: 'None',
+                label: AppLocalizations.of(context)!.noneOption,
                 fillColor: theme.colorScheme.surfaceContainerHighest,
                 onTap: () => _setHighlightColor(null),
               ),
@@ -332,17 +343,17 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
                 color: highlightColor.withValues(alpha: 0.28),
                 borderRadius: BorderRadius.circular(14),
               ),
-              child: const Text(
-                'This note will keep a connected verse highlight on its primary verse.',
+              child: Text(
+                AppLocalizations.of(context)!.connectedHighlightDescription,
               ),
             ),
           ],
           const SizedBox(height: 20),
           TextField(
             controller: _labelsController,
-            decoration: const InputDecoration(
-              labelText: 'Labels',
-              hintText: 'Comma separated labels',
+            decoration: InputDecoration(
+              labelText: AppLocalizations.of(context)!.labelsFieldLabel,
+              hintText: AppLocalizations.of(context)!.labelsFieldHint,
             ),
             onChanged: (value) {
               final labels = value

@@ -9,7 +9,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 const _john316 = BibleReference(bookId: 'JHN', chapter: 3, verse: 16);
 
-Future<ReferenceNotifier> _notifier([Map<String, Object> saved = const {}]) async {
+Future<ReferenceNotifier> _notifier([
+  Map<String, Object> saved = const {},
+]) async {
   SharedPreferences.setMockInitialValues(saved);
   return ReferenceNotifier(await SharedPreferences.getInstance());
 }
@@ -43,7 +45,9 @@ void main() {
   test('a later navigation replaces an unconsumed request', () async {
     final notifier = await _notifier();
     await notifier.setReference(_john316);
-    await notifier.setReference(const BibleReference(bookId: 'JHN', chapter: 4));
+    await notifier.setReference(
+      const BibleReference(bookId: 'JHN', chapter: 4),
+    );
 
     expect(notifier.takeVerseFocusRequest(_john316), isFalse);
   });

@@ -7,8 +7,11 @@ extension _BibleTextViewStateCore on _BibleTextViewState {
     ref.read(highlightPaletteExpandedProvider.notifier).state = false;
   }
 
-  void _rebuildContinuousSections() =>
-      _continuousController.rebuildSections(widget.books);
+  void _rebuildContinuousSections() {
+    _lastSyncedSectionIndex = null;
+    _lastVisibleRange = null;
+    _continuousController.rebuildSections(widget.books);
+  }
 
   void _scheduleVerseFocus() {
     if (!_verseFocusRequested) return;
@@ -514,7 +517,7 @@ extension _BibleTextViewStateCore on _BibleTextViewState {
       context: context,
       isScrollControlled: true,
       showDragHandle: true,
-      builder: (sheetContext) {
+      builder: inReaderScope(context, (sheetContext) {
         var isClosing = false;
         return Consumer(
           builder: (context, ref, _) {
@@ -547,10 +550,13 @@ extension _BibleTextViewStateCore on _BibleTextViewState {
                 if (translation == null || !sheetContext.mounted) return;
                 await Navigator.of(sheetContext).push<bool>(
                   MaterialPageRoute(
-                    builder: (context) => NoteEditorScreen(
-                      primaryVerse: buildAnnotationVerseLink(
-                        reference: reference,
-                        translation: translation,
+                    builder: inReaderScope(
+                      sheetContext,
+                      (context) => NoteEditorScreen(
+                        primaryVerse: buildAnnotationVerseLink(
+                          reference: reference,
+                          translation: translation,
+                        ),
                       ),
                     ),
                   ),
@@ -561,7 +567,7 @@ extension _BibleTextViewStateCore on _BibleTextViewState {
                   context: sheetContext,
                   isScrollControlled: true,
                   showDragHandle: true,
-                  builder: (previewContext) {
+                  builder: inReaderScope(sheetContext, (previewContext) {
                     return ReferencePreviewSheet(
                       referenceLabel: verses.label(
                         displayBookNameForReference(
@@ -576,7 +582,9 @@ extension _BibleTextViewStateCore on _BibleTextViewState {
                       fallbackTranslationId: translationId,
                       fallbackTranslationName: fallbackTranslationName,
                       books: widget.books,
-                      returnLabel: 'Back to Note',
+                      returnLabel: AppLocalizations.of(
+                        context,
+                      )!.backToNoteAction,
                       onOpenInBible: (previewSheetContext, preview) async {
                         await ref
                             .read(currentTranslationProvider.notifier)
@@ -592,7 +600,7 @@ extension _BibleTextViewStateCore on _BibleTextViewState {
                         }
                       },
                     );
-                  },
+                  }),
                 );
               },
               onOpenReference: (annotation) async {
@@ -618,93 +626,118 @@ extension _BibleTextViewStateCore on _BibleTextViewState {
                 if (!sheetContext.mounted) return;
                 await Navigator.of(sheetContext).push(
                   MaterialPageRoute(
-                    builder: (context) => AnnotationDetailScreen(
-                      annotation: annotation,
-                      books: widget.books,
-                      onPreviewVerses: (verses) => showModalBottomSheet<void>(
-                        context: context,
-                        isScrollControlled: true,
-                        showDragHandle: true,
-                        builder: (previewContext) => ReferencePreviewSheet(
-                          referenceLabel: verses.label(
-                            displayBookNameForReference(
-                              widget.books,
-                              verses.bookId,
-                            ),
-                          ),
-                          reference: verses.first.reference,
-                          range: verses.passage,
-                          preferredTranslationId: verses.first.translationId,
-                          preferredTranslationName:
-                              verses.first.translationName,
-                          fallbackTranslationId: translationId,
-                          fallbackTranslationName: fallbackTranslationName,
-                          books: widget.books,
-                          returnLabel: 'Back to Note',
-                          onOpenInBible: (previewSheetContext, preview) async {
-                            await ref
-                                .read(currentTranslationProvider.notifier)
-                                .setTranslation(preview.translationId);
-                            await ref
-                                .read(currentReferenceProvider.notifier)
-                                .setReference(preview.reference);
-                            if (previewSheetContext.mounted) {
-                              Navigator.of(previewSheetContext).pop();
-                            }
-                            if (sheetContext.mounted) {
-                              Navigator.of(sheetContext).pop();
-                            }
-                          },
-                        ),
-                      ),
-                      onOpenReference: () async {
-                        await ref
-                            .read(currentReferenceProvider.notifier)
-                            .setReference(annotation.primaryVerse.reference);
-                        if (context.mounted) Navigator.of(context).pop();
-                        if (sheetContext.mounted) {
-                          Navigator.of(sheetContext).pop();
-                        }
-                      },
-                      onEdit: () async {
-                        if (context.mounted) Navigator.of(context).pop();
-                        await Navigator.of(sheetContext).push<bool>(
-                          MaterialPageRoute(
-                            builder: (context) => NoteEditorScreen(
-                              primaryVerse: annotation.primaryVerse,
-                              existingAnnotation: annotation,
-                            ),
-                          ),
-                        );
-                      },
-                      onDelete: () async {
-                        final id = annotation.id;
-                        if (id == null || !context.mounted) return;
-                        final confirmed = await showDialog<bool>(
+                    builder: inReaderScope(
+                      sheetContext,
+                      (context) => AnnotationDetailScreen(
+                        annotation: annotation,
+                        books: widget.books,
+                        onPreviewVerses: (verses) => showModalBottomSheet<void>(
                           context: context,
-                          builder: (ctx) => AlertDialog(
-                            title: const Text('Delete?'),
-                            content: const Text(
-                              'This note or highlight will be permanently removed.',
+                          isScrollControlled: true,
+                          showDragHandle: true,
+                          builder: inReaderScope(
+                            context,
+                            (previewContext) => ReferencePreviewSheet(
+                              referenceLabel: verses.label(
+                                displayBookNameForReference(
+                                  widget.books,
+                                  verses.bookId,
+                                ),
+                              ),
+                              reference: verses.first.reference,
+                              range: verses.passage,
+                              preferredTranslationId:
+                                  verses.first.translationId,
+                              preferredTranslationName:
+                                  verses.first.translationName,
+                              fallbackTranslationId: translationId,
+                              fallbackTranslationName: fallbackTranslationName,
+                              books: widget.books,
+                              returnLabel: AppLocalizations.of(
+                                context,
+                              )!.backToNoteAction,
+                              onOpenInBible:
+                                  (previewSheetContext, preview) async {
+                                    await ref
+                                        .read(
+                                          currentTranslationProvider.notifier,
+                                        )
+                                        .setTranslation(preview.translationId);
+                                    await ref
+                                        .read(currentReferenceProvider.notifier)
+                                        .setReference(preview.reference);
+                                    if (previewSheetContext.mounted) {
+                                      Navigator.of(previewSheetContext).pop();
+                                    }
+                                    if (sheetContext.mounted) {
+                                      Navigator.of(sheetContext).pop();
+                                    }
+                                  },
                             ),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.of(ctx).pop(false),
-                                child: const Text('Cancel'),
-                              ),
-                              TextButton(
-                                onPressed: () => Navigator.of(ctx).pop(true),
-                                child: const Text('Delete'),
-                              ),
-                            ],
                           ),
-                        );
-                        if (confirmed != true) return;
-                        await ref
-                            .read(userAnnotationRepositoryProvider)
-                            .deleteAnnotation(id);
-                        if (context.mounted) Navigator.of(context).pop();
-                      },
+                        ),
+                        onOpenReference: () async {
+                          await ref
+                              .read(currentReferenceProvider.notifier)
+                              .setReference(annotation.primaryVerse.reference);
+                          if (context.mounted) Navigator.of(context).pop();
+                          if (sheetContext.mounted) {
+                            Navigator.of(sheetContext).pop();
+                          }
+                        },
+                        onEdit: () async {
+                          if (context.mounted) Navigator.of(context).pop();
+                          await Navigator.of(sheetContext).push<bool>(
+                            MaterialPageRoute(
+                              builder: inReaderScope(
+                                sheetContext,
+                                (context) => NoteEditorScreen(
+                                  primaryVerse: annotation.primaryVerse,
+                                  existingAnnotation: annotation,
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                        onDelete: () async {
+                          final id = annotation.id;
+                          if (id == null || !context.mounted) return;
+                          final confirmed = await showDialog<bool>(
+                            context: context,
+                            builder: (ctx) => AlertDialog(
+                              title: Text(
+                                AppLocalizations.of(
+                                  context,
+                                )!.deleteAnnotationTitle,
+                              ),
+                              content: Text(
+                                AppLocalizations.of(
+                                  context,
+                                )!.deleteAnnotationDescription,
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.of(ctx).pop(false),
+                                  child: Text(
+                                    AppLocalizations.of(context)!.cancelAction,
+                                  ),
+                                ),
+                                TextButton(
+                                  onPressed: () => Navigator.of(ctx).pop(true),
+                                  child: Text(
+                                    AppLocalizations.of(context)!.deleteAction,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                          if (confirmed != true) return;
+                          await ref
+                              .read(userAnnotationRepositoryProvider)
+                              .deleteAnnotation(id);
+                          if (context.mounted) Navigator.of(context).pop();
+                        },
+                      ),
                     ),
                   ),
                 );
@@ -713,9 +746,12 @@ extension _BibleTextViewStateCore on _BibleTextViewState {
                 if (!sheetContext.mounted) return;
                 await Navigator.of(sheetContext).push<bool>(
                   MaterialPageRoute(
-                    builder: (context) => NoteEditorScreen(
-                      primaryVerse: annotation.primaryVerse,
-                      existingAnnotation: annotation,
+                    builder: inReaderScope(
+                      sheetContext,
+                      (context) => NoteEditorScreen(
+                        primaryVerse: annotation.primaryVerse,
+                        existingAnnotation: annotation,
+                      ),
                     ),
                   ),
                 );
@@ -726,18 +762,20 @@ extension _BibleTextViewStateCore on _BibleTextViewState {
                 final confirmed = await showDialog<bool>(
                   context: sheetContext,
                   builder: (ctx) => AlertDialog(
-                    title: const Text('Delete?'),
-                    content: const Text(
-                      'This note or highlight will be permanently removed.',
+                    title: Text(
+                      AppLocalizations.of(context)!.deleteAnnotationTitle,
+                    ),
+                    content: Text(
+                      AppLocalizations.of(context)!.deleteAnnotationDescription,
                     ),
                     actions: [
                       TextButton(
                         onPressed: () => Navigator.of(ctx).pop(false),
-                        child: const Text('Cancel'),
+                        child: Text(AppLocalizations.of(context)!.cancelAction),
                       ),
                       TextButton(
                         onPressed: () => Navigator.of(ctx).pop(true),
-                        child: const Text('Delete'),
+                        child: Text(AppLocalizations.of(context)!.deleteAction),
                       ),
                     ],
                   ),
@@ -750,7 +788,7 @@ extension _BibleTextViewStateCore on _BibleTextViewState {
             );
           },
         );
-      },
+      }),
     );
   }
 

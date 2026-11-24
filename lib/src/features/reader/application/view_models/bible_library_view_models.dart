@@ -137,7 +137,7 @@ final currentTranslationInfoProvider = Provider<BibleTranslation?>((ref) {
   final id = ref.watch(currentTranslationProvider);
   final translations = ref.watch(availableTranslationsProvider).asData?.value;
   return translations?.where((t) => t.id == id).firstOrNull;
-});
+}, dependencies: [currentTranslationProvider]);
 
 // =============================================================================
 // Bible books — shell (fast, no verses)
@@ -191,6 +191,7 @@ final bibleBooksShellProvider =
         ref.onDispose(removeListener);
         return notifier;
       },
+      dependencies: [currentTranslationProvider, currentReferenceProvider],
     );
 
 /// The shell book list as readers navigate it (issue #87).
@@ -203,11 +204,9 @@ final bibleBooksShellProvider =
 /// book's text on that page. Chapterless books with no text are dropped.
 /// UI should watch this provider; [bibleBooksShellProvider] keeps the raw
 /// list for repository-facing code.
-final readableBibleBooksProvider = Provider<AsyncValue<List<BibleBook>>>((
-  ref,
-) {
+final readableBibleBooksProvider = Provider<AsyncValue<List<BibleBook>>>((ref) {
   return ref.watch(bibleBooksShellProvider).whenData(readableBooks);
-});
+}, dependencies: [bibleBooksShellProvider]);
 
 /// See [readableBibleBooksProvider]. Returns [books] itself when every book
 /// already has chapters, so widgets comparing book lists by identity don't
@@ -245,4 +244,4 @@ final bibleBooksProvider =
         notifier.changeTranslation(next);
       });
       return notifier;
-    });
+    }, dependencies: [currentTranslationProvider]);

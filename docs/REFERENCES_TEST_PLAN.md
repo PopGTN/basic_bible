@@ -131,7 +131,7 @@ This test plan verifies that the References picker keeps the reader in sync with
 - Should smoothly update, not flash old reference
 
 **Fix if Needed:**
-- Ensure both `_continuousVisibleReference` and `currentReference` update atomically
+- Both the visible reference (`_setVisibleReference`) and `currentReference` are set in the same call; if this still flashes, look at the order of those two calls
 - Or suppress visible-reference updates briefly during picker navigation
 
 ---

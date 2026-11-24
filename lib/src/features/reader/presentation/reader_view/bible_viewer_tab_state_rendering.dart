@@ -311,6 +311,7 @@ extension _BibleTextViewStateRendering on _BibleTextViewState {
         )
         .toList(growable: false);
     if (visibleItems.isEmpty) return;
+    _prefetchAheadOfScroll(visibleItems);
 
     visibleItems.sort((a, b) {
       final aDistance = (a.itemLeadingEdge - 0.08).abs();
@@ -321,16 +322,45 @@ extension _BibleTextViewStateRendering on _BibleTextViewState {
     final targetPosition = visibleItems.first;
     final sectionIndex = targetPosition.index;
     if (sectionIndex < 0 || sectionIndex >= _continuousSections.length) return;
+    // Runs every frame while scrolling; reporting is only needed when a
+    // different chapter comes into view.
+    if (sectionIndex == _lastSyncedSectionIndex) return;
+    _lastSyncedSectionIndex = sectionIndex;
 
     final visibleReference = BibleReference(
       bookId: _continuousSections[sectionIndex].book.id,
       chapter: _continuousSections[sectionIndex].chapter.number,
     );
-    _prefetchContinuousChapterWindow(visibleReference);
-
-    if (visibleReference == widget.displayReference) return;
+    if (visibleReference == _displayReference) return;
 
     widget.onVisibleReferenceChanged(visibleReference);
+  }
+
+  /// Starts loading the chapters about to scroll into view, beyond the edge
+  /// of the screen the user is moving towards. Chapters behind were just read
+  /// and are still cached; centring the window on the top chapter (as before)
+  /// spent half of it on those and left the ones coming up from the bottom
+  /// to load only as they appeared, so scrolling down showed placeholders
+  /// while scrolling back up was instant.
+  void _prefetchAheadOfScroll(List<ItemPosition> visibleItems) {
+    var first = visibleItems.first.index;
+    var last = first;
+    for (final item in visibleItems) {
+      if (item.index < first) first = item.index;
+      if (item.index > last) last = item.index;
+    }
+    final previous = _lastVisibleRange;
+    if (previous == (first, last)) return;
+    _lastVisibleRange = (first, last);
+
+    const ahead = 4;
+    // No previous range (just opened or jumped): load both ways.
+    if (previous == null || last > previous.$2) {
+      _continuousController.prefetchRange(last + 1, last + ahead);
+    }
+    if (previous == null || first < previous.$1) {
+      _continuousController.prefetchRange(first - ahead, first - 1);
+    }
   }
 
   List<Widget> _buildChapterBlocksFor(

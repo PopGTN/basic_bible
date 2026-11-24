@@ -94,11 +94,9 @@ void main() {
       expect(loadedKeys, ['GEN:1']);
     });
 
-    test('completed load stores the chapter and notifies listeners', () async {
+    test('completed load stores the chapter', () async {
       final c = controller();
       c.rebuildSections([book('GEN', 3)]);
-      var notified = 0;
-      c.addListener(() => notified++);
 
       expect(c.hydratedChapter('GEN', 1), isNull);
       await c.chapterFuture(c.sections.first);
@@ -106,7 +104,6 @@ void main() {
       final stored = c.hydratedChapter('GEN', 1);
       expect(stored, isNotNull);
       expect(stored!.verses, hasLength(2));
-      expect(notified, 1);
     });
 
     test('onChapterHydrated fires with the chapter identity', () async {
@@ -125,16 +122,16 @@ void main() {
       () async {
         final c = controller(loader: (_, _) async => null);
         c.rebuildSections([book('GEN', 1)]);
-        var notified = 0;
-        c.addListener(() => notified++);
+        var hydrated = 0;
+        c.onChapterHydrated = (_, _) => hydrated++;
 
         final resolved = await c.chapterFuture(c.sections.first);
 
-        // Shell chapter has no verses, so nothing is cached and no one is
-        // notified — the FutureBuilder just renders the fallback.
+        // Shell chapter has no verses, so nothing is cached or reported —
+        // the FutureBuilder just renders the fallback.
         expect(resolved, same(c.sections.first.chapter));
         expect(c.hydratedChapter('GEN', 1), isNull);
-        expect(notified, 0);
+        expect(hydrated, 0);
       },
     );
   });
@@ -205,6 +202,21 @@ void main() {
       expect(loadedKeys, ['GEN:1', 'GEN:2', 'GEN:3']);
     });
 
+    test(
+      'prefetchRange loads only the part of the range that exists',
+      () async {
+        final c = controller();
+        c.rebuildSections([book('GEN', 4)]);
+
+        c.prefetchRange(-4, -1); // "4 chapters above Genesis 1": nothing
+        c.prefetchRange(10, 13); // past the end: nothing
+        c.prefetchRange(3, 9); // clipped to GEN 4 (index 3)
+        await Future<void>.delayed(Duration.zero);
+
+        expect(loadedKeys, ['GEN:4']);
+      },
+    );
+
     test('prefetchWindow ignores references outside the section list', () {
       final c = controller();
       c.rebuildSections([book('GEN', 4)]);
@@ -228,22 +240,22 @@ void main() {
     expect(loadedKeys, ['GEN:1']); // future was cleared, so it re-loads
   });
 
-  test('no notifications are delivered after dispose', () async {
+  test('no hydration callback is delivered after dispose', () async {
     // Deferred callbacks capture the controller; if it's disposed before the
-    // "frame" fires, they must be dropped instead of notifying.
+    // "frame" fires, they must be dropped.
     void Function()? pendingFrame;
     final c = ContinuousReaderController(
       loadChapter: (_, _) async => hydratedChapter(1),
       deferNotify: (callback) => pendingFrame = callback,
     );
     c.rebuildSections([book('GEN', 1)]);
-    var notified = 0;
-    c.addListener(() => notified++);
+    var hydrated = 0;
+    c.onChapterHydrated = (_, _) => hydrated++;
 
     await c.chapterFuture(c.sections.first);
     c.dispose();
     pendingFrame?.call();
 
-    expect(notified, 0);
+    expect(hydrated, 0);
   });
 }

@@ -5,7 +5,7 @@ This module owns choosing and opening Bible references.
 ## Files
 
 - `chapter_bar.dart`
-  - Reader chapter bar with previous/next controls and picker entry.
+  - Reader chapter bar: a round play button (audio placeholder) beside the previous/next + picker pill.
 - `reference_picker_screen.dart`
   - Main book/chapter/verse selection flow.
 - `reference_screen.dart`
