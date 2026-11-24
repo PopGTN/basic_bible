@@ -1231,4 +1231,27 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get linkOpenFailed => 'Could not open the link.';
+
+  @override
+  String get reportChooseRoute => 'How would you like to send it?';
+
+  @override
+  String reportByEmail(String email) {
+    return 'Email $email';
+  }
+
+  @override
+  String get reportByEmailSubtitle => 'Private. Opens your email app.';
+
+  @override
+  String get reportByGitHub => 'Open a GitHub issue';
+
+  @override
+  String get reportByGitHubSubtitle =>
+      'Public: anyone can read it. Needs a GitHub account.';
+
+  @override
+  String reportNoEmailApp(String email) {
+    return 'No email app opened. Write to $email.';
+  }
 }

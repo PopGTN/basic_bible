@@ -371,5 +371,11 @@
   "hymnalRenameAction": "保存",
   "hymnalImportGuide": "如何导入",
   "hymnalMakeGuide": "制作自己的诗歌本文件",
-  "linkOpenFailed": "无法打开链接。"
+  "linkOpenFailed": "无法打开链接。",
+  "reportChooseRoute": "你想如何发送？",
+  "reportByEmail": "发送邮件至 {email}",
+  "reportByEmailSubtitle": "私密。会打开你的邮件应用。",
+  "reportByGitHub": "在 GitHub 上提交问题",
+  "reportByGitHubSubtitle": "公开：任何人都能看到。需要 GitHub 账号。",
+  "reportNoEmailApp": "没有打开邮件应用。请写信至 {email}。"
 }

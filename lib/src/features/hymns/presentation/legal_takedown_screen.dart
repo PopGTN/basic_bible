@@ -1,8 +1,7 @@
 import 'package:basic_bible/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
 
-import '../data/content_reporting.dart';
+import 'report_options.dart';
 
 /// Settings → Legal & takedown requests: what the app distributes, what it
 /// doesn't (third-party repositories), and how rights holders get content
@@ -36,24 +35,14 @@ class LegalTakedownScreen extends StatelessWidget {
           FilledButton.icon(
             icon: const Icon(Icons.flag_outlined),
             label: Text(t.legalReportButton),
-            onPressed: () async {
-              final uri = buildContentReportUri(
-                kAppTakedownContact,
-                subject: 'Takedown request',
-                body:
-                    'Content (book title and hymn numbers, or repository '
-                    'address):\n\nYour rights in the work:\n\nHow we can '
-                    'contact you:\n',
-              );
-              final opened =
-                  uri != null &&
-                  await launchUrl(uri, mode: LaunchMode.externalApplication);
-              if (!opened && context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(t.hymnReportUnavailable)),
-                );
-              }
-            },
+            onPressed: () => sendContentReport(
+              context,
+              subject: 'Takedown request',
+              body:
+                  'Content (book title and hymn numbers, or repository '
+                  'address):\n\nYour rights in the work:\n\nHow we can '
+                  'contact you:\n',
+            ),
           ),
         ],
       ),

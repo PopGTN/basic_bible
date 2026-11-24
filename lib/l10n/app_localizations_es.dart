@@ -1240,4 +1240,27 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get linkOpenFailed => 'No se pudo abrir el enlace.';
+
+  @override
+  String get reportChooseRoute => '¿Cómo quieres enviarlo?';
+
+  @override
+  String reportByEmail(String email) {
+    return 'Correo a $email';
+  }
+
+  @override
+  String get reportByEmailSubtitle => 'Privado. Abre tu aplicación de correo.';
+
+  @override
+  String get reportByGitHub => 'Abrir un issue en GitHub';
+
+  @override
+  String get reportByGitHubSubtitle =>
+      'Público: cualquiera puede leerlo. Requiere una cuenta de GitHub.';
+
+  @override
+  String reportNoEmailApp(String email) {
+    return 'No se abrió ninguna aplicación de correo. Escribe a $email.';
+  }
 }

@@ -2215,6 +2215,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Could not open the link.'**
   String get linkOpenFailed;
+
+  /// No description provided for @reportChooseRoute.
+  ///
+  /// In en, this message translates to:
+  /// **'How would you like to send it?'**
+  String get reportChooseRoute;
+
+  /// No description provided for @reportByEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Email {email}'**
+  String reportByEmail(String email);
+
+  /// No description provided for @reportByEmailSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Private. Opens your email app.'**
+  String get reportByEmailSubtitle;
+
+  /// No description provided for @reportByGitHub.
+  ///
+  /// In en, this message translates to:
+  /// **'Open a GitHub issue'**
+  String get reportByGitHub;
+
+  /// No description provided for @reportByGitHubSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Public: anyone can read it. Needs a GitHub account.'**
+  String get reportByGitHubSubtitle;
+
+  /// No description provided for @reportNoEmailApp.
+  ///
+  /// In en, this message translates to:
+  /// **'No email app opened. Write to {email}.'**
+  String reportNoEmailApp(String email);
 }
 
 class _AppLocalizationsDelegate

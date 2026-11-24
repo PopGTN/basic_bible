@@ -664,5 +664,25 @@
         "type": "int"
       }
     }
+  },
+  "reportChooseRoute": "How would you like to send it?",
+  "reportByEmail": "Email {email}",
+  "reportByEmailSubtitle": "Private. Opens your email app.",
+  "reportByGitHub": "Open a GitHub issue",
+  "reportByGitHubSubtitle": "Public: anyone can read it. Needs a GitHub account.",
+  "reportNoEmailApp": "No email app opened. Write to {email}.",
+  "@reportByEmail": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "@reportNoEmailApp": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
   }
 }

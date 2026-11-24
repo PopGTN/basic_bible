@@ -1190,4 +1190,26 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get linkOpenFailed => '无法打开链接。';
+
+  @override
+  String get reportChooseRoute => '你想如何发送？';
+
+  @override
+  String reportByEmail(String email) {
+    return '发送邮件至 $email';
+  }
+
+  @override
+  String get reportByEmailSubtitle => '私密。会打开你的邮件应用。';
+
+  @override
+  String get reportByGitHub => '在 GitHub 上提交问题';
+
+  @override
+  String get reportByGitHubSubtitle => '公开：任何人都能看到。需要 GitHub 账号。';
+
+  @override
+  String reportNoEmailApp(String email) {
+    return '没有打开邮件应用。请写信至 $email。';
+  }
 }

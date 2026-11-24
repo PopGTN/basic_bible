@@ -371,5 +371,11 @@
   "hymnalRenameAction": "Speichern",
   "hymnalImportGuide": "So importierst du",
   "hymnalMakeGuide": "Eigene Liederbuch-Datei erstellen",
-  "linkOpenFailed": "Der Link konnte nicht geöffnet werden."
+  "linkOpenFailed": "Der Link konnte nicht geöffnet werden.",
+  "reportChooseRoute": "Wie möchtest du es senden?",
+  "reportByEmail": "E-Mail an {email}",
+  "reportByEmailSubtitle": "Privat. Öffnet deine E-Mail-App.",
+  "reportByGitHub": "GitHub-Issue erstellen",
+  "reportByGitHubSubtitle": "Öffentlich: für alle lesbar. Erfordert ein GitHub-Konto.",
+  "reportNoEmailApp": "Keine E-Mail-App geöffnet. Schreib an {email}."
 }

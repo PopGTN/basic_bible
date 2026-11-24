@@ -51,6 +51,13 @@ described in `tool/hymnals/README.md`. The architecture summary is in
   - `showHymnalAboutSheet`: publisher, edition, ISBN, copyright, permission,
     source and hymn count, and **Report a copyright concern**. `TODO_`
     placeholder values are never shown.
+- `report_options.dart`
+  - `sendContentReport`: used by Report a copyright concern and the Legal
+    page. Lets the sender choose **email** (`kAppTakedownEmail`,
+    contact@joshuamc.ca, private) or a **GitHub issue** (`kAppTakedownContact`,
+    public), both pre-filled. A book from a third-party repository goes
+    straight to that repository's own contact instead. If no email app
+    opens, the address is shown with a Copy button.
 - `hymn_print.dart`
   - `printHymn` / `buildHymnPdf`: a one-hymn PDF (Gentium Plus font) sent to the
     system print dialog (`printing` package; the browser's print on web).

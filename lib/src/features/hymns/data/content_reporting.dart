@@ -1,9 +1,17 @@
-/// Where rights holders send takedown requests for content the app ships or
-/// lists from the official repository. Override at build time with
-/// `--dart-define=TAKEDOWN_URL=…` (an https: page or a mailto: address).
-///
-/// Default: a new issue in the public bible-data repository, which should
-/// carry a takedown issue template (`.github/ISSUE_TEMPLATE/takedown.md`).
+// Where rights holders send takedown requests for content the app ships or
+// lists from the official repository. They choose between [kAppTakedownEmail]
+// (private) and [kAppTakedownContact] (a public GitHub issue).
+
+/// Private route: the developer's email. Override with
+/// `--dart-define=TAKEDOWN_EMAIL=…`.
+const kAppTakedownEmail = String.fromEnvironment(
+  'TAKEDOWN_EMAIL',
+  defaultValue: 'contact@joshuamc.ca',
+);
+
+/// Public route: a new issue in the bible-data repository, using its
+/// takedown template (`.github/ISSUE_TEMPLATE/takedown.md`). Override with
+/// `--dart-define=TAKEDOWN_URL=…`.
 const kAppTakedownContact = String.fromEnvironment(
   'TAKEDOWN_URL',
   defaultValue:

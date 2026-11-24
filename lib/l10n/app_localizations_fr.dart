@@ -1243,4 +1243,28 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get linkOpenFailed => 'Impossible d\'ouvrir le lien.';
+
+  @override
+  String get reportChooseRoute => 'Comment souhaitez-vous l\'envoyer ?';
+
+  @override
+  String reportByEmail(String email) {
+    return 'E-mail à $email';
+  }
+
+  @override
+  String get reportByEmailSubtitle =>
+      'Privé. Ouvre votre application de messagerie.';
+
+  @override
+  String get reportByGitHub => 'Ouvrir un ticket GitHub';
+
+  @override
+  String get reportByGitHubSubtitle =>
+      'Public : tout le monde peut le lire. Nécessite un compte GitHub.';
+
+  @override
+  String reportNoEmailApp(String email) {
+    return 'Aucune application de messagerie ne s\'est ouverte. Écrivez à $email.';
+  }
 }

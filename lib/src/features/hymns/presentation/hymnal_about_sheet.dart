@@ -1,9 +1,9 @@
 import 'package:basic_bible/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../data/content_reporting.dart';
 import '../models/hymnal.dart';
+import 'report_options.dart';
 
 /// Book details, copyright and permission text, where it came from, and a
 /// way to report a copyright concern.
@@ -39,14 +39,14 @@ class _AboutContent extends StatelessWidget {
     ),
   };
 
-  Future<void> _report(BuildContext context, AppLocalizations t) async {
-    // Bundled and imported content is reported to the app; repository
-    // content to the repository's own contact when it has one.
-    final contact = info.sourceKind == HymnalSourceKind.repository
-        ? (_shown(info.takedownContact) ?? kAppTakedownContact)
-        : kAppTakedownContact;
-    final uri = buildContentReportUri(
-      contact,
+  Future<void> _report(BuildContext context) {
+    // Books from someone else's repository go to that repository's own
+    // contact; everything else to the app (email or GitHub issue).
+    final ownerContact = info.sourceKind == HymnalSourceKind.repository
+        ? _shown(info.takedownContact)
+        : null;
+    return sendContentReport(
+      context,
       subject: 'Copyright concern: ${info.title}',
       body: contentReportBody(
         bookTitle: info.title,
@@ -54,15 +54,8 @@ class _AboutContent extends StatelessWidget {
         source: info.repoUrl ?? info.sourceKind.name,
         publisher: _shown(info.publisher),
       ),
+      ownerContact: ownerContact,
     );
-    final opened =
-        uri != null &&
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-    if (!opened && context.mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(t.hymnReportUnavailable)));
-    }
   }
 
   @override
@@ -117,7 +110,7 @@ class _AboutContent extends StatelessWidget {
         OutlinedButton.icon(
           icon: const Icon(Icons.flag_outlined),
           label: Text(t.hymnReportConcern),
-          onPressed: () => _report(context, t),
+          onPressed: () => _report(context),
         ),
       ],
     );

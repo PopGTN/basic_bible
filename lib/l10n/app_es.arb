@@ -371,5 +371,11 @@
   "hymnalRenameAction": "Guardar",
   "hymnalImportGuide": "Cómo importar",
   "hymnalMakeGuide": "Crea tu propio archivo de himnario",
-  "linkOpenFailed": "No se pudo abrir el enlace."
+  "linkOpenFailed": "No se pudo abrir el enlace.",
+  "reportChooseRoute": "¿Cómo quieres enviarlo?",
+  "reportByEmail": "Correo a {email}",
+  "reportByEmailSubtitle": "Privado. Abre tu aplicación de correo.",
+  "reportByGitHub": "Abrir un issue en GitHub",
+  "reportByGitHubSubtitle": "Público: cualquiera puede leerlo. Requiere una cuenta de GitHub.",
+  "reportNoEmailApp": "No se abrió ninguna aplicación de correo. Escribe a {email}."
 }
