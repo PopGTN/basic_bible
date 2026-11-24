@@ -298,6 +298,9 @@ ThemeData _buildMonochromeTheme({required Brightness brightness}) {
       }),
     ),
     bottomNavigationBarTheme: BottomNavigationBarThemeData(
+      // Fixed for any number of tabs (4+ would default to transparent
+      // "shifting"); see home_screen.dart.
+      type: BottomNavigationBarType.fixed,
       backgroundColor: background,
       selectedItemColor: foreground,
       unselectedItemColor: onSurfaceVariant,

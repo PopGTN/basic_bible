@@ -334,6 +334,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                   hoverColor: Colors.transparent,
                 ),
                 child: BottomNavigationBar(
+                  // Must stay fixed: with 4+ items Flutter defaults to the
+                  // "shifting" style, which ignores the theme's background
+                  // and draws the bar transparent (it vanished on phones
+                  // when the Hymns tab became the 4th item).
+                  type: BottomNavigationBarType.fixed,
                   currentIndex: _currentIndex,
                   onTap: (i) => setState(() {
                     _currentIndex = i;
