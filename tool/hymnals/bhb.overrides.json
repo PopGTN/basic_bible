@@ -1,0 +1,54 @@
+{
+  "_doc": "Per-hymn patches applied by build_hymnal.dart. Keys are hymn ids. Supported: title, author, meter, tuneName (replace); verses: {index: [lines]} (replace one verse); chorus: [lines]; replaceText: [[find, replace]] (applied to each verse/chorus joined with \\n so it can split or merge lines; empty lines dropped); notes: [text]; optionalVerses / alternateChoruses: [{label, lines}]; copyright; rightsStatus. Keys starting with _ are ignored.",
+
+  "41": { "title": "Come, ye that know the Saviour's name" },
+  "68": { "verses": { "0": ["He comes! Emmanuel comes!", "Jesus, the crucified:", "The man of Sorrows—He", "Who bowed His head and died;", "Who hath redeemed us by His blood;", "He comes to take us home to God."] } },
+  "100": { "author": "George Burden Bubier" },
+  "108": { "author": "Samuel Barnard" },
+  "120": {
+    "author": "Nikolaus Ludwig von Zinzendorf, tr. John Wesley",
+    "notes": ["Alternate first line: God's Christ, who is my righteousness"]
+  },
+  "193": { "author": "Charitie Lees Bancroft (née Smith)" },
+  "203": { "replaceText": [["be this,To hear", "be this,\nTo hear"]] },
+  "231": { "replaceText": [["welcomed home: Hallelujah!", "welcomed home:\nHallelujah!"]] },
+  "240": {
+    "chorus": ["Trim your lamps and be ready,", "Trim your lamps and be ready,", "Trim your lamps and be ready", "For the midnight cry.", "For the midnight cry,", "For the midnight cry,", "Trim your lamps and be ready,", "For the midnight cry."],
+    "notes": ["The full chorus is sung to the tune “Trim your Lamps”."]
+  },
+  "264": {
+    "replaceText": [[" (2x for Yarmouth)", ""]],
+    "notes": ["With the tune Yarmouth, the third line of each verse is sung twice."]
+  },
+  "320": { "replaceText": [["When langour and", "When languor and"]] },
+  "321": {
+    "replaceText": [["Lost ones found and\nDead ones raised,", "Lost ones found and dead ones raised,"], ["Hearts exulting,\nSongs out-bursting,", "Hearts exulting, songs out-bursting,"]],
+    "author": "Richard Chenevix Trench"
+  },
+  "331": { "author": "Richard Jukes" },
+  "375": { "replaceText": [["Our\ngratitude to show;", "Our gratitude to show;"]] },
+  "386": { "replaceText": [["Its breadth, depth, height, and\neverlasting strength!", "Its breadth, depth, height, and everlasting strength!"], ["for Calvary's\nmercy seat.", "for Calvary's mercy seat."]], "rightsStatus": "unclear" },
+  "408": {
+    "replaceText": [[" (3x Helmsley)", ""]],
+    "notes": ["With the tune Helmsley, the fifth line of each verse is sung three times."]
+  },
+  "391": {
+    "replaceText": [["(or chorus) ", ""]],
+    "notes": ["Verse 3 may also be sung as a chorus."],
+    "copyright": "Words © 1941, renewed 1969, Lillenas Publishing Co.",
+    "rightsStatus": "unclear"
+  },
+
+  "_unclear": "20th-century texts whose rights must be confirmed with the publisher before release. Marked unclear so the build report lists them; the app does not show this status to readers.",
+  "362": { "rightsStatus": "unclear" },
+  "367": { "rightsStatus": "unclear" },
+  "371": { "rightsStatus": "unclear" },
+  "383": { "rightsStatus": "unclear" },
+  "385": { "rightsStatus": "unclear" },
+  "399": { "rightsStatus": "unclear" },
+  "423": { "rightsStatus": "unclear" },
+  "448": { "rightsStatus": "unclear" },
+  "453": { "rightsStatus": "unclear" },
+  "456": { "rightsStatus": "unclear" },
+  "460": { "rightsStatus": "unclear" }
+}

@@ -1,0 +1,23 @@
+{
+  "source": "sources/nbhb.source.json",
+  "draftSource": "sources/nbhb.draft.json",
+  "output": "../../assets/hymnals/nbhb.json.gz",
+  "book": {
+    "id": "nbhb",
+    "title": "The New Believers Hymnbook",
+    "shortTitle": "NBHB",
+    "publisher": "John Ritchie Ltd",
+    "publisherAddress": "Kilmarnock, Scotland",
+    "publisherUrl": "https://ritchiechristianmedia.co.uk",
+    "edition": "2019",
+    "year": 2019,
+    "language": "en",
+    "isbn": "9781912522385",
+    "copyright": "TODO_COPYRIGHT_LINE (e.g. © 2019 John Ritchie Ltd. All rights reserved.)",
+    "rightsStatus": "permission_granted",
+    "permissionNotice": "TODO_PERMISSION_WORDING (exact credit line the publisher asked for)",
+    "permissionDate": "TODO_PERMISSION_DATE",
+    "sourceUrl": null,
+    "takedownContact": "TODO_TAKEDOWN_CONTACT"
+  }
+}

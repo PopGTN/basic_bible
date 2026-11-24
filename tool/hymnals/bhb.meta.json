@@ -1,0 +1,22 @@
+{
+  "source": "sources/bhb.source.json",
+  "output": "../../assets/hymnals/bhb.json.gz",
+  "book": {
+    "id": "bhb",
+    "title": "The Believers Hymn Book",
+    "shortTitle": "BHB",
+    "publisher": "John Ritchie Ltd",
+    "publisherAddress": "Kilmarnock, Scotland",
+    "publisherUrl": "https://ritchiechristianmedia.co.uk",
+    "edition": "TODO_EDITION (e.g. Revised Edition with Supplement)",
+    "year": null,
+    "language": "en",
+    "isbn": "TODO_ISBN",
+    "copyright": "TODO_COPYRIGHT_LINE (e.g. © John Ritchie Ltd. All rights reserved.)",
+    "rightsStatus": "permission_granted",
+    "permissionNotice": "TODO_PERMISSION_WORDING (exact credit line the publisher asked for, e.g. Used by permission of John Ritchie Ltd.)",
+    "permissionDate": "TODO_PERMISSION_DATE",
+    "sourceUrl": null,
+    "takedownContact": "TODO_TAKEDOWN_CONTACT"
+  }
+}
