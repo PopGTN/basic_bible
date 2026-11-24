@@ -123,7 +123,7 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
       }
 
       await ref.read(currentReferenceProvider.notifier).setReference(reference);
-      ref.read(homeTabIndexProvider.notifier).state = 1;
+      ref.read(homeTabIndexProvider.notifier).state = HomeTabs.bible;
       if (context.mounted) context.go('/home');
     } catch (_) {
       if (context.mounted) {

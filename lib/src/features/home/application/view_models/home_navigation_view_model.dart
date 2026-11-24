@@ -2,8 +2,18 @@ import 'package:basic_bible/src/features/settings/application/view_models/app_la
 import 'package:flutter_riverpod/flutter_riverpod.dart' show Provider;
 import 'package:flutter_riverpod/legacy.dart';
 
+/// Indexes of the home shell's tabs. Use these instead of bare numbers so
+/// adding a tab can't silently send links to the wrong one.
+abstract final class HomeTabs {
+  static const home = 0;
+  static const bible = 1;
+  static const hymns = 2;
+  static const menu = 3;
+}
+
 final startupHomeTabIndexProvider = Provider<int>(
-  (ref) => ref.read(openBibleTabByDefaultProvider) ? 1 : 0,
+  (ref) =>
+      ref.read(openBibleTabByDefaultProvider) ? HomeTabs.bible : HomeTabs.home,
 );
 
 /// ViewModel for the selected tab inside the authenticated home shell.

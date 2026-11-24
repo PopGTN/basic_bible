@@ -17,6 +17,6 @@
     "permissionNotice": "TODO_PERMISSION_WORDING (exact credit line the publisher asked for, e.g. Used by permission of John Ritchie Ltd.)",
     "permissionDate": "TODO_PERMISSION_DATE",
     "sourceUrl": null,
-    "takedownContact": "TODO_TAKEDOWN_CONTACT"
+    "takedownContact": null
   }
 }

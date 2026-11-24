@@ -64,9 +64,12 @@ class HymnalInfo extends Equatable {
       (shortTitle?.trim().isNotEmpty ?? false) ? shortTitle!.trim() : title;
 
   /// The credit lines that must travel with every copy, share and print.
+  /// Unfilled `TODO_` placeholders from an unfinished build are skipped so
+  /// they can never leak into copied text.
   List<String> get creditLines => [
-    if (copyright?.trim().isNotEmpty ?? false) copyright!.trim(),
-    if (permissionNotice?.trim().isNotEmpty ?? false) permissionNotice!.trim(),
+    for (final line in [copyright, permissionNotice])
+      if (line != null && line.trim().isNotEmpty && !line.contains('TODO_'))
+        line.trim(),
   ];
 
   HymnalInfo copyWith({

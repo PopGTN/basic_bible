@@ -40,6 +40,6 @@ class ReaderLinkOpener {
     await _ref
         .read(currentReferenceProvider.notifier)
         .setReference(link.reference);
-    _ref.read(homeTabIndexProvider.notifier).state = 1;
+    _ref.read(homeTabIndexProvider.notifier).state = HomeTabs.bible;
   }
 }

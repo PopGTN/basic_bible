@@ -870,4 +870,324 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get keepOneTranslationMessage =>
       'Au moins une traduction doit rester sur cet appareil. Téléchargez ou importez-en une autre avant de retirer celle-ci.';
+
+  @override
+  String get hymnsTab => 'Cantiques';
+
+  @override
+  String get hymnSearchHint => 'Numéro, titre, paroles ou auteur';
+
+  @override
+  String get hymnSortTooltip => 'Trier';
+
+  @override
+  String get hymnSortNumber => 'Par numéro';
+
+  @override
+  String get hymnSortAlphabetical => 'Alphabétique';
+
+  @override
+  String get hymnFavoritesOnly => 'Afficher les favoris';
+
+  @override
+  String get hymnShowAll => 'Afficher tous les cantiques';
+
+  @override
+  String get hymnCountLabel => 'Cantiques';
+
+  @override
+  String get hymnNoResults => 'Aucun cantique ne correspond à votre recherche.';
+
+  @override
+  String get hymnNoFavorites =>
+      'Aucun favori pour l\'instant. Touchez l\'étoile d\'un cantique pour l\'ajouter.';
+
+  @override
+  String get hymnPickHint => 'Choisissez un cantique pour le lire ici.';
+
+  @override
+  String get hymnalLoadError => 'Impossible d\'ouvrir ce recueil.';
+
+  @override
+  String get hymnChorusLabel => 'Refrain';
+
+  @override
+  String get hymnOptionalChorus => 'Refrain facultatif';
+
+  @override
+  String get hymnOptionalVerse => 'Strophe facultative';
+
+  @override
+  String get hymnAddFavorite => 'Ajouter aux favoris';
+
+  @override
+  String get hymnRemoveFavorite => 'Retirer des favoris';
+
+  @override
+  String get hymnCopied => 'Cantique copié';
+
+  @override
+  String get hymnPrint => 'Imprimer';
+
+  @override
+  String get hymnPrevious => 'Cantique précédent';
+
+  @override
+  String get hymnNext => 'Cantique suivant';
+
+  @override
+  String get hymnDisplaySettings => 'Affichage';
+
+  @override
+  String get hymnTextSize => 'Taille du texte';
+
+  @override
+  String get hymnChorusEveryVerse => 'Afficher le refrain après chaque strophe';
+
+  @override
+  String get hymnChorusEveryVerseSubtitle =>
+      'Désactivé, le refrain apparaît une fois après la strophe 1, comme dans le livre imprimé.';
+
+  @override
+  String get hymnShowDetails => 'Afficher auteur, mètre et mélodie';
+
+  @override
+  String get hymnShowOptional =>
+      'Afficher les strophes et refrains facultatifs';
+
+  @override
+  String get hymnAboutBook => 'À propos de ce recueil';
+
+  @override
+  String get hymnReportConcern => 'Signaler un problème de droits d\'auteur';
+
+  @override
+  String get hymnReportUnavailable =>
+      'Impossible d\'ouvrir la page de signalement. Réessayez plus tard.';
+
+  @override
+  String get hymnalPublisher => 'Éditeur';
+
+  @override
+  String get hymnalEdition => 'Édition';
+
+  @override
+  String get hymnalIsbn => 'ISBN';
+
+  @override
+  String get hymnalCopyright => 'Droits d\'auteur';
+
+  @override
+  String get hymnalPermission => 'Autorisation';
+
+  @override
+  String get hymnalSource => 'Source';
+
+  @override
+  String get hymnalSourceBundled => 'Inclus dans l\'application';
+
+  @override
+  String get hymnalSourceImported =>
+      'Importé depuis un fichier de cet appareil';
+
+  @override
+  String hymnalSourceRepository(String source) {
+    return 'Téléchargé depuis $source';
+  }
+
+  @override
+  String get hymnalSourceBundledShort => 'Inclus';
+
+  @override
+  String get hymnalSourceImportedShort => 'Importé';
+
+  @override
+  String get hymnalSourceRepositoryShort => 'Téléchargé';
+
+  @override
+  String get hymnalThirdPartyNotice =>
+      'Ce recueil n\'est pas fourni avec l\'application. Ses droits relèvent de la personne qui l\'a fourni.';
+
+  @override
+  String get hymnalLibraryTitle => 'Recueils';
+
+  @override
+  String get hymnalManageBooks => 'Gérer les recueils';
+
+  @override
+  String get hymnalInstalledSection => 'Sur cet appareil';
+
+  @override
+  String get hymnalAvailableSection => 'Disponibles dans les dépôts';
+
+  @override
+  String get hymnalImportFile => 'Importer un fichier de recueil';
+
+  @override
+  String get hymnalImportSubtitle =>
+      'Fichiers JSON de recueil (.json ou .json.gz)';
+
+  @override
+  String hymnalImported(String title) {
+    return '« $title » ajouté';
+  }
+
+  @override
+  String hymnalImportFailed(String error) {
+    return 'Import impossible : $error';
+  }
+
+  @override
+  String get hymnalOpenBook => 'Ouvrir';
+
+  @override
+  String hymnalDeleteTitle(String title) {
+    return 'Retirer « $title » ?';
+  }
+
+  @override
+  String get hymnalDeleteMessage =>
+      'Le recueil est retiré de cet appareil. Vos favoris sont conservés si vous l\'ajoutez à nouveau.';
+
+  @override
+  String get hymnalNoRepoBooks =>
+      'Vos dépôts ne proposent encore aucun recueil.';
+
+  @override
+  String get hymnalDownload => 'Télécharger';
+
+  @override
+  String get hymnalDownloaded => 'Installé';
+
+  @override
+  String get hymnalNotDownloadable =>
+      'Listé seulement — non proposé au téléchargement';
+
+  @override
+  String hymnalDownloadFailed(String error) {
+    return 'Échec du téléchargement : $error';
+  }
+
+  @override
+  String get manageRepositories => 'Gérer les dépôts';
+
+  @override
+  String get manageRepositoriesSubtitle =>
+      'D\'où les recueils peuvent être téléchargés';
+
+  @override
+  String get repositoriesTitle => 'Dépôts';
+
+  @override
+  String get repositoriesIntro =>
+      'Les dépôts listent les recueils téléchargeables. Le dépôt officiel est géré par les développeurs de l\'application ; les autres par des tiers.';
+
+  @override
+  String get repositoryOfficial => 'Officiel';
+
+  @override
+  String get repositoryAdd => 'Ajouter un dépôt';
+
+  @override
+  String get repositoryUrlLabel => 'Adresse du dépôt (https://…)';
+
+  @override
+  String get repositoryCheck => 'Vérifier';
+
+  @override
+  String repositoryAdded(String name) {
+    return '« $name » ajouté';
+  }
+
+  @override
+  String repositoryAddFailed(String error) {
+    return 'Impossible d\'ajouter le dépôt : $error';
+  }
+
+  @override
+  String get repositoryRefresh => 'Actualiser';
+
+  @override
+  String get repositoryRemove => 'Retirer';
+
+  @override
+  String repositoryRemoveTitle(String name) {
+    return 'Retirer « $name » ?';
+  }
+
+  @override
+  String get repositoryRemoveMessage =>
+      'Les recueils téléchargés depuis ce dépôt seront aussi retirés de cet appareil.';
+
+  @override
+  String get repositoryLoadFailed =>
+      'Impossible de charger ce dépôt pour le moment.';
+
+  @override
+  String repositoryMaintainer(String name) {
+    return 'Géré par $name';
+  }
+
+  @override
+  String get repositoryOwnerNote => 'Du propriétaire du dépôt :';
+
+  @override
+  String get repositoryDisclaimerTitle => 'Dépôt tiers';
+
+  @override
+  String get repositoryDisclaimerBody =>
+      'Ce dépôt est géré par un tiers, et non par les développeurs de l\'application. Nous n\'hébergeons, ne vérifions ni ne distribuons son contenu, et ne pouvons pas confirmer que son propriétaire a le droit de le partager. Vous êtes responsable de vos téléchargements. Pour signaler un problème de droits d\'auteur, utilisez « Signaler un problème de droits d\'auteur » dans la page « À propos » du recueil, qui contacte le propriétaire du dépôt.';
+
+  @override
+  String get repositoryDisclaimerAccept =>
+      'Je comprends que ce contenu n\'est pas fourni par l\'application';
+
+  @override
+  String get legalTitle => 'Mentions légales et demandes de retrait';
+
+  @override
+  String get legalSubtitle =>
+      'Droits du contenu, sources tierces et demandes de retrait';
+
+  @override
+  String get legalBundledHeading => 'Contenu inclus dans l\'application';
+
+  @override
+  String get legalBundledBody =>
+      'Les recueils inclus dans l\'application sont distribués avec l\'autorisation de leurs éditeurs. Les mentions de droits et d\'autorisation figurent dans la page « À propos » de chaque recueil et accompagnent chaque cantique copié, partagé ou imprimé.';
+
+  @override
+  String get legalThirdPartyHeading => 'Dépôts tiers';
+
+  @override
+  String get legalThirdPartyBody =>
+      'Les dépôts que vous ajoutez vous-même sont gérés par d\'autres personnes. Leur contenu n\'est ni hébergé, ni vérifié, ni distribué par les développeurs de l\'application, et nous ne garantissons pas que leurs propriétaires aient le droit de le partager. Les demandes concernant ce contenu doivent être adressées au propriétaire du dépôt, dont le contact figure dans la page « À propos » de chaque recueil.';
+
+  @override
+  String get legalImportedHeading => 'Fichiers importés';
+
+  @override
+  String get legalImportedBody =>
+      'Les fichiers importés restent sur votre appareil et ne sont jamais partagés par l\'application. N\'importez que des fichiers que vous avez le droit d\'utiliser.';
+
+  @override
+  String get legalTakedownHeading => 'Demandes de retrait';
+
+  @override
+  String get legalTakedownBody =>
+      'Si vous détenez les droits d\'un contenu inclus dans l\'application ou listé dans le dépôt officiel et souhaitez son retrait, envoyez une demande de retrait. Indiquez le recueil et les numéros de cantiques, l\'œuvre concernée et comment vous joindre. Une fois la demande confirmée, le contenu est retiré du dépôt officiel et les recueils retirés sont supprimés des appareils lors de la prochaine actualisation des dépôts.';
+
+  @override
+  String get legalReportButton => 'Envoyer une demande de retrait';
+
+  @override
+  String hymnCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count cantiques',
+      one: '1 cantique',
+    );
+    return '$_temp0';
+  }
 }

@@ -482,5 +482,166 @@
       "chapter": {}
     }
   },
-  "keepOneTranslationMessage": "Keep at least one translation on this device. Download or import another one before removing this one."
+  "keepOneTranslationMessage": "Keep at least one translation on this device. Download or import another one before removing this one.",
+  "hymnsTab": "Hymns",
+  "hymnSearchHint": "Number, title, words or author",
+  "hymnSortTooltip": "Sort",
+  "hymnSortNumber": "By number",
+  "hymnSortAlphabetical": "Alphabetical",
+  "hymnFavoritesOnly": "Show favorites",
+  "hymnShowAll": "Show all hymns",
+  "hymnCountLabel": "Hymns",
+  "hymnNoResults": "No hymns match your search.",
+  "hymnNoFavorites": "No favorites yet. Tap the star on a hymn to add it.",
+  "hymnPickHint": "Choose a hymn to read it here.",
+  "hymnalLoadError": "This hymn book could not be opened.",
+  "hymnChorusLabel": "Chorus",
+  "hymnOptionalChorus": "Optional chorus",
+  "hymnOptionalVerse": "Optional verse",
+  "hymnAddFavorite": "Add to favorites",
+  "hymnRemoveFavorite": "Remove from favorites",
+  "hymnCopied": "Hymn copied",
+  "hymnPrint": "Print",
+  "hymnPrevious": "Previous hymn",
+  "hymnNext": "Next hymn",
+  "hymnDisplaySettings": "Display settings",
+  "hymnTextSize": "Text size",
+  "hymnChorusEveryVerse": "Show chorus after every verse",
+  "hymnChorusEveryVerseSubtitle": "When off, the chorus appears once after verse 1, as in the printed book.",
+  "hymnShowDetails": "Show author, meter and tune",
+  "hymnShowOptional": "Show optional verses and choruses",
+  "hymnAboutBook": "About this book",
+  "hymnReportConcern": "Report a copyright concern",
+  "hymnReportUnavailable": "Could not open the report page. Please try again later.",
+  "hymnalPublisher": "Publisher",
+  "hymnalEdition": "Edition",
+  "hymnalIsbn": "ISBN",
+  "hymnalCopyright": "Copyright",
+  "hymnalPermission": "Permission",
+  "hymnalSource": "Source",
+  "hymnalSourceBundled": "Included with the app",
+  "hymnalSourceImported": "Imported from a file on this device",
+  "hymnalSourceRepository": "Downloaded from {source}",
+  "@hymnalSourceRepository": {
+    "placeholders": {
+      "source": {
+        "type": "String"
+      }
+    }
+  },
+  "hymnalSourceBundledShort": "Included",
+  "hymnalSourceImportedShort": "Imported",
+  "hymnalSourceRepositoryShort": "Downloaded",
+  "hymnalThirdPartyNotice": "This book did not come with the app. Its rights are the responsibility of whoever provided it.",
+  "hymnalLibraryTitle": "Hymn books",
+  "hymnalManageBooks": "Manage hymn books",
+  "hymnalInstalledSection": "On this device",
+  "hymnalAvailableSection": "Available from repositories",
+  "hymnalImportFile": "Import a hymn book file",
+  "hymnalImportSubtitle": "Hymn book JSON files (.json or .json.gz)",
+  "hymnalImported": "Added \"{title}\"",
+  "@hymnalImported": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "hymnalImportFailed": "Could not import: {error}",
+  "@hymnalImportFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "hymnalOpenBook": "Open",
+  "hymnalDeleteTitle": "Remove \"{title}\"?",
+  "@hymnalDeleteTitle": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "hymnalDeleteMessage": "The book is removed from this device. Your favorites for it are kept in case you add it again.",
+  "hymnalNoRepoBooks": "No hymn books are available from your repositories yet.",
+  "hymnalDownload": "Download",
+  "hymnalDownloaded": "Installed",
+  "hymnalNotDownloadable": "Listed only — not offered for download",
+  "hymnalDownloadFailed": "Download failed: {error}",
+  "@hymnalDownloadFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "manageRepositories": "Manage repositories",
+  "manageRepositoriesSubtitle": "Where hymn books can be downloaded from",
+  "repositoriesTitle": "Repositories",
+  "repositoriesIntro": "Repositories list hymn books you can download. The official repository is run by this app's developers; any others are run by third parties.",
+  "repositoryOfficial": "Official",
+  "repositoryAdd": "Add repository",
+  "repositoryUrlLabel": "Repository address (https://…)",
+  "repositoryCheck": "Check",
+  "repositoryAdded": "Added \"{name}\"",
+  "@repositoryAdded": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "repositoryAddFailed": "Could not add the repository: {error}",
+  "@repositoryAddFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "repositoryRefresh": "Refresh",
+  "repositoryRemove": "Remove",
+  "repositoryRemoveTitle": "Remove \"{name}\"?",
+  "@repositoryRemoveTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "repositoryRemoveMessage": "Hymn books downloaded from this repository will also be removed from this device.",
+  "repositoryLoadFailed": "Could not load this repository right now.",
+  "repositoryMaintainer": "Maintained by {name}",
+  "@repositoryMaintainer": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "repositoryOwnerNote": "From the repository owner:",
+  "repositoryDisclaimerTitle": "Third-party repository",
+  "repositoryDisclaimerBody": "This repository is run by a third party, not by the developers of this app. We do not host, review or distribute its content, and we cannot confirm that its owner has permission to share it. You are responsible for what you download. To report a copyright problem with a book from this repository, use \"Report a copyright concern\" on that book's About page, which contacts the repository owner.",
+  "repositoryDisclaimerAccept": "I understand this content is not provided by this app",
+  "legalTitle": "Legal & takedown requests",
+  "legalSubtitle": "Content rights, third-party sources and how to request removal",
+  "legalBundledHeading": "Content included with the app",
+  "legalBundledBody": "Hymn books included with the app are distributed with their publishers' permission. Each book's copyright and permission notices are shown on its About page and are added to every hymn you copy, share or print.",
+  "legalThirdPartyHeading": "Third-party repositories",
+  "legalThirdPartyBody": "Repositories you add yourself are run by other people. Their content is not hosted, reviewed or distributed by the developers of this app, and we make no promise that their owners have the right to share it. Requests about that content should go to the repository owner, whose contact is shown on each book's About page.",
+  "legalImportedHeading": "Files you import",
+  "legalImportedBody": "Imported files stay on your device and are never shared by the app. Only import files you have the right to use.",
+  "legalTakedownHeading": "Takedown requests",
+  "legalTakedownBody": "If you hold the rights to content included with the app or listed in the official repository and want it removed, send a takedown request. Name the book and hymn numbers, the work you own, and how we can reach you. Once a request is confirmed, the content is withdrawn from the official repository, and withdrawn books are removed from devices the next time the app refreshes its repositories.",
+  "legalReportButton": "Send a takedown request",
+  "hymnCount": "{count, plural, =1{1 hymn} other{{count} hymns}}",
+  "@hymnCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }

@@ -839,4 +839,306 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get keepOneTranslationMessage => '此设备上必须至少保留一个译本。请先下载或导入其他译本，再移除此译本。';
+
+  @override
+  String get hymnsTab => '诗歌';
+
+  @override
+  String get hymnSearchHint => '编号、标题、歌词或作者';
+
+  @override
+  String get hymnSortTooltip => '排序';
+
+  @override
+  String get hymnSortNumber => '按编号';
+
+  @override
+  String get hymnSortAlphabetical => '按字母';
+
+  @override
+  String get hymnFavoritesOnly => '显示收藏';
+
+  @override
+  String get hymnShowAll => '显示全部诗歌';
+
+  @override
+  String get hymnCountLabel => '诗歌数';
+
+  @override
+  String get hymnNoResults => '没有符合搜索的诗歌。';
+
+  @override
+  String get hymnNoFavorites => '还没有收藏。点击诗歌旁的星标即可收藏。';
+
+  @override
+  String get hymnPickHint => '选择一首诗歌在此阅读。';
+
+  @override
+  String get hymnalLoadError => '无法打开这本诗歌本。';
+
+  @override
+  String get hymnChorusLabel => '副歌';
+
+  @override
+  String get hymnOptionalChorus => '可选副歌';
+
+  @override
+  String get hymnOptionalVerse => '可选段落';
+
+  @override
+  String get hymnAddFavorite => '加入收藏';
+
+  @override
+  String get hymnRemoveFavorite => '取消收藏';
+
+  @override
+  String get hymnCopied => '已复制诗歌';
+
+  @override
+  String get hymnPrint => '打印';
+
+  @override
+  String get hymnPrevious => '上一首';
+
+  @override
+  String get hymnNext => '下一首';
+
+  @override
+  String get hymnDisplaySettings => '显示设置';
+
+  @override
+  String get hymnTextSize => '文字大小';
+
+  @override
+  String get hymnChorusEveryVerse => '每段后显示副歌';
+
+  @override
+  String get hymnChorusEveryVerseSubtitle => '关闭时，副歌只在第 1 段后出现一次，与印刷版相同。';
+
+  @override
+  String get hymnShowDetails => '显示作者、格律和曲调';
+
+  @override
+  String get hymnShowOptional => '显示可选段落和副歌';
+
+  @override
+  String get hymnAboutBook => '关于本书';
+
+  @override
+  String get hymnReportConcern => '报告版权问题';
+
+  @override
+  String get hymnReportUnavailable => '无法打开报告页面，请稍后再试。';
+
+  @override
+  String get hymnalPublisher => '出版社';
+
+  @override
+  String get hymnalEdition => '版本';
+
+  @override
+  String get hymnalIsbn => 'ISBN';
+
+  @override
+  String get hymnalCopyright => '版权';
+
+  @override
+  String get hymnalPermission => '授权';
+
+  @override
+  String get hymnalSource => '来源';
+
+  @override
+  String get hymnalSourceBundled => '随应用提供';
+
+  @override
+  String get hymnalSourceImported => '从本设备上的文件导入';
+
+  @override
+  String hymnalSourceRepository(String source) {
+    return '下载自 $source';
+  }
+
+  @override
+  String get hymnalSourceBundledShort => '内置';
+
+  @override
+  String get hymnalSourceImportedShort => '已导入';
+
+  @override
+  String get hymnalSourceRepositoryShort => '已下载';
+
+  @override
+  String get hymnalThirdPartyNotice => '本书并非随应用提供，其版权由提供者负责。';
+
+  @override
+  String get hymnalLibraryTitle => '诗歌本';
+
+  @override
+  String get hymnalManageBooks => '管理诗歌本';
+
+  @override
+  String get hymnalInstalledSection => '本设备上';
+
+  @override
+  String get hymnalAvailableSection => '可从资源库获取';
+
+  @override
+  String get hymnalImportFile => '导入诗歌本文件';
+
+  @override
+  String get hymnalImportSubtitle => '诗歌本 JSON 文件（.json 或 .json.gz）';
+
+  @override
+  String hymnalImported(String title) {
+    return '已添加“$title”';
+  }
+
+  @override
+  String hymnalImportFailed(String error) {
+    return '无法导入：$error';
+  }
+
+  @override
+  String get hymnalOpenBook => '打开';
+
+  @override
+  String hymnalDeleteTitle(String title) {
+    return '移除“$title”？';
+  }
+
+  @override
+  String get hymnalDeleteMessage => '本书将从此设备移除。你的收藏会保留，以便再次添加时使用。';
+
+  @override
+  String get hymnalNoRepoBooks => '你的资源库暂时没有可用的诗歌本。';
+
+  @override
+  String get hymnalDownload => '下载';
+
+  @override
+  String get hymnalDownloaded => '已安装';
+
+  @override
+  String get hymnalNotDownloadable => '仅列出——不提供下载';
+
+  @override
+  String hymnalDownloadFailed(String error) {
+    return '下载失败：$error';
+  }
+
+  @override
+  String get manageRepositories => '管理资源库';
+
+  @override
+  String get manageRepositoriesSubtitle => '诗歌本的下载来源';
+
+  @override
+  String get repositoriesTitle => '资源库';
+
+  @override
+  String get repositoriesIntro => '资源库列出可下载的诗歌本。官方资源库由本应用开发者维护，其他资源库由第三方维护。';
+
+  @override
+  String get repositoryOfficial => '官方';
+
+  @override
+  String get repositoryAdd => '添加资源库';
+
+  @override
+  String get repositoryUrlLabel => '资源库地址（https://…）';
+
+  @override
+  String get repositoryCheck => '检查';
+
+  @override
+  String repositoryAdded(String name) {
+    return '已添加“$name”';
+  }
+
+  @override
+  String repositoryAddFailed(String error) {
+    return '无法添加资源库：$error';
+  }
+
+  @override
+  String get repositoryRefresh => '刷新';
+
+  @override
+  String get repositoryRemove => '移除';
+
+  @override
+  String repositoryRemoveTitle(String name) {
+    return '移除“$name”？';
+  }
+
+  @override
+  String get repositoryRemoveMessage => '从该资源库下载的诗歌本也将从此设备移除。';
+
+  @override
+  String get repositoryLoadFailed => '暂时无法加载此资源库。';
+
+  @override
+  String repositoryMaintainer(String name) {
+    return '维护者：$name';
+  }
+
+  @override
+  String get repositoryOwnerNote => '资源库所有者说明：';
+
+  @override
+  String get repositoryDisclaimerTitle => '第三方资源库';
+
+  @override
+  String get repositoryDisclaimerBody =>
+      '此资源库由第三方维护，而非本应用开发者。我们不托管、不审核也不分发其内容，也无法确认其所有者是否有权分享。你需要对自己下载的内容负责。如需报告某本书的版权问题，请在该书的“关于本书”页面使用“报告版权问题”，它会联系资源库所有者。';
+
+  @override
+  String get repositoryDisclaimerAccept => '我了解此内容并非由本应用提供';
+
+  @override
+  String get legalTitle => '法律声明与删除请求';
+
+  @override
+  String get legalSubtitle => '内容权利、第三方来源以及如何申请删除';
+
+  @override
+  String get legalBundledHeading => '随应用提供的内容';
+
+  @override
+  String get legalBundledBody =>
+      '随应用提供的诗歌本已获得出版社授权分发。每本书的版权与授权声明显示在其“关于本书”页面，并会附在你复制、分享或打印的每首诗歌中。';
+
+  @override
+  String get legalThirdPartyHeading => '第三方资源库';
+
+  @override
+  String get legalThirdPartyBody =>
+      '你自行添加的资源库由他人维护。本应用开发者不托管、不审核也不分发其内容，也不保证其所有者有权分享。有关这些内容的请求请联系资源库所有者，联系方式显示在每本书的“关于本书”页面。';
+
+  @override
+  String get legalImportedHeading => '你导入的文件';
+
+  @override
+  String get legalImportedBody => '导入的文件只保存在你的设备上，应用不会分享它们。请只导入你有权使用的文件。';
+
+  @override
+  String get legalTakedownHeading => '删除请求';
+
+  @override
+  String get legalTakedownBody =>
+      '如果你拥有随应用提供或官方资源库中内容的权利并希望将其删除，请发送删除请求。请注明书名和诗歌编号、你拥有的作品以及联系方式。请求确认后，内容将从官方资源库撤下，被撤下的书会在应用下次刷新资源库时从设备中移除。';
+
+  @override
+  String get legalReportButton => '发送删除请求';
+
+  @override
+  String hymnCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count 首诗歌',
+    );
+    return '$_temp0';
+  }
 }

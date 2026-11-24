@@ -871,4 +871,324 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get keepOneTranslationMessage =>
       'Mindestens eine Übersetzung muss auf diesem Gerät bleiben. Lade eine andere herunter oder importiere sie, bevor du diese entfernst.';
+
+  @override
+  String get hymnsTab => 'Lieder';
+
+  @override
+  String get hymnSearchHint => 'Nummer, Titel, Text oder Autor';
+
+  @override
+  String get hymnSortTooltip => 'Sortieren';
+
+  @override
+  String get hymnSortNumber => 'Nach Nummer';
+
+  @override
+  String get hymnSortAlphabetical => 'Alphabetisch';
+
+  @override
+  String get hymnFavoritesOnly => 'Favoriten anzeigen';
+
+  @override
+  String get hymnShowAll => 'Alle Lieder anzeigen';
+
+  @override
+  String get hymnCountLabel => 'Lieder';
+
+  @override
+  String get hymnNoResults => 'Keine Lieder passen zu deiner Suche.';
+
+  @override
+  String get hymnNoFavorites =>
+      'Noch keine Favoriten. Tippe auf den Stern bei einem Lied.';
+
+  @override
+  String get hymnPickHint => 'Wähle ein Lied, um es hier zu lesen.';
+
+  @override
+  String get hymnalLoadError =>
+      'Dieses Liederbuch konnte nicht geöffnet werden.';
+
+  @override
+  String get hymnChorusLabel => 'Refrain';
+
+  @override
+  String get hymnOptionalChorus => 'Optionaler Refrain';
+
+  @override
+  String get hymnOptionalVerse => 'Optionale Strophe';
+
+  @override
+  String get hymnAddFavorite => 'Zu Favoriten hinzufügen';
+
+  @override
+  String get hymnRemoveFavorite => 'Aus Favoriten entfernen';
+
+  @override
+  String get hymnCopied => 'Lied kopiert';
+
+  @override
+  String get hymnPrint => 'Drucken';
+
+  @override
+  String get hymnPrevious => 'Vorheriges Lied';
+
+  @override
+  String get hymnNext => 'Nächstes Lied';
+
+  @override
+  String get hymnDisplaySettings => 'Anzeige';
+
+  @override
+  String get hymnTextSize => 'Textgröße';
+
+  @override
+  String get hymnChorusEveryVerse => 'Refrain nach jeder Strophe zeigen';
+
+  @override
+  String get hymnChorusEveryVerseSubtitle =>
+      'Wenn aus, erscheint der Refrain einmal nach Strophe 1, wie im gedruckten Buch.';
+
+  @override
+  String get hymnShowDetails => 'Autor, Versmaß und Melodie zeigen';
+
+  @override
+  String get hymnShowOptional => 'Optionale Strophen und Refrains zeigen';
+
+  @override
+  String get hymnAboutBook => 'Über dieses Buch';
+
+  @override
+  String get hymnReportConcern => 'Urheberrechtsproblem melden';
+
+  @override
+  String get hymnReportUnavailable =>
+      'Die Meldeseite konnte nicht geöffnet werden. Bitte später erneut versuchen.';
+
+  @override
+  String get hymnalPublisher => 'Verlag';
+
+  @override
+  String get hymnalEdition => 'Ausgabe';
+
+  @override
+  String get hymnalIsbn => 'ISBN';
+
+  @override
+  String get hymnalCopyright => 'Urheberrecht';
+
+  @override
+  String get hymnalPermission => 'Genehmigung';
+
+  @override
+  String get hymnalSource => 'Quelle';
+
+  @override
+  String get hymnalSourceBundled => 'In der App enthalten';
+
+  @override
+  String get hymnalSourceImported =>
+      'Aus einer Datei auf diesem Gerät importiert';
+
+  @override
+  String hymnalSourceRepository(String source) {
+    return 'Heruntergeladen von $source';
+  }
+
+  @override
+  String get hymnalSourceBundledShort => 'Enthalten';
+
+  @override
+  String get hymnalSourceImportedShort => 'Importiert';
+
+  @override
+  String get hymnalSourceRepositoryShort => 'Heruntergeladen';
+
+  @override
+  String get hymnalThirdPartyNotice =>
+      'Dieses Buch ist nicht Teil der App. Für die Rechte ist verantwortlich, wer es bereitgestellt hat.';
+
+  @override
+  String get hymnalLibraryTitle => 'Liederbücher';
+
+  @override
+  String get hymnalManageBooks => 'Liederbücher verwalten';
+
+  @override
+  String get hymnalInstalledSection => 'Auf diesem Gerät';
+
+  @override
+  String get hymnalAvailableSection => 'Aus Quellen verfügbar';
+
+  @override
+  String get hymnalImportFile => 'Liederbuch-Datei importieren';
+
+  @override
+  String get hymnalImportSubtitle =>
+      'Liederbuch-JSON-Dateien (.json oder .json.gz)';
+
+  @override
+  String hymnalImported(String title) {
+    return '„$title“ hinzugefügt';
+  }
+
+  @override
+  String hymnalImportFailed(String error) {
+    return 'Import fehlgeschlagen: $error';
+  }
+
+  @override
+  String get hymnalOpenBook => 'Öffnen';
+
+  @override
+  String hymnalDeleteTitle(String title) {
+    return '„$title“ entfernen?';
+  }
+
+  @override
+  String get hymnalDeleteMessage =>
+      'Das Buch wird von diesem Gerät entfernt. Deine Favoriten bleiben erhalten, falls du es erneut hinzufügst.';
+
+  @override
+  String get hymnalNoRepoBooks =>
+      'Deine Quellen bieten noch keine Liederbücher an.';
+
+  @override
+  String get hymnalDownload => 'Herunterladen';
+
+  @override
+  String get hymnalDownloaded => 'Installiert';
+
+  @override
+  String get hymnalNotDownloadable =>
+      'Nur gelistet – nicht zum Download angeboten';
+
+  @override
+  String hymnalDownloadFailed(String error) {
+    return 'Download fehlgeschlagen: $error';
+  }
+
+  @override
+  String get manageRepositories => 'Quellen verwalten';
+
+  @override
+  String get manageRepositoriesSubtitle =>
+      'Woher Liederbücher heruntergeladen werden können';
+
+  @override
+  String get repositoriesTitle => 'Quellen';
+
+  @override
+  String get repositoriesIntro =>
+      'Quellen listen Liederbücher zum Herunterladen auf. Die offizielle Quelle wird von den Entwicklern dieser App betrieben, alle anderen von Dritten.';
+
+  @override
+  String get repositoryOfficial => 'Offiziell';
+
+  @override
+  String get repositoryAdd => 'Quelle hinzufügen';
+
+  @override
+  String get repositoryUrlLabel => 'Adresse der Quelle (https://…)';
+
+  @override
+  String get repositoryCheck => 'Prüfen';
+
+  @override
+  String repositoryAdded(String name) {
+    return '„$name“ hinzugefügt';
+  }
+
+  @override
+  String repositoryAddFailed(String error) {
+    return 'Quelle konnte nicht hinzugefügt werden: $error';
+  }
+
+  @override
+  String get repositoryRefresh => 'Aktualisieren';
+
+  @override
+  String get repositoryRemove => 'Entfernen';
+
+  @override
+  String repositoryRemoveTitle(String name) {
+    return '„$name“ entfernen?';
+  }
+
+  @override
+  String get repositoryRemoveMessage =>
+      'Von dieser Quelle heruntergeladene Liederbücher werden ebenfalls von diesem Gerät entfernt.';
+
+  @override
+  String get repositoryLoadFailed =>
+      'Diese Quelle kann gerade nicht geladen werden.';
+
+  @override
+  String repositoryMaintainer(String name) {
+    return 'Betreut von $name';
+  }
+
+  @override
+  String get repositoryOwnerNote => 'Vom Betreiber der Quelle:';
+
+  @override
+  String get repositoryDisclaimerTitle => 'Quelle eines Drittanbieters';
+
+  @override
+  String get repositoryDisclaimerBody =>
+      'Diese Quelle wird von Dritten betrieben, nicht von den Entwicklern dieser App. Wir hosten, prüfen oder verbreiten ihre Inhalte nicht und können nicht bestätigen, dass der Betreiber sie weitergeben darf. Du bist für deine Downloads verantwortlich. Urheberrechtsprobleme meldest du über „Urheberrechtsproblem melden“ auf der Infoseite des Buches; dies kontaktiert den Betreiber der Quelle.';
+
+  @override
+  String get repositoryDisclaimerAccept =>
+      'Mir ist klar, dass diese Inhalte nicht von dieser App stammen';
+
+  @override
+  String get legalTitle => 'Rechtliches & Entfernungsanfragen';
+
+  @override
+  String get legalSubtitle =>
+      'Inhaltsrechte, Drittquellen und Entfernungsanfragen';
+
+  @override
+  String get legalBundledHeading => 'In der App enthaltene Inhalte';
+
+  @override
+  String get legalBundledBody =>
+      'Die in der App enthaltenen Liederbücher werden mit Genehmigung ihrer Verlage verbreitet. Urheberrechts- und Genehmigungshinweise stehen auf der Infoseite jedes Buches und werden jedem kopierten, geteilten oder gedruckten Lied beigefügt.';
+
+  @override
+  String get legalThirdPartyHeading => 'Quellen von Drittanbietern';
+
+  @override
+  String get legalThirdPartyBody =>
+      'Selbst hinzugefügte Quellen werden von anderen betrieben. Ihre Inhalte werden von den Entwicklern dieser App weder gehostet noch geprüft oder verbreitet, und wir garantieren nicht, dass die Betreiber sie weitergeben dürfen. Anfragen zu diesen Inhalten richten sich an den Betreiber der Quelle; der Kontakt steht auf der Infoseite jedes Buches.';
+
+  @override
+  String get legalImportedHeading => 'Importierte Dateien';
+
+  @override
+  String get legalImportedBody =>
+      'Importierte Dateien bleiben auf deinem Gerät und werden von der App nie geteilt. Importiere nur Dateien, die du nutzen darfst.';
+
+  @override
+  String get legalTakedownHeading => 'Entfernungsanfragen';
+
+  @override
+  String get legalTakedownBody =>
+      'Wenn du Rechte an Inhalten der App oder der offiziellen Quelle hast und sie entfernen lassen möchtest, sende eine Entfernungsanfrage. Nenne Buch und Liednummern, dein Werk und wie wir dich erreichen. Nach Bestätigung wird der Inhalt aus der offiziellen Quelle zurückgezogen und beim nächsten Aktualisieren der Quellen von den Geräten entfernt.';
+
+  @override
+  String get legalReportButton => 'Entfernungsanfrage senden';
+
+  @override
+  String hymnCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Lieder',
+      one: '1 Lied',
+    );
+    return '$_temp0';
+  }
 }

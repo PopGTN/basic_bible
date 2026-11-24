@@ -6,6 +6,7 @@ import 'package:basic_bible/src/features/annotations/application/view_models/ann
 import 'package:basic_bible/src/features/settings/application/view_models/reader_font_view_models.dart';
 import 'package:basic_bible/src/features/settings/presentation/reader_font_screen.dart';
 import 'package:basic_bible/src/features/home/application/view_models/home_navigation_view_model.dart';
+import 'package:basic_bible/src/features/hymns/presentation/hymns_tab.dart';
 import 'package:basic_bible/src/features/menu/presentation/menu_tab.dart';
 import 'package:basic_bible/src/features/reader/application/view_models/split_view_view_models.dart';
 import 'package:basic_bible/src/features/reader/presentation/split_view/split_reader_layout.dart';
@@ -30,11 +31,18 @@ class _HomeTabDefinition {
     required this.widget,
     required this.title,
     required this.icon,
+    this.titleWidget,
+    this.actions,
   });
 
   final Widget widget;
   final String title;
   final IconData icon;
+
+  /// Replaces the plain [title] text in the app bar (e.g. the Hymns tab's
+  /// book switcher).
+  final Widget? titleWidget;
+  final List<Widget>? actions;
 }
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -271,7 +279,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
     final tabs = _buildTabs(t, isSmall);
     final currentTab = tabs[_currentIndex];
-    final isBibleTab = _currentIndex == 1;
+    final isBibleTab = _currentIndex == HomeTabs.bible;
 
     return Scaffold(
       // Top bar changes depending on device size + tab
@@ -368,6 +376,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         ),
         title: t.bible,
         icon: Icons.menu_book,
+      ),
+      _HomeTabDefinition(
+        widget: const HymnsTab(),
+        title: t.hymnsTab,
+        icon: Icons.library_music,
+        titleWidget: const HymnalTitleButton(),
+        actions: hymnsTabActions(context),
       ),
       _HomeTabDefinition(
         widget: const MenuTab(),
@@ -477,10 +492,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     bool isWide,
     bool isBible,
   ) {
-    final title = Text(tab.title);
+    final title = tab.titleWidget ?? Text(tab.title);
 
-    // Extra buttons only appear on Bible tab
-    final actions = isBible ? _readerActions() : null;
+    // The Bible tab's reader tools, or the tab's own actions.
+    final actions = isBible ? _readerActions() : tab.actions;
     // Split view side by side: the second pane's chip, lined up with the
     // divider instead of in the actions row (#84).
     final flexibleSpace = isBible

@@ -862,4 +862,320 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get keepOneTranslationMessage =>
       'Keep at least one translation on this device. Download or import another one before removing this one.';
+
+  @override
+  String get hymnsTab => 'Hymns';
+
+  @override
+  String get hymnSearchHint => 'Number, title, words or author';
+
+  @override
+  String get hymnSortTooltip => 'Sort';
+
+  @override
+  String get hymnSortNumber => 'By number';
+
+  @override
+  String get hymnSortAlphabetical => 'Alphabetical';
+
+  @override
+  String get hymnFavoritesOnly => 'Show favorites';
+
+  @override
+  String get hymnShowAll => 'Show all hymns';
+
+  @override
+  String get hymnCountLabel => 'Hymns';
+
+  @override
+  String get hymnNoResults => 'No hymns match your search.';
+
+  @override
+  String get hymnNoFavorites =>
+      'No favorites yet. Tap the star on a hymn to add it.';
+
+  @override
+  String get hymnPickHint => 'Choose a hymn to read it here.';
+
+  @override
+  String get hymnalLoadError => 'This hymn book could not be opened.';
+
+  @override
+  String get hymnChorusLabel => 'Chorus';
+
+  @override
+  String get hymnOptionalChorus => 'Optional chorus';
+
+  @override
+  String get hymnOptionalVerse => 'Optional verse';
+
+  @override
+  String get hymnAddFavorite => 'Add to favorites';
+
+  @override
+  String get hymnRemoveFavorite => 'Remove from favorites';
+
+  @override
+  String get hymnCopied => 'Hymn copied';
+
+  @override
+  String get hymnPrint => 'Print';
+
+  @override
+  String get hymnPrevious => 'Previous hymn';
+
+  @override
+  String get hymnNext => 'Next hymn';
+
+  @override
+  String get hymnDisplaySettings => 'Display settings';
+
+  @override
+  String get hymnTextSize => 'Text size';
+
+  @override
+  String get hymnChorusEveryVerse => 'Show chorus after every verse';
+
+  @override
+  String get hymnChorusEveryVerseSubtitle =>
+      'When off, the chorus appears once after verse 1, as in the printed book.';
+
+  @override
+  String get hymnShowDetails => 'Show author, meter and tune';
+
+  @override
+  String get hymnShowOptional => 'Show optional verses and choruses';
+
+  @override
+  String get hymnAboutBook => 'About this book';
+
+  @override
+  String get hymnReportConcern => 'Report a copyright concern';
+
+  @override
+  String get hymnReportUnavailable =>
+      'Could not open the report page. Please try again later.';
+
+  @override
+  String get hymnalPublisher => 'Publisher';
+
+  @override
+  String get hymnalEdition => 'Edition';
+
+  @override
+  String get hymnalIsbn => 'ISBN';
+
+  @override
+  String get hymnalCopyright => 'Copyright';
+
+  @override
+  String get hymnalPermission => 'Permission';
+
+  @override
+  String get hymnalSource => 'Source';
+
+  @override
+  String get hymnalSourceBundled => 'Included with the app';
+
+  @override
+  String get hymnalSourceImported => 'Imported from a file on this device';
+
+  @override
+  String hymnalSourceRepository(String source) {
+    return 'Downloaded from $source';
+  }
+
+  @override
+  String get hymnalSourceBundledShort => 'Included';
+
+  @override
+  String get hymnalSourceImportedShort => 'Imported';
+
+  @override
+  String get hymnalSourceRepositoryShort => 'Downloaded';
+
+  @override
+  String get hymnalThirdPartyNotice =>
+      'This book did not come with the app. Its rights are the responsibility of whoever provided it.';
+
+  @override
+  String get hymnalLibraryTitle => 'Hymn books';
+
+  @override
+  String get hymnalManageBooks => 'Manage hymn books';
+
+  @override
+  String get hymnalInstalledSection => 'On this device';
+
+  @override
+  String get hymnalAvailableSection => 'Available from repositories';
+
+  @override
+  String get hymnalImportFile => 'Import a hymn book file';
+
+  @override
+  String get hymnalImportSubtitle => 'Hymn book JSON files (.json or .json.gz)';
+
+  @override
+  String hymnalImported(String title) {
+    return 'Added \"$title\"';
+  }
+
+  @override
+  String hymnalImportFailed(String error) {
+    return 'Could not import: $error';
+  }
+
+  @override
+  String get hymnalOpenBook => 'Open';
+
+  @override
+  String hymnalDeleteTitle(String title) {
+    return 'Remove \"$title\"?';
+  }
+
+  @override
+  String get hymnalDeleteMessage =>
+      'The book is removed from this device. Your favorites for it are kept in case you add it again.';
+
+  @override
+  String get hymnalNoRepoBooks =>
+      'No hymn books are available from your repositories yet.';
+
+  @override
+  String get hymnalDownload => 'Download';
+
+  @override
+  String get hymnalDownloaded => 'Installed';
+
+  @override
+  String get hymnalNotDownloadable => 'Listed only — not offered for download';
+
+  @override
+  String hymnalDownloadFailed(String error) {
+    return 'Download failed: $error';
+  }
+
+  @override
+  String get manageRepositories => 'Manage repositories';
+
+  @override
+  String get manageRepositoriesSubtitle =>
+      'Where hymn books can be downloaded from';
+
+  @override
+  String get repositoriesTitle => 'Repositories';
+
+  @override
+  String get repositoriesIntro =>
+      'Repositories list hymn books you can download. The official repository is run by this app\'s developers; any others are run by third parties.';
+
+  @override
+  String get repositoryOfficial => 'Official';
+
+  @override
+  String get repositoryAdd => 'Add repository';
+
+  @override
+  String get repositoryUrlLabel => 'Repository address (https://…)';
+
+  @override
+  String get repositoryCheck => 'Check';
+
+  @override
+  String repositoryAdded(String name) {
+    return 'Added \"$name\"';
+  }
+
+  @override
+  String repositoryAddFailed(String error) {
+    return 'Could not add the repository: $error';
+  }
+
+  @override
+  String get repositoryRefresh => 'Refresh';
+
+  @override
+  String get repositoryRemove => 'Remove';
+
+  @override
+  String repositoryRemoveTitle(String name) {
+    return 'Remove \"$name\"?';
+  }
+
+  @override
+  String get repositoryRemoveMessage =>
+      'Hymn books downloaded from this repository will also be removed from this device.';
+
+  @override
+  String get repositoryLoadFailed =>
+      'Could not load this repository right now.';
+
+  @override
+  String repositoryMaintainer(String name) {
+    return 'Maintained by $name';
+  }
+
+  @override
+  String get repositoryOwnerNote => 'From the repository owner:';
+
+  @override
+  String get repositoryDisclaimerTitle => 'Third-party repository';
+
+  @override
+  String get repositoryDisclaimerBody =>
+      'This repository is run by a third party, not by the developers of this app. We do not host, review or distribute its content, and we cannot confirm that its owner has permission to share it. You are responsible for what you download. To report a copyright problem with a book from this repository, use \"Report a copyright concern\" on that book\'s About page, which contacts the repository owner.';
+
+  @override
+  String get repositoryDisclaimerAccept =>
+      'I understand this content is not provided by this app';
+
+  @override
+  String get legalTitle => 'Legal & takedown requests';
+
+  @override
+  String get legalSubtitle =>
+      'Content rights, third-party sources and how to request removal';
+
+  @override
+  String get legalBundledHeading => 'Content included with the app';
+
+  @override
+  String get legalBundledBody =>
+      'Hymn books included with the app are distributed with their publishers\' permission. Each book\'s copyright and permission notices are shown on its About page and are added to every hymn you copy, share or print.';
+
+  @override
+  String get legalThirdPartyHeading => 'Third-party repositories';
+
+  @override
+  String get legalThirdPartyBody =>
+      'Repositories you add yourself are run by other people. Their content is not hosted, reviewed or distributed by the developers of this app, and we make no promise that their owners have the right to share it. Requests about that content should go to the repository owner, whose contact is shown on each book\'s About page.';
+
+  @override
+  String get legalImportedHeading => 'Files you import';
+
+  @override
+  String get legalImportedBody =>
+      'Imported files stay on your device and are never shared by the app. Only import files you have the right to use.';
+
+  @override
+  String get legalTakedownHeading => 'Takedown requests';
+
+  @override
+  String get legalTakedownBody =>
+      'If you hold the rights to content included with the app or listed in the official repository and want it removed, send a takedown request. Name the book and hymn numbers, the work you own, and how we can reach you. Once a request is confirmed, the content is withdrawn from the official repository, and withdrawn books are removed from devices the next time the app refreshes its repositories.';
+
+  @override
+  String get legalReportButton => 'Send a takedown request';
+
+  @override
+  String hymnCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count hymns',
+      one: '1 hymn',
+    );
+    return '$_temp0';
+  }
 }

@@ -1585,6 +1585,552 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Keep at least one translation on this device. Download or import another one before removing this one.'**
   String get keepOneTranslationMessage;
+
+  /// No description provided for @hymnsTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Hymns'**
+  String get hymnsTab;
+
+  /// No description provided for @hymnSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Number, title, words or author'**
+  String get hymnSearchHint;
+
+  /// No description provided for @hymnSortTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Sort'**
+  String get hymnSortTooltip;
+
+  /// No description provided for @hymnSortNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'By number'**
+  String get hymnSortNumber;
+
+  /// No description provided for @hymnSortAlphabetical.
+  ///
+  /// In en, this message translates to:
+  /// **'Alphabetical'**
+  String get hymnSortAlphabetical;
+
+  /// No description provided for @hymnFavoritesOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Show favorites'**
+  String get hymnFavoritesOnly;
+
+  /// No description provided for @hymnShowAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Show all hymns'**
+  String get hymnShowAll;
+
+  /// No description provided for @hymnCountLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Hymns'**
+  String get hymnCountLabel;
+
+  /// No description provided for @hymnNoResults.
+  ///
+  /// In en, this message translates to:
+  /// **'No hymns match your search.'**
+  String get hymnNoResults;
+
+  /// No description provided for @hymnNoFavorites.
+  ///
+  /// In en, this message translates to:
+  /// **'No favorites yet. Tap the star on a hymn to add it.'**
+  String get hymnNoFavorites;
+
+  /// No description provided for @hymnPickHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a hymn to read it here.'**
+  String get hymnPickHint;
+
+  /// No description provided for @hymnalLoadError.
+  ///
+  /// In en, this message translates to:
+  /// **'This hymn book could not be opened.'**
+  String get hymnalLoadError;
+
+  /// No description provided for @hymnChorusLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Chorus'**
+  String get hymnChorusLabel;
+
+  /// No description provided for @hymnOptionalChorus.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional chorus'**
+  String get hymnOptionalChorus;
+
+  /// No description provided for @hymnOptionalVerse.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional verse'**
+  String get hymnOptionalVerse;
+
+  /// No description provided for @hymnAddFavorite.
+  ///
+  /// In en, this message translates to:
+  /// **'Add to favorites'**
+  String get hymnAddFavorite;
+
+  /// No description provided for @hymnRemoveFavorite.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove from favorites'**
+  String get hymnRemoveFavorite;
+
+  /// No description provided for @hymnCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Hymn copied'**
+  String get hymnCopied;
+
+  /// No description provided for @hymnPrint.
+  ///
+  /// In en, this message translates to:
+  /// **'Print'**
+  String get hymnPrint;
+
+  /// No description provided for @hymnPrevious.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous hymn'**
+  String get hymnPrevious;
+
+  /// No description provided for @hymnNext.
+  ///
+  /// In en, this message translates to:
+  /// **'Next hymn'**
+  String get hymnNext;
+
+  /// No description provided for @hymnDisplaySettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Display settings'**
+  String get hymnDisplaySettings;
+
+  /// No description provided for @hymnTextSize.
+  ///
+  /// In en, this message translates to:
+  /// **'Text size'**
+  String get hymnTextSize;
+
+  /// No description provided for @hymnChorusEveryVerse.
+  ///
+  /// In en, this message translates to:
+  /// **'Show chorus after every verse'**
+  String get hymnChorusEveryVerse;
+
+  /// No description provided for @hymnChorusEveryVerseSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'When off, the chorus appears once after verse 1, as in the printed book.'**
+  String get hymnChorusEveryVerseSubtitle;
+
+  /// No description provided for @hymnShowDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Show author, meter and tune'**
+  String get hymnShowDetails;
+
+  /// No description provided for @hymnShowOptional.
+  ///
+  /// In en, this message translates to:
+  /// **'Show optional verses and choruses'**
+  String get hymnShowOptional;
+
+  /// No description provided for @hymnAboutBook.
+  ///
+  /// In en, this message translates to:
+  /// **'About this book'**
+  String get hymnAboutBook;
+
+  /// No description provided for @hymnReportConcern.
+  ///
+  /// In en, this message translates to:
+  /// **'Report a copyright concern'**
+  String get hymnReportConcern;
+
+  /// No description provided for @hymnReportUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not open the report page. Please try again later.'**
+  String get hymnReportUnavailable;
+
+  /// No description provided for @hymnalPublisher.
+  ///
+  /// In en, this message translates to:
+  /// **'Publisher'**
+  String get hymnalPublisher;
+
+  /// No description provided for @hymnalEdition.
+  ///
+  /// In en, this message translates to:
+  /// **'Edition'**
+  String get hymnalEdition;
+
+  /// No description provided for @hymnalIsbn.
+  ///
+  /// In en, this message translates to:
+  /// **'ISBN'**
+  String get hymnalIsbn;
+
+  /// No description provided for @hymnalCopyright.
+  ///
+  /// In en, this message translates to:
+  /// **'Copyright'**
+  String get hymnalCopyright;
+
+  /// No description provided for @hymnalPermission.
+  ///
+  /// In en, this message translates to:
+  /// **'Permission'**
+  String get hymnalPermission;
+
+  /// No description provided for @hymnalSource.
+  ///
+  /// In en, this message translates to:
+  /// **'Source'**
+  String get hymnalSource;
+
+  /// No description provided for @hymnalSourceBundled.
+  ///
+  /// In en, this message translates to:
+  /// **'Included with the app'**
+  String get hymnalSourceBundled;
+
+  /// No description provided for @hymnalSourceImported.
+  ///
+  /// In en, this message translates to:
+  /// **'Imported from a file on this device'**
+  String get hymnalSourceImported;
+
+  /// No description provided for @hymnalSourceRepository.
+  ///
+  /// In en, this message translates to:
+  /// **'Downloaded from {source}'**
+  String hymnalSourceRepository(String source);
+
+  /// No description provided for @hymnalSourceBundledShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Included'**
+  String get hymnalSourceBundledShort;
+
+  /// No description provided for @hymnalSourceImportedShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Imported'**
+  String get hymnalSourceImportedShort;
+
+  /// No description provided for @hymnalSourceRepositoryShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Downloaded'**
+  String get hymnalSourceRepositoryShort;
+
+  /// No description provided for @hymnalThirdPartyNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'This book did not come with the app. Its rights are the responsibility of whoever provided it.'**
+  String get hymnalThirdPartyNotice;
+
+  /// No description provided for @hymnalLibraryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Hymn books'**
+  String get hymnalLibraryTitle;
+
+  /// No description provided for @hymnalManageBooks.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage hymn books'**
+  String get hymnalManageBooks;
+
+  /// No description provided for @hymnalInstalledSection.
+  ///
+  /// In en, this message translates to:
+  /// **'On this device'**
+  String get hymnalInstalledSection;
+
+  /// No description provided for @hymnalAvailableSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Available from repositories'**
+  String get hymnalAvailableSection;
+
+  /// No description provided for @hymnalImportFile.
+  ///
+  /// In en, this message translates to:
+  /// **'Import a hymn book file'**
+  String get hymnalImportFile;
+
+  /// No description provided for @hymnalImportSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Hymn book JSON files (.json or .json.gz)'**
+  String get hymnalImportSubtitle;
+
+  /// No description provided for @hymnalImported.
+  ///
+  /// In en, this message translates to:
+  /// **'Added \"{title}\"'**
+  String hymnalImported(String title);
+
+  /// No description provided for @hymnalImportFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not import: {error}'**
+  String hymnalImportFailed(String error);
+
+  /// No description provided for @hymnalOpenBook.
+  ///
+  /// In en, this message translates to:
+  /// **'Open'**
+  String get hymnalOpenBook;
+
+  /// No description provided for @hymnalDeleteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove \"{title}\"?'**
+  String hymnalDeleteTitle(String title);
+
+  /// No description provided for @hymnalDeleteMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'The book is removed from this device. Your favorites for it are kept in case you add it again.'**
+  String get hymnalDeleteMessage;
+
+  /// No description provided for @hymnalNoRepoBooks.
+  ///
+  /// In en, this message translates to:
+  /// **'No hymn books are available from your repositories yet.'**
+  String get hymnalNoRepoBooks;
+
+  /// No description provided for @hymnalDownload.
+  ///
+  /// In en, this message translates to:
+  /// **'Download'**
+  String get hymnalDownload;
+
+  /// No description provided for @hymnalDownloaded.
+  ///
+  /// In en, this message translates to:
+  /// **'Installed'**
+  String get hymnalDownloaded;
+
+  /// No description provided for @hymnalNotDownloadable.
+  ///
+  /// In en, this message translates to:
+  /// **'Listed only — not offered for download'**
+  String get hymnalNotDownloadable;
+
+  /// No description provided for @hymnalDownloadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Download failed: {error}'**
+  String hymnalDownloadFailed(String error);
+
+  /// No description provided for @manageRepositories.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage repositories'**
+  String get manageRepositories;
+
+  /// No description provided for @manageRepositoriesSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Where hymn books can be downloaded from'**
+  String get manageRepositoriesSubtitle;
+
+  /// No description provided for @repositoriesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Repositories'**
+  String get repositoriesTitle;
+
+  /// No description provided for @repositoriesIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'Repositories list hymn books you can download. The official repository is run by this app\'s developers; any others are run by third parties.'**
+  String get repositoriesIntro;
+
+  /// No description provided for @repositoryOfficial.
+  ///
+  /// In en, this message translates to:
+  /// **'Official'**
+  String get repositoryOfficial;
+
+  /// No description provided for @repositoryAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add repository'**
+  String get repositoryAdd;
+
+  /// No description provided for @repositoryUrlLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Repository address (https://…)'**
+  String get repositoryUrlLabel;
+
+  /// No description provided for @repositoryCheck.
+  ///
+  /// In en, this message translates to:
+  /// **'Check'**
+  String get repositoryCheck;
+
+  /// No description provided for @repositoryAdded.
+  ///
+  /// In en, this message translates to:
+  /// **'Added \"{name}\"'**
+  String repositoryAdded(String name);
+
+  /// No description provided for @repositoryAddFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not add the repository: {error}'**
+  String repositoryAddFailed(String error);
+
+  /// No description provided for @repositoryRefresh.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh'**
+  String get repositoryRefresh;
+
+  /// No description provided for @repositoryRemove.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get repositoryRemove;
+
+  /// No description provided for @repositoryRemoveTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove \"{name}\"?'**
+  String repositoryRemoveTitle(String name);
+
+  /// No description provided for @repositoryRemoveMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Hymn books downloaded from this repository will also be removed from this device.'**
+  String get repositoryRemoveMessage;
+
+  /// No description provided for @repositoryLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load this repository right now.'**
+  String get repositoryLoadFailed;
+
+  /// No description provided for @repositoryMaintainer.
+  ///
+  /// In en, this message translates to:
+  /// **'Maintained by {name}'**
+  String repositoryMaintainer(String name);
+
+  /// No description provided for @repositoryOwnerNote.
+  ///
+  /// In en, this message translates to:
+  /// **'From the repository owner:'**
+  String get repositoryOwnerNote;
+
+  /// No description provided for @repositoryDisclaimerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Third-party repository'**
+  String get repositoryDisclaimerTitle;
+
+  /// No description provided for @repositoryDisclaimerBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This repository is run by a third party, not by the developers of this app. We do not host, review or distribute its content, and we cannot confirm that its owner has permission to share it. You are responsible for what you download. To report a copyright problem with a book from this repository, use \"Report a copyright concern\" on that book\'s About page, which contacts the repository owner.'**
+  String get repositoryDisclaimerBody;
+
+  /// No description provided for @repositoryDisclaimerAccept.
+  ///
+  /// In en, this message translates to:
+  /// **'I understand this content is not provided by this app'**
+  String get repositoryDisclaimerAccept;
+
+  /// No description provided for @legalTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Legal & takedown requests'**
+  String get legalTitle;
+
+  /// No description provided for @legalSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Content rights, third-party sources and how to request removal'**
+  String get legalSubtitle;
+
+  /// No description provided for @legalBundledHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Content included with the app'**
+  String get legalBundledHeading;
+
+  /// No description provided for @legalBundledBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Hymn books included with the app are distributed with their publishers\' permission. Each book\'s copyright and permission notices are shown on its About page and are added to every hymn you copy, share or print.'**
+  String get legalBundledBody;
+
+  /// No description provided for @legalThirdPartyHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Third-party repositories'**
+  String get legalThirdPartyHeading;
+
+  /// No description provided for @legalThirdPartyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Repositories you add yourself are run by other people. Their content is not hosted, reviewed or distributed by the developers of this app, and we make no promise that their owners have the right to share it. Requests about that content should go to the repository owner, whose contact is shown on each book\'s About page.'**
+  String get legalThirdPartyBody;
+
+  /// No description provided for @legalImportedHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Files you import'**
+  String get legalImportedHeading;
+
+  /// No description provided for @legalImportedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Imported files stay on your device and are never shared by the app. Only import files you have the right to use.'**
+  String get legalImportedBody;
+
+  /// No description provided for @legalTakedownHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Takedown requests'**
+  String get legalTakedownHeading;
+
+  /// No description provided for @legalTakedownBody.
+  ///
+  /// In en, this message translates to:
+  /// **'If you hold the rights to content included with the app or listed in the official repository and want it removed, send a takedown request. Name the book and hymn numbers, the work you own, and how we can reach you. Once a request is confirmed, the content is withdrawn from the official repository, and withdrawn books are removed from devices the next time the app refreshes its repositories.'**
+  String get legalTakedownBody;
+
+  /// No description provided for @legalReportButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Send a takedown request'**
+  String get legalReportButton;
+
+  /// No description provided for @hymnCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 hymn} other{{count} hymns}}'**
+  String hymnCount(int count);
 }
 
 class _AppLocalizationsDelegate

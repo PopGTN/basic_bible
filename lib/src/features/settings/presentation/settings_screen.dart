@@ -1,5 +1,6 @@
 import 'package:basic_bible/l10n/app_localizations.dart';
 import 'package:basic_bible/src/features/annotations/application/view_models/annotation_preferences_view_models.dart';
+import 'package:basic_bible/src/features/hymns/presentation/hymn_display_settings.dart';
 import 'package:basic_bible/src/features/reader/application/view_models/reader_preferences_view_models.dart';
 import 'package:basic_bible/src/features/reader/application/view_models/split_view_view_models.dart';
 import 'package:basic_bible/src/features/settings/application/view_models/app_launch_preferences_view_models.dart';
@@ -305,6 +306,24 @@ class SettingsScreen extends ConsumerWidget {
             const SyncSettingsSection(),
             const SizedBox(height: 20),
 
+            Text(
+              AppLocalizations.of(context)!.hymnsTab,
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 10),
+            const HymnDisplaySettingsPanel(),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.dns_outlined),
+              title: Text(AppLocalizations.of(context)!.manageRepositories),
+              subtitle: Text(
+                AppLocalizations.of(context)!.manageRepositoriesSubtitle,
+              ),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => context.push('/home/hymns/repos'),
+            ),
+            const SizedBox(height: 20),
+
             const Divider(),
             ListTile(
               contentPadding: EdgeInsets.zero,
@@ -327,6 +346,14 @@ class SettingsScreen extends ConsumerWidget {
               ),
               trailing: const Icon(Icons.chevron_right),
               onTap: () => showAppLicenses(context),
+            ),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.gavel_outlined),
+              title: Text(AppLocalizations.of(context)!.legalTitle),
+              subtitle: Text(AppLocalizations.of(context)!.legalSubtitle),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => context.push('/home/settings/legal'),
             ),
           ],
         ),

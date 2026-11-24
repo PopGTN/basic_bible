@@ -11,6 +11,10 @@ import 'package:basic_bible/l10n/app_localizations.dart';
 import 'features/auth/presentation/login_screen.dart';
 import 'features/home/application/view_models/reader_link_opener.dart';
 import 'features/home/presentation/home_screen.dart';
+import 'features/hymns/application/hymn_links.dart';
+import 'features/hymns/presentation/hymnal_library_screen.dart';
+import 'features/hymns/presentation/legal_takedown_screen.dart';
+import 'features/hymns/presentation/manage_repos_screen.dart';
 import 'features/reader/models/reader_deep_link.dart';
 import 'features/library/presentation/versions_screen.dart';
 import 'features/annotations/presentation/notes_screen.dart';
@@ -169,6 +173,44 @@ class _MyAppState extends ConsumerState<MyApp> {
                 GoRoute(
                   path: 'advanced',
                   builder: (context, state) => const AdvancedSettingsScreen(),
+                ),
+                GoRoute(
+                  path: 'legal',
+                  builder: (context, state) => const LegalTakedownScreen(),
+                ),
+              ],
+            ),
+            GoRoute(
+              path: 'hymns',
+              redirect: (context, state) =>
+                  state.uri.path == '/home/hymns' ? '/home' : null,
+              routes: [
+                GoRoute(
+                  path: 'library',
+                  builder: (context, state) => const HymnalLibraryScreen(),
+                ),
+                GoRoute(
+                  path: 'repos',
+                  builder: (context, state) => const ManageReposScreen(),
+                ),
+                // Deep link to one hymn: /home/hymns/<bookId>/<number>.
+                // Bundled ids only (repository ids contain a slash).
+                GoRoute(
+                  path: ':bookId/:number',
+                  redirect: (context, state) {
+                    final number = int.tryParse(
+                      state.pathParameters['number'] ?? '',
+                    );
+                    final bookId = state.pathParameters['bookId'];
+                    if (number != null && bookId != null) {
+                      openHymnFromLink(
+                        ProviderScope.containerOf(context, listen: false),
+                        bookId,
+                        number,
+                      );
+                    }
+                    return '/home';
+                  },
                 ),
               ],
             ),

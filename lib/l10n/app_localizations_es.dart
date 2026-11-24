@@ -868,4 +868,323 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get keepOneTranslationMessage =>
       'Debe quedar al menos una traducción en este dispositivo. Descarga o importa otra antes de quitar esta.';
+
+  @override
+  String get hymnsTab => 'Himnos';
+
+  @override
+  String get hymnSearchHint => 'Número, título, letra o autor';
+
+  @override
+  String get hymnSortTooltip => 'Ordenar';
+
+  @override
+  String get hymnSortNumber => 'Por número';
+
+  @override
+  String get hymnSortAlphabetical => 'Alfabético';
+
+  @override
+  String get hymnFavoritesOnly => 'Mostrar favoritos';
+
+  @override
+  String get hymnShowAll => 'Mostrar todos los himnos';
+
+  @override
+  String get hymnCountLabel => 'Himnos';
+
+  @override
+  String get hymnNoResults => 'Ningún himno coincide con tu búsqueda.';
+
+  @override
+  String get hymnNoFavorites =>
+      'Aún no hay favoritos. Toca la estrella de un himno para añadirlo.';
+
+  @override
+  String get hymnPickHint => 'Elige un himno para leerlo aquí.';
+
+  @override
+  String get hymnalLoadError => 'No se pudo abrir este himnario.';
+
+  @override
+  String get hymnChorusLabel => 'Coro';
+
+  @override
+  String get hymnOptionalChorus => 'Coro opcional';
+
+  @override
+  String get hymnOptionalVerse => 'Estrofa opcional';
+
+  @override
+  String get hymnAddFavorite => 'Añadir a favoritos';
+
+  @override
+  String get hymnRemoveFavorite => 'Quitar de favoritos';
+
+  @override
+  String get hymnCopied => 'Himno copiado';
+
+  @override
+  String get hymnPrint => 'Imprimir';
+
+  @override
+  String get hymnPrevious => 'Himno anterior';
+
+  @override
+  String get hymnNext => 'Himno siguiente';
+
+  @override
+  String get hymnDisplaySettings => 'Pantalla';
+
+  @override
+  String get hymnTextSize => 'Tamaño del texto';
+
+  @override
+  String get hymnChorusEveryVerse => 'Mostrar el coro después de cada estrofa';
+
+  @override
+  String get hymnChorusEveryVerseSubtitle =>
+      'Si está desactivado, el coro aparece una vez después de la estrofa 1, como en el libro impreso.';
+
+  @override
+  String get hymnShowDetails => 'Mostrar autor, métrica y melodía';
+
+  @override
+  String get hymnShowOptional => 'Mostrar estrofas y coros opcionales';
+
+  @override
+  String get hymnAboutBook => 'Acerca de este libro';
+
+  @override
+  String get hymnReportConcern =>
+      'Informar de un problema de derechos de autor';
+
+  @override
+  String get hymnReportUnavailable =>
+      'No se pudo abrir la página de informe. Inténtalo más tarde.';
+
+  @override
+  String get hymnalPublisher => 'Editorial';
+
+  @override
+  String get hymnalEdition => 'Edición';
+
+  @override
+  String get hymnalIsbn => 'ISBN';
+
+  @override
+  String get hymnalCopyright => 'Derechos de autor';
+
+  @override
+  String get hymnalPermission => 'Permiso';
+
+  @override
+  String get hymnalSource => 'Origen';
+
+  @override
+  String get hymnalSourceBundled => 'Incluido con la aplicación';
+
+  @override
+  String get hymnalSourceImported =>
+      'Importado desde un archivo de este dispositivo';
+
+  @override
+  String hymnalSourceRepository(String source) {
+    return 'Descargado de $source';
+  }
+
+  @override
+  String get hymnalSourceBundledShort => 'Incluido';
+
+  @override
+  String get hymnalSourceImportedShort => 'Importado';
+
+  @override
+  String get hymnalSourceRepositoryShort => 'Descargado';
+
+  @override
+  String get hymnalThirdPartyNotice =>
+      'Este libro no viene con la aplicación. Sus derechos son responsabilidad de quien lo proporcionó.';
+
+  @override
+  String get hymnalLibraryTitle => 'Himnarios';
+
+  @override
+  String get hymnalManageBooks => 'Administrar himnarios';
+
+  @override
+  String get hymnalInstalledSection => 'En este dispositivo';
+
+  @override
+  String get hymnalAvailableSection => 'Disponibles en repositorios';
+
+  @override
+  String get hymnalImportFile => 'Importar un archivo de himnario';
+
+  @override
+  String get hymnalImportSubtitle =>
+      'Archivos JSON de himnario (.json o .json.gz)';
+
+  @override
+  String hymnalImported(String title) {
+    return 'Se añadió «$title»';
+  }
+
+  @override
+  String hymnalImportFailed(String error) {
+    return 'No se pudo importar: $error';
+  }
+
+  @override
+  String get hymnalOpenBook => 'Abrir';
+
+  @override
+  String hymnalDeleteTitle(String title) {
+    return '¿Quitar «$title»?';
+  }
+
+  @override
+  String get hymnalDeleteMessage =>
+      'El libro se quita de este dispositivo. Tus favoritos se conservan por si lo vuelves a añadir.';
+
+  @override
+  String get hymnalNoRepoBooks => 'Tus repositorios aún no ofrecen himnarios.';
+
+  @override
+  String get hymnalDownload => 'Descargar';
+
+  @override
+  String get hymnalDownloaded => 'Instalado';
+
+  @override
+  String get hymnalNotDownloadable =>
+      'Solo listado: no disponible para descargar';
+
+  @override
+  String hymnalDownloadFailed(String error) {
+    return 'Error al descargar: $error';
+  }
+
+  @override
+  String get manageRepositories => 'Administrar repositorios';
+
+  @override
+  String get manageRepositoriesSubtitle =>
+      'De dónde se pueden descargar himnarios';
+
+  @override
+  String get repositoriesTitle => 'Repositorios';
+
+  @override
+  String get repositoriesIntro =>
+      'Los repositorios listan himnarios que puedes descargar. El oficial lo gestionan los desarrolladores de esta aplicación; los demás, terceros.';
+
+  @override
+  String get repositoryOfficial => 'Oficial';
+
+  @override
+  String get repositoryAdd => 'Añadir repositorio';
+
+  @override
+  String get repositoryUrlLabel => 'Dirección del repositorio (https://…)';
+
+  @override
+  String get repositoryCheck => 'Comprobar';
+
+  @override
+  String repositoryAdded(String name) {
+    return 'Se añadió «$name»';
+  }
+
+  @override
+  String repositoryAddFailed(String error) {
+    return 'No se pudo añadir el repositorio: $error';
+  }
+
+  @override
+  String get repositoryRefresh => 'Actualizar';
+
+  @override
+  String get repositoryRemove => 'Quitar';
+
+  @override
+  String repositoryRemoveTitle(String name) {
+    return '¿Quitar «$name»?';
+  }
+
+  @override
+  String get repositoryRemoveMessage =>
+      'Los himnarios descargados de este repositorio también se quitarán de este dispositivo.';
+
+  @override
+  String get repositoryLoadFailed =>
+      'No se puede cargar este repositorio ahora.';
+
+  @override
+  String repositoryMaintainer(String name) {
+    return 'Mantenido por $name';
+  }
+
+  @override
+  String get repositoryOwnerNote => 'Del propietario del repositorio:';
+
+  @override
+  String get repositoryDisclaimerTitle => 'Repositorio de terceros';
+
+  @override
+  String get repositoryDisclaimerBody =>
+      'Este repositorio lo gestiona un tercero, no los desarrolladores de esta aplicación. No alojamos, revisamos ni distribuimos su contenido, y no podemos confirmar que su propietario tenga permiso para compartirlo. Eres responsable de lo que descargas. Para informar de un problema de derechos de autor, usa «Informar de un problema de derechos de autor» en la página «Acerca de» del libro, que contacta con el propietario del repositorio.';
+
+  @override
+  String get repositoryDisclaimerAccept =>
+      'Entiendo que este contenido no lo proporciona esta aplicación';
+
+  @override
+  String get legalTitle => 'Aviso legal y solicitudes de retirada';
+
+  @override
+  String get legalSubtitle =>
+      'Derechos del contenido, fuentes de terceros y cómo solicitar la retirada';
+
+  @override
+  String get legalBundledHeading => 'Contenido incluido con la aplicación';
+
+  @override
+  String get legalBundledBody =>
+      'Los himnarios incluidos con la aplicación se distribuyen con permiso de sus editoriales. Los avisos de derechos y permisos de cada libro aparecen en su página «Acerca de» y se añaden a cada himno que copies, compartas o imprimas.';
+
+  @override
+  String get legalThirdPartyHeading => 'Repositorios de terceros';
+
+  @override
+  String get legalThirdPartyBody =>
+      'Los repositorios que añades tú mismo los gestionan otras personas. Los desarrolladores de esta aplicación no alojan, revisan ni distribuyen su contenido, y no garantizamos que sus propietarios tengan derecho a compartirlo. Las solicitudes sobre ese contenido deben dirigirse al propietario del repositorio, cuyo contacto aparece en la página «Acerca de» de cada libro.';
+
+  @override
+  String get legalImportedHeading => 'Archivos que importas';
+
+  @override
+  String get legalImportedBody =>
+      'Los archivos importados se quedan en tu dispositivo y la aplicación nunca los comparte. Importa solo archivos que tengas derecho a usar.';
+
+  @override
+  String get legalTakedownHeading => 'Solicitudes de retirada';
+
+  @override
+  String get legalTakedownBody =>
+      'Si tienes los derechos de contenido incluido en la aplicación o en el repositorio oficial y quieres que se retire, envía una solicitud de retirada. Indica el libro y los números de himno, la obra que te pertenece y cómo contactarte. Una vez confirmada, el contenido se retira del repositorio oficial y los libros retirados se eliminan de los dispositivos la próxima vez que la aplicación actualice sus repositorios.';
+
+  @override
+  String get legalReportButton => 'Enviar solicitud de retirada';
+
+  @override
+  String hymnCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count himnos',
+      one: '1 himno',
+    );
+    return '$_temp0';
+  }
 }

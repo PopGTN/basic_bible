@@ -61,6 +61,8 @@ dependencies:
   # System notification with progress for translation downloads (#55).
   # 20.x is the newest line that still supports Flutter 3.35 / Dart 3.9.
   flutter_local_notifications: ^20.1.0
+  pdf: ^3.12.0
+  printing: ^5.14.3
 
 dev_dependencies:
   flutter_test:
@@ -85,6 +87,9 @@ flutter:
     # decompress on first use (see app_bible_repository_loading.dart).
     - "assets/bible/eng-kjv2006_usfx.xml.gz"
     - "assets/bible/kjv.sqlite.gz"
+    # Bundled hymnals, built by tool/hymnals/build_hymnal.dart (never edit
+    # by hand). Only built .json.gz files live here; raw sources stay in tool/.
+    - "assets/hymnals/"
 
 flutter_launcher_icons:
   android: "launcher_icon"
