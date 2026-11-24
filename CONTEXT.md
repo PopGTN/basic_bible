@@ -57,17 +57,23 @@ Use `TODO_STATUS.md` beside this file as the execution tracker:
   - `/login`
   - `/home`
   - `/home/other`
-  - `/home/settings`
+  - `/home/settings` (+ `/home/settings/advanced`, `/home/settings/legal`)
+  - `/home/hymns/library`, `/home/hymns/repos`
+  - `/home/hymns/<bookId>/<number>` (deep link; sets providers, redirects to `/home`)
 
 ### Main UI structure
 - `lib/src/views/home/home_screen.dart` is the main authenticated shell.
 - It provides a responsive layout:
   - bottom navigation on smaller screens
   - `NavigationRail` on wider screens
-- The three primary tabs are:
+- The four primary tabs are (indexes are the `HomeTabs` constants in
+  `home_navigation_view_model.dart` — never use bare numbers):
   - Home
   - Bible
+  - Hymns
   - Menu
+- A tab definition can supply its own app-bar `titleWidget` and `actions`
+  (the Hymns tab uses them for the book switcher, favorites, sort, library).
 - The Bible tab also owns the app-bar actions for search/audio placeholders, translation selection, and Bible text size selection.
 
 ### Reader presentation structure
@@ -223,6 +229,35 @@ This split is a structural maintenance improvement, not a feature change. Treat 
   currently support XML-family artifacts (`usfx`, `osis`, `zefania`) only.
 - Manual import now explicitly recognizes future `usfm` / `.zip` inputs and
   returns clear "not connected yet" errors instead of pretending they are XML.
+
+### Hymns (`lib/src/features/hymns/`)
+- Two accepted JSON formats, both read by `parseHymnalBytes` (in `compute()`):
+  the legacy bare array of `{id, title, author, meter, tuneName, verses,
+  chorus, addedChorus}`, and "hymnal" v1 `{format, schemaVersion, book, hymns}`
+  whose `book` block carries publisher/copyright/permission text. Format
+  details: `tool/hymnals/README.md`.
+- Bundled books are **built, not hand-edited**: `tool/hymnals/build_hymnal.dart`
+  turns `tool/hymnals/sources/*.json` + `<id>.meta.json` + `<id>.overrides.json`
+  into `assets/hymnals/<id>.json.gz`. `bundled_hymnals_test.dart` is the release
+  gate for the legal text (fails while `TODO_` placeholders remain).
+- Imported/downloaded books live in a separate drift DB (`hymnals.sqlite`,
+  IndexedDB `basic_bible_hymnals` on web) opened with plain SQL — no codegen,
+  and `AppDatabase` migrations are untouched. Favorites and display settings
+  are SharedPreferences.
+- All Hymns tab state is in providers (`hymnal_view_models.dart`) because the
+  home shell rebuilds tabs on every switch. `hymnResultsProvider` is a sync
+  derived provider; search is a linear scan over a prebuilt normalized index.
+- `hymn_layout.dart` is the single place chorus placement is decided; screen,
+  copy, share and print all use it, and plain text always ends with
+  `hymnCreditLines` (copyright must travel with copied hymns).
+- Repositories (F-Droid style, `content_repo_service.dart`): index format
+  `{"format": "basic-bible-repo", "repo": {...}, "hymnals": [...],
+  "withdrawn": [...], "bibles": []}`. The official repo can be disabled, not
+  removed; third-party repos need the disclaimer accepted; `withdrawn` ids are
+  deleted from devices on refresh (takedown kill-switch). `bibles` is reserved
+  for a later branch.
+- Downloads use `lib/src/services/verified_download.dart` (https only, size
+  cap, SHA-256), shared with Bible translation downloads.
 
 ### Database layer
 - `lib/src/services/app_database.dart` defines the Drift-backed storage layer.
