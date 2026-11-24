@@ -62,11 +62,11 @@ Separate from feature backlog — these affect correctness, safety, and maintain
 
 ## Recommended Next Step
 
-- `next` Fill in the publisher's exact copyright and permission wording for the bundled hymnals (`tool/hymnals/bhb.meta.json`: edition, ISBN, copyright, permissionNotice, permissionDate), supply the correct NBHB source as `tool/hymnals/sources/nbhb.source.json`, rebuild with `dart run tool/hymnals/build_hymnal.dart bhb nbhb`, and add NBHB to `kBundledHymnals`.
+- `next` Get John Ritchie Ltd's exact permission wording for both bundled hymnals and fill the `TODO_` fields (`tool/hymnals/bhb.meta.json`: edition, ISBN, copyright, permissionNotice, permissionDate; `nbhb.meta.json`: permissionNotice, permissionDate), confirm whether that permission covers the 38 Remembrance Hymns (Isaac Y. Ewan) in NBHB and the 13 flagged BHB hymns, then rebuild with `dart run tool/hymnals/build_hymnal.dart bhb nbhb`.
 
 **Why this first:**
 
-- The Hymns feature is built on branch `Hymnbooks-added`, but `test/features/hymns/bundled_hymnals_test.dart` deliberately fails (release gate) while any `TODO_` placeholder remains, and the 13 BHB hymns listed as "rights to confirm" in `build/hymnals/bhb.report.txt` must be confirmed as covered by the publisher's permission. Only the project owner can get that wording from John Ritchie Ltd.
+- The Hymns feature is built on branch `Hymnbooks-added`, but `test/features/hymns/bundled_hymnals_test.dart` deliberately fails (release gate) while any `TODO_` placeholder remains, the 13 BHB hymns listed as "rights to confirm" and the 38 NBHB Remembrance Hymns listed as third-party (see the build reports and `bible-data/licenses/hymnals/`) must be confirmed as covered. NBHB is now bundled from the clean 2021 source (678 hymns; the other publishers' songs are already left out). Only the project owner can get that wording from John Ritchie Ltd.
 
 ---
 

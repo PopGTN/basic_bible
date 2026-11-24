@@ -35,14 +35,19 @@ class BundledHymnal {
   );
 }
 
-/// Built by tool/hymnals/build_hymnal.dart. Add NBHB here once its source
-/// file is supplied and `assets/hymnals/nbhb.json.gz` exists.
+/// Built by tool/hymnals/build_hymnal.dart.
 const kBundledHymnals = <BundledHymnal>[
   BundledHymnal(
     id: 'bhb',
     assetPath: 'assets/hymnals/bhb.json.gz',
     title: 'The Believers Hymn Book',
     shortTitle: 'BHB',
+  ),
+  BundledHymnal(
+    id: 'nbhb',
+    assetPath: 'assets/hymnals/nbhb.json.gz',
+    title: 'The New Believers Hymnbook',
+    shortTitle: 'NBHB',
   ),
 ];
 

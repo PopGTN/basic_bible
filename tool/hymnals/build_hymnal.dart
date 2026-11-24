@@ -162,16 +162,25 @@ bool _build(String id) {
   return errors == 0;
 }
 
+/// Simple inline formatting some sources carry (`<i>…</i>`); the app shows
+/// plain text, and editor notes are styled from structure instead.
+final _inlineTags = RegExp(
+  r'</?(i|b|em|strong|u)\s*>|<br\s*/?>',
+  caseSensitive: false,
+);
+
+String _plain(Object? v) => '${v ?? ''}'.replaceAll(_inlineTags, '');
+
 Map<String, dynamic> _normalize(Map<String, dynamic> h) {
   List<String> lines(Object? v) => [
-    for (final l in (v as List? ?? const [])) l.toString(),
+    for (final l in (v as List? ?? const [])) _plain(l),
   ];
   return <String, dynamic>{
     'id': h['id'] is int ? h['id'] : int.parse('${h['id']}'),
-    'title': '${h['title'] ?? ''}'.trim(),
-    'author': '${h['author'] ?? ''}'.trim(),
-    'meter': '${h['meter'] ?? ''}'.trim(),
-    'tuneName': '${h['tuneName'] ?? ''}'.trim(),
+    'title': _plain(h['title']).trim(),
+    'author': _plain(h['author']).trim(),
+    'meter': _plain(h['meter']).trim(),
+    'tuneName': _plain(h['tuneName']).trim(),
     'verses': [for (final v in (h['verses'] as List? ?? const [])) lines(v)],
     'chorus': lines(h['chorus']),
     'addedChorus': lines(h['addedChorus']),
@@ -267,24 +276,21 @@ void _autoClean(Map<String, dynamic> h, List<String> report) {
     }
   }
 
-  // Bracketed note heading the chorus.
+  // A bracketed heading on the chorus ("[optional chorus]", "[** McGranahan
+  // tune only **]") makes the whole chorus conditional: show it as an
+  // optional chorus labelled with that note instead of a regular chorus.
   final chorus = h['chorus'] as List<String>;
   if (chorus.isNotEmpty) {
     final note = _bracketNote.firstMatch(chorus.first);
     if (note != null) {
-      final text = note.group(1)!;
+      final text = _sentenceCase(note.group(1)!);
       chorus.removeAt(0);
-      if (RegExp(r'\bchorus\b', caseSensitive: false).hasMatch(text) &&
-          !RegExp(r'\bonly\b', caseSensitive: false).hasMatch(text)) {
-        (h['alternateChoruses'] as List).add({
-          'label': text,
-          'lines': List<String>.of(chorus),
-        });
-        chorus.clear();
-      } else {
-        (h['notes'] as List).add(text);
-      }
-      report.add('#$id chorus note "$text" moved out of the lyrics');
+      (h['alternateChoruses'] as List).add({
+        'label': text,
+        'lines': List<String>.of(chorus),
+      });
+      chorus.clear();
+      report.add('#$id chorus "$text" is now an optional chorus');
     }
   }
 }

@@ -150,4 +150,16 @@ void main() {
       throwsA(isA<HymnalFormatException>()),
     );
   });
+  test('strips simple inline formatting tags', () {
+    final hymnal = _parse([
+      {
+        ..._legacyHymn(1),
+        'title': '<i>Italic</i> title',
+        'chorus': ['<i>Our Saviour hath done all things well!</i>', '<br/>'],
+      },
+    ]);
+    final hymn = hymnal.byNumber(1)!;
+    expect(hymn.title, 'Italic title');
+    expect(hymn.chorus, ['Our Saviour hath done all things well!']);
+  });
 }

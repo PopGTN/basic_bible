@@ -10,8 +10,7 @@ dart run tool/hymnals/build_hymnal.dart bhb nbhb
 | File | Purpose |
 |---|---|
 | `sources/<id>.source.json` | Raw hymn data (legacy bare-array format). |
-| `sources/nbhb.draft.json` | Old NBHB file with 145 broken titles. Used only until `nbhb.source.json` exists; draft builds go to `build/hymnals/`, never `assets/`. |
-| `<id>.meta.json` | The `book` block: title, publisher, copyright, permission wording. |
+| `<id>.meta.json` | The `book` block (title, publisher, copyright, permission wording), optional `rightsRules` for groups of hymns, and an optional `draftSource` used only while `source` is missing (draft builds go to `build/hymnals/`, never `assets/`). |
 | `<id>.overrides.json` | Hand-reviewed per-hymn fixes (typos, line splits, editor notes, per-hymn copyright). |
 
 Each run also writes `build/hymnals/<id>.json` (pretty, for review) and

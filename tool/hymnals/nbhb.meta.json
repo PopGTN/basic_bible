@@ -1,6 +1,5 @@
 {
   "source": "sources/nbhb.source.json",
-  "draftSource": "sources/nbhb.draft.json",
   "output": "../../assets/hymnals/nbhb.json.gz",
   "book": {
     "id": "nbhb",

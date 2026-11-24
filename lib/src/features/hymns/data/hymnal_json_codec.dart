@@ -177,7 +177,16 @@ Hymn? _parseHymn(Map<String, dynamic> raw) {
   );
 }
 
-String _str(Object? value) => value == null ? '' : '$value'.trim();
+/// Inline formatting some hymn files carry (`<i>…</i>`); shown as plain text.
+final _inlineTags = RegExp(
+  r'</?(i|b|em|strong|u)\s*>|<br\s*/?>',
+  caseSensitive: false,
+);
+
+String _plain(Object? value) =>
+    value == null ? '' : '$value'.replaceAll(_inlineTags, '');
+
+String _str(Object? value) => _plain(value).trim();
 
 /// Accepts a list of lines or a single string with embedded newlines.
 List<String> _lines(Object? value) {
@@ -188,7 +197,7 @@ List<String> _lines(Object? value) {
   };
   return [
     for (final line in raw)
-      if (line != null && '$line'.trim().isNotEmpty) '$line'.trimRight(),
+      if (_plain(line).trim().isNotEmpty) _plain(line).trimRight(),
   ];
 }
 
