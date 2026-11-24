@@ -2,10 +2,10 @@ import 'package:basic_bible/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../application/view_models/hymnal_library_view_models.dart';
 import '../data/content_reporting.dart';
+import 'guide_links.dart';
 import '../models/content_repository.dart';
 
 /// F-Droid style repository management: list, enable/disable, add (after
@@ -312,22 +312,8 @@ class _RepositoriesGuideLink extends StatelessWidget {
   const _RepositoriesGuideLink();
 
   @override
-  Widget build(BuildContext context) {
-    final t = AppLocalizations.of(context)!;
-    return TextButton.icon(
-      icon: const Icon(Icons.help_outline),
-      label: Text(t.repositoryGuide),
-      onPressed: () async {
-        final opened = await launchUrl(
-          Uri.parse(kRepositoriesGuideUrl),
-          mode: LaunchMode.externalApplication,
-        );
-        if (!opened && context.mounted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text(t.hymnReportUnavailable)));
-        }
-      },
-    );
-  }
+  Widget build(BuildContext context) => HymnGuideLink(
+    label: AppLocalizations.of(context)!.repositoryGuide,
+    url: kRepositoriesGuideUrl,
+  );
 }

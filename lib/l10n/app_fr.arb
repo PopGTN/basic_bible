@@ -358,5 +358,18 @@
   "legalTakedownBody": "Si vous détenez les droits d'un contenu inclus dans l'application ou listé dans le dépôt officiel et souhaitez son retrait, envoyez une demande de retrait. Indiquez le recueil et les numéros de cantiques, l'œuvre concernée et comment vous joindre. Une fois la demande confirmée, le contenu est retiré du dépôt officiel et les recueils retirés sont supprimés des appareils lors de la prochaine actualisation des dépôts.",
   "legalReportButton": "Envoyer une demande de retrait",
   "hymnCount": "{count, plural, =1{1 cantique} other{{count} cantiques}}",
-  "repositoryGuide": "Fonctionnement des dépôts et comment créer le vôtre"
+  "repositoryGuide": "Fonctionnement des dépôts et comment créer le vôtre",
+  "hymnalNameTitle": "Nommer ce recueil",
+  "hymnalNameLabel": "Nom",
+  "hymnalNameRequired": "Saisissez un nom",
+  "hymnalShortNameLabel": "Nom court (facultatif)",
+  "hymnalShortNameHelper": "Affiché en haut de l'onglet Cantiques, par ex. BHB",
+  "hymnalImportAction": "Importer",
+  "hymnalImportFound": "{count, plural, =1{1 cantique trouvé.} other{{count} cantiques trouvés.}}",
+  "hymnalImportReplaces": "Ce recueil est déjà sur l'appareil. L'importer le remplace ; vos favoris sont conservés.",
+  "hymnalRename": "Renommer",
+  "hymnalRenameAction": "Enregistrer",
+  "hymnalImportGuide": "Comment importer",
+  "hymnalMakeGuide": "Créer votre propre fichier de recueil",
+  "linkOpenFailed": "Impossible d'ouvrir le lien."
 }

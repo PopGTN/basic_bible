@@ -358,5 +358,18 @@
   "legalTakedownBody": "Wenn du Rechte an Inhalten der App oder der offiziellen Quelle hast und sie entfernen lassen möchtest, sende eine Entfernungsanfrage. Nenne Buch und Liednummern, dein Werk und wie wir dich erreichen. Nach Bestätigung wird der Inhalt aus der offiziellen Quelle zurückgezogen und beim nächsten Aktualisieren der Quellen von den Geräten entfernt.",
   "legalReportButton": "Entfernungsanfrage senden",
   "hymnCount": "{count, plural, =1{1 Lied} other{{count} Lieder}}",
-  "repositoryGuide": "Wie Quellen funktionieren und wie du eine eigene erstellst"
+  "repositoryGuide": "Wie Quellen funktionieren und wie du eine eigene erstellst",
+  "hymnalNameTitle": "Liederbuch benennen",
+  "hymnalNameLabel": "Name",
+  "hymnalNameRequired": "Bitte einen Namen eingeben",
+  "hymnalShortNameLabel": "Kurzname (optional)",
+  "hymnalShortNameHelper": "Oben im Liederbereich angezeigt, z. B. BHB",
+  "hymnalImportAction": "Importieren",
+  "hymnalImportFound": "{count, plural, =1{1 Lied gefunden.} other{{count} Lieder gefunden.}}",
+  "hymnalImportReplaces": "Dieses Buch ist bereits auf dem Gerät. Der Import ersetzt es; deine Favoriten bleiben erhalten.",
+  "hymnalRename": "Umbenennen",
+  "hymnalRenameAction": "Speichern",
+  "hymnalImportGuide": "So importierst du",
+  "hymnalMakeGuide": "Eigene Liederbuch-Datei erstellen",
+  "linkOpenFailed": "Der Link konnte nicht geöffnet werden."
 }

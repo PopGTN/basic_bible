@@ -1191,4 +1191,53 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get repositoryGuide =>
       'Cómo funcionan los repositorios y cómo crear el tuyo';
+
+  @override
+  String get hymnalNameTitle => 'Nombra este himnario';
+
+  @override
+  String get hymnalNameLabel => 'Nombre';
+
+  @override
+  String get hymnalNameRequired => 'Escribe un nombre';
+
+  @override
+  String get hymnalShortNameLabel => 'Nombre corto (opcional)';
+
+  @override
+  String get hymnalShortNameHelper =>
+      'Se muestra arriba en la pestaña Himnos, p. ej. BHB';
+
+  @override
+  String get hymnalImportAction => 'Importar';
+
+  @override
+  String hymnalImportFound(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Se encontraron $count himnos.',
+      one: 'Se encontró 1 himno.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get hymnalImportReplaces =>
+      'Este libro ya está en el dispositivo. Importarlo lo reemplaza; tus favoritos se conservan.';
+
+  @override
+  String get hymnalRename => 'Cambiar nombre';
+
+  @override
+  String get hymnalRenameAction => 'Guardar';
+
+  @override
+  String get hymnalImportGuide => 'Cómo importar';
+
+  @override
+  String get hymnalMakeGuide => 'Crea tu propio archivo de himnario';
+
+  @override
+  String get linkOpenFailed => 'No se pudo abrir el enlace.';
 }

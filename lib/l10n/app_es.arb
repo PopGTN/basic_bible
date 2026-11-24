@@ -358,5 +358,18 @@
   "legalTakedownBody": "Si tienes los derechos de contenido incluido en la aplicación o en el repositorio oficial y quieres que se retire, envía una solicitud de retirada. Indica el libro y los números de himno, la obra que te pertenece y cómo contactarte. Una vez confirmada, el contenido se retira del repositorio oficial y los libros retirados se eliminan de los dispositivos la próxima vez que la aplicación actualice sus repositorios.",
   "legalReportButton": "Enviar solicitud de retirada",
   "hymnCount": "{count, plural, =1{1 himno} other{{count} himnos}}",
-  "repositoryGuide": "Cómo funcionan los repositorios y cómo crear el tuyo"
+  "repositoryGuide": "Cómo funcionan los repositorios y cómo crear el tuyo",
+  "hymnalNameTitle": "Nombra este himnario",
+  "hymnalNameLabel": "Nombre",
+  "hymnalNameRequired": "Escribe un nombre",
+  "hymnalShortNameLabel": "Nombre corto (opcional)",
+  "hymnalShortNameHelper": "Se muestra arriba en la pestaña Himnos, p. ej. BHB",
+  "hymnalImportAction": "Importar",
+  "hymnalImportFound": "{count, plural, =1{Se encontró 1 himno.} other{Se encontraron {count} himnos.}}",
+  "hymnalImportReplaces": "Este libro ya está en el dispositivo. Importarlo lo reemplaza; tus favoritos se conservan.",
+  "hymnalRename": "Cambiar nombre",
+  "hymnalRenameAction": "Guardar",
+  "hymnalImportGuide": "Cómo importar",
+  "hymnalMakeGuide": "Crea tu propio archivo de himnario",
+  "linkOpenFailed": "No se pudo abrir el enlace."
 }

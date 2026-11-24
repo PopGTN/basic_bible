@@ -55,10 +55,22 @@ described in `tool/hymnals/README.md`. The architecture summary is in
   - `printHymn` / `buildHymnPdf`: a one-hymn PDF (Gentium Plus font) sent to the
     system print dialog (`printing` package; the browser's print on web).
 - `hymnal_library_screen.dart`
-  - `HymnalLibraryScreen`: books on this device (open, about, remove for
-    non-bundled), **Import a hymn book file** (JSON, plain or `.gz`, also on
-    web), and books available from enabled repositories with download
-    progress. Pull to refresh.
+  - `HymnalLibraryScreen`: books on this device (open, about; rename and
+    remove for non-bundled books), **Import a hymn book file** (JSON, plain
+    or `.gz`, also on web), help links to the import and "make your own hymn
+    book" guides, and books available from enabled repositories with
+    download progress. Pull to refresh.
+  - Import is two steps: `prepareImport` checks the file without saving it,
+    then the name dialog asks for a name and optional short name
+    (pre-filled from the book, or the file name for legacy files), then
+    `completeImport` saves it. A book with the same id is replaced, and the
+    dialog says so.
+- `hymnal_name_dialog.dart`
+  - `showHymnalNameDialog`: name + optional short name, used for import and
+    rename. The stored name always wins over the title inside the file.
+- `guide_links.dart`
+  - `HymnGuideLink` / `openHymnGuide`: open the public guides in
+    `bible-data/docs/` (URLs in `../data/content_reporting.dart`).
 - `manage_repos_screen.dart`
   - `ManageReposScreen`: repositories, F-Droid style. The official one can be
     turned off but not removed. **Add repository** checks the address

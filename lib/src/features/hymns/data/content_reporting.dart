@@ -18,6 +18,20 @@ const kRepositoriesGuideUrl = String.fromEnvironment(
       'https://github.com/PopGTN/bible-data/blob/main/docs/repositories.md',
 );
 
+/// How to import a hymn book file into the app.
+const kImportGuideUrl = String.fromEnvironment(
+  'IMPORT_GUIDE_URL',
+  defaultValue:
+      'https://github.com/PopGTN/bible-data/blob/main/docs/importing-hymn-books.md',
+);
+
+/// How to make a hymn book file: by hand, or with ChatGPT / Claude.
+const kMakeHymnbookGuideUrl = String.fromEnvironment(
+  'MAKE_HYMNBOOK_GUIDE_URL',
+  defaultValue:
+      'https://github.com/PopGTN/bible-data/blob/main/docs/making-a-hymn-book.md',
+);
+
 /// Builds a link that opens [contact] with the report pre-filled.
 ///
 /// - `mailto:` addresses get `subject` and `body`.

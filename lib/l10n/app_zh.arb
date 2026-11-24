@@ -358,5 +358,18 @@
   "legalTakedownBody": "如果你拥有随应用提供或官方资源库中内容的权利并希望将其删除，请发送删除请求。请注明书名和诗歌编号、你拥有的作品以及联系方式。请求确认后，内容将从官方资源库撤下，被撤下的书会在应用下次刷新资源库时从设备中移除。",
   "legalReportButton": "发送删除请求",
   "hymnCount": "{count, plural, other{{count} 首诗歌}}",
-  "repositoryGuide": "资源库如何运作，以及如何创建自己的资源库"
+  "repositoryGuide": "资源库如何运作，以及如何创建自己的资源库",
+  "hymnalNameTitle": "为这本诗歌本命名",
+  "hymnalNameLabel": "名称",
+  "hymnalNameRequired": "请输入名称",
+  "hymnalShortNameLabel": "简称（可选）",
+  "hymnalShortNameHelper": "显示在诗歌页顶部，例如 BHB",
+  "hymnalImportAction": "导入",
+  "hymnalImportFound": "{count, plural, other{找到 {count} 首诗歌。}}",
+  "hymnalImportReplaces": "本设备上已有这本书。导入会替换它，你的收藏会保留。",
+  "hymnalRename": "重命名",
+  "hymnalRenameAction": "保存",
+  "hymnalImportGuide": "如何导入",
+  "hymnalMakeGuide": "制作自己的诗歌本文件",
+  "linkOpenFailed": "无法打开链接。"
 }

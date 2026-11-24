@@ -1182,4 +1182,53 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get repositoryGuide =>
       'How repositories work, and how to make your own';
+
+  @override
+  String get hymnalNameTitle => 'Name this hymn book';
+
+  @override
+  String get hymnalNameLabel => 'Name';
+
+  @override
+  String get hymnalNameRequired => 'Enter a name';
+
+  @override
+  String get hymnalShortNameLabel => 'Short name (optional)';
+
+  @override
+  String get hymnalShortNameHelper =>
+      'Shown at the top of the Hymns tab, e.g. BHB';
+
+  @override
+  String get hymnalImportAction => 'Import';
+
+  @override
+  String hymnalImportFound(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Found $count hymns.',
+      one: 'Found 1 hymn.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get hymnalImportReplaces =>
+      'This book is already on this device. Importing replaces it; your favorites are kept.';
+
+  @override
+  String get hymnalRename => 'Rename';
+
+  @override
+  String get hymnalRenameAction => 'Save';
+
+  @override
+  String get hymnalImportGuide => 'How to import';
+
+  @override
+  String get hymnalMakeGuide => 'Make your own hymn book file';
+
+  @override
+  String get linkOpenFailed => 'Could not open the link.';
 }

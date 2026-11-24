@@ -1194,4 +1194,53 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get repositoryGuide =>
       'Fonctionnement des dépôts et comment créer le vôtre';
+
+  @override
+  String get hymnalNameTitle => 'Nommer ce recueil';
+
+  @override
+  String get hymnalNameLabel => 'Nom';
+
+  @override
+  String get hymnalNameRequired => 'Saisissez un nom';
+
+  @override
+  String get hymnalShortNameLabel => 'Nom court (facultatif)';
+
+  @override
+  String get hymnalShortNameHelper =>
+      'Affiché en haut de l\'onglet Cantiques, par ex. BHB';
+
+  @override
+  String get hymnalImportAction => 'Importer';
+
+  @override
+  String hymnalImportFound(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count cantiques trouvés.',
+      one: '1 cantique trouvé.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get hymnalImportReplaces =>
+      'Ce recueil est déjà sur l\'appareil. L\'importer le remplace ; vos favoris sont conservés.';
+
+  @override
+  String get hymnalRename => 'Renommer';
+
+  @override
+  String get hymnalRenameAction => 'Enregistrer';
+
+  @override
+  String get hymnalImportGuide => 'Comment importer';
+
+  @override
+  String get hymnalMakeGuide => 'Créer votre propre fichier de recueil';
+
+  @override
+  String get linkOpenFailed => 'Impossible d\'ouvrir le lien.';
 }

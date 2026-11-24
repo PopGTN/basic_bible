@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../data/hymnal_repository.dart';
 import '../../models/content_repository.dart';
 import '../../models/hymnal.dart';
 import 'hymnal_view_models.dart';
@@ -126,15 +127,43 @@ class HymnalInstallsNotifier extends Notifier<Map<String, double?>> {
     }
   }
 
-  Future<HymnalInfo> importFile(Uint8List bytes, String fileName) async {
+  /// Checks a picked file; nothing is saved until [completeImport].
+  Future<PreparedHymnalImport> prepareImport(
+    Uint8List bytes,
+    String fileName,
+  ) => ref
+      .read(hymnalRepositoryProvider)
+      .prepareImport(bytes, fileName: fileName);
+
+  Future<HymnalInfo> completeImport(
+    PreparedHymnalImport prepared, {
+    required String title,
+    String? shortTitle,
+  }) async {
     final info = await ref
         .read(hymnalRepositoryProvider)
-        .importBytes(bytes, fileName: fileName);
+        .completeImport(prepared, title: title, shortTitle: shortTitle);
+    _afterChange(info.id);
+    return info;
+  }
+
+  Future<HymnalInfo> rename(
+    HymnalInfo book, {
+    required String title,
+    String? shortTitle,
+  }) async {
+    final info = await ref
+        .read(hymnalRepositoryProvider)
+        .rename(book.id, title: title, shortTitle: shortTitle);
+    _afterChange(info.id);
+    return info;
+  }
+
+  void _afterChange(String id) {
     ref.invalidate(hymnalListProvider);
-    if (ref.read(selectedHymnalIdProvider) == info.id) {
+    if (ref.read(selectedHymnalIdProvider) == id) {
       ref.invalidate(currentHymnalProvider);
     }
-    return info;
   }
 
   Future<void> delete(HymnalInfo info) async {

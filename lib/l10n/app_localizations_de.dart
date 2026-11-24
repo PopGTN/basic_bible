@@ -1195,4 +1195,53 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get repositoryGuide =>
       'Wie Quellen funktionieren und wie du eine eigene erstellst';
+
+  @override
+  String get hymnalNameTitle => 'Liederbuch benennen';
+
+  @override
+  String get hymnalNameLabel => 'Name';
+
+  @override
+  String get hymnalNameRequired => 'Bitte einen Namen eingeben';
+
+  @override
+  String get hymnalShortNameLabel => 'Kurzname (optional)';
+
+  @override
+  String get hymnalShortNameHelper =>
+      'Oben im Liederbereich angezeigt, z. B. BHB';
+
+  @override
+  String get hymnalImportAction => 'Importieren';
+
+  @override
+  String hymnalImportFound(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Lieder gefunden.',
+      one: '1 Lied gefunden.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get hymnalImportReplaces =>
+      'Dieses Buch ist bereits auf dem Gerät. Der Import ersetzt es; deine Favoriten bleiben erhalten.';
+
+  @override
+  String get hymnalRename => 'Umbenennen';
+
+  @override
+  String get hymnalRenameAction => 'Speichern';
+
+  @override
+  String get hymnalImportGuide => 'So importierst du';
+
+  @override
+  String get hymnalMakeGuide => 'Eigene Liederbuch-Datei erstellen';
+
+  @override
+  String get linkOpenFailed => 'Der Link konnte nicht geöffnet werden.';
 }

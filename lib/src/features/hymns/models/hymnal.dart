@@ -79,11 +79,12 @@ class HymnalInfo extends Equatable {
     String? repoUrl,
     String? takedownContact,
     String? title,
+    String? shortTitle,
   }) {
     return HymnalInfo(
       id: id ?? this.id,
       title: title ?? this.title,
-      shortTitle: shortTitle,
+      shortTitle: shortTitle ?? this.shortTitle,
       publisher: publisher,
       publisherAddress: publisherAddress,
       publisherUrl: publisherUrl,

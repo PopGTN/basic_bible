@@ -644,5 +644,25 @@
       }
     }
   },
-  "repositoryGuide": "How repositories work, and how to make your own"
+  "repositoryGuide": "How repositories work, and how to make your own",
+  "hymnalNameTitle": "Name this hymn book",
+  "hymnalNameLabel": "Name",
+  "hymnalNameRequired": "Enter a name",
+  "hymnalShortNameLabel": "Short name (optional)",
+  "hymnalShortNameHelper": "Shown at the top of the Hymns tab, e.g. BHB",
+  "hymnalImportAction": "Import",
+  "hymnalImportFound": "{count, plural, =1{Found 1 hymn.} other{Found {count} hymns.}}",
+  "hymnalImportReplaces": "This book is already on this device. Importing replaces it; your favorites are kept.",
+  "hymnalRename": "Rename",
+  "hymnalRenameAction": "Save",
+  "hymnalImportGuide": "How to import",
+  "hymnalMakeGuide": "Make your own hymn book file",
+  "linkOpenFailed": "Could not open the link.",
+  "@hymnalImportFound": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }

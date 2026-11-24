@@ -137,6 +137,83 @@ void main() {
     );
   });
 
+  test(
+    'import lets the user choose the name, and re-import replaces',
+    () async {
+      final prepared = await repository.prepareImport(
+        _legacy([1, 2]),
+        fileName: 'favoritehymns.json',
+      );
+      expect(
+        prepared.info.title,
+        'favoritehymns',
+        reason: 'from the file name',
+      );
+      expect(prepared.info.hymnCount, 2);
+      expect(prepared.replacesExisting, isFalse);
+      expect(
+        await repository.listHymnals(),
+        hasLength(1),
+        reason: 'not saved yet',
+      );
+
+      final info = await repository.completeImport(
+        prepared,
+        title: 'Favorite Hymns',
+        shortTitle: 'FH',
+      );
+      expect(info.title, 'Favorite Hymns');
+      final loaded = await repository.load(info.id);
+      expect(loaded.info.title, 'Favorite Hymns');
+      expect(loaded.info.displayShortTitle, 'FH');
+
+      final again = await repository.prepareImport(
+        _legacy([1, 2, 3]),
+        fileName: 'favoritehymns.json',
+      );
+      expect(again.replacesExisting, isTrue);
+    },
+  );
+
+  test('rename sticks, even for a v1 file that names itself', () async {
+    final v1 = Uint8List.fromList(
+      utf8.encode(
+        jsonEncode({
+          'format': 'hymnal',
+          'schemaVersion': 1,
+          'book': {'id': 'gh', 'title': 'Gospel Hymns', 'shortTitle': 'GH'},
+          'hymns': [
+            {
+              'id': 1,
+              'title': 'x',
+              'verses': [
+                ['x'],
+              ],
+            },
+          ],
+        }),
+      ),
+    );
+    final prepared = await repository.prepareImport(v1, fileName: 'x.json');
+    expect(prepared.info.title, 'Gospel Hymns', reason: "the book's own title");
+    final info = await repository.completeImport(
+      prepared,
+      title: prepared.info.title,
+    );
+    await repository.load(info.id);
+
+    await repository.rename(info.id, title: 'Our Gospel Hymns', shortTitle: '');
+    final reloaded = await repository.load(info.id);
+    expect(reloaded.info.title, 'Our Gospel Hymns');
+    expect(reloaded.info.displayShortTitle, 'Our Gospel Hymns');
+    expect((await repository.listHymnals()).last.title, 'Our Gospel Hymns');
+    expect(
+      () => repository.rename('bhb', title: 'Nope'),
+      throwsA(isA<HymnalFormatException>()),
+      reason: 'bundled books keep their names',
+    );
+  });
+
   test('the drift store round-trips through SQLite', () async {
     final store = DriftHymnalStore(NativeDatabase.memory());
     final content = Uint8List.fromList([1, 2, 3]);

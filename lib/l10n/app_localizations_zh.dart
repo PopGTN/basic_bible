@@ -1144,4 +1144,50 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get repositoryGuide => '资源库如何运作，以及如何创建自己的资源库';
+
+  @override
+  String get hymnalNameTitle => '为这本诗歌本命名';
+
+  @override
+  String get hymnalNameLabel => '名称';
+
+  @override
+  String get hymnalNameRequired => '请输入名称';
+
+  @override
+  String get hymnalShortNameLabel => '简称（可选）';
+
+  @override
+  String get hymnalShortNameHelper => '显示在诗歌页顶部，例如 BHB';
+
+  @override
+  String get hymnalImportAction => '导入';
+
+  @override
+  String hymnalImportFound(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '找到 $count 首诗歌。',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get hymnalImportReplaces => '本设备上已有这本书。导入会替换它，你的收藏会保留。';
+
+  @override
+  String get hymnalRename => '重命名';
+
+  @override
+  String get hymnalRenameAction => '保存';
+
+  @override
+  String get hymnalImportGuide => '如何导入';
+
+  @override
+  String get hymnalMakeGuide => '制作自己的诗歌本文件';
+
+  @override
+  String get linkOpenFailed => '无法打开链接。';
 }

@@ -36,6 +36,21 @@ class BundledHymnal {
   );
 }
 
+/// A checked, not yet saved, user import (see [HymnalRepository.prepareImport]).
+class PreparedHymnalImport {
+  const PreparedHymnalImport({
+    required this.bytes,
+    required this.info,
+    required this.replacesExisting,
+  });
+
+  final Uint8List bytes;
+  final HymnalInfo info;
+
+  /// A book with the same id is already installed and will be replaced.
+  final bool replacesExisting;
+}
+
 /// Built by tool/hymnals/build_hymnal.dart.
 const kBundledHymnals = <BundledHymnal>[
   BundledHymnal(
@@ -162,13 +177,17 @@ class HymnalRepository {
         repoUrl: stored.info.repoUrl,
         takedownContact:
             hymnal.info.takedownContact ?? stored.info.takedownContact,
+        // The name the user chose (or renamed it to) wins over the file's.
+        title: stored.info.title,
+        shortTitle: stored.info.shortTitle ?? '',
       ),
     );
   }
 
-  /// Validates and stores a user-picked file. Re-importing the same book
-  /// replaces it.
-  Future<HymnalInfo> importBytes(
+  /// Checks a user-picked file without saving it, so the user can name the
+  /// book first. The title is the book's own (v1 files) or comes from the
+  /// file name (legacy files).
+  Future<PreparedHymnalImport> prepareImport(
     Uint8List bytes, {
     required String fileName,
   }) async {
@@ -187,7 +206,56 @@ class HymnalRepository {
       id: 'local/${_slug(parsed.info.id)}',
       sourceKind: HymnalSourceKind.imported,
     );
-    await _save(info, bytes);
+    return PreparedHymnalImport(
+      bytes: bytes,
+      info: info,
+      replacesExisting: await _store.read(info.id) != null,
+    );
+  }
+
+  /// Saves a prepared import under the name the user chose. Importing the
+  /// same book again replaces it.
+  Future<HymnalInfo> completeImport(
+    PreparedHymnalImport prepared, {
+    required String title,
+    String? shortTitle,
+  }) async {
+    final info = prepared.info.copyWith(
+      title: title.trim().isEmpty ? prepared.info.title : title.trim(),
+      shortTitle: shortTitle?.trim() ?? prepared.info.shortTitle,
+    );
+    await _save(info, prepared.bytes);
+    return info;
+  }
+
+  /// Validates and stores a user-picked file in one step, keeping the
+  /// file's own (or file-name) title.
+  Future<HymnalInfo> importBytes(
+    Uint8List bytes, {
+    required String fileName,
+  }) async {
+    final prepared = await prepareImport(bytes, fileName: fileName);
+    return completeImport(prepared, title: prepared.info.title);
+  }
+
+  /// Renames an imported or downloaded book. Bundled books keep their names.
+  Future<HymnalInfo> rename(
+    String id, {
+    required String title,
+    String? shortTitle,
+  }) async {
+    final stored = await _store.read(id);
+    if (stored == null || title.trim().isEmpty) {
+      throw HymnalFormatException('Hymnal "$id" cannot be renamed.');
+    }
+    final info = stored.info.copyWith(
+      title: title.trim(),
+      shortTitle: shortTitle?.trim() ?? stored.info.shortTitle,
+    );
+    _cache.remove(id);
+    await _store.save(
+      StoredHymnal(info: info, content: stored.content, sha256: stored.sha256),
+    );
     return info;
   }
 

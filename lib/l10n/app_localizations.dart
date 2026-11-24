@@ -2137,6 +2137,84 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'How repositories work, and how to make your own'**
   String get repositoryGuide;
+
+  /// No description provided for @hymnalNameTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Name this hymn book'**
+  String get hymnalNameTitle;
+
+  /// No description provided for @hymnalNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get hymnalNameLabel;
+
+  /// No description provided for @hymnalNameRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a name'**
+  String get hymnalNameRequired;
+
+  /// No description provided for @hymnalShortNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Short name (optional)'**
+  String get hymnalShortNameLabel;
+
+  /// No description provided for @hymnalShortNameHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'Shown at the top of the Hymns tab, e.g. BHB'**
+  String get hymnalShortNameHelper;
+
+  /// No description provided for @hymnalImportAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Import'**
+  String get hymnalImportAction;
+
+  /// No description provided for @hymnalImportFound.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Found 1 hymn.} other{Found {count} hymns.}}'**
+  String hymnalImportFound(int count);
+
+  /// No description provided for @hymnalImportReplaces.
+  ///
+  /// In en, this message translates to:
+  /// **'This book is already on this device. Importing replaces it; your favorites are kept.'**
+  String get hymnalImportReplaces;
+
+  /// No description provided for @hymnalRename.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename'**
+  String get hymnalRename;
+
+  /// No description provided for @hymnalRenameAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get hymnalRenameAction;
+
+  /// No description provided for @hymnalImportGuide.
+  ///
+  /// In en, this message translates to:
+  /// **'How to import'**
+  String get hymnalImportGuide;
+
+  /// No description provided for @hymnalMakeGuide.
+  ///
+  /// In en, this message translates to:
+  /// **'Make your own hymn book file'**
+  String get hymnalMakeGuide;
+
+  /// No description provided for @linkOpenFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not open the link.'**
+  String get linkOpenFailed;
 }
 
 class _AppLocalizationsDelegate

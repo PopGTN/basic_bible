@@ -8,7 +8,10 @@ import '../application/view_models/hymnal_library_view_models.dart';
 import '../application/view_models/hymnal_view_models.dart';
 import '../models/content_repository.dart';
 import '../models/hymnal.dart';
+import '../data/content_reporting.dart';
+import 'guide_links.dart';
 import 'hymnal_about_sheet.dart';
+import 'hymnal_name_dialog.dart';
 import 'hymnal_picker_sheet.dart';
 
 /// Manage hymn books: what's on the device, import a file, and download
@@ -51,6 +54,21 @@ class HymnalLibraryScreen extends ConsumerWidget {
               title: Text(t.hymnalImportFile),
               subtitle: Text(t.hymnalImportSubtitle),
               onTap: () => _importFile(context, ref),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              child: Wrap(
+                children: [
+                  HymnGuideLink(
+                    label: t.hymnalImportGuide,
+                    url: kImportGuideUrl,
+                  ),
+                  HymnGuideLink(
+                    label: t.hymnalMakeGuide,
+                    url: kMakeHymnbookGuideUrl,
+                  ),
+                ],
+              ),
             ),
             const Divider(),
             _SectionHeader(t.hymnalAvailableSection),
@@ -122,10 +140,31 @@ class HymnalLibraryScreen extends ConsumerWidget {
     );
     if (file == null || !context.mounted) return;
     final messenger = ScaffoldMessenger.of(context);
+    final installs = ref.read(hymnalInstallsProvider.notifier);
     try {
-      final info = await ref
-          .read(hymnalInstallsProvider.notifier)
-          .importFile(await file.readAsBytes(), file.name);
+      // 1. Check the file. 2. Let the user name the book. 3. Save it.
+      final prepared = await installs.prepareImport(
+        await file.readAsBytes(),
+        file.name,
+      );
+      if (!context.mounted) return;
+      final name = await showHymnalNameDialog(
+        context,
+        dialogTitle: t.hymnalNameTitle,
+        confirmLabel: t.hymnalImportAction,
+        initialTitle: prepared.info.title,
+        initialShortTitle: prepared.info.shortTitle,
+        message: [
+          t.hymnalImportFound(prepared.info.hymnCount),
+          if (prepared.replacesExisting) t.hymnalImportReplaces,
+        ].join('\n\n'),
+      );
+      if (name == null) return;
+      final info = await installs.completeImport(
+        prepared,
+        title: name.title,
+        shortTitle: name.shortTitle,
+      );
       messenger.showSnackBar(
         SnackBar(
           content: Text(t.hymnalImported(info.title)),
@@ -187,14 +226,47 @@ class _InstalledTile extends ConsumerWidget {
             onPressed: () => showHymnalAboutSheet(context, info),
           ),
           if (info.sourceKind != HymnalSourceKind.bundled)
-            IconButton(
-              tooltip: t.removeAction,
-              icon: const Icon(Icons.delete_outline),
-              onPressed: () => _confirmDelete(context, ref, t),
+            PopupMenuButton<VoidCallback>(
+              tooltip: MaterialLocalizations.of(context).showMenuTooltip,
+              onSelected: (action) => action(),
+              itemBuilder: (_) => [
+                PopupMenuItem(
+                  value: () => _rename(context, ref, t),
+                  child: ListTile(
+                    leading: const Icon(Icons.edit_outlined),
+                    title: Text(t.hymnalRename),
+                  ),
+                ),
+                PopupMenuItem(
+                  value: () => _confirmDelete(context, ref, t),
+                  child: ListTile(
+                    leading: const Icon(Icons.delete_outline),
+                    title: Text(t.removeAction),
+                  ),
+                ),
+              ],
             ),
         ],
       ),
     );
+  }
+
+  Future<void> _rename(
+    BuildContext context,
+    WidgetRef ref,
+    AppLocalizations t,
+  ) async {
+    final name = await showHymnalNameDialog(
+      context,
+      dialogTitle: t.hymnalRename,
+      confirmLabel: t.hymnalRenameAction,
+      initialTitle: info.title,
+      initialShortTitle: info.shortTitle,
+    );
+    if (name == null) return;
+    await ref
+        .read(hymnalInstallsProvider.notifier)
+        .rename(info, title: name.title, shortTitle: name.shortTitle);
   }
 
   Future<void> _confirmDelete(
