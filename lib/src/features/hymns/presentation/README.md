@@ -160,7 +160,8 @@ publisher's permission, so keep it on every new way of exporting a hymn.
 
 - **No hymn books on the Hymns tab, or "This hymn book could not be opened".**
   The bundled assets aren't built. Run `make hymnals` (needs access to the
-  private `PopGTN/basic_bible_hymnals` submodule), then do a full restart.
+  private `PopGTN/basic_bible_hymnals` submodule; see
+  `docs/hymnal_sources_setup.md`), then do a full restart.
 - **A rebuilt book doesn't appear or shows old text.** Stop the app and run
   it again; hot reload doesn't reload the parsed book (it's cached in
   `HymnalRepository`).

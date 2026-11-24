@@ -229,6 +229,8 @@ Module READMEs sit next to the code they describe, for example
 `lib/src/features/hymns/presentation/README.md` (Hymns pages). Bundled hymn
 books are built as described in `tool/hymnals/README.md`; the hymn text itself
 is in a private submodule, so run `make hymnals` before building a release.
+Setting that up on a new computer, editing the hymn text, and building with
+or without access: `docs/hymnal_sources_setup.md`.
 
 ## Running The Web App
 
@@ -237,6 +239,11 @@ Start from the app folder:
 ```bash
 cd "/home/joshua/Documents/Flutter Apps/Bible App Projects/basic_bible"
 ```
+
+To include the bundled hymn books, build them first with `make hymnals`
+(needs access to the private hymnal sources; see
+`docs/hymnal_sources_setup.md`). Without it the app runs with no bundled
+hymn books.
 
 For normal web development, use Flutter's web runner:
 

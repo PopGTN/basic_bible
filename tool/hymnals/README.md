@@ -16,6 +16,9 @@ condition it isn't shared. Never commit either. Without access to the
 submodule, the app builds fine with no bundled hymn books and the bundled
 tests are skipped. `make deploy` builds the hymnals first.
 
+Setting up the submodule on a new computer, editing the hymn text, pulling
+changes, CI and the safety rules: **`docs/hymnal_sources_setup.md`**.
+
 | File | Purpose |
 |---|---|
 | `sources/<id>.source.json` | Raw hymn data (legacy bare-array format), in the private submodule. |

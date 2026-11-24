@@ -244,7 +244,8 @@ This split is a structural maintenance improvement, not a feature change. Treat 
   submodule of the private `PopGTN/basic_bible_hymnals`; built assets are
   gitignored and made by `make hymnals` (also run by `make deploy`). Without
   the submodule the app lists no bundled books (asset-manifest check in
-  `HymnalRepository`) and the bundled tests skip.
+  `HymnalRepository`) and the bundled tests skip. Setup, editing workflow,
+  CI and safety rules: `docs/hymnal_sources_setup.md`.
 - Imported/downloaded books live in a separate drift DB (`hymnals.sqlite`,
   IndexedDB `basic_bible_hymnals` on web) opened with plain SQL — no codegen,
   and `AppDatabase` migrations are untouched. Favorites and display settings
