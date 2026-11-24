@@ -29,6 +29,15 @@ class HymnSettings extends Equatable {
   static const minFontScale = 0.8;
   static const maxFontScale = 2.4;
 
+  /// Step for the smaller/larger buttons (the slider moves in the same steps).
+  static const fontScaleStep = 0.1;
+
+  /// Lyric size at 100%. The hymn view and the settings preview both use
+  /// [lyricSize], so the preview is exactly what the hymn will look like.
+  static const baseLyricSize = 18.0;
+
+  double get lyricSize => baseLyricSize * fontScale;
+
   HymnSettings copyWith({
     ChorusPlacement? chorusPlacement,
     double? fontScale,

@@ -377,5 +377,7 @@
   "reportByEmailSubtitle": "Privé. Ouvre votre application de messagerie.",
   "reportByGitHub": "Ouvrir un ticket GitHub",
   "reportByGitHubSubtitle": "Public : tout le monde peut le lire. Nécessite un compte GitHub.",
-  "reportNoEmailApp": "Aucune application de messagerie ne s'est ouverte. Écrivez à {email}."
+  "reportNoEmailApp": "Aucune application de messagerie ne s'est ouverte. Écrivez à {email}.",
+  "hymnTextSmaller": "Texte plus petit",
+  "hymnTextLarger": "Texte plus grand"
 }

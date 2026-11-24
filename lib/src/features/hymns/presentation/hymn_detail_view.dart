@@ -28,8 +28,6 @@ class HymnDetailView extends ConsumerWidget {
   final Hymn hymn;
   final bool showBackButton;
 
-  static const _baseLyricSize = 18.0;
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final t = AppLocalizations.of(context)!;
@@ -108,7 +106,7 @@ class HymnDetailView extends ConsumerWidget {
                 hymnal: hymnal,
                 hymn: hymn,
                 settings: settings,
-                lyricSize: _baseLyricSize * settings.fontScale,
+                lyricSize: settings.lyricSize,
               ),
             ),
           ),

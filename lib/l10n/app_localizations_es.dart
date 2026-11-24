@@ -1263,4 +1263,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String reportNoEmailApp(String email) {
     return 'No se abrió ninguna aplicación de correo. Escribe a $email.';
   }
+
+  @override
+  String get hymnTextSmaller => 'Texto más pequeño';
+
+  @override
+  String get hymnTextLarger => 'Texto más grande';
 }

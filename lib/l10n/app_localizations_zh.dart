@@ -1212,4 +1212,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String reportNoEmailApp(String email) {
     return '没有打开邮件应用。请写信至 $email。';
   }
+
+  @override
+  String get hymnTextSmaller => '缩小文字';
+
+  @override
+  String get hymnTextLarger => '放大文字';
 }

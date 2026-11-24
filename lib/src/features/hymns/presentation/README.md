@@ -40,7 +40,9 @@ described in `tool/hymnals/README.md`. The architecture summary is in
     parts and the credit lines. Swipe left/right or the arrows move through
     the *current result list*. Text is selectable.
 - `hymn_display_settings.dart`
-  - `HymnDisplaySettingsPanel`: text size, chorus after every verse (off =
+  - `HymnDisplaySettingsPanel`: text size (smaller/larger buttons, slider,
+    a % readout and a live preview drawn at `HymnSettings.lyricSize`, the
+    same size the hymn view uses), chorus after every verse (off =
     once after verse 1, like the printed book), show author/meter/tune, show
     optional verses and choruses. The same panel is in the hymn view's sheet
     (`showHymnDisplaySettings`) and in Settings → Hymns.

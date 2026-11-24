@@ -377,5 +377,7 @@
   "reportByEmailSubtitle": "私密。会打开你的邮件应用。",
   "reportByGitHub": "在 GitHub 上提交问题",
   "reportByGitHubSubtitle": "公开：任何人都能看到。需要 GitHub 账号。",
-  "reportNoEmailApp": "没有打开邮件应用。请写信至 {email}。"
+  "reportNoEmailApp": "没有打开邮件应用。请写信至 {email}。",
+  "hymnTextSmaller": "缩小文字",
+  "hymnTextLarger": "放大文字"
 }

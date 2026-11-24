@@ -2251,6 +2251,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No email app opened. Write to {email}.'**
   String reportNoEmailApp(String email);
+
+  /// No description provided for @hymnTextSmaller.
+  ///
+  /// In en, this message translates to:
+  /// **'Smaller text'**
+  String get hymnTextSmaller;
+
+  /// No description provided for @hymnTextLarger.
+  ///
+  /// In en, this message translates to:
+  /// **'Larger text'**
+  String get hymnTextLarger;
 }
 
 class _AppLocalizationsDelegate

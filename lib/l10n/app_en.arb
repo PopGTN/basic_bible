@@ -684,5 +684,7 @@
         "type": "String"
       }
     }
-  }
+  },
+  "hymnTextSmaller": "Smaller text",
+  "hymnTextLarger": "Larger text"
 }

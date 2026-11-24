@@ -377,5 +377,7 @@
   "reportByEmailSubtitle": "Privat. Öffnet deine E-Mail-App.",
   "reportByGitHub": "GitHub-Issue erstellen",
   "reportByGitHubSubtitle": "Öffentlich: für alle lesbar. Erfordert ein GitHub-Konto.",
-  "reportNoEmailApp": "Keine E-Mail-App geöffnet. Schreib an {email}."
+  "reportNoEmailApp": "Keine E-Mail-App geöffnet. Schreib an {email}.",
+  "hymnTextSmaller": "Kleinere Schrift",
+  "hymnTextLarger": "Größere Schrift"
 }
