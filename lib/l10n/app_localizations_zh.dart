@@ -1141,4 +1141,7 @@ class AppLocalizationsZh extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get repositoryGuide => '资源库如何运作，以及如何创建自己的资源库';
 }

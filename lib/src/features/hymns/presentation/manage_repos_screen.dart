@@ -2,8 +2,10 @@ import 'package:basic_bible/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../application/view_models/hymnal_library_view_models.dart';
+import '../data/content_reporting.dart';
 import '../models/content_repository.dart';
 
 /// F-Droid style repository management: list, enable/disable, add (after
@@ -48,6 +50,13 @@ class ManageReposScreen extends ConsumerWidget {
             child: Text(
               t.repositoriesIntro,
               style: Theme.of(context).textTheme.bodyMedium,
+            ),
+          ),
+          const Align(
+            alignment: Alignment.centerLeft,
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: 8),
+              child: _RepositoriesGuideLink(),
             ),
           ),
           for (final repo in repos)
@@ -209,13 +218,21 @@ class _AddRepoDialogState extends State<_AddRepoDialog> {
     void submit() => Navigator.pop(context, _controller.text.trim());
     return AlertDialog(
       title: Text(t.repositoryAdd),
-      content: TextField(
-        controller: _controller,
-        autofocus: true,
-        keyboardType: TextInputType.url,
-        autocorrect: false,
-        decoration: InputDecoration(labelText: t.repositoryUrlLabel),
-        onSubmitted: (_) => submit(),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          TextField(
+            controller: _controller,
+            autofocus: true,
+            keyboardType: TextInputType.url,
+            autocorrect: false,
+            decoration: InputDecoration(labelText: t.repositoryUrlLabel),
+            onSubmitted: (_) => submit(),
+          ),
+          const SizedBox(height: 8),
+          const _RepositoriesGuideLink(),
+        ],
       ),
       actions: [
         TextButton(
@@ -286,6 +303,31 @@ class _DisclaimerDialogState extends State<_DisclaimerDialog> {
           child: Text(t.repositoryAdd),
         ),
       ],
+    );
+  }
+}
+
+/// Opens the public guide: how repositories work and how to make your own.
+class _RepositoriesGuideLink extends StatelessWidget {
+  const _RepositoriesGuideLink();
+
+  @override
+  Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
+    return TextButton.icon(
+      icon: const Icon(Icons.help_outline),
+      label: Text(t.repositoryGuide),
+      onPressed: () async {
+        final opened = await launchUrl(
+          Uri.parse(kRepositoriesGuideUrl),
+          mode: LaunchMode.externalApplication,
+        );
+        if (!opened && context.mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(t.hymnReportUnavailable)));
+        }
+      },
     );
   }
 }

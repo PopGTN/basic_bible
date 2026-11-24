@@ -10,6 +10,14 @@ const kAppTakedownContact = String.fromEnvironment(
       'https://github.com/PopGTN/bible-data/issues/new?template=takedown.md',
 );
 
+/// The public guide to how hymnal repositories work and how to publish
+/// one. Opened from Manage repositories and the Add repository dialog.
+const kRepositoriesGuideUrl = String.fromEnvironment(
+  'REPOSITORIES_GUIDE_URL',
+  defaultValue:
+      'https://github.com/PopGTN/bible-data/blob/main/docs/repositories.md',
+);
+
 /// Builds a link that opens [contact] with the report pre-filled.
 ///
 /// - `mailto:` addresses get `subject` and `body`.

@@ -2131,6 +2131,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count, plural, =1{1 hymn} other{{count} hymns}}'**
   String hymnCount(int count);
+
+  /// No description provided for @repositoryGuide.
+  ///
+  /// In en, this message translates to:
+  /// **'How repositories work, and how to make your own'**
+  String get repositoryGuide;
 }
 
 class _AppLocalizationsDelegate

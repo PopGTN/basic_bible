@@ -1187,4 +1187,8 @@ class AppLocalizationsEs extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get repositoryGuide =>
+      'Cómo funcionan los repositorios y cómo crear el tuyo';
 }

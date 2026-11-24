@@ -1191,4 +1191,8 @@ class AppLocalizationsDe extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get repositoryGuide =>
+      'Wie Quellen funktionieren und wie du eine eigene erstellst';
 }

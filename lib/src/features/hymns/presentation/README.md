@@ -65,6 +65,10 @@ described in `tool/hymnals/README.md`. The architecture summary is in
     (https only; http only for localhost testing), then shows a third-party
     disclaimer that must be ticked before the repository is saved. Removing a
     repository also removes the books downloaded from it.
+  - "How repositories work, and how to make your own" (on the screen and in
+    the Add repository dialog) opens `kRepositoriesGuideUrl`
+    (`../data/content_reporting.dart`): `bible-data/docs/repositories.md` on
+    GitHub, which documents both file formats for repository makers.
 - `legal_takedown_screen.dart`
   - `LegalTakedownScreen`: what the app distributes (bundled books, with
     permission), what it doesn't (third-party repositories, imported files),

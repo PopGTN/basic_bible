@@ -357,5 +357,6 @@
   "legalTakedownHeading": "删除请求",
   "legalTakedownBody": "如果你拥有随应用提供或官方资源库中内容的权利并希望将其删除，请发送删除请求。请注明书名和诗歌编号、你拥有的作品以及联系方式。请求确认后，内容将从官方资源库撤下，被撤下的书会在应用下次刷新资源库时从设备中移除。",
   "legalReportButton": "发送删除请求",
-  "hymnCount": "{count, plural, other{{count} 首诗歌}}"
+  "hymnCount": "{count, plural, other{{count} 首诗歌}}",
+  "repositoryGuide": "资源库如何运作，以及如何创建自己的资源库"
 }

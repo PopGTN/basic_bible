@@ -643,5 +643,6 @@
         "type": "int"
       }
     }
-  }
+  },
+  "repositoryGuide": "How repositories work, and how to make your own"
 }

@@ -1190,4 +1190,8 @@ class AppLocalizationsFr extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get repositoryGuide =>
+      'Fonctionnement des dépôts et comment créer le vôtre';
 }
