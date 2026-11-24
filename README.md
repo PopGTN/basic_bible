@@ -24,6 +24,15 @@ flutter run --profile -d linux --dart-define-from-file=dart_defines.json
 - Search the Bible text from the reader's search button, limited to the whole Bible, either testament, the current book, or the current chapter.
 - Read a second, independent translation/passage side by side in split view (tablets, computers, and phones in landscape; rotating a phone upright hides it until it turns back), with every reader feature in both panes: highlights, notes, verse details, continuous scrolling. Each pane has its own translation button and chapter bar; split view opens where the main reader is and remembers the second pane's place until the app is relaunched (Settings → "Open Split View At The Current Chapter" to always follow the main reader).
 - Open the reader from links such as `basicbible://bible/JHN/3/16?translation=kjv` (Android/iOS/web).
+- Read hymns on the `Hymns` tab, with The Believers Hymn Book and The New Believers Hymnbook included by permission of John Ritchie Ltd:
+  - search by number, title, words or author as you type; sort by number or A–Z
+  - favorites per book, kept on the device
+  - on tablets, computers and the web the list stays beside the open hymn and keeps updating as you type
+  - chorus once after verse 1 (as printed) or after every verse (Settings → Hymns)
+  - copy, share and print a hymn, always with its copyright lines
+  - `About this book` with publisher and copyright details and a `Report a copyright concern` link
+- Add hymn books from a JSON file (also in the browser), or download them from repositories under `Hymn books` → `Manage repositories`. Third-party repositories need a disclaimer accepted first; books a repository withdraws are removed on the next refresh.
+- Read how content rights and takedown requests work under Settings → `Legal & takedown requests`.
 - Control startup behavior from Settings, including:
   - opening directly on the Bible tab by default
   - turning the sample login gate on or off
@@ -191,6 +200,7 @@ Most active app code lives under `lib/src/features/`:
 
 - `auth`
 - `home`
+- `hymns`
 - `library`
 - `menu`
 - `reader`
@@ -213,6 +223,12 @@ These files are the main internal docs for the app:
 - `TODO_STATUS.md`
 - `ANNOTATIONS_CONTEXT.md`
 - `ANNOTATIONS_STATUS.md`
+
+Module READMEs sit next to the code they describe, for example
+`lib/src/features/reader/presentation/split_view/README.md` and
+`lib/src/features/hymns/presentation/README.md` (Hymns pages). Bundled hymn
+books are built as described in `tool/hymnals/README.md`; the hymn text itself
+is in a private submodule, so run `make hymnals` before building a release.
 
 ## Running The Web App
 
