@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:archive/archive.dart' show GZipEncoder;
 import 'package:crypto/crypto.dart';
+import 'package:flutter/foundation.dart' show compute;
 import 'package:flutter/services.dart'
     show AssetBundle, AssetManifest, rootBundle;
 import 'package:http/http.dart' as http;
@@ -333,17 +334,22 @@ class HymnalRepository {
   }
 
   Future<void> _save(HymnalInfo info, Uint8List bytes) async {
-    final isGzip = bytes.length > 2 && bytes[0] == 0x1f && bytes[1] == 0x8b;
-    final content = isGzip
-        ? bytes
-        : Uint8List.fromList(GZipEncoder().encode(bytes));
+    // Compressing and hashing a multi-MB import is pure CPU work; keep it
+    // off the UI isolate so the screen doesn't freeze while saving.
+    final (:content, :digest) = await compute(_compressAndHash, bytes);
     _cache.remove(info.id);
     await _store.save(
-      StoredHymnal(
-        info: info,
-        content: content,
-        sha256: sha256.convert(bytes).toString(),
-      ),
+      StoredHymnal(info: info, content: content, sha256: digest),
+    );
+  }
+
+  static ({Uint8List content, String digest}) _compressAndHash(
+    Uint8List bytes,
+  ) {
+    final isGzip = bytes.length > 2 && bytes[0] == 0x1f && bytes[1] == 0x8b;
+    return (
+      content: isGzip ? bytes : Uint8List.fromList(GZipEncoder().encode(bytes)),
+      digest: sha256.convert(bytes).toString(),
     );
   }
 

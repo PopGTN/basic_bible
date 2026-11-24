@@ -79,6 +79,9 @@ class HymnListView extends ConsumerWidget {
   }
 }
 
+/// Compiled once, not per row build while scrolling.
+final _trailingPunctuation = RegExp(r'[,;:.]+$');
+
 class _HymnRow extends ConsumerWidget {
   const _HymnRow({
     required this.hymn,
@@ -96,7 +99,7 @@ class _HymnRow extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final t = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
-    final firstLine = hymn.firstLine.replaceAll(RegExp(r'[,;:.]+$'), '');
+    final firstLine = hymn.firstLine.replaceAll(_trailingPunctuation, '');
     final subtitle = firstLine.isNotEmpty && firstLine != hymn.title
         ? firstLine
         : hymn.author;

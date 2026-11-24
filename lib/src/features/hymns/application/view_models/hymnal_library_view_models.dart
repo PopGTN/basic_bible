@@ -109,6 +109,9 @@ class HymnalInstallsNotifier extends Notifier<Map<String, double?>> {
   ) async {
     final key = '${repo.id}/${entry.id}';
     state = {...state, key: null};
+    // Rebuild the library at most once per whole percent, not once per
+    // network chunk.
+    var lastPercent = -1;
     try {
       final info = await ref
           .read(hymnalRepositoryProvider)
@@ -117,6 +120,9 @@ class HymnalInstallsNotifier extends Notifier<Map<String, double?>> {
             entry,
             onProgress: (received, total) {
               if (total == null || total == 0) return;
+              final percent = (received * 100) ~/ total;
+              if (percent == lastPercent) return;
+              lastPercent = percent;
               state = {...state, key: received / total};
             },
           );
