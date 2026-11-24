@@ -379,5 +379,7 @@
   "reportByGitHubSubtitle": "Public : tout le monde peut le lire. Nécessite un compte GitHub.",
   "reportNoEmailApp": "Aucune application de messagerie ne s'est ouverte. Écrivez à {email}.",
   "hymnTextSmaller": "Texte plus petit",
-  "hymnTextLarger": "Texte plus grand"
+  "hymnTextLarger": "Texte plus grand",
+  "hymnOpenOnNumber": "Ouvrir un cantique en tapant son numéro",
+  "hymnOpenOnNumberSubtitle": "Taper 122 dans la recherche ouvre le cantique 122. Si des numéros plus longs commencent pareil (12 → 120–129), il s'ouvre après une courte pause."
 }

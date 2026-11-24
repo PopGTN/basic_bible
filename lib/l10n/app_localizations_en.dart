@@ -1260,4 +1260,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get hymnTextLarger => 'Larger text';
+
+  @override
+  String get hymnOpenOnNumber => 'Open a hymn when you type its number';
+
+  @override
+  String get hymnOpenOnNumberSubtitle =>
+      'Typing 122 in the search box opens hymn 122. If longer numbers start the same way (12 → 120–129), it opens after a short pause.';
 }

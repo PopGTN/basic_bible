@@ -1269,4 +1269,11 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get hymnTextLarger => 'Texto más grande';
+
+  @override
+  String get hymnOpenOnNumber => 'Abrir un himno al escribir su número';
+
+  @override
+  String get hymnOpenOnNumberSubtitle =>
+      'Al escribir 122 en la búsqueda se abre el himno 122. Si hay números más largos que empiezan igual (12 → 120–129), se abre tras una breve pausa.';
 }

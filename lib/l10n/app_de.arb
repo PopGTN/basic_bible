@@ -379,5 +379,7 @@
   "reportByGitHubSubtitle": "Öffentlich: für alle lesbar. Erfordert ein GitHub-Konto.",
   "reportNoEmailApp": "Keine E-Mail-App geöffnet. Schreib an {email}.",
   "hymnTextSmaller": "Kleinere Schrift",
-  "hymnTextLarger": "Größere Schrift"
+  "hymnTextLarger": "Größere Schrift",
+  "hymnOpenOnNumber": "Lied öffnen, wenn du seine Nummer eingibst",
+  "hymnOpenOnNumberSubtitle": "Wenn du 122 ins Suchfeld tippst, öffnet sich Lied 122. Beginnen längere Nummern gleich (12 → 120–129), öffnet es sich nach einer kurzen Pause."
 }

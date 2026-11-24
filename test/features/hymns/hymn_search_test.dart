@@ -149,4 +149,23 @@ void main() {
     // 5 queries; generous bound so slow CI machines don't flake.
     expect(watch.elapsedMilliseconds, lessThan(250));
   });
+
+  test('typing an exact number decides when to open that hymn', () {
+    final sorted = [..._hymns]..sort((a, b) => a.number.compareTo(b.number));
+    final book = _book(sorted); // numbers 1, 2, 12, 30, 120
+    expect(hymnToAutoOpen(book, '30'), (number: 30, when: HymnAutoOpen.now));
+    expect(hymnToAutoOpen(book, '#2'), (number: 2, when: HymnAutoOpen.now));
+    expect(hymnToAutoOpen(book, '12'), (
+      number: 12,
+      when: HymnAutoOpen.afterPause,
+    ), reason: '120 also starts with 12');
+    expect(hymnToAutoOpen(book, '1'), (
+      number: 1,
+      when: HymnAutoOpen.afterPause,
+    ));
+    expect(hymnToAutoOpen(book, '120'), (number: 120, when: HymnAutoOpen.now));
+    expect(hymnToAutoOpen(book, '3'), isNull, reason: 'no hymn 3');
+    expect(hymnToAutoOpen(book, 'lamb'), isNull);
+    expect(hymnToAutoOpen(book, '12 lamb'), isNull);
+  });
 }

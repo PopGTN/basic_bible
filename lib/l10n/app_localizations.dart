@@ -2263,6 +2263,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Larger text'**
   String get hymnTextLarger;
+
+  /// No description provided for @hymnOpenOnNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Open a hymn when you type its number'**
+  String get hymnOpenOnNumber;
+
+  /// No description provided for @hymnOpenOnNumberSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Typing 122 in the search box opens hymn 122. If longer numbers start the same way (12 → 120–129), it opens after a short pause.'**
+  String get hymnOpenOnNumberSubtitle;
 }
 
 class _AppLocalizationsDelegate

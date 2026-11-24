@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../application/view_models/hymn_settings_view_model.dart';
 import '../application/view_models/hymnal_view_models.dart';
 import '../data/hymn_search.dart';
 import '../models/hymnal.dart';
@@ -114,13 +115,77 @@ class _HymnSearchFieldState extends ConsumerState<_HymnSearchField> {
   late final TextEditingController _controller = TextEditingController(
     text: ref.read(hymnQueryProvider),
   );
+  final _focus = FocusNode();
   Timer? _debounce;
+  Timer? _autoOpen;
+
+  /// The number a pending or finished auto-open was for, so it doesn't fire
+  /// twice for the same text.
+  String? _autoOpenedFor;
+
+  /// After the pause that lets a longer number be typed (12 → 122).
+  static const _autoOpenPause = Duration(milliseconds: 900);
+
+  @override
+  void initState() {
+    super.initState();
+    _focus.addListener(_selectNumberOnFocus);
+  }
 
   @override
   void dispose() {
     _debounce?.cancel();
+    _autoOpen?.cancel();
+    _focus.dispose();
     _controller.dispose();
     super.dispose();
+  }
+
+  /// Tapping back into the box after a number search selects the number, so
+  /// the next one can be typed straight over it.
+  void _selectNumberOnFocus() {
+    if (!_focus.hasFocus) return;
+    final text = _controller.text.trim();
+    if (!RegExp(r'^#?\d+$').hasMatch(text)) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _controller.selection = TextSelection(
+        baseOffset: 0,
+        extentOffset: _controller.text.length,
+      );
+    });
+  }
+
+  /// "Open a hymn when you type its number": opens the exact match right
+  /// away, or after a short pause when longer numbers share its digits.
+  void _maybeAutoOpen(String value) {
+    _autoOpen?.cancel();
+    if (!ref.read(hymnSettingsProvider).openOnNumber) return;
+    final hymnal = ref.read(currentHymnalProvider).value;
+    if (hymnal == null) return;
+    final target = hymnToAutoOpen(hymnal, value);
+    if (target == null) {
+      _autoOpenedFor = null;
+      return;
+    }
+    if (_autoOpenedFor == value) return;
+    void open() {
+      if (!mounted || _controller.text != value) return;
+      _autoOpenedFor = value;
+      ref.read(openHymnNumberProvider.notifier).open(target.number);
+      // On phones the hymn replaces the list: put the keyboard away so the
+      // hymn can be read. Two-pane keeps typing focus.
+      if (MediaQuery.sizeOf(context).width < kHymnsTwoPaneWidth) {
+        _focus.unfocus();
+      }
+    }
+
+    switch (target.when) {
+      case HymnAutoOpen.now:
+        open();
+      case HymnAutoOpen.afterPause:
+        _autoOpen = Timer(_autoOpenPause, open);
+    }
   }
 
   void _onChanged(String value) {
@@ -130,12 +195,16 @@ class _HymnSearchFieldState extends ConsumerState<_HymnSearchField> {
     // avoids rebuilding the list for every key of a fast typist.
     _debounce?.cancel();
     _debounce = Timer(const Duration(milliseconds: 90), () {
-      if (mounted) ref.read(hymnQueryProvider.notifier).set(value);
+      if (!mounted) return;
+      ref.read(hymnQueryProvider.notifier).set(value);
+      _maybeAutoOpen(value);
     });
   }
 
   void _clear() {
     _debounce?.cancel();
+    _autoOpen?.cancel();
+    _autoOpenedFor = null;
     _controller.clear();
     ref.read(hymnQueryProvider.notifier).set('');
   }
@@ -153,6 +222,7 @@ class _HymnSearchFieldState extends ConsumerState<_HymnSearchField> {
       padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
       child: TextField(
         controller: _controller,
+        focusNode: _focus,
         onChanged: _onChanged,
         textInputAction: TextInputAction.search,
         decoration: InputDecoration(

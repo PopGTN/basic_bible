@@ -1273,4 +1273,11 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get hymnTextLarger => 'Texte plus grand';
+
+  @override
+  String get hymnOpenOnNumber => 'Ouvrir un cantique en tapant son numéro';
+
+  @override
+  String get hymnOpenOnNumberSubtitle =>
+      'Taper 122 dans la recherche ouvre le cantique 122. Si des numéros plus longs commencent pareil (12 → 120–129), il s\'ouvre après une courte pause.';
 }

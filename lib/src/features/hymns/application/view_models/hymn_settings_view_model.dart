@@ -13,6 +13,7 @@ class HymnSettings extends Equatable {
     this.fontScale = 1.0,
     this.showDetails = true,
     this.showOptionalParts = true,
+    this.openOnNumber = true,
   });
 
   final ChorusPlacement chorusPlacement;
@@ -25,6 +26,9 @@ class HymnSettings extends Equatable {
 
   /// Optional verses and alternate choruses.
   final bool showOptionalParts;
+
+  /// Typing a hymn's exact number in the search box opens it without a tap.
+  final bool openOnNumber;
 
   static const minFontScale = 0.8;
   static const maxFontScale = 2.4;
@@ -43,11 +47,13 @@ class HymnSettings extends Equatable {
     double? fontScale,
     bool? showDetails,
     bool? showOptionalParts,
+    bool? openOnNumber,
   }) => HymnSettings(
     chorusPlacement: chorusPlacement ?? this.chorusPlacement,
     fontScale: (fontScale ?? this.fontScale).clamp(minFontScale, maxFontScale),
     showDetails: showDetails ?? this.showDetails,
     showOptionalParts: showOptionalParts ?? this.showOptionalParts,
+    openOnNumber: openOnNumber ?? this.openOnNumber,
   );
 
   Map<String, dynamic> toJson() => {
@@ -55,6 +61,7 @@ class HymnSettings extends Equatable {
     'fontScale': fontScale,
     'showDetails': showDetails,
     'showOptionalParts': showOptionalParts,
+    'openOnNumber': openOnNumber,
   };
 
   factory HymnSettings.fromJson(Map<String, dynamic> json) => HymnSettings(
@@ -68,6 +75,7 @@ class HymnSettings extends Equatable {
     ),
     showDetails: json['showDetails'] != false,
     showOptionalParts: json['showOptionalParts'] != false,
+    openOnNumber: json['openOnNumber'] != false,
   );
 
   @override
@@ -76,6 +84,7 @@ class HymnSettings extends Equatable {
     fontScale,
     showDetails,
     showOptionalParts,
+    openOnNumber,
   ];
 }
 

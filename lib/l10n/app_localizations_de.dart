@@ -1273,4 +1273,11 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get hymnTextLarger => 'Größere Schrift';
+
+  @override
+  String get hymnOpenOnNumber => 'Lied öffnen, wenn du seine Nummer eingibst';
+
+  @override
+  String get hymnOpenOnNumberSubtitle =>
+      'Wenn du 122 ins Suchfeld tippst, öffnet sich Lied 122. Beginnen längere Nummern gleich (12 → 120–129), öffnet es sich nach einer kurzen Pause.';
 }

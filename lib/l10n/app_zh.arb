@@ -379,5 +379,7 @@
   "reportByGitHubSubtitle": "公开：任何人都能看到。需要 GitHub 账号。",
   "reportNoEmailApp": "没有打开邮件应用。请写信至 {email}。",
   "hymnTextSmaller": "缩小文字",
-  "hymnTextLarger": "放大文字"
+  "hymnTextLarger": "放大文字",
+  "hymnOpenOnNumber": "输入编号时直接打开诗歌",
+  "hymnOpenOnNumberSubtitle": "在搜索框输入 122 会打开第 122 首。如果有更长的编号以相同数字开头（12 → 120–129），会在短暂停顿后打开。"
 }

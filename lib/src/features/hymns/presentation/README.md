@@ -24,6 +24,12 @@ described in `tool/hymnals/README.md`. The architecture summary is in
   - `HymnsTab`: the tab body. A search field over the result list, or the open
     hymn on phones, or both side by side at `kHymnsTwoPaneWidth` (840px) and
     wider, so the list keeps updating while a hymn stays open.
+  - Typing a hymn's exact number opens it without a tap (setting "Open a
+    hymn when you type its number", on by default). `hymnToAutoOpen` in
+    `../data/hymn_search.dart` decides: right away when no longer number
+    starts with those digits, otherwise after a 0.9 s pause (so 12 doesn't
+    open while typing 122). On phones the keyboard is put away; tapping the
+    box again selects the number so the next one types over it.
   - `HymnalTitleButton`: the app bar title (current book, tap to switch).
   - `hymnsTabActions`: app bar actions: favorites filter (with a count
     badge), sort (number / A–Z), library.

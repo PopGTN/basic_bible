@@ -40,6 +40,13 @@ class HymnDisplaySettingsPanel extends ConsumerWidget {
               notifier.update((s) => s.copyWith(fontScale: scale)),
         ),
         SwitchListTile(
+          title: Text(t.hymnOpenOnNumber),
+          subtitle: Text(t.hymnOpenOnNumberSubtitle),
+          value: settings.openOnNumber,
+          onChanged: (on) =>
+              notifier.update((s) => s.copyWith(openOnNumber: on)),
+        ),
+        SwitchListTile(
           title: Text(t.hymnChorusEveryVerse),
           subtitle: Text(t.hymnChorusEveryVerseSubtitle),
           value: settings.chorusPlacement == ChorusPlacement.afterEveryVerse,

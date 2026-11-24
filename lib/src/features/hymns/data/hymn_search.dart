@@ -173,3 +173,35 @@ double _termScore(HymnSearchEntry entry, String term) {
   }
   return 0;
 }
+
+/// When typing [rawQuery] should open a hymn by itself (the "open a hymn
+/// when you type its number" setting).
+enum HymnAutoOpen {
+  /// No other hymn number starts with these digits: open straight away.
+  now,
+
+  /// Longer numbers also start with these digits (12 → 120–129): open only
+  /// after the user pauses, so they can keep typing.
+  afterPause,
+}
+
+/// The hymn [rawQuery] names exactly (digits, optionally with a leading #),
+/// and when to open it. Null when the query isn't a number or no hymn has
+/// that number.
+({int number, HymnAutoOpen when})? hymnToAutoOpen(
+  Hymnal hymnal,
+  String rawQuery,
+) {
+  final match = RegExp(r'^#?(\d{1,6})$').firstMatch(rawQuery.trim());
+  if (match == null) return null;
+  final number = int.parse(match.group(1)!);
+  if (hymnal.byNumber(number) == null) return null;
+  final digits = '$number';
+  final longerExists = hymnal.index.entries.any(
+    (e) => e.number != number && e.numberText.startsWith(digits),
+  );
+  return (
+    number: number,
+    when: longerExists ? HymnAutoOpen.afterPause : HymnAutoOpen.now,
+  );
+}

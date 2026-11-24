@@ -1218,4 +1218,11 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get hymnTextLarger => '放大文字';
+
+  @override
+  String get hymnOpenOnNumber => '输入编号时直接打开诗歌';
+
+  @override
+  String get hymnOpenOnNumberSubtitle =>
+      '在搜索框输入 122 会打开第 122 首。如果有更长的编号以相同数字开头（12 → 120–129），会在短暂停顿后打开。';
 }

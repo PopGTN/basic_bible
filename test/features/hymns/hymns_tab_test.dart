@@ -31,6 +31,13 @@ final _hymns = [
     ],
     chorus: ['Worthy is the Lamb'],
   ),
+  const Hymn(
+    number: 12,
+    title: 'Twelfth test hymn',
+    verses: [
+      ['Twelfth hymn first line', 'second line'],
+    ],
+  ),
 ];
 
 final _hymnal = Hymnal(
@@ -44,16 +51,20 @@ final _hymnal = Hymnal(
   index: HymnSearchIndex(_hymns),
 );
 
-Future<void> _pump(WidgetTester tester, Size size) async {
-  SharedPreferences.setMockInitialValues({});
-  final prefs = await SharedPreferences.getInstance();
+Future<void> _pump(
+  WidgetTester tester,
+  Size size, {
+  Map<String, Object> prefs = const {},
+}) async {
+  SharedPreferences.setMockInitialValues(prefs);
+  final preferences = await SharedPreferences.getInstance();
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
-        sharedPreferencesProvider.overrideWithValue(prefs),
+        sharedPreferencesProvider.overrideWithValue(preferences),
         hymnalStoreProvider.overrideWithValue(InMemoryHymnalStore()),
         hymnalRepositoryProvider.overrideWithValue(
           HymnalRepository(store: InMemoryHymnalStore()),
@@ -128,5 +139,63 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Rock of Ages! Cleft for me'), findsOneWidget);
     expect(find.text('Lamb of God! our souls adore Thee'), findsNothing);
+  });
+
+  group('open a hymn when you type its number', () {
+    Future<void> typeOnly(WidgetTester tester, String text) async {
+      await tester.enterText(find.byType(TextField), text);
+      await tester.pump(const Duration(milliseconds: 120)); // debounce
+    }
+
+    testWidgets('a number nothing else starts with opens right away', (
+      tester,
+    ) async {
+      await _pump(tester, const Size(400, 800));
+      await tester.tap(find.byType(TextField));
+      await typeOnly(tester, '2');
+      await tester.pumpAndSettle();
+      expect(find.text('2. Lamb of God! our souls adore Thee'), findsOneWidget);
+      expect(
+        FocusManager.instance.primaryFocus?.context?.widget,
+        isNot(isA<EditableText>()),
+        reason: 'keyboard put away on phones',
+      );
+    });
+
+    testWidgets('a number other numbers start with waits for a pause', (
+      tester,
+    ) async {
+      await _pump(tester, const Size(400, 800));
+      await typeOnly(tester, '1');
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(find.text('1. Rock of Ages! Cleft for me'), findsNothing);
+
+      // Keep typing before the pause ends: goes to 12, not 1.
+      await typeOnly(tester, '12');
+      await tester.pumpAndSettle(const Duration(seconds: 1));
+      expect(find.text('12. Twelfth test hymn'), findsOneWidget);
+      expect(find.text('1. Rock of Ages! Cleft for me'), findsNothing);
+    });
+
+    testWidgets('after the pause the exact number opens', (tester) async {
+      await _pump(tester, const Size(400, 800));
+      await typeOnly(tester, '1');
+      await tester.pump(const Duration(milliseconds: 950));
+      await tester.pumpAndSettle();
+      expect(find.text('1. Rock of Ages! Cleft for me'), findsOneWidget);
+    });
+
+    testWidgets('turned off, a number just filters the list', (tester) async {
+      await _pump(
+        tester,
+        const Size(400, 800),
+        prefs: {'hymn_settings_v1': '{"openOnNumber": false}'},
+      );
+      await typeOnly(tester, '2');
+      await tester.pump(const Duration(seconds: 2));
+      await tester.pumpAndSettle();
+      expect(find.text('2. Lamb of God! our souls adore Thee'), findsNothing);
+      expect(find.text('Lamb of God! our souls adore Thee'), findsOneWidget);
+    });
   });
 }
