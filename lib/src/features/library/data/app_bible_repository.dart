@@ -1,9 +1,7 @@
 import 'dart:async';
 import 'dart:collection';
 import 'dart:convert';
-import 'dart:typed_data';
 import 'package:archive/archive.dart' show GZipDecoder;
-import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
@@ -19,6 +17,7 @@ import 'package:basic_bible/src/models/bible_models.dart';
 import 'package:basic_bible/src/services/app_database.dart';
 import 'package:basic_bible/src/services/translation_database_executor.dart';
 import 'package:basic_bible/src/services/translation_database_manager.dart';
+import 'package:basic_bible/src/services/verified_download.dart';
 
 import 'library_source_io.dart';
 

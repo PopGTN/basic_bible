@@ -189,87 +189,23 @@ extension AppBibleRepositoryNetwork on AppBibleRepository {
   /// either a catalog mistake or a hostile server.
   static const int _maxDownloadBytes = 100 * 1024 * 1024;
 
+  /// https-only, size-capped, SHA-256-checked download. The rules live in
+  /// [fetchVerifiedHttps] so hymnal downloads share them.
   Future<Uint8List> _fetchRemoteArtifactBytes(
     BibleTranslationArtifact artifact, {
     required String actionLabel,
     DownloadProgressCallback? onProgress,
-  }) async {
-    final uri = Uri.parse(artifact.downloadUrl);
-    if (uri.scheme != 'https') {
-      throw Exception(
-        'Refusing to $actionLabel: only https:// download URLs are allowed '
-        '(got "${uri.scheme}://").',
-      );
-    }
-
-    final declaredSize = artifact.sizeBytes;
-    if (declaredSize != null && declaredSize > _maxDownloadBytes) {
-      throw Exception(
-        'Refusing to $actionLabel: the file is larger than the '
-        '${_maxDownloadBytes ~/ (1024 * 1024)} MB download limit.',
-      );
-    }
-
-    try {
-      final response = await AppBibleRepository._httpClient
-          .send(http.Request('GET', uri))
-          .timeout(AppBibleRepository._remoteRequestTimeout);
-      if (response.statusCode != 200) {
-        throw Exception('HTTP ${response.statusCode}');
-      }
-      if ((response.contentLength ?? 0) > _maxDownloadBytes) {
-        throw Exception(
-          'The file is larger than the '
-          '${_maxDownloadBytes ~/ (1024 * 1024)} MB download limit.',
-        );
-      }
-
-      // Stream the body and count as we go, so a server that lies about (or
-      // omits) Content-Length still can't fill memory without bound.
-      final builder = BytesBuilder(copy: false);
-      final expectedBytes = response.contentLength ?? artifact.sizeBytes;
-      onProgress?.call(0, expectedBytes);
-      await for (final chunk in response.stream.timeout(
-        AppBibleRepository._remoteRequestTimeout,
-      )) {
-        builder.add(chunk);
-        onProgress?.call(builder.length, expectedBytes);
-        if (builder.length > _maxDownloadBytes) {
-          throw Exception(
-            'The download exceeded the '
-            '${_maxDownloadBytes ~/ (1024 * 1024)} MB limit and was aborted.',
-          );
-        }
-      }
-      final bytes = builder.takeBytes();
-
-      _verifyArtifactChecksum(artifact, bytes);
-      return bytes;
-    } on TimeoutException {
-      throw Exception(
-        'Timed out trying to $actionLabel. Please check your internet connection and try again.',
-      );
-    } catch (error) {
-      throw Exception('Failed to $actionLabel: $error');
-    }
-  }
-
-  /// Verifies the downloaded bytes against the catalog's SHA-256 checksum.
-  /// A missing checksum is allowed (older catalog entries); a mismatch means
-  /// the file was corrupted or tampered with in transit, so we refuse it.
-  void _verifyArtifactChecksum(
-    BibleTranslationArtifact artifact,
-    Uint8List bytes,
-  ) {
-    final expected = artifact.sha256?.trim().toLowerCase();
-    if (expected == null || expected.isEmpty) return;
-    final actual = sha256.convert(bytes).toString();
-    if (actual != expected) {
-      throw Exception(
-        'The downloaded file failed its integrity check (SHA-256 mismatch). '
-        'It may have been corrupted or tampered with — please try again.',
-      );
-    }
+  }) {
+    return fetchVerifiedHttps(
+      Uri.parse(artifact.downloadUrl),
+      client: AppBibleRepository._httpClient,
+      maxBytes: _maxDownloadBytes,
+      actionLabel: actionLabel,
+      expectedSize: artifact.sizeBytes,
+      expectedSha256: artifact.sha256,
+      timeout: AppBibleRepository._remoteRequestTimeout,
+      onProgress: onProgress,
+    );
   }
 
   // ---------------------------------------------------------------------------
