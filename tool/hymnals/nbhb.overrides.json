@@ -1,0 +1,21 @@
+{
+  "_doc": "Same keys as bhb.overrides.json. Copyright lines for 184, 236 and 420 are copied from the acknowledgements page of the 2021 printing. All three are owned by third parties: the publisher's permission to print them does not by itself cover the app.",
+
+  "184": {
+    "title": "How deep the Father’s love for us",
+    "author": "Stuart Townend",
+    "copyright": "Copyright © 1995 Thankyou Music (Adm. by CapitolCMGPublishing.com excl. UK & Europe, adm. by Integrity Music, part of the David C Cook family, songs@integritymusic.com)",
+    "rightsStatus": "third_party"
+  },
+  "236": {
+    "title": "In Christ alone my hope is found",
+    "author": "Stuart Townend and Keith Getty",
+    "copyright": "Copyright © 2001 Thankyou Music (Adm. by CapitolCMGPublishing.com excl. UK & Europe, adm. by Integrity Music, part of the David C Cook family, songs@integritymusic.com)",
+    "rightsStatus": "third_party"
+  },
+  "420": {
+    "author": "Carl Boberg; English words Stuart K. Hine (1899–1989)",
+    "copyright": "Words and music arr. Stuart K. Hine. Copyright © 1949 and 1953 by the Stuart Hine Trust CIO. All rights in the USA, its territories and possessions, except print rights, administered by Capitol CMG Publishing. USA, North, Central and South America print rights and all Canadian rights administered by Hope Publishing Company. All other non-US Americas rights administered by the Stuart Hine Trust CIO. Rest of the world rights administered by Integrity Music Europe.",
+    "rightsStatus": "third_party"
+  }
+}

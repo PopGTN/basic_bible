@@ -27,7 +27,10 @@ final _meterLike = RegExp(
   r"^((\d+(\.\d+)*\.?(\s*(D|d)\.?)?)|([CLSP]\.?\s?M\.?(\s?D\.?)?)|(\d+\.\d+.*'s)|.*\bwith (chorus|refrain)\b.*|irregular\.?|P\.M\.)$",
   caseSensitive: false,
 );
-final _optionalVerse = RegExp(r'^\s*OPTIONAL:\s*(.+?)\s*$', caseSensitive: false);
+final _optionalVerse = RegExp(
+  r'^\s*OPTIONAL:\s*(.+?)\s*$',
+  caseSensitive: false,
+);
 final _optionalChorus = RegExp(
   r'^\s*\[\s*(optional chorus.*?)\s*\]\s*$',
   caseSensitive: false,
@@ -84,6 +87,7 @@ bool _build(String id) {
     _autoClean(hymn, report);
     final patch = overrides['$hid'];
     if (patch is Map<String, dynamic>) _applyOverride(hymn, patch, report);
+    _applyRightsRules(hymn, meta['rightsRules']);
     _finish(hymn);
     if (!seen.add(hid)) report.add('#$hid ERROR duplicate id');
     _validate(hymn, report);
@@ -105,13 +109,24 @@ bool _build(String id) {
     'hymns': hymns,
   };
 
-  final unclear = hymns
-      .where((h) => h['rightsStatus'] == 'unclear')
+  List<Object?> idsWith(String status) => hymns
+      .where((h) => h['rightsStatus'] == status)
       .map((h) => h['id'])
       .toList();
+  final unclear = idsWith('unclear');
   if (unclear.isNotEmpty) {
-    report.add('rights to confirm with publisher (${unclear.length}): '
-        '${unclear.join(', ')}');
+    report.add(
+      'rights to confirm with publisher (${unclear.length}): '
+      '${unclear.join(', ')}',
+    );
+  }
+  final thirdParty = idsWith('third_party');
+  if (thirdParty.isNotEmpty) {
+    report.add(
+      'owned by third parties — app permission needed from the '
+      'owner, or written confirmation that the publisher\'s licence covers '
+      'the app (${thirdParty.length}): ${thirdParty.join(', ')}',
+    );
   }
   final todos = book.entries
       .where((e) => e.value is String && (e.value as String).contains('TODO_'))
@@ -131,12 +146,12 @@ bool _build(String id) {
 
   final reviewDir = Directory('${_toolDir.path}/../../build/hymnals')
     ..createSync(recursive: true);
-  File('${reviewDir.path}/$id.json').writeAsStringSync(
-    const JsonEncoder.withIndent('  ').convert(doc),
-  );
-  File('${reviewDir.path}/$id.report.txt').writeAsStringSync(
-    '${report.join('\n')}\n',
-  );
+  File(
+    '${reviewDir.path}/$id.json',
+  ).writeAsStringSync(const JsonEncoder.withIndent('  ').convert(doc));
+  File(
+    '${reviewDir.path}/$id.report.txt',
+  ).writeAsStringSync('${report.join('\n')}\n');
 
   final errors = report.where((l) => l.contains('ERROR')).length;
   stdout.writeln(
@@ -178,24 +193,54 @@ void _autoClean(Map<String, dynamic> h, List<String> report) {
   final id = h['id'];
   final verses = h['verses'] as List<List<String>>;
 
-  // Header verse: meter used as title, [author, meter] as the first verse.
-  if (_meterLike.hasMatch(h['title'] as String) &&
-      verses.length > 1 &&
-      verses.first.length <= 2) {
+  // Header verse: [author, meter] as the first verse, with either the meter
+  // or the author copied into the title. The author line may carry the
+  // hymn's copyright notice glued on ("Stuart Townend© 1995 Thankyou…").
+  final title = h['title'] as String;
+  final first = verses.isEmpty ? const <String>[] : verses.first;
+  if (verses.length > 1 &&
+      first.isNotEmpty &&
+      first.length <= 2 &&
+      _meterLike.hasMatch(first.last.trim()) &&
+      (_meterLike.hasMatch(title) || title.trim() == first.first.trim())) {
     final header = verses.removeAt(0);
     for (final line in header) {
       final clean = line.trim();
       if (_meterLike.hasMatch(clean)) {
         if ((h['meter'] as String).isEmpty) h['meter'] = clean;
       } else if ((h['author'] as String).isEmpty) {
-        h['author'] = clean;
+        final mark = clean.indexOf('©');
+        if (mark >= 0) {
+          // "Copyright © 1952 …" has no author before the ©.
+          final before = clean.substring(0, mark).trim();
+          final noAuthor = RegExp(
+            r'^(copyright)?$',
+            caseSensitive: false,
+          ).hasMatch(before);
+          h['author'] = noAuthor ? '' : before;
+          h['copyright'] ??= noAuthor ? clean : clean.substring(mark).trim();
+        } else {
+          h['author'] = clean;
+        }
       }
     }
-    if ((h['meter'] as String).isEmpty) h['meter'] = h['title'];
+    if ((h['meter'] as String).isEmpty && _meterLike.hasMatch(title)) {
+      h['meter'] = title;
+    }
+    verses.first[0] = _uncapFirstWord(verses.first.first);
     h['title'] = verses.first.first;
-    report.add('#$id fixed header verse → author "${h['author']}", '
-        'meter "${h['meter']}", title "${h['title']}"');
+    report.add(
+      '#$id fixed header verse → author "${h['author']}", '
+      'meter "${h['meter']}", title "${h['title']}"'
+      '${h['copyright'] == null ? '' : ', copyright moved out of author'}',
+    );
   }
+
+  // Printed-style capitals on every hymn's opening word.
+  if (verses.isNotEmpty && verses.first.isNotEmpty) {
+    verses.first[0] = _uncapFirstWord(verses.first.first);
+  }
+  h['title'] = _uncapFirstWord(h['title'] as String);
 
   // Editor notes inside verses.
   for (var vi = 0; vi < verses.length; vi++) {
@@ -307,7 +352,30 @@ void _applyOverride(
     }
   }
   if (patch['copyright'] is String) h['copyright'] = patch['copyright'];
-  if (patch['rightsStatus'] is String) h['rightsStatus'] = patch['rightsStatus'];
+  if (patch['rightsStatus'] is String) {
+    h['rightsStatus'] = patch['rightsStatus'];
+  }
+}
+
+/// Book-wide rights rules from `<id>.meta.json` (`rightsRules`), for whole
+/// groups of hymns: `authorContains` / `copyrightContains` select hymns,
+/// `rightsStatus` / `copyright` are applied unless an override already set
+/// them. Overrides win, so one hymn can still be handled differently.
+void _applyRightsRules(Map<String, dynamic> h, Object? rules) {
+  if (rules is! List) return;
+  for (final rule in rules.whereType<Map>()) {
+    final author = rule['authorContains'] as String?;
+    final copyrightNeedle = rule['copyrightContains'] as String?;
+    final matches =
+        (author != null && (h['author'] as String).contains(author)) ||
+        (copyrightNeedle != null &&
+            ((h['copyright'] as String?) ?? '').contains(copyrightNeedle));
+    if (!matches) continue;
+    if (rule['rightsStatus'] is String) {
+      h['rightsStatus'] ??= rule['rightsStatus'];
+    }
+    if (rule['copyright'] is String) h['copyright'] ??= rule['copyright'];
+  }
 }
 
 /// Tidies the title and drops empty optional keys so the asset stays small.
@@ -346,6 +414,29 @@ void _validate(Map<String, dynamic> h, List<String> report) {
   if (_meterLike.hasMatch(h['title'] as String)) {
     report.add('#$id title looks like a meter: "${h['title']}"');
   }
+}
+
+/// The printed book capitalizes a hymn's first word ("HOW deep the
+/// Father's love", "I DO not know", "A LITTLE while"); "How deep…" reads
+/// and searches better.
+/// After "O ", divine names ("O LORD my God") keep their capitals.
+String _uncapFirstWord(String line) {
+  final match = RegExp(
+    r"^([“‘'\x22]?(?:[AIO] )?)([A-Z][A-Z’']+)(\b.*)$",
+  ).firstMatch(line);
+  if (match == null) return line;
+  final word = match.group(2)!;
+  final lead = match.group(1)!;
+  // "O LORD my God" is a real small-caps divine name; at the very start of
+  // a hymn ("GOD moves…", "LORD, e'en to death…") it's just printed caps.
+  if (lead.endsWith('O ') && const {'LORD', 'GOD', 'JEHOVAH'}.contains(word)) {
+    return line;
+  }
+  // After a leading "I "/"O " the word is mid-sentence: all lower case.
+  final fixed = lead.endsWith(' ')
+      ? word.toLowerCase()
+      : '${word[0]}${word.substring(1).toLowerCase()}';
+  return '$lead$fixed${match.group(3)}';
 }
 
 String _sentenceCase(String s) =>

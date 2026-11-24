@@ -7,17 +7,30 @@
     "title": "The New Believers Hymnbook",
     "shortTitle": "NBHB",
     "publisher": "John Ritchie Ltd",
-    "publisherAddress": "Kilmarnock, Scotland",
+    "publisherAddress": "40 Beansburn, Kilmarnock, Scotland",
     "publisherUrl": "https://ritchiechristianmedia.co.uk",
-    "edition": "2019",
-    "year": 2019,
+    "edition": "2021 (printed 2023)",
+    "year": 2021,
     "language": "en",
-    "isbn": "9781912522385",
-    "copyright": "TODO_COPYRIGHT_LINE (e.g. © 2019 John Ritchie Ltd. All rights reserved.)",
+    "isbn": "978-1-914273-14-8",
+    "copyright": "© 2021 John Ritchie Ltd. All rights reserved.",
     "rightsStatus": "permission_granted",
-    "permissionNotice": "TODO_PERMISSION_WORDING (exact credit line the publisher asked for)",
+    "permissionNotice": "TODO_PERMISSION_WORDING (exact credit line John Ritchie Ltd asked for, e.g. Used by permission of John Ritchie Ltd.)",
     "permissionDate": "TODO_PERMISSION_DATE",
     "sourceUrl": null,
     "takedownContact": null
-  }
+  },
+  "rightsRules": [
+    {
+      "_why": "The printed book thanks the family of the late Mr Edmund Ewan for permission to use hymns from Remembrance Hymns. That permission was given to the publisher for the book; app use must be confirmed.",
+      "authorContains": "Ewan",
+      "rightsStatus": "third_party",
+      "copyright": "From Remembrance Hymns. Rights: the family of the late Mr Edmund Ewan."
+    },
+    {
+      "_why": "A per-hymn © naming another owner means the publisher does not own it.",
+      "copyrightContains": "©",
+      "rightsStatus": "third_party"
+    }
+  ]
 }
