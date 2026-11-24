@@ -17,8 +17,7 @@ final exportableTranslationsProvider = FutureProvider<List<BibleTranslation>>((
   // Catalog-only entries can't have a file; skip the disk check for them.
   final candidates = [
     for (final translation in translations)
-      if (translation.availability !=
-          BibleTranslationAvailability.downloadable)
+      if (translation.availability != BibleTranslationAvailability.downloadable)
         translation,
   ];
   final cached = await Future.wait(

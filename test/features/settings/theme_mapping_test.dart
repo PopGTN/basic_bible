@@ -7,20 +7,22 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  test('every mode supplies an app-defined dark theme, never the stock one',
-      () {
-    final stockDark = ThemeData.dark(useMaterial3: true).colorScheme;
-    for (final mode in AppThemeMode.values) {
-      final dark = getDarkThemeData(mode);
-      expect(dark.brightness, Brightness.dark, reason: '$mode');
-      expect(
-        themeDataMap.values.any((t) => identical(t, dark)),
-        isTrue,
-        reason: '$mode must use one of the app themes',
-      );
-      expect(dark.colorScheme, isNot(stockDark), reason: '$mode');
-    }
-  });
+  test(
+    'every mode supplies an app-defined dark theme, never the stock one',
+    () {
+      final stockDark = ThemeData.dark(useMaterial3: true).colorScheme;
+      for (final mode in AppThemeMode.values) {
+        final dark = getDarkThemeData(mode);
+        expect(dark.brightness, Brightness.dark, reason: '$mode');
+        expect(
+          themeDataMap.values.any((t) => identical(t, dark)),
+          isTrue,
+          reason: '$mode must use one of the app themes',
+        );
+        expect(dark.colorScheme, isNot(stockDark), reason: '$mode');
+      }
+    },
+  );
 
   test('System follows the device: light theme by day, app dark by night', () {
     expect(mapThemeMode(AppThemeMode.system), ThemeMode.system);

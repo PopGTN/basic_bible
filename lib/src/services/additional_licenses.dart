@@ -37,10 +37,7 @@ const List<AdditionalLicense> kAdditionalLicenses = [
 
 /// Registers [kAdditionalLicenses] with Flutter's [LicenseRegistry]. Call
 /// once at startup. Texts load lazily, only when the license page opens.
-void registerAdditionalLicenses({
-  bool isWeb = kIsWeb,
-  AssetBundle? bundle,
-}) {
+void registerAdditionalLicenses({bool isWeb = kIsWeb, AssetBundle? bundle}) {
   final licenses = [
     for (final license in kAdditionalLicenses)
       if (!license.webOnly || isWeb) license,

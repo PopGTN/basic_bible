@@ -216,31 +216,34 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
               _dateField != NoteDateField.modified;
           final now = DateTime.now();
 
-          final filteredAnnotations = sortNotesByDate(annotations.where((annotation) {
-            final matchesQuery =
-                _searchQuery.isEmpty ||
-                _annotationMatchesQuery(annotation, books, _searchQuery);
-            final matchesTags =
-                _selectedTags.isEmpty ||
-                annotation.labels.any(_selectedTags.contains);
-            final matchesTranslation =
-                _selectedTranslationIds.isEmpty ||
-                _selectedTranslationIds.contains(
-                  annotation.primaryVerse.translationId,
-                );
-            final matchesType = matchesNoteTypes(annotation, _selectedTypes);
-            final matchesDate = matchesNoteDateRange(
-              annotation,
-              field: _dateField,
-              range: _dateRange,
-              now: now,
-            );
-            return matchesQuery &&
-                matchesTags &&
-                matchesTranslation &&
-                matchesType &&
-                matchesDate;
-          }).toList(), _dateField);
+          final filteredAnnotations = sortNotesByDate(
+            annotations.where((annotation) {
+              final matchesQuery =
+                  _searchQuery.isEmpty ||
+                  _annotationMatchesQuery(annotation, books, _searchQuery);
+              final matchesTags =
+                  _selectedTags.isEmpty ||
+                  annotation.labels.any(_selectedTags.contains);
+              final matchesTranslation =
+                  _selectedTranslationIds.isEmpty ||
+                  _selectedTranslationIds.contains(
+                    annotation.primaryVerse.translationId,
+                  );
+              final matchesType = matchesNoteTypes(annotation, _selectedTypes);
+              final matchesDate = matchesNoteDateRange(
+                annotation,
+                field: _dateField,
+                range: _dateRange,
+                now: now,
+              );
+              return matchesQuery &&
+                  matchesTags &&
+                  matchesTranslation &&
+                  matchesType &&
+                  matchesDate;
+            }).toList(),
+            _dateField,
+          );
 
           return Column(
             children: [
@@ -312,95 +315,89 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
                             const SizedBox(height: 12),
                         itemBuilder: (context, index) {
                           final annotation = filteredAnnotations[index];
-                          Future<void> openDetails() =>
-                              Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (context) => AnnotationDetailScreen(
-                                    annotation: annotation,
-                                    books: books,
-                                    onPreviewVerses: (verses) =>
-                                        _showLinkedVersePreview(
-                                          context,
-                                          verses: verses,
-                                          books: books,
+                          Future<void>
+                          openDetails() => Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) => AnnotationDetailScreen(
+                                annotation: annotation,
+                                books: books,
+                                onPreviewVerses: (verses) =>
+                                    _showLinkedVersePreview(
+                                      context,
+                                      verses: verses,
+                                      books: books,
+                                    ),
+                                onOpenReference: () async {
+                                  await _openReferenceInReader(
+                                    context,
+                                    reference:
+                                        annotation.primaryVerse.reference,
+                                    preferredTranslationId:
+                                        annotation.primaryVerse.translationId,
+                                    preferredTranslationName:
+                                        annotation.primaryVerse.translationName,
+                                  );
+                                },
+                                onEdit: () async {
+                                  Navigator.of(context).pop();
+                                  await Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (context) => NoteEditorScreen(
+                                        primaryVerse: annotation.primaryVerse,
+                                        existingAnnotation: annotation,
+                                      ),
+                                    ),
+                                  );
+                                },
+                                onDelete: () async {
+                                  final id = annotation.id;
+                                  if (id == null) return;
+                                  final confirmed = await showDialog<bool>(
+                                    context: context,
+                                    builder: (ctx) => AlertDialog(
+                                      title: const Text('Delete?'),
+                                      content: const Text(
+                                        'This note and all its linked verses will be permanently removed.',
+                                      ),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () =>
+                                              Navigator.of(ctx).pop(false),
+                                          child: const Text('Cancel'),
                                         ),
-                                    onOpenReference: () async {
-                                      await _openReferenceInReader(
-                                        context,
-                                        reference:
-                                            annotation.primaryVerse.reference,
-                                        preferredTranslationId: annotation
-                                            .primaryVerse
-                                            .translationId,
-                                        preferredTranslationName: annotation
-                                            .primaryVerse
-                                            .translationName,
-                                      );
-                                    },
-                                    onEdit: () async {
+                                        TextButton(
+                                          onPressed: () =>
+                                              Navigator.of(ctx).pop(true),
+                                          child: const Text('Delete'),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                  if (confirmed != true) return;
+                                  try {
+                                    await ref
+                                        .read(userAnnotationRepositoryProvider)
+                                        .deleteAnnotation(id);
+                                    if (context.mounted) {
                                       Navigator.of(context).pop();
-                                      await Navigator.of(context).push(
-                                        MaterialPageRoute(
-                                          builder: (context) =>
-                                              NoteEditorScreen(
-                                                primaryVerse:
-                                                    annotation.primaryVerse,
-                                                existingAnnotation: annotation,
-                                              ),
-                                        ),
-                                      );
-                                    },
-                                    onDelete: () async {
-                                      final id = annotation.id;
-                                      if (id == null) return;
-                                      final confirmed = await showDialog<bool>(
-                                        context: context,
-                                        builder: (ctx) => AlertDialog(
-                                          title: const Text('Delete?'),
-                                          content: const Text(
-                                            'This note and all its linked verses will be permanently removed.',
+                                    }
+                                  } catch (_) {
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        const SnackBar(
+                                          content: Text(
+                                            'Failed to delete note.',
                                           ),
-                                          actions: [
-                                            TextButton(
-                                              onPressed: () =>
-                                                  Navigator.of(ctx).pop(false),
-                                              child: const Text('Cancel'),
-                                            ),
-                                            TextButton(
-                                              onPressed: () =>
-                                                  Navigator.of(ctx).pop(true),
-                                              child: const Text('Delete'),
-                                            ),
-                                          ],
                                         ),
                                       );
-                                      if (confirmed != true) return;
-                                      try {
-                                        await ref
-                                            .read(
-                                              userAnnotationRepositoryProvider,
-                                            )
-                                            .deleteAnnotation(id);
-                                        if (context.mounted) {
-                                          Navigator.of(context).pop();
-                                        }
-                                      } catch (_) {
-                                        if (context.mounted) {
-                                          ScaffoldMessenger.of(
-                                            context,
-                                          ).showSnackBar(
-                                            const SnackBar(
-                                              content: Text(
-                                                'Failed to delete note.',
-                                              ),
-                                            ),
-                                          );
-                                        }
-                                      }
-                                    },
-                                  ),
-                                ),
-                              );
+                                    }
+                                  }
+                                },
+                              ),
+                            ),
+                          );
                           return _AnnotationListCard(
                             annotation: annotation,
                             books: books,
@@ -641,12 +638,18 @@ class _NotesFilterBar extends StatelessWidget {
             child: HorizontalMouseScrollList(
               children: [
                 for (final dropdown in dropdowns)
-                  Padding(padding: const EdgeInsets.only(right: 8), child: dropdown),
+                  Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: dropdown,
+                  ),
               ],
             ),
           ),
           if (onClearAll != null)
-            TextButton(onPressed: onClearAll, child: const Text('Clear filters')),
+            TextButton(
+              onPressed: onClearAll,
+              child: const Text('Clear filters'),
+            ),
         ],
       ),
     );
@@ -686,12 +689,17 @@ class _MultiSelectDropdown extends StatelessWidget {
     return MenuAnchor(
       builder: (context, controller, child) {
         return OutlinedButton.icon(
-          onPressed: () => controller.isOpen ? controller.close() : controller.open(),
+          onPressed: () =>
+              controller.isOpen ? controller.close() : controller.open(),
           icon: const Icon(Icons.arrow_drop_down),
           label: Text(_buttonLabel, overflow: TextOverflow.ellipsis),
           style: OutlinedButton.styleFrom(
-            foregroundColor: hasSelection ? colors.onSurface : colors.onSurfaceVariant,
-            backgroundColor: hasSelection ? colors.surfaceContainerHighest : null,
+            foregroundColor: hasSelection
+                ? colors.onSurface
+                : colors.onSurfaceVariant,
+            backgroundColor: hasSelection
+                ? colors.surfaceContainerHighest
+                : null,
             side: BorderSide(
               color: hasSelection ? colors.onSurface : colors.outlineVariant,
             ),
@@ -756,128 +764,131 @@ class _AnnotationListCard extends StatelessWidget {
       onTap: onViewDetails,
       borderRadius: BorderRadius.circular(18),
       child: Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHigh,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: theme.colorScheme.outlineVariant),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  children: [
-                    _TypePill(
-                      label: annotation.hasNoteText ? 'Note' : 'Highlight',
-                    ),
-                    if (highlightColor != null)
-                      Container(
-                        width: 18,
-                        height: 18,
-                        decoration: BoxDecoration(
-                          color: highlightColor,
-                          shape: BoxShape.circle,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surfaceContainerHigh,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: theme.colorScheme.outlineVariant),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      _TypePill(
+                        label: annotation.hasNoteText ? 'Note' : 'Highlight',
+                      ),
+                      if (highlightColor != null)
+                        Container(
+                          width: 18,
+                          height: 18,
+                          decoration: BoxDecoration(
+                            color: highlightColor,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                      Text(
+                        annotation.primaryVerse.translationName,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
                         ),
                       ),
-                    Text(
-                      annotation.primaryVerse.translationName,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
+                    ],
+                  ),
+                ),
+                PopupMenuButton<String>(
+                  onSelected: (value) async {
+                    switch (value) {
+                      case 'edit':
+                        await onEdit();
+                      case 'delete':
+                        await onDelete();
+                    }
+                  },
+                  itemBuilder: (context) => const [
+                    PopupMenuItem(value: 'edit', child: Text('Edit')),
+                    PopupMenuItem(value: 'delete', child: Text('Delete')),
                   ],
                 ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              referenceLabel,
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w700,
               ),
-              PopupMenuButton<String>(
-                onSelected: (value) async {
-                  switch (value) {
-                    case 'edit':
-                      await onEdit();
-                    case 'delete':
-                      await onDelete();
-                  }
-                },
-                itemBuilder: (context) => const [
-                  PopupMenuItem(value: 'edit', child: Text('Edit')),
-                  PopupMenuItem(value: 'delete', child: Text('Delete')),
+            ),
+            const SizedBox(height: 4),
+            InkWell(
+              onTap: annotation.hasNoteText
+                  ? () async => onViewDetails()
+                  : null,
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: annotation.hasNoteText
+                      ? theme.colorScheme.surfaceContainerHighest
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  annotation.noteText?.trim().isNotEmpty == true
+                      ? annotation.noteText!.trim()
+                      : 'Saved highlight',
+                  style: theme.textTheme.bodyLarge,
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ),
+            if (linkedRanges.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              LinkedVersesSection.grouped(
+                books: books,
+                ranges: linkedRanges,
+                onPreviewVerses: onPreviewVerses,
+                maxVisible: kLinkedReferencesPreviewLimit,
+              ),
+            ],
+            if (annotation.labels.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  for (final label in annotation.labels)
+                    Chip(label: Text(label)),
                 ],
               ),
             ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            referenceLabel,
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 4),
-          InkWell(
-            onTap: annotation.hasNoteText ? () async => onViewDetails() : null,
-            borderRadius: BorderRadius.circular(12),
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: annotation.hasNoteText
-                    ? theme.colorScheme.surfaceContainerHighest
-                    : Colors.transparent,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Text(
-                annotation.noteText?.trim().isNotEmpty == true
-                    ? annotation.noteText!.trim()
-                    : 'Saved highlight',
-                style: theme.textTheme.bodyLarge,
-                maxLines: 3,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ),
-          if (linkedRanges.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            LinkedVersesSection.grouped(
-              books: books,
-              ranges: linkedRanges,
-              onPreviewVerses: onPreviewVerses,
-              maxVisible: kLinkedReferencesPreviewLimit,
-            ),
-          ],
-          if (annotation.labels.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
+            const SizedBox(height: 14),
+            Row(
               children: [
-                for (final label in annotation.labels) Chip(label: Text(label)),
+                TextButton.icon(
+                  onPressed: onOpenReference,
+                  icon: const Icon(Icons.menu_book_outlined),
+                  label: const Text('Open in Reader'),
+                ),
+                const SizedBox(width: 8),
+                TextButton.icon(
+                  onPressed: onEdit,
+                  icon: const Icon(Icons.edit_outlined),
+                  label: const Text('Edit'),
+                ),
               ],
             ),
           ],
-          const SizedBox(height: 14),
-          Row(
-            children: [
-              TextButton.icon(
-                onPressed: onOpenReference,
-                icon: const Icon(Icons.menu_book_outlined),
-                label: const Text('Open in Reader'),
-              ),
-              const SizedBox(width: 8),
-              TextButton.icon(
-                onPressed: onEdit,
-                icon: const Icon(Icons.edit_outlined),
-                label: const Text('Edit'),
-              ),
-            ],
-          ),
-        ],
+        ),
       ),
-    ),
     );
   }
 }

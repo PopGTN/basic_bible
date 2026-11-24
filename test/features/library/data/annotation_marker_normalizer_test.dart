@@ -86,7 +86,10 @@ void main() {
 
   test('chapters with no annotations are returned untouched', () {
     final verses = [_verse(1), _verse(2)];
-    expect(identical(normalizeChapterAnnotationMarkers(verses), verses), isTrue);
+    expect(
+      identical(normalizeChapterAnnotationMarkers(verses), verses),
+      isTrue,
+    );
   });
 
   test('parsed USFX gets one marker sequence per chapter', () async {

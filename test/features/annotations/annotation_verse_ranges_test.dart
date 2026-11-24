@@ -65,8 +65,39 @@ void main() {
 
   test('verses tapped out of order still read as one passage', () {
     // The screenshot case: Luke 15 selected in tap order, primary = 15:23.
-    final tapOrder = [24, 25, 26, 28, 27, 29, 30, 31, 32, 22, 21, 20, 18, 19,
-      17, 16, 15, 14, 13, 3, 1, 2, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+    final tapOrder = [
+      24,
+      25,
+      26,
+      28,
+      27,
+      29,
+      30,
+      31,
+      32,
+      22,
+      21,
+      20,
+      18,
+      19,
+      17,
+      16,
+      15,
+      14,
+      13,
+      3,
+      1,
+      2,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+    ];
     final note = UserAnnotation(
       type: UserAnnotationType.note,
       primaryVerse: _v(23, book: 'LUK', chapter: 15),
@@ -100,11 +131,9 @@ void main() {
       _v(1, book: 'GEN', chapter: 2),
       _v(1, book: 'GEN'),
     ]);
-    expect([for (final l in sorted) '${l.bookId} ${l.chapter}'], [
-      'GEN 1',
-      'GEN 2',
-      'EXO 1',
-      'REV 1',
-    ]);
+    expect(
+      [for (final l in sorted) '${l.bookId} ${l.chapter}'],
+      ['GEN 1', 'GEN 2', 'EXO 1', 'REV 1'],
+    );
   });
 }

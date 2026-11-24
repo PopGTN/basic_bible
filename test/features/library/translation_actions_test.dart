@@ -188,15 +188,18 @@ void main() {
     final actions = container.read(translationActionsProvider);
     final pending = actions.download(_translation);
     books.lastProgress!(12345, null);
-    expect(container.read(translationDownloadsProvider)['web']!.fraction, isNull);
+    expect(
+      container.read(translationDownloadsProvider)['web']!.fraction,
+      isNull,
+    );
     books.download.complete();
     await pending;
   });
 
   test('a download drives its system notification (#55)', () async {
-    final pending = container.read(translationActionsProvider).download(
-      _translation,
-    );
+    final pending = container
+        .read(translationActionsProvider)
+        .download(_translation);
     final notify = books.lastProgress!;
     notify(0, 200);
     notify(1, 200); // same percent: no extra notification
@@ -214,9 +217,9 @@ void main() {
   });
 
   test('a failed download posts a failure notification', () async {
-    final pending = container.read(translationActionsProvider).download(
-      _translation,
-    );
+    final pending = container
+        .read(translationActionsProvider)
+        .download(_translation);
     books.download.completeError(Exception('offline'));
     await expectLater(pending, throwsException);
     expect(notifications.events.last, 'failed');

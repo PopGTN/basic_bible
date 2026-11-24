@@ -31,7 +31,9 @@ void main() {
             child: LinkedVersesSection(
               books: const [],
               // Tap order, as stored.
-              links: [for (final v in [5, 1, 4, 2, 3]) _v(v)],
+              links: [
+                for (final v in [5, 1, 4, 2, 3]) _v(v),
+              ],
               maxVisible: 2,
               onPreviewVerses: (_) async {},
               onDeleteLink: (link) => removed.add(link.verse),
@@ -97,7 +99,10 @@ void main() {
         home: Scaffold(
           body: LinkedVersesSection.grouped(
             books: const [],
-            ranges: [range, AnnotationVerseRange([_v(9)])],
+            ranges: [
+              range,
+              AnnotationVerseRange([_v(9)]),
+            ],
             onPreviewVerses: (verses) async => previewed = verses,
           ),
         ),

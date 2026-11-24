@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  testWidgets('About shows the app and opens the licenses page', (tester) async {
+  testWidgets('About shows the app and opens the licenses page', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
